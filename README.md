@@ -21,3 +21,7 @@ See [`docs/engineering-foundation/local-development.md`](docs/engineering-founda
 - `GET /actuator/health/readiness` — includes the database dependency.
 
 Authentication only accepts JWTs from an explicitly configured OIDC issuer; no issuer means protected routes fail closed. There are no token issuance, OTP, real payment, AI or order flows. See [`docs/engineering-foundation/implementation-status.md`](docs/engineering-foundation/implementation-status.md) and [`docs/roadmap/README.md`](docs/roadmap/README.md).
+
+## License
+
+This public repository is licensed under [Apache License 2.0](LICENSE). The license permits commercial use subject to its terms.

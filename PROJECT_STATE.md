@@ -2,6 +2,10 @@
 
 Last reviewed: 2026-11-10. See [`AGENTS.md`](AGENTS.md) for mandatory continuation rules and [`NEXT_TASK.md`](NEXT_TASK.md) for the next action.
 
+## GitHub publication
+
+Repository: [ADatkashov/kunde](https://github.com/ADatkashov/kunde), public, licensed under Apache License 2.0. Commercial use is permitted under that license. The local `main` branch is tracked to `origin/main`; latest published commit is recorded by Git. Local identity POC `.env` files, test-account file and Maven truststore remain ignored and were excluded from the upload.
+
 ## Product and architecture
 
 KUNDE is at the Development Foundation stage, not a marketplace MVP. The repository contains a Java 21 / Spring Boot 3.5.7 modular-monolith API, PostgreSQL/Flyway foundation, and Flutter Consumer shell with localization scaffolding. API health/capabilities and currently empty categories/search are implemented. No production catalog, order, payment, AI, phone OTP, registration, or production identity lifecycle is enabled.
@@ -34,6 +38,6 @@ The API's OIDC resource-server boundary validates configured JWTs and fails clos
 
 ## Git and verification limits
 
-At this review, the workspace contained no `.git` directory. `git status` and `git log` failed with “not a git repository”; branch, uncommitted-change state, remotes and commit history are unknown. Available decision history is documented in ADRs and roadmap files. Do not describe the workspace as clean or infer commit state.
+Git metadata was initialized for the created public repository and the existing remote `main` history was preserved. Keep checking `git status --short --branch`; do not reset, clean, or rewrite the published history. Detailed decisions remain in ADRs and roadmap files. The most recent push triggered Foundation CI; see the GitHub Actions run linked from the repository. Do not describe tests as passing until that run completes successfully.
 
 Do not count a built APK as mobile authentication proof, fixture JWT tests as provider verification, a discovery response as a completed login, logout token deletion as JWT revocation, or POC evidence as production readiness.
