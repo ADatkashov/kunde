@@ -41,9 +41,12 @@ class _IdentityPocScreenState extends State<IdentityPocScreen> {
   bool get _allowInsecureConnections {
     final issuer = Uri.tryParse(_issuer);
     final host = issuer?.host.toLowerCase();
-    return issuer?.scheme == 'http' && host != null &&
-        (host == 'localhost' || host.endsWith('.localhost') ||
-            host == '127.0.0.1' || host == '::1');
+    return issuer?.scheme == 'http' &&
+        host != null &&
+        (host == 'localhost' ||
+            host.endsWith('.localhost') ||
+            host == '127.0.0.1' ||
+            host == '::1');
   }
 
   Future<void> _run(Future<void> Function() action) async {
@@ -57,7 +60,8 @@ class _IdentityPocScreenState extends State<IdentityPocScreen> {
     } catch (error) {
       if (!mounted) return;
       setState(() {
-        _status = 'Operation failed (${error.runtimeType}). Check local IdP configuration.';
+        _status =
+            'Operation failed (${error.runtimeType}). Check local IdP configuration.';
       });
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -79,9 +83,11 @@ class _IdentityPocScreenState extends State<IdentityPocScreen> {
         if (accessToken == null) throw StateError('No access token returned');
         _accessToken = accessToken;
         final refreshToken = response.refreshToken;
-        if (refreshToken != null) await _storage.write(key: _refreshTokenKey, value: refreshToken);
+        if (refreshToken != null)
+          await _storage.write(key: _refreshTokenKey, value: refreshToken);
         final idToken = response.idToken;
-        if (idToken != null) await _storage.write(key: _idTokenKey, value: idToken);
+        if (idToken != null)
+          await _storage.write(key: _idTokenKey, value: idToken);
         if (!mounted) return;
         setState(() => _status = 'Authorization Code + PKCE completed');
       });
@@ -101,12 +107,15 @@ class _IdentityPocScreenState extends State<IdentityPocScreen> {
           ),
         );
         final accessToken = response.accessToken;
-        if (accessToken == null) throw StateError('Refresh returned no access token');
+        if (accessToken == null)
+          throw StateError('Refresh returned no access token');
         _accessToken = accessToken;
         final rotated = response.refreshToken;
-        if (rotated != null) await _storage.write(key: _refreshTokenKey, value: rotated);
+        if (rotated != null)
+          await _storage.write(key: _refreshTokenKey, value: rotated);
         final idToken = response.idToken;
-        if (idToken != null) await _storage.write(key: _idTokenKey, value: idToken);
+        if (idToken != null)
+          await _storage.write(key: _idTokenKey, value: idToken);
         if (!mounted) return;
         setState(() => _status = 'Refresh completed');
       });
@@ -116,12 +125,16 @@ class _IdentityPocScreenState extends State<IdentityPocScreen> {
         if (token == null) throw StateError('Sign in first');
         final response = await http.get(
           Uri.parse(_apiUrl),
-          headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json'
+          },
         );
         if (!mounted) return;
         setState(() {
           _status = 'API returned HTTP ${response.statusCode}';
-          _apiResult = const JsonEncoder.withIndent('  ').convert(jsonDecode(response.body));
+          _apiResult = const JsonEncoder.withIndent('  ')
+              .convert(jsonDecode(response.body));
         });
       });
 
@@ -145,7 +158,8 @@ class _IdentityPocScreenState extends State<IdentityPocScreen> {
           _accessToken = null;
         }
         if (!mounted) return;
-        setState(() => _status = 'Local tokens cleared; provider logout requested');
+        setState(
+            () => _status = 'Local tokens cleared; provider logout requested');
       });
 
   void _requireConfig() {
@@ -161,9 +175,11 @@ class _IdentityPocScreenState extends State<IdentityPocScreen> {
           child: ListView(
             padding: const EdgeInsets.all(24),
             children: [
-              Text('Provider: ${_issuer.isEmpty ? 'not configured' : Uri.parse(_issuer).host}'),
+              Text(
+                  'Provider: ${_issuer.isEmpty ? 'not configured' : Uri.parse(_issuer).host}'),
               const SizedBox(height: 8),
-              const Text('Local test only. Use a synthetic account. No token values are shown.'),
+              const Text(
+                  'Local test only. Use a synthetic account. No token values are shown.'),
               const SizedBox(height: 16),
               Text(_status),
               const SizedBox(height: 16),
@@ -186,7 +202,8 @@ class _IdentityPocScreenState extends State<IdentityPocScreen> {
               if (_busy) const LinearProgressIndicator(),
               if (_apiResult != null) ...[
                 const SizedBox(height: 24),
-                SelectableText(_apiResult!, style: const TextStyle(fontFamily: 'monospace')),
+                SelectableText(_apiResult!,
+                    style: const TextStyle(fontFamily: 'monospace')),
               ],
             ],
           ),

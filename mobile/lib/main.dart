@@ -19,7 +19,8 @@ void main() {
 }
 
 class KundeApp extends StatelessWidget {
-  const KundeApp({required this.api, this.identityPocEnabled = false, super.key});
+  const KundeApp(
+      {required this.api, this.identityPocEnabled = false, super.key});
 
   final KundeApi api;
   final bool identityPocEnabled;
