@@ -1,0 +1,95 @@
+name: Foundation CI
+
+on:
+  push:
+    paths:
+      - 'backend/**'
+      - 'mobile/**'
+      - 'compose.yaml'
+      - 'docs/engineering-foundation/**'
+      - 'docs/api/**'
+      - 'backend/Dockerfile'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'mobile/**'
+      - 'compose.yaml'
+      - 'docs/engineering-foundation/**'
+      - 'docs/api/**'
+      - 'backend/Dockerfile'
+      - '.github/workflows/ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: kunde
+          POSTGRES_USER: kunde_ci
+          POSTGRES_PASSWORD: kunde_ci_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kunde_ci -d kunde"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Test and package backend
+        working-directory: backend
+        env:
+          DB_URL: jdbc:postgresql://localhost:5432/kunde
+          DB_USERNAME: kunde_ci
+          DB_PASSWORD: kunde_ci_only
+        run: mvn --batch-mode --no-transfer-progress verify
+  mobile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: stable
+          cache: true
+      - name: Resolve mobile dependencies
+        working-directory: mobile
+        run: flutter pub get
+      - name: Analyze mobile app
+        working-directory: mobile
+        run: flutter analyze --fatal-infos
+      - name: Check Dart formatting
+        working-directory: mobile
+        run: dart format --output=none --set-exit-if-changed lib test
+      - name: Test mobile app
+        working-directory: mobile
+        run: flutter test
+      - name: Build Android debug app
+        working-directory: mobile
+        run: flutter build apk --debug
+  mobile-ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: stable
+          cache: true
+      - name: Resolve mobile dependencies
+        working-directory: mobile
+        run: flutter pub get
+      - name: Build iOS app without signing
+        working-directory: mobile
+        run: flutter build ios --debug --no-codesign

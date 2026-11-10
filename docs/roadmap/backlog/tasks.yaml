@@ -1,0 +1,1091 @@
+[
+  {
+    "id": "TASK-001",
+    "epic": "EP-001",
+    "feature": "FEAT-001",
+    "name": "Decision register and owners",
+    "description": "Implement and document decision register and owners within approved architecture and scope.",
+    "area": "product",
+    "priority": "P0",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-0",
+    "user_story_id": "US-001",
+    "implementation_status": "blocked",
+    "implementation_note": "Decision owners cannot be named from repository evidence."
+  },
+  {
+    "id": "TASK-002",
+    "epic": "EP-001",
+    "feature": "FEAT-001",
+    "name": "Architecture and API contract baseline",
+    "description": "Implement and document architecture and api contract baseline within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P0",
+    "dependencies": [
+      "TASK-001"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-0",
+    "user_story_id": "US-001",
+    "implementation_status": "implemented_verified",
+    "implementation_note": "OpenAPI contract YAML parses and is served at /api/v1/openapi.yaml; Maven verify passed with 14 backend tests after local verification updates; PostgreSQL/Flyway, live API and security boundary checks passed. Real OIDC provider remains unverified."
+  },
+  {
+    "id": "TASK-003",
+    "epic": "EP-001",
+    "feature": "FEAT-002",
+    "name": "Repository build and review gates",
+    "description": "Implement and document repository build and review gates within approved architecture and scope.",
+    "area": "devops",
+    "priority": "P1",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-0",
+    "user_story_id": "US-002",
+    "implementation_status": "partially_verified",
+    "implementation_note": "GitHub Actions YAML parsed; Java 21, Maven verify, PostgreSQL service, cache and permissions inspected; local equivalent build passed. Remote workflow not executed; CI does not upload or publish build artifacts."
+  },
+  {
+    "id": "TASK-004",
+    "epic": "EP-001",
+    "feature": "FEAT-002",
+    "name": "Environment configuration and health checks",
+    "description": "Implement and document environment configuration and health checks within approved architecture and scope.",
+    "area": "infrastructure",
+    "priority": "P1",
+    "dependencies": [
+      "TASK-003"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-0",
+    "user_story_id": "US-002",
+    "implementation_status": "implemented_verified",
+    "implementation_note": "Compose config passed; Spring context connected to isolated PostgreSQL 16.15; Flyway V1 history and repeat migration verified; live health/readiness/liveness returned UP."
+  },
+  {
+    "id": "TASK-005",
+    "epic": "EP-002",
+    "feature": "FEAT-003",
+    "name": "Identity provider and fallback decision",
+    "description": "Implement and document identity provider and fallback decision within approved architecture and scope.",
+    "area": "security",
+    "priority": "P0",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-0",
+    "user_story_id": "US-003",
+    "implementation_status": "blocked",
+    "implementation_note": "Secure Maven trust and `mvn verify` completed (21 passing tests, including fixture-backed resource-server cases). Keycloak 26.8.2 Android PKCE with a synthetic user, real JWT validation and protected API HTTP 200, refresh, and browser login prompt after logout are evidenced in docs/identity/poc. ZITADEL 4.19.5 health/discovery passed but its client flow remains unconfigured; live negative-token and full lifecycle tests remain open. No provider is accepted; TASK-005 stays blocked and ADR-015 remains PROPOSED."
+  },
+  {
+    "id": "TASK-006",
+    "epic": "EP-002",
+    "feature": "FEAT-003",
+    "name": "Authentication and session API",
+    "description": "Implement and document authentication and session api within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P1",
+    "dependencies": [
+      "TASK-005"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-003",
+    "implementation_status": "not_started",
+    "implementation_note": "No registration, login, token issuance or session lifecycle."
+  },
+  {
+    "id": "TASK-007",
+    "epic": "EP-003",
+    "feature": "FEAT-004",
+    "name": "Profile and consent contract",
+    "description": "Implement and document profile and consent contract within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P1",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-004"
+  },
+  {
+    "id": "TASK-008",
+    "epic": "EP-003",
+    "feature": "FEAT-004",
+    "name": "Profile and localization screens",
+    "description": "Implement and document profile and localization screens within approved architecture and scope.",
+    "area": "mobile",
+    "priority": "P1",
+    "dependencies": [
+      "TASK-007"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-004"
+  },
+  {
+    "id": "TASK-009",
+    "epic": "EP-004",
+    "feature": "FEAT-005",
+    "name": "Address and serviceability model",
+    "description": "Implement and document address and serviceability model within approved architecture and scope.",
+    "area": "database",
+    "priority": "P1",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-005"
+  },
+  {
+    "id": "TASK-010",
+    "epic": "EP-004",
+    "feature": "FEAT-005",
+    "name": "Address selection and out-of-zone UX",
+    "description": "Implement and document address selection and out-of-zone ux within approved architecture and scope.",
+    "area": "mobile",
+    "priority": "P1",
+    "dependencies": [
+      "TASK-009"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-005"
+  },
+  {
+    "id": "TASK-011",
+    "epic": "EP-005",
+    "feature": "FEAT-007",
+    "name": "Catalog query and relevance baseline",
+    "description": "Implement and document catalog query and relevance baseline within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P1",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-007"
+  },
+  {
+    "id": "TASK-012",
+    "epic": "EP-005",
+    "feature": "FEAT-007",
+    "name": "Search and empty-state experience",
+    "description": "Implement and document search and empty-state experience within approved architecture and scope.",
+    "area": "mobile",
+    "priority": "P1",
+    "dependencies": [
+      "TASK-011"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-007"
+  },
+  {
+    "id": "TASK-013",
+    "epic": "EP-006",
+    "feature": "FEAT-006",
+    "name": "Category and catalog domain schema",
+    "description": "Implement and document category and catalog domain schema within approved architecture and scope.",
+    "area": "database",
+    "priority": "P1",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-006"
+  },
+  {
+    "id": "TASK-014",
+    "epic": "EP-006",
+    "feature": "FEAT-006",
+    "name": "Catalog APIs and availability rules",
+    "description": "Implement and document catalog apis and availability rules within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P1",
+    "dependencies": [
+      "TASK-013"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-006"
+  },
+  {
+    "id": "TASK-015",
+    "epic": "EP-007",
+    "feature": "FEAT-006",
+    "name": "Partner verification workflow",
+    "description": "Implement and document partner verification workflow within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P1",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-006"
+  },
+  {
+    "id": "TASK-016",
+    "epic": "EP-007",
+    "feature": "FEAT-008",
+    "name": "Partner and offering detail API",
+    "description": "Implement and document partner and offering detail api within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P1",
+    "dependencies": [
+      "TASK-015"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-008"
+  },
+  {
+    "id": "TASK-017",
+    "epic": "EP-008",
+    "feature": "FEAT-011",
+    "name": "Partner onboarding and catalog workflow",
+    "description": "Implement and document partner onboarding and catalog workflow within approved architecture and scope.",
+    "area": "web",
+    "priority": "P1",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-011"
+  },
+  {
+    "id": "TASK-018",
+    "epic": "EP-008",
+    "feature": "FEAT-012",
+    "name": "Partner order response queue",
+    "description": "Implement and document partner order response queue within approved architecture and scope.",
+    "area": "web",
+    "priority": "P1",
+    "dependencies": [
+      "TASK-017"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-012"
+  },
+  {
+    "id": "TASK-019",
+    "epic": "EP-009",
+    "feature": "FEAT-013",
+    "name": "Provider operating model gate",
+    "description": "Implement and document provider operating model gate within approved architecture and scope.",
+    "area": "product",
+    "priority": "P0",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-0",
+    "user_story_id": "US-013"
+  },
+  {
+    "id": "TASK-020",
+    "epic": "EP-009",
+    "feature": "FEAT-013",
+    "name": "Conditional provider task workflow",
+    "description": "Implement and document conditional provider task workflow within approved architecture and scope.",
+    "area": "mobile",
+    "priority": "P2",
+    "dependencies": [
+      "TASK-019"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-2",
+    "user_story_id": "US-013"
+  },
+  {
+    "id": "TASK-021",
+    "epic": "EP-010",
+    "feature": "FEAT-010",
+    "name": "Order state machine and idempotency",
+    "description": "Implement and document order state machine and idempotency within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P0",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-010"
+  },
+  {
+    "id": "TASK-022",
+    "epic": "EP-010",
+    "feature": "FEAT-009",
+    "name": "Cart quote and checkout API",
+    "description": "Implement and document cart quote and checkout api within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P1",
+    "dependencies": [
+      "TASK-021"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-009"
+  },
+  {
+    "id": "TASK-023",
+    "epic": "EP-011",
+    "feature": "FEAT-028",
+    "name": "Booking requirements and lifecycle decision",
+    "description": "Implement and document booking requirements and lifecycle decision within approved architecture and scope.",
+    "area": "product",
+    "priority": "P2",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-2",
+    "user_story_id": "US-028"
+  },
+  {
+    "id": "TASK-024",
+    "epic": "EP-011",
+    "feature": "FEAT-028",
+    "name": "Booking state and availability module",
+    "description": "Implement and document booking state and availability module within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P2",
+    "dependencies": [
+      "TASK-023"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-2",
+    "user_story_id": "US-028"
+  },
+  {
+    "id": "TASK-025",
+    "epic": "EP-012",
+    "feature": "FEAT-014",
+    "name": "Payment provider and funds-flow decision",
+    "description": "Implement and document payment provider and funds-flow decision within approved architecture and scope.",
+    "area": "product",
+    "priority": "P0",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-0",
+    "user_story_id": "US-014"
+  },
+  {
+    "id": "TASK-026",
+    "epic": "EP-012",
+    "feature": "FEAT-014",
+    "name": "Payment adapter and verified callbacks",
+    "description": "Implement and document payment adapter and verified callbacks within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P0",
+    "dependencies": [
+      "TASK-025"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-014"
+  },
+  {
+    "id": "TASK-027",
+    "epic": "EP-013",
+    "feature": "FEAT-015",
+    "name": "Refund policy and approval controls",
+    "description": "Implement and document refund policy and approval controls within approved architecture and scope.",
+    "area": "product",
+    "priority": "P0",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-0",
+    "user_story_id": "US-015"
+  },
+  {
+    "id": "TASK-028",
+    "epic": "EP-013",
+    "feature": "FEAT-015",
+    "name": "Reconciliation and refund workflow",
+    "description": "Implement and document reconciliation and refund workflow within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P0",
+    "dependencies": [
+      "TASK-027"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-015"
+  },
+  {
+    "id": "TASK-029",
+    "epic": "EP-014",
+    "feature": "FEAT-016",
+    "name": "Fulfillment responsibility decision",
+    "description": "Implement and document fulfillment responsibility decision within approved architecture and scope.",
+    "area": "product",
+    "priority": "P0",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-0",
+    "user_story_id": "US-016"
+  },
+  {
+    "id": "TASK-030",
+    "epic": "EP-014",
+    "feature": "FEAT-016",
+    "name": "Fulfillment status integration",
+    "description": "Implement and document fulfillment status integration within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P1",
+    "dependencies": [
+      "TASK-029"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-016"
+  },
+  {
+    "id": "TASK-031",
+    "epic": "EP-015",
+    "feature": "FEAT-017",
+    "name": "Transactional notification adapter",
+    "description": "Implement and document transactional notification adapter within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P1",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-017"
+  },
+  {
+    "id": "TASK-032",
+    "epic": "EP-015",
+    "feature": "FEAT-017",
+    "name": "Activity and notification UX",
+    "description": "Implement and document activity and notification ux within approved architecture and scope.",
+    "area": "mobile",
+    "priority": "P1",
+    "dependencies": [
+      "TASK-031"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-017"
+  },
+  {
+    "id": "TASK-033",
+    "epic": "EP-016",
+    "feature": "FEAT-029",
+    "name": "Rating policy and moderation decision",
+    "description": "Implement and document rating policy and moderation decision within approved architecture and scope.",
+    "area": "product",
+    "priority": "P2",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-2",
+    "user_story_id": "US-029"
+  },
+  {
+    "id": "TASK-034",
+    "epic": "EP-016",
+    "feature": "FEAT-029",
+    "name": "Reviews moderation capability",
+    "description": "Implement and document reviews moderation capability within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P2",
+    "dependencies": [
+      "TASK-033"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-2",
+    "user_story_id": "US-029"
+  },
+  {
+    "id": "TASK-035",
+    "epic": "EP-017",
+    "feature": "FEAT-030",
+    "name": "Promotion funding and eligibility policy",
+    "description": "Implement and document promotion funding and eligibility policy within approved architecture and scope.",
+    "area": "product",
+    "priority": "P2",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-2",
+    "user_story_id": "US-030"
+  },
+  {
+    "id": "TASK-036",
+    "epic": "EP-017",
+    "feature": "FEAT-030",
+    "name": "Promotion eligibility service",
+    "description": "Implement and document promotion eligibility service within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P2",
+    "dependencies": [
+      "TASK-035"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-2",
+    "user_story_id": "US-030"
+  },
+  {
+    "id": "TASK-037",
+    "epic": "EP-018",
+    "feature": "FEAT-018",
+    "name": "Support case API and escalation",
+    "description": "Implement and document support case api and escalation within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P1",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-018"
+  },
+  {
+    "id": "TASK-038",
+    "epic": "EP-018",
+    "feature": "FEAT-018",
+    "name": "Customer support entry points",
+    "description": "Implement and document customer support entry points within approved architecture and scope.",
+    "area": "mobile",
+    "priority": "P1",
+    "dependencies": [
+      "TASK-037"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-018"
+  },
+  {
+    "id": "TASK-039",
+    "epic": "EP-019",
+    "feature": "FEAT-019",
+    "name": "Scoped staff RBAC and audit",
+    "description": "Implement and document scoped staff rbac and audit within approved architecture and scope.",
+    "area": "security",
+    "priority": "P0",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-019"
+  },
+  {
+    "id": "TASK-040",
+    "epic": "EP-019",
+    "feature": "FEAT-019",
+    "name": "Order exception and refund admin views",
+    "description": "Implement and document order exception and refund admin views within approved architecture and scope.",
+    "area": "web",
+    "priority": "P1",
+    "dependencies": [
+      "TASK-039"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-019"
+  },
+  {
+    "id": "TASK-041",
+    "epic": "EP-020",
+    "feature": "FEAT-020",
+    "name": "Event taxonomy and minimization",
+    "description": "Implement and document event taxonomy and minimization within approved architecture and scope.",
+    "area": "product_analytics",
+    "priority": "P1",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-0",
+    "user_story_id": "US-020"
+  },
+  {
+    "id": "TASK-042",
+    "epic": "EP-020",
+    "feature": "FEAT-032",
+    "name": "Operations and funnel dashboards",
+    "description": "Implement and document operations and funnel dashboards within approved architecture and scope.",
+    "area": "product_analytics",
+    "priority": "P2",
+    "dependencies": [
+      "TASK-041"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-2",
+    "user_story_id": "US-032"
+  },
+  {
+    "id": "TASK-043",
+    "epic": "EP-021",
+    "feature": "FEAT-021",
+    "name": "AI processor and privacy approval",
+    "description": "Implement and document ai processor and privacy approval within approved architecture and scope.",
+    "area": "security",
+    "priority": "P2",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-2",
+    "user_story_id": "US-021"
+  },
+  {
+    "id": "TASK-044",
+    "epic": "EP-021",
+    "feature": "FEAT-033",
+    "name": "Grounded search assistant and evaluation",
+    "description": "Implement and document grounded search assistant and evaluation within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P2",
+    "dependencies": [
+      "TASK-043"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-2",
+    "user_story_id": "US-033"
+  },
+  {
+    "id": "TASK-045",
+    "epic": "EP-022",
+    "feature": "FEAT-022",
+    "name": "Threat model and secure defaults",
+    "description": "Implement and document threat model and secure defaults within approved architecture and scope.",
+    "area": "security",
+    "priority": "P0",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-0",
+    "user_story_id": "US-022",
+    "implementation_status": "implemented_unverified",
+    "implementation_note": "Fail-closed security boundary and safe errors added; backend build/security review pending."
+  },
+  {
+    "id": "TASK-046",
+    "epic": "EP-022",
+    "feature": "FEAT-022",
+    "name": "API abuse and vulnerability controls",
+    "description": "Implement and document api abuse and vulnerability controls within approved architecture and scope.",
+    "area": "security",
+    "priority": "P1",
+    "dependencies": [
+      "TASK-045"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-022",
+    "implementation_status": "not_started",
+    "implementation_note": "Rate limiting/scanning not implemented; no public sensitive mutation route exists."
+  },
+  {
+    "id": "TASK-047",
+    "epic": "EP-023",
+    "feature": "FEAT-023",
+    "name": "Telemetry and alert ownership",
+    "description": "Implement and document telemetry and alert ownership within approved architecture and scope.",
+    "area": "devops",
+    "priority": "P0",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-0",
+    "user_story_id": "US-023",
+    "implementation_status": "implemented_unverified",
+    "implementation_note": "Correlation IDs, structured logs and Actuator health added; backend build pending."
+  },
+  {
+    "id": "TASK-048",
+    "epic": "EP-023",
+    "feature": "FEAT-023",
+    "name": "Incident dashboards and runbooks",
+    "description": "Implement and document incident dashboards and runbooks within approved architecture and scope.",
+    "area": "devops",
+    "priority": "P1",
+    "dependencies": [
+      "TASK-047"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-023"
+  },
+  {
+    "id": "TASK-049",
+    "epic": "EP-024",
+    "feature": "FEAT-024",
+    "name": "Language and critical-copy approval",
+    "description": "Implement and document language and critical-copy approval within approved architecture and scope.",
+    "area": "product",
+    "priority": "P0",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-0",
+    "user_story_id": "US-024"
+  },
+  {
+    "id": "TASK-050",
+    "epic": "EP-024",
+    "feature": "FEAT-024",
+    "name": "Localization framework and formats",
+    "description": "Implement and document localization framework and formats within approved architecture and scope.",
+    "area": "mobile",
+    "priority": "P1",
+    "dependencies": [
+      "TASK-049"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-024"
+  },
+  {
+    "id": "TASK-051",
+    "epic": "EP-025",
+    "feature": "FEAT-025",
+    "name": "Hosting and residency procurement gate",
+    "description": "Implement and document hosting and residency procurement gate within approved architecture and scope.",
+    "area": "infrastructure",
+    "priority": "P0",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-0",
+    "user_story_id": "US-025"
+  },
+  {
+    "id": "TASK-052",
+    "epic": "EP-025",
+    "feature": "FEAT-025",
+    "name": "Staged deployment and rollback",
+    "description": "Implement and document staged deployment and rollback within approved architecture and scope.",
+    "area": "devops",
+    "priority": "P1",
+    "dependencies": [
+      "TASK-051"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-025"
+  },
+  {
+    "id": "TASK-053",
+    "epic": "EP-026",
+    "feature": "FEAT-026",
+    "name": "Automated quality gates",
+    "description": "Implement and document automated quality gates within approved architecture and scope.",
+    "area": "qa",
+    "priority": "P1",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-0",
+    "user_story_id": "US-026",
+    "implementation_status": "partially_verified",
+    "implementation_note": "Flutter analyze, 4 tests and Android debug build passed; backend tests/build pending."
+  },
+  {
+    "id": "TASK-054",
+    "epic": "EP-026",
+    "feature": "FEAT-026",
+    "name": "Pilot E2E recovery suite",
+    "description": "Implement and document pilot e2e recovery suite within approved architecture and scope.",
+    "area": "qa",
+    "priority": "P1",
+    "dependencies": [
+      "TASK-053"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-026"
+  },
+  {
+    "id": "TASK-055",
+    "epic": "EP-027",
+    "feature": "FEAT-027",
+    "name": "Domain-owned migrations and constraints",
+    "description": "Implement and document domain-owned migrations and constraints within approved architecture and scope.",
+    "area": "database",
+    "priority": "P1",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-0",
+    "user_story_id": "US-027",
+    "implementation_status": "implemented_unverified",
+    "implementation_note": "PostgreSQL/Flyway schemas and integration test added; Docker Hub blocked Maven image build."
+  },
+  {
+    "id": "TASK-056",
+    "epic": "EP-027",
+    "feature": "FEAT-027",
+    "name": "Backup restore and retention evidence",
+    "description": "Implement and document backup restore and retention evidence within approved architecture and scope.",
+    "area": "database",
+    "priority": "P0",
+    "dependencies": [
+      "TASK-055"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-027",
+    "implementation_status": "not_started",
+    "implementation_note": "Backup/restore needs a selected environment and operations owner."
+  }
+]
+

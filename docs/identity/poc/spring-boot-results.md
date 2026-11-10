@@ -1,0 +1,9 @@
+# Spring Boot integration results — recovery 3.0
+
+Spring Boot 3.5.7 / Java 21 resource server was run with the isolated `identity-poc` profile, strict issuer validation, `kunde-api` audience and POC scope enforcement. `GET /api/v1/poc/whoami` accepted a real Keycloak access token after signature/JWKS, issuer, audience, expiration and scope validation, returning **HTTP 200** with `authenticated:true`, the Keycloak issuer, `kunde-api` audience and scope names. A prior run of the same real token path returned 500 because Keycloak's token omitted `sub` and the controller used null-rejecting `Map.of`. The default `basic` scope Subject mapper was configured in the local realm, after which the same scenario passed.
+
+No raw token, authorization code, refresh token or credential is logged. Temporary POC diagnostics log only claim names and presence/shape, without values. The protected endpoint is local POC functionality only.
+
+Previously verified backend evidence: Java 21, Maven 3.9.9, Spring Boot 3.5.7; `mvn verify` passed 21 tests (0 failures/errors/skips). Six Spring HTTP integration tests with a deterministic OIDC/JWKS fixture cover valid token, missing bearer, bad signature, wrong issuer/audience, expiration and not-before, missing scope, JWKS caching and unknown-kid refetch. They remain fixture tests. The Maven TLS approach keeps certificate and hostname validation on; see `maven-tls.md` and use PowerShell 7 (`pwsh`). The full suite was not rerun in recovery.
+
+Live Keycloak **negative** JWT variants (wrong issuer/audience, expiration, not-before, corrupted signature) were not submitted to the running API in this recovery. The deterministic integration matrix is not reported as provider-backed evidence. ZITADEL issued tokens were not tested. Keep strict fail-closed production validation unchanged.

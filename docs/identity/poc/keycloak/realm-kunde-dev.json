@@ -1,0 +1,95 @@
+{
+  "realm": "kunde-dev",
+  "enabled": true,
+  "displayName": "KUNDE Local POC",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "revokeRefreshToken": true,
+  "refreshTokenMaxReuse": 0,
+  "accessTokenLifespan": 300,
+  "roles": {
+    "realm": [
+      { "name": "consumer-poc", "description": "Synthetic local consumer role" },
+      { "name": "operator-poc", "description": "Synthetic local operator role" }
+    ]
+  },
+  "clientScopes": [
+    {
+      "name": "basic",
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "subject",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-sub-mapper",
+          "consentRequired": false,
+          "config": {
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "lightweight.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ],
+      "attributes": { "display.on.consent.screen": "false", "include.in.token.scope": "false" }
+    },
+    {
+      "name": "kunde.poc",
+      "protocol": "openid-connect",
+      "attributes": { "display.on.consent.screen": "false", "include.in.token.scope": "true" }
+    },
+    {
+      "name": "kunde-api-audience",
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "kunde-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "kunde-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ],
+      "attributes": { "display.on.consent.screen": "false", "include.in.token.scope": "false" }
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "kunde-consumer-poc",
+      "name": "KUNDE Consumer POC",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["com.kunde.mobile:/oauth2redirect", "http://127.0.0.1:8765/callback"],
+      "webOrigins": [],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "com.kunde.mobile:/oauth2redirect##http://127.0.0.1:8765/callback"
+      },
+      "defaultClientScopes": ["basic", "web-origins", "acr", "profile", "email", "roles", "kunde.poc", "kunde-api-audience"],
+      "optionalClientScopes": ["offline_access"]
+    },
+    {
+      "clientId": "kunde-api",
+      "name": "KUNDE API POC audience",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "bearerOnly": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
+    }
+  ]
+}
+
+

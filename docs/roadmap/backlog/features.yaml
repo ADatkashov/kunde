@@ -1,0 +1,513 @@
+[
+  {
+    "id": "FEAT-001",
+    "epic": "EP-001",
+    "name": "Decision and architecture baseline",
+    "story": "As a KUNDE user or operator, I need decision and architecture baseline so the approved marketplace journey is safe and usable.",
+    "requirements": [],
+    "priority": "P1",
+    "release": "REL-0",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-001"
+  },
+  {
+    "id": "FEAT-002",
+    "epic": "EP-001",
+    "name": "Build and environment pipeline",
+    "story": "As a KUNDE user or operator, I need build and environment pipeline so the approved marketplace journey is safe and usable.",
+    "requirements": [],
+    "priority": "P1",
+    "release": "REL-0",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-002"
+  },
+  {
+    "id": "FEAT-003",
+    "epic": "EP-002",
+    "name": "Authentication and session",
+    "story": "As a KUNDE user or operator, I need authentication and session so the approved marketplace journey is safe and usable.",
+    "requirements": [
+      "AUTH-001",
+      "AUTH-002"
+    ],
+    "priority": "P1",
+    "release": "REL-1",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-003"
+  },
+  {
+    "id": "FEAT-004",
+    "epic": "EP-002",
+    "name": "Profile and consent",
+    "story": "As a KUNDE user or operator, I need profile and consent so the approved marketplace journey is safe and usable.",
+    "requirements": [
+      "USER-001",
+      "USER-003"
+    ],
+    "priority": "P1",
+    "release": "REL-1",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-004"
+  },
+  {
+    "id": "FEAT-005",
+    "epic": "EP-004",
+    "name": "Address and serviceability",
+    "story": "As a KUNDE user or operator, I need address and serviceability so the approved marketplace journey is safe and usable.",
+    "requirements": [
+      "USER-002",
+      "USER-004"
+    ],
+    "priority": "P1",
+    "release": "REL-1",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-005"
+  },
+  {
+    "id": "FEAT-006",
+    "epic": "EP-006",
+    "name": "Catalog and partner data",
+    "story": "As a KUNDE user or operator, I need catalog and partner data so the approved marketplace journey is safe and usable.",
+    "requirements": [
+      "PARTNER-001",
+      "PARTNER-002",
+      "FOOD-001"
+    ],
+    "priority": "P1",
+    "release": "REL-1",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-006"
+  },
+  {
+    "id": "FEAT-007",
+    "epic": "EP-006",
+    "name": "Search and discovery",
+    "story": "As a KUNDE user or operator, I need search and discovery so the approved marketplace journey is safe and usable.",
+    "requirements": [
+      "HOME-001",
+      "HOME-002",
+      "HOME-004",
+      "SEARCH-001",
+      "SEARCH-002",
+      "SEARCH-003",
+      "EXP-002",
+      "EXP-003"
+    ],
+    "priority": "P1",
+    "release": "REL-1",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-007"
+  },
+  {
+    "id": "FEAT-008",
+    "epic": "EP-006",
+    "name": "Offering details and quote",
+    "story": "As a KUNDE user or operator, I need offering details and quote so the approved marketplace journey is safe and usable.",
+    "requirements": [
+      "EXP-001",
+      "FOOD-001"
+    ],
+    "priority": "P1",
+    "release": "REL-1",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-008"
+  },
+  {
+    "id": "FEAT-009",
+    "epic": "EP-006",
+    "name": "Cart and checkout",
+    "story": "As a KUNDE user or operator, I need cart and checkout so the approved marketplace journey is safe and usable.",
+    "requirements": [
+      "ORDER-001",
+      "ORDER-002",
+      "ORDER-003",
+      "FOOD-001",
+      "FOOD-002"
+    ],
+    "priority": "P1",
+    "release": "REL-1",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-009"
+  },
+  {
+    "id": "FEAT-010",
+    "epic": "EP-010",
+    "name": "Order state and recovery",
+    "story": "As a KUNDE user or operator, I need order state and recovery so the approved marketplace journey is safe and usable.",
+    "requirements": [
+      "ORDER-001",
+      "ORDER-002",
+      "ORDER-003",
+      "FOOD-001",
+      "FOOD-002"
+    ],
+    "priority": "P1",
+    "release": "REL-1",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-010"
+  },
+  {
+    "id": "FEAT-011",
+    "epic": "EP-008",
+    "name": "Partner onboarding",
+    "story": "As a KUNDE user or operator, I need partner onboarding so the approved marketplace journey is safe and usable.",
+    "requirements": [
+      "PARTNER-001",
+      "PARTNER-002"
+    ],
+    "priority": "P1",
+    "release": "REL-1",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-011"
+  },
+  {
+    "id": "FEAT-012",
+    "epic": "EP-008",
+    "name": "Partner work queue",
+    "story": "As a KUNDE user or operator, I need partner work queue so the approved marketplace journey is safe and usable.",
+    "requirements": [
+      "PARTNER-001",
+      "PARTNER-002"
+    ],
+    "priority": "P1",
+    "release": "REL-1",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-012"
+  },
+  {
+    "id": "FEAT-013",
+    "epic": "EP-009",
+    "name": "Provider dispatch",
+    "story": "As a KUNDE user or operator, I need provider dispatch so the approved marketplace journey is safe and usable.",
+    "requirements": [
+      "PROVIDER-001",
+      "MOB-001"
+    ],
+    "priority": "P1",
+    "release": "REL-1",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-013"
+  },
+  {
+    "id": "FEAT-014",
+    "epic": "EP-012",
+    "name": "Payment adapter",
+    "story": "As a KUNDE user or operator, I need payment adapter so the approved marketplace journey is safe and usable.",
+    "requirements": [
+      "PAY-001",
+      "PAY-002"
+    ],
+    "priority": "P1",
+    "release": "REL-1",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-014"
+  },
+  {
+    "id": "FEAT-015",
+    "epic": "EP-013",
+    "name": "Refund and reconciliation",
+    "story": "As a KUNDE user or operator, I need refund and reconciliation so the approved marketplace journey is safe and usable.",
+    "requirements": [
+      "FIN-001",
+      "PAY-002"
+    ],
+    "priority": "P1",
+    "release": "REL-1",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-015"
+  },
+  {
+    "id": "FEAT-016",
+    "epic": "EP-014",
+    "name": "Fulfillment status",
+    "story": "As a KUNDE user or operator, I need fulfillment status so the approved marketplace journey is safe and usable.",
+    "requirements": [
+      "ORDER-003"
+    ],
+    "priority": "P1",
+    "release": "REL-1",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-016"
+  },
+  {
+    "id": "FEAT-017",
+    "epic": "EP-015",
+    "name": "Notifications",
+    "story": "As a KUNDE user or operator, I need notifications so the approved marketplace journey is safe and usable.",
+    "requirements": [
+      "ACT-001"
+    ],
+    "priority": "P1",
+    "release": "REL-1",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-017"
+  },
+  {
+    "id": "FEAT-018",
+    "epic": "EP-018",
+    "name": "Support case handling",
+    "story": "As a KUNDE user or operator, I need support case handling so the approved marketplace journey is safe and usable.",
+    "requirements": [
+      "SUP-001"
+    ],
+    "priority": "P1",
+    "release": "REL-1",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-018"
+  },
+  {
+    "id": "FEAT-019",
+    "epic": "EP-019",
+    "name": "Admin access and operations",
+    "story": "As a KUNDE user or operator, I need admin access and operations so the approved marketplace journey is safe and usable.",
+    "requirements": [
+      "ADMIN-001",
+      "OPS-002",
+      "OPS-001"
+    ],
+    "priority": "P1",
+    "release": "REL-1",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-019"
+  },
+  {
+    "id": "FEAT-020",
+    "epic": "EP-020",
+    "name": "Minimum analytics",
+    "story": "As a KUNDE user or operator, I need minimum analytics so the approved marketplace journey is safe and usable.",
+    "requirements": [
+      "HOME-003"
+    ],
+    "priority": "P1",
+    "release": "REL-1",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-020"
+  },
+  {
+    "id": "FEAT-021",
+    "epic": "EP-021",
+    "name": "Grounded AI discovery",
+    "story": "As a KUNDE user or operator, I need grounded ai discovery so the approved marketplace journey is safe and usable.",
+    "requirements": [
+      "AI-001",
+      "AI-002",
+      "AI-003",
+      "AI-004",
+      "AI-005"
+    ],
+    "priority": "P1",
+    "release": "REL-1",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-021"
+  },
+  {
+    "id": "FEAT-022",
+    "epic": "EP-022",
+    "name": "Security controls",
+    "story": "As a KUNDE user or operator, I need security controls so the approved marketplace journey is safe and usable.",
+    "requirements": [],
+    "priority": "P1",
+    "release": "REL-0",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-022"
+  },
+  {
+    "id": "FEAT-023",
+    "epic": "EP-023",
+    "name": "Observability and incident",
+    "story": "As a KUNDE user or operator, I need observability and incident so the approved marketplace journey is safe and usable.",
+    "requirements": [],
+    "priority": "P1",
+    "release": "REL-0",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-023"
+  },
+  {
+    "id": "FEAT-024",
+    "epic": "EP-024",
+    "name": "Localization foundations",
+    "story": "As a KUNDE user or operator, I need localization foundations so the approved marketplace journey is safe and usable.",
+    "requirements": [
+      "USER-004"
+    ],
+    "priority": "P1",
+    "release": "REL-0",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-024"
+  },
+  {
+    "id": "FEAT-025",
+    "epic": "EP-025",
+    "name": "Deployment and recovery",
+    "story": "As a KUNDE user or operator, I need deployment and recovery so the approved marketplace journey is safe and usable.",
+    "requirements": [],
+    "priority": "P1",
+    "release": "REL-0",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-025"
+  },
+  {
+    "id": "FEAT-026",
+    "epic": "EP-026",
+    "name": "Automated quality gates",
+    "story": "As a KUNDE user or operator, I need automated quality gates so the approved marketplace journey is safe and usable.",
+    "requirements": [],
+    "priority": "P1",
+    "release": "REL-0",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-026"
+  },
+  {
+    "id": "FEAT-027",
+    "epic": "EP-027",
+    "name": "Data schema and migration",
+    "story": "As a KUNDE user or operator, I need data schema and migration so the approved marketplace journey is safe and usable.",
+    "requirements": [],
+    "priority": "P1",
+    "release": "REL-0",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-027"
+  },
+  {
+    "id": "FEAT-028",
+    "epic": "EP-011",
+    "name": "Booking lifecycle",
+    "story": "As a KUNDE user or operator, I need booking lifecycle so the approved marketplace journey is safe and usable.",
+    "requirements": [
+      "BOOK-001",
+      "BOOK-002",
+      "CARE-001",
+      "AUTO-001",
+      "HOME-005"
+    ],
+    "priority": "P2",
+    "release": "REL-2",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-028"
+  },
+  {
+    "id": "FEAT-029",
+    "epic": "EP-016",
+    "name": "Reviews and moderation",
+    "story": "As a KUNDE user or operator, I need reviews and moderation so the approved marketplace journey is safe and usable.",
+    "requirements": [
+      "EVENT-001"
+    ],
+    "priority": "P2",
+    "release": "REL-2",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-029"
+  },
+  {
+    "id": "FEAT-030",
+    "epic": "EP-017",
+    "name": "Promotions and loyalty",
+    "story": "As a KUNDE user or operator, I need promotions and loyalty so the approved marketplace journey is safe and usable.",
+    "requirements": [],
+    "priority": "P2",
+    "release": "REL-2",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-030"
+  },
+  {
+    "id": "FEAT-031",
+    "epic": "EP-008",
+    "name": "Advanced partner tools",
+    "story": "As a KUNDE user or operator, I need advanced partner tools so the approved marketplace journey is safe and usable.",
+    "requirements": [],
+    "priority": "P2",
+    "release": "REL-2",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-031"
+  },
+  {
+    "id": "FEAT-032",
+    "epic": "EP-020",
+    "name": "Advanced analytics",
+    "story": "As a KUNDE user or operator, I need advanced analytics so the approved marketplace journey is safe and usable.",
+    "requirements": [],
+    "priority": "P2",
+    "release": "REL-2",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-032"
+  },
+  {
+    "id": "FEAT-033",
+    "epic": "EP-021",
+    "name": "AI action preparation",
+    "story": "As a KUNDE user or operator, I need ai action preparation so the approved marketplace journey is safe and usable.",
+    "requirements": [
+      "AI-002",
+      "AI-003",
+      "AI-005"
+    ],
+    "priority": "P2",
+    "release": "REL-2",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-033"
+  },
+  {
+    "id": "FEAT-034",
+    "epic": "EP-001",
+    "name": "City expansion",
+    "story": "As a KUNDE user or operator, I need city expansion so the approved marketplace journey is safe and usable.",
+    "requirements": [
+      "FAM-001",
+      "FAM-002",
+      "FAMILY-003"
+    ],
+    "priority": "P2",
+    "release": "REL-2",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-034"
+  },
+  {
+    "id": "FEAT-035",
+    "epic": "EP-024",
+    "name": "Internationalization and compliance",
+    "story": "As a KUNDE user or operator, I need internationalization and compliance so the approved marketplace journey is safe and usable.",
+    "requirements": [
+      "HEALTH-001",
+      "EVENT-001"
+    ],
+    "priority": "P2",
+    "release": "REL-2",
+    "dependencies": [],
+    "acceptance": "Given approved scope and permissions, the capability returns an auditable, localized result and handles the defined failure path.",
+    "user_story_id": "US-035"
+  }
+]

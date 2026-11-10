@@ -1,0 +1,76 @@
+openapi: 3.1.0
+info:
+  title: KUNDE Foundation API
+  version: 1.0.0
+  description: Foundation endpoints only. Public marketplace and authentication flows are not enabled.
+servers:
+  - url: /api/v1
+paths:
+  /health:
+    get:
+      operationId: getApiHealth
+      responses:
+        '200':
+          description: API process is serving requests.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, service]
+                properties:
+                  status: { type: string, example: UP }
+                  service: { type: string, example: kunde-api }
+  /capabilities:
+    get:
+      operationId: getPlatformCapabilities
+      responses:
+        '200':
+          description: Enabled platform capabilities; does not expose secrets or operational details.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [releaseStage, marketplaceEnabled, oidcIssuerConfigured, aiEnabled]
+                properties:
+                  releaseStage: { type: string, example: FOUNDATION }
+                  marketplaceEnabled: { type: boolean, example: false }
+                  oidcIssuerConfigured: { type: boolean, example: false }
+                  aiEnabled: { type: boolean, example: false }
+  /categories:
+    get:
+      operationId: listAvailableCategories
+      responses:
+        '200':
+          description: Available categories. Empty until an approved catalog is implemented and configured.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: object }
+  /search:
+    get:
+      operationId: searchCatalog
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string, maxLength: 200 }
+      responses:
+        '200':
+          description: Search results; empty until an approved catalog is implemented.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: object }
+components:
+  schemas:
+    ApiError:
+      type: object
+      required: [timestamp, status, code, message, path, correlationId]
+      properties:
+        timestamp: { type: string, format: date-time }
+        status: { type: integer }
+        code: { type: string }
+        message: { type: string }
+        path: { type: string }
+        correlationId: { type: string }

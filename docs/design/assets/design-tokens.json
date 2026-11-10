@@ -1,0 +1,51 @@
+{
+  "metadata": {
+    "name": "KUNDE Design Tokens",
+    "version": "1.0.0-proposal",
+    "status": "proposed",
+    "unit": "logical px",
+    "colorSpace": "sRGB"
+  },
+  "color": {
+    "light": {
+      "brandPrimary": "#0B6B5E", "brandPrimaryHover": "#07574D", "brandSecondary": "#2E8174", "brandAccent": "#C66A22",
+      "canvas": "#F6F7F4", "surface": "#FFFFFF", "surfaceSubtle": "#EEF2EF", "surfaceRaised": "#FFFFFF",
+      "textPrimary": "#17221F", "textSecondary": "#465650", "textTertiary": "#5C6B65", "textOnBrand": "#FFFFFF",
+      "borderSubtle": "#CBD5D0", "borderControl": "#7A8782", "focus": "#0B6B5E", "success": "#176B52", "warning": "#8A5700", "error": "#B9382D", "info": "#1769AA",
+      "disabledSurface": "#E8ECE9", "disabledText": "#5C6B65", "overlay": "#101A17"
+    },
+    "dark": {
+      "brandPrimary": "#77D8C2", "brandPrimaryHover": "#91E0CF", "brandSecondary": "#4BC99A", "brandAccent": "#FFD166",
+      "canvas": "#121916", "surface": "#18211D", "surfaceRaised": "#202A25", "surfaceSubtle": "#26312C",
+      "textPrimary": "#F2F5F2", "textSecondary": "#C2CDC8", "textTertiary": "#AEBBB5", "textOnBrand": "#121916",
+      "borderSubtle": "#43514A", "borderControl": "#64736C", "focus": "#91E0CF", "success": "#4BC99A", "warning": "#FFD166", "error": "#FF7A70", "info": "#75B8FF",
+      "disabledSurface": "#26312C", "disabledText": "#AEBBB5", "overlay": "#000000"
+    }
+  },
+  "space": { "0": 0, "0_5": 2, "1": 4, "2": 8, "3": 12, "4": 16, "5": 20, "6": 24, "8": 32, "10": 40, "12": 48, "16": 64, "20": 80, "24": 96 },
+  "size": { "touchTargetMin": 44, "touchTargetPreferred": 48, "controlCompact": 40, "controlDefault": 48, "controlLarge": 56, "iconSmall": 16, "iconMedium": 20, "iconDefault": 24, "iconLarge": 32, "iconXL": 40, "contentMobileMax": 600, "contentDesktopMax": 1280, "adminContentMax": 1600 },
+  "radius": { "xs": 4, "sm": 8, "md": 12, "lg": 16, "xl": 20, "xxl": 24, "pill": 9999 },
+  "border": { "default": 1, "strong": 2, "focus": 2, "selected": 2 },
+  "opacity": { "disabledDecoration": 0.48, "scrimLight": 0.56, "scrimDark": 0.64 },
+  "breakpoint": { "compactMax": 359, "mobileMin": 360, "mobileMax": 599, "tabletMin": 600, "tabletMax": 899, "desktopMin": 900, "desktopMax": 1199, "wideMin": 1200 },
+  "motion": { "durationFastMs": 100, "durationStandardMs": 160, "durationEmphasisMs": 220, "durationPageMs": 280, "easingStandard": "cubic-bezier(0.2, 0, 0, 1)", "easingEnter": "cubic-bezier(0, 0, 0.2, 1)", "easingExit": "cubic-bezier(0.4, 0, 1, 1)", "reducedMotion": "near-zero; preserve state change and feedback" },
+  "elevation": { "level0": "none", "level1": "0 1px 3px rgba(18, 35, 29, 0.08)", "level2": "0 4px 12px rgba(18, 35, 29, 0.12)", "level3": "0 12px 32px rgba(18, 35, 29, 0.16)" },
+  "zIndex": { "base": 0, "sticky": 10, "navigation": 20, "menu": 30, "scrim": 40, "modal": 50, "toast": 60, "criticalDialog": 70 },
+  "typography": {
+    "family": { "primary": "Noto Sans, system-ui, sans-serif", "alternative": "Inter (requires shipped-glyph and license review)", "fallback": "system-ui, sans-serif" },
+    "weight": { "regular": 400, "medium": 500, "semibold": 600, "bold": 700 },
+    "scale": {
+      "displayL": { "mobile": 36, "web": 48, "lineHeight": 1.17, "weight": 700 },
+      "displayM": { "mobile": 30, "web": 40, "lineHeight": 1.2, "weight": 700 },
+      "h1": { "mobile": 28, "web": 32, "lineHeight": 1.22, "weight": 700 },
+      "h2": { "mobile": 24, "web": 28, "lineHeight": 1.25, "weight": 700 },
+      "h3": { "mobile": 20, "web": 22, "lineHeight": 1.3, "weight": 600 },
+      "bodyL": { "mobile": 17, "web": 18, "lineHeight": 1.5, "weight": 400 },
+      "bodyM": { "mobile": 16, "web": 16, "lineHeight": 1.5, "weight": 400 },
+      "bodyS": { "mobile": 14, "web": 14, "lineHeight": 1.43, "weight": 400 },
+      "labelL": { "mobile": 14, "web": 14, "lineHeight": 1.43, "weight": 600 },
+      "labelM": { "mobile": 13, "web": 13, "lineHeight": 1.38, "weight": 600 },
+      "caption": { "mobile": 12, "web": 12, "lineHeight": 1.33, "weight": 500 }
+    }
+  }
+}

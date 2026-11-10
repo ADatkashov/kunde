@@ -1,0 +1,124 @@
+[
+  {
+    "id": "REL-0",
+    "name": "Foundation",
+    "objective": "Resolve decisions and establish secure deployable engineering base.",
+    "scope": [
+      "EP-001",
+      "EP-002",
+      "EP-022",
+      "EP-023",
+      "EP-024",
+      "EP-025",
+      "EP-026",
+      "EP-027"
+    ],
+    "gate": [
+      "Owners assigned to critical open decisions",
+      "Architecture/security/privacy baseline approved",
+      "Build, migration, telemetry and recovery gates defined"
+    ]
+  },
+  {
+    "id": "REL-1",
+    "name": "MVP closed pilot",
+    "objective": "Prove one selected category end-to-end in a limited Almaty zone.",
+    "scope": [
+      "EP-003",
+      "EP-004",
+      "EP-005",
+      "EP-006",
+      "EP-007",
+      "EP-008",
+      "EP-010",
+      "EP-012",
+      "EP-013",
+      "EP-015",
+      "EP-018",
+      "EP-019",
+      "EP-020"
+    ],
+    "gate": [
+      "D-01 through D-08 resolved as applicable",
+      "Signed partner/fulfillment/payment terms and legal approval",
+      "End-to-end recovery and reconciliation rehearsal passed"
+    ]
+  },
+  {
+    "id": "REL-2",
+    "name": "Initial production and marketplace expansion",
+    "objective": "Operate safely in proven zone, then add capabilities based on evidence.",
+    "scope": [
+      "EP-009",
+      "EP-011",
+      "EP-014",
+      "EP-016",
+      "EP-017",
+      "EP-020",
+      "EP-021"
+    ],
+    "gate": [
+      "Operational support and supply thresholds met",
+      "No critical open security/legal/financial issues",
+      "Category/city expansion approved separately"
+    ]
+  },
+  {
+    "id": "REL-3",
+    "name": "Everyday services",
+    "objective": "Add service and booking categories with proven operating models.",
+    "scope": [
+      "EP-011",
+      "EP-014"
+    ],
+    "gate": [
+      "Category lifecycle and partner/provider readiness proven"
+    ]
+  },
+  {
+    "id": "REL-4",
+    "name": "Lifestyle",
+    "objective": "Add family, events or other lifestyle capabilities after specialist review.",
+    "scope": [
+      "EP-016"
+    ],
+    "gate": [
+      "Consent, child/health/ticketing legal and operational review complete"
+    ]
+  },
+  {
+    "id": "REL-5",
+    "name": "AI expansion",
+    "objective": "Introduce grounded assistance and progressively bounded action preparation.",
+    "scope": [
+      "EP-021"
+    ],
+    "gate": [
+      "Privacy, evaluation, cost monitoring and confirmation controls pass"
+    ]
+  },
+  {
+    "id": "REL-6",
+    "name": "Kazakhstan city expansion",
+    "objective": "Expand to additional cities one at a time.",
+    "scope": [
+      "EP-004",
+      "EP-006",
+      "EP-008"
+    ],
+    "gate": [
+      "Local supply, support, service area and legal readiness proven"
+    ]
+  },
+  {
+    "id": "REL-7",
+    "name": "International expansion",
+    "objective": "Enter a country only after country-specific product and operating review.",
+    "scope": [
+      "EP-024"
+    ],
+    "gate": [
+      "Local legal, payment, language, data and support approvals complete"
+    ]
+  }
+]

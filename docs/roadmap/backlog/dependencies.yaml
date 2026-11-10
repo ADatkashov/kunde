@@ -1,0 +1,142 @@
+[
+  {
+    "prerequisite": "TASK-001",
+    "dependent": "TASK-002",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-003",
+    "dependent": "TASK-004",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-005",
+    "dependent": "TASK-006",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-007",
+    "dependent": "TASK-008",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-009",
+    "dependent": "TASK-010",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-011",
+    "dependent": "TASK-012",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-013",
+    "dependent": "TASK-014",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-015",
+    "dependent": "TASK-016",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-017",
+    "dependent": "TASK-018",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-019",
+    "dependent": "TASK-020",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-021",
+    "dependent": "TASK-022",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-023",
+    "dependent": "TASK-024",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-025",
+    "dependent": "TASK-026",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-027",
+    "dependent": "TASK-028",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-029",
+    "dependent": "TASK-030",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-031",
+    "dependent": "TASK-032",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-033",
+    "dependent": "TASK-034",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-035",
+    "dependent": "TASK-036",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-037",
+    "dependent": "TASK-038",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-039",
+    "dependent": "TASK-040",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-041",
+    "dependent": "TASK-042",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-043",
+    "dependent": "TASK-044",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-045",
+    "dependent": "TASK-046",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-047",
+    "dependent": "TASK-048",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-049",
+    "dependent": "TASK-050",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-051",
+    "dependent": "TASK-052",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-053",
+    "dependent": "TASK-054",
+    "reason": "Required task sequencing"
+  },
+  {
+    "prerequisite": "TASK-055",
+    "dependent": "TASK-056",
+    "reason": "Required task sequencing"
+  }
+]
