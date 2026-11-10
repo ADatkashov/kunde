@@ -83,11 +83,13 @@ class _IdentityPocScreenState extends State<IdentityPocScreen> {
         if (accessToken == null) throw StateError('No access token returned');
         _accessToken = accessToken;
         final refreshToken = response.refreshToken;
-        if (refreshToken != null)
+        if (refreshToken != null) {
           await _storage.write(key: _refreshTokenKey, value: refreshToken);
+        }
         final idToken = response.idToken;
-        if (idToken != null)
+        if (idToken != null) {
           await _storage.write(key: _idTokenKey, value: idToken);
+        }
         if (!mounted) return;
         setState(() => _status = 'Authorization Code + PKCE completed');
       });
@@ -107,15 +109,18 @@ class _IdentityPocScreenState extends State<IdentityPocScreen> {
           ),
         );
         final accessToken = response.accessToken;
-        if (accessToken == null)
+        if (accessToken == null) {
           throw StateError('Refresh returned no access token');
+        }
         _accessToken = accessToken;
         final rotated = response.refreshToken;
-        if (rotated != null)
+        if (rotated != null) {
           await _storage.write(key: _refreshTokenKey, value: rotated);
+        }
         final idToken = response.idToken;
-        if (idToken != null)
+        if (idToken != null) {
           await _storage.write(key: _idTokenKey, value: idToken);
+        }
         if (!mounted) return;
         setState(() => _status = 'Refresh completed');
       });
