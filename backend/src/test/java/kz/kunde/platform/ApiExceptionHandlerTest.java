@@ -28,6 +28,17 @@ class ApiExceptionHandlerTest {
     }
 
     @Test
+    void methodAuthorizationDenialReturnsSafeForbiddenResponse() {
+        var request = new MockHttpServletRequest("GET", "/api/v1/me");
+        var result = new ApiExceptionHandler().handleAccessDenied(
+                new org.springframework.security.access.AccessDeniedException("sensitive-policy-details"), request);
+        assertThat(result.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(result.getBody().code()).isEqualTo("FORBIDDEN");
+        assertThat(result.getBody().message()).isEqualTo("Access is denied");
+        assertThat(result.getBody().correlationId()).isEqualTo("unavailable");
+    }
+
+    @Test
     void returnsStableSafeErrorShape() {
         var request = new MockHttpServletRequest("POST", "/api/v1/assistant/messages");
         var result = new ApiExceptionHandler().handleApiException(

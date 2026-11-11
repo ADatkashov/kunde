@@ -178,13 +178,17 @@ class IdentityPocJwtHttpIntegrationTest {
     @Test
     @Order(8)
     void missingExpirySubjectAndFutureIssuedAtAreRejected() throws Exception {
-        for (String invalid : java.util.List.of("exp", "sub", "iat")) {
+        for (String invalid : java.util.List.of("exp", "sub", "iat", "numeric-sub")) {
             var claims = new JWTClaimsSet.Builder().issuer(ISSUER).audience("kunde-api")
                     .claim("scope", "kunde.poc");
             if (!invalid.equals("sub")) claims.subject("synthetic-required-claims");
             if (!invalid.equals("exp")) claims.expirationTime(Date.from(Instant.now().plusSeconds(600)));
             claims.issueTime(Date.from(Instant.now().plusSeconds(invalid.equals("iat") ? 300 : -5)));
-            var token = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(KEY_1.getKeyID()).build(), claims.build());
+            var raw = claims.build().toJSONObject();
+            if (invalid.equals("numeric-sub")) raw.put("sub", 42);
+            var token = new com.nimbusds.jose.JWSObject(
+                    new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(KEY_1.getKeyID()).build(),
+                    new com.nimbusds.jose.Payload(JSON.writeValueAsString(raw)));
             token.sign(new RSASSASigner(KEY_1.toPrivateKey()));
             assertThat(call(token.serialize()).getStatusCode().value()).isEqualTo(401);
         }

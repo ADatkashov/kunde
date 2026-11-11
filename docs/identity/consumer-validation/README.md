@@ -6,17 +6,17 @@ Keycloak; production privacy, residency, operations, OTP and recovery gates rema
 ## Automated checks
 
 Java 21, Spring Boot **4.0.9** (actual pom), PostgreSQL 16.15 and Flyway V1/V2:
-`mvn --batch-mode --no-transfer-progress clean verify` passed 39 tests, no skips.
+`mvn --batch-mode --no-transfer-progress clean verify` passed 40 tests, no skips.
 The suite covers concurrent provisioning and profile updates, unique binding,
 restricted users, IDOR route rejection, validation and optimistic locking, real
-RSA signatures/JWKS rotation, issuer/audience/time/required claims and consumer
+RSA signatures/JWKS rotation, issuer/audience/time/required claims (including raw signed subject type) and consumer
 scope/client/type checks. Mock-decoder tests exercise malformed claim shapes;
 signed-token HTTP tests independently exercise the real security filter chain.
 
 Flutter 3.47.0: `flutter pub get --enforce-lockfile`,
 `flutter analyze --fatal-infos`,
 `dart format --output=none --set-exit-if-changed lib test`, and `flutter test`.
-31 tests passed, including browser gateway parameters, serialized refresh/logout,
+32 tests passed, including browser gateway parameters, serialized refresh/logout,
 restore, issuer context isolation, 401/403/409, offline recovery, route boundary,
 editing/discard, registration, locales and a phone-size welcome golden.
 Golden fonts come from the pinned Flutter SDK, not host-installed fonts.

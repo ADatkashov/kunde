@@ -1,0 +1,912 @@
+{
+  "provenance": {
+    "run": "https://github.com/ADatkashov/kunde/actions/runs/43041867797",
+    "jobId": 130595483597,
+    "source": "BASELINE_ACTIONABLE log records",
+    "scope": "Historical Maven/native CRITICAL/HIGH entries; container OS findings retained in separate reports. Not a complete current ledger."
+  },
+  "findings": [
+    {
+      "advisory": "CVE-2026-89425",
+      "package": "Maven:com.fasterxml.jackson.core:jackson-core",
+      "version": "2.19.2",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.flywaydb:flyway-core:11.7.2",
+        "com.fasterxml.jackson.dataformat:jackson-dataformat-toml:2.19.2",
+        "com.fasterxml.jackson.core:jackson-core:2.19.2"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "2.18.11",
+        "2.21.7",
+        "2.22.3"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-7hhh-6rmp-j9qf"
+    },
+    {
+      "advisory": "CVE-2026-89407",
+      "package": "Maven:com.fasterxml.jackson.core:jackson-core",
+      "version": "2.19.2",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.flywaydb:flyway-core:11.7.2",
+        "com.fasterxml.jackson.dataformat:jackson-dataformat-toml:2.19.2",
+        "com.fasterxml.jackson.core:jackson-core:2.19.2"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "2.18.11",
+        "2.21.7",
+        "2.22.3"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-p6pp-m3f8-5c89"
+    },
+    {
+      "advisory": "CVE-2026-68494",
+      "package": "Maven:com.fasterxml.jackson.core:jackson-core",
+      "version": "2.19.2",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.flywaydb:flyway-core:11.7.2",
+        "com.fasterxml.jackson.dataformat:jackson-dataformat-toml:2.19.2",
+        "com.fasterxml.jackson.core:jackson-core:2.19.2"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "2.18.8",
+        "2.21.4"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-r7wm-3cxj-wff9"
+    },
+    {
+      "advisory": "CVE-2026-91777",
+      "package": "Maven:com.fasterxml.jackson.core:jackson-databind",
+      "version": "2.19.2",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework.boot:spring-boot-starter-json:3.5.7",
+        "com.fasterxml.jackson.core:jackson-databind:2.19.2"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "2.18.11",
+        "2.21.7",
+        "2.22.3"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-cxp5-3px4-pw24"
+    },
+    {
+      "advisory": "CVE-2026-54512",
+      "package": "Maven:com.fasterxml.jackson.core:jackson-databind",
+      "version": "2.19.2",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework.boot:spring-boot-starter-json:3.5.7",
+        "com.fasterxml.jackson.core:jackson-databind:2.19.2"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "2.18.8",
+        "2.21.4",
+        "3.1.4"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-j3rv-43j4-c7qm"
+    },
+    {
+      "advisory": "CVE-2026-68497",
+      "package": "Maven:com.fasterxml.jackson.core:jackson-databind",
+      "version": "2.19.2",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework.boot:spring-boot-starter-json:3.5.7",
+        "com.fasterxml.jackson.core:jackson-databind:2.19.2"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "2.18.10",
+        "2.21.6",
+        "2.22.2"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-q4xh-88c3-wmh7"
+    },
+    {
+      "advisory": "CVE-2026-54513",
+      "package": "Maven:com.fasterxml.jackson.core:jackson-databind",
+      "version": "2.19.2",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework.boot:spring-boot-starter-json:3.5.7",
+        "com.fasterxml.jackson.core:jackson-databind:2.19.2"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "2.18.8",
+        "2.21.4",
+        "3.1.4"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-rmj7-2vxq-3g9f"
+    },
+    {
+      "advisory": "CVE-2026-91776",
+      "package": "Maven:com.fasterxml.jackson.core:jackson-databind",
+      "version": "2.19.2",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework.boot:spring-boot-starter-json:3.5.7",
+        "com.fasterxml.jackson.core:jackson-databind:2.19.2"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "2.18.11",
+        "2.21.7",
+        "2.22.3"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-wv8q-qhhj-9h54"
+    },
+    {
+      "advisory": "CVE-2026-40984",
+      "package": "Maven:io.micrometer:micrometer-core",
+      "version": "1.15.5",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-actuator:3.5.7",
+        "io.micrometer:micrometer-jakarta9:1.15.5",
+        "io.micrometer:micrometer-core:1.15.5"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "1.15.12",
+        "1.16.6"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-g3pr-3p32-fp23"
+    },
+    {
+      "advisory": "CVE-2026-40983",
+      "package": "Maven:io.micrometer:micrometer-core",
+      "version": "1.15.5",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-actuator:3.5.7",
+        "io.micrometer:micrometer-jakarta9:1.15.5",
+        "io.micrometer:micrometer-core:1.15.5"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "1.15.12",
+        "1.16.6"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-w737-wx49-qj23"
+    },
+    {
+      "advisory": "CVE-2026-24880",
+      "package": "Maven:org.apache.tomcat.embed:tomcat-embed-core",
+      "version": "10.1.48",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework.boot:spring-boot-starter-tomcat:3.5.7",
+        "org.apache.tomcat.embed:tomcat-embed-core:10.1.48"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "10.1.52",
+        "11.0.20",
+        "9.0.116"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-563x-q5rq-57qp"
+    },
+    {
+      "advisory": "CVE-2026-43515",
+      "package": "Maven:org.apache.tomcat.embed:tomcat-embed-core",
+      "version": "10.1.48",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework.boot:spring-boot-starter-tomcat:3.5.7",
+        "org.apache.tomcat.embed:tomcat-embed-core:10.1.48"
+      ],
+      "severity": "CRITICAL",
+      "fixedVersions": [
+        "10.1.55",
+        "11.0.22",
+        "9.0.118"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-5m62-pw8w-7w9f"
+    },
+    {
+      "advisory": "CVE-2026-43513",
+      "package": "Maven:org.apache.tomcat.embed:tomcat-embed-core",
+      "version": "10.1.48",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework.boot:spring-boot-starter-tomcat:3.5.7",
+        "org.apache.tomcat.embed:tomcat-embed-core:10.1.48"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "10.1.55",
+        "11.0.22",
+        "9.0.118"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-5mp6-jrq3-r938"
+    },
+    {
+      "advisory": "CVE-2026-65905",
+      "package": "Maven:org.apache.tomcat.embed:tomcat-embed-core",
+      "version": "10.1.48",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework.boot:spring-boot-starter-tomcat:3.5.7",
+        "org.apache.tomcat.embed:tomcat-embed-core:10.1.48"
+      ],
+      "severity": "CRITICAL",
+      "fixedVersions": [
+        "10.1.58",
+        "11.0.25",
+        "9.0.121"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-9xv2-5v5q-p794"
+    },
+    {
+      "advisory": "CVE-2026-42498",
+      "package": "Maven:org.apache.tomcat.embed:tomcat-embed-core",
+      "version": "10.1.48",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework.boot:spring-boot-starter-tomcat:3.5.7",
+        "org.apache.tomcat.embed:tomcat-embed-core:10.1.48"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "10.1.55",
+        "11.0.22",
+        "9.0.118"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-fv25-8xcx-gqjc"
+    },
+    {
+      "advisory": "CVE-2026-65182",
+      "package": "Maven:org.apache.tomcat.embed:tomcat-embed-core",
+      "version": "10.1.48",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework.boot:spring-boot-starter-tomcat:3.5.7",
+        "org.apache.tomcat.embed:tomcat-embed-core:10.1.48"
+      ],
+      "severity": "CRITICAL",
+      "fixedVersions": [
+        "10.1.58",
+        "11.0.25",
+        "9.0.121"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-gcx9-497g-6cp6"
+    },
+    {
+      "advisory": "CVE-2026-41284",
+      "package": "Maven:org.apache.tomcat.embed:tomcat-embed-core",
+      "version": "10.1.48",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework.boot:spring-boot-starter-tomcat:3.5.7",
+        "org.apache.tomcat.embed:tomcat-embed-core:10.1.48"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "10.1.55",
+        "11.0.22",
+        "9.0.118"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-gx5v-xp9w-j4cg"
+    },
+    {
+      "advisory": "CVE-2026-68525",
+      "package": "Maven:org.apache.tomcat.embed:tomcat-embed-core",
+      "version": "10.1.48",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework.boot:spring-boot-starter-tomcat:3.5.7",
+        "org.apache.tomcat.embed:tomcat-embed-core:10.1.48"
+      ],
+      "severity": "CRITICAL",
+      "fixedVersions": [
+        "10.1.58",
+        "11.0.25",
+        "9.0.121"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-h3x4-894j-xpx5"
+    },
+    {
+      "advisory": "CVE-2026-43512",
+      "package": "Maven:org.apache.tomcat.embed:tomcat-embed-core",
+      "version": "10.1.48",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework.boot:spring-boot-starter-tomcat:3.5.7",
+        "org.apache.tomcat.embed:tomcat-embed-core:10.1.48"
+      ],
+      "severity": "CRITICAL",
+      "fixedVersions": [
+        "10.1.55",
+        "11.0.22",
+        "9.0.118"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-h6fc-48rj-7qqh"
+    },
+    {
+      "advisory": "CVE-2026-53404",
+      "package": "Maven:org.apache.tomcat.embed:tomcat-embed-core",
+      "version": "10.1.48",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework.boot:spring-boot-starter-tomcat:3.5.7",
+        "org.apache.tomcat.embed:tomcat-embed-core:10.1.48"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "10.1.56",
+        "11.0.23",
+        "9.0.119"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-h792-v28v-ppgr"
+    },
+    {
+      "advisory": "CVE-2026-24734",
+      "package": "Maven:org.apache.tomcat.embed:tomcat-embed-core",
+      "version": "10.1.48",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework.boot:spring-boot-starter-tomcat:3.5.7",
+        "org.apache.tomcat.embed:tomcat-embed-core:10.1.48"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "10.1.52",
+        "11.0.18",
+        "9.0.115"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-mgp5-rv84-w37q"
+    },
+    {
+      "advisory": "CVE-2026-55276",
+      "package": "Maven:org.apache.tomcat.embed:tomcat-embed-core",
+      "version": "10.1.48",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework.boot:spring-boot-starter-tomcat:3.5.7",
+        "org.apache.tomcat.embed:tomcat-embed-core:10.1.48"
+      ],
+      "severity": "CRITICAL",
+      "fixedVersions": [
+        "10.1.56",
+        "11.0.23",
+        "9.0.119"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-mqg3-r7h5-24x4"
+    },
+    {
+      "advisory": "CVE-2026-41293",
+      "package": "Maven:org.apache.tomcat.embed:tomcat-embed-core",
+      "version": "10.1.48",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework.boot:spring-boot-starter-tomcat:3.5.7",
+        "org.apache.tomcat.embed:tomcat-embed-core:10.1.48"
+      ],
+      "severity": "CRITICAL",
+      "fixedVersions": [
+        "10.1.55",
+        "11.0.22",
+        "9.0.118"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-r29c-68gh-xp6x"
+    },
+    {
+      "advisory": "CVE-2026-34483",
+      "package": "Maven:org.apache.tomcat.embed:tomcat-embed-core",
+      "version": "10.1.48",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework.boot:spring-boot-starter-tomcat:3.5.7",
+        "org.apache.tomcat.embed:tomcat-embed-core:10.1.48"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "10.1.54",
+        "11.0.21",
+        "9.0.116"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-rv64-5gf8-9qq8"
+    },
+    {
+      "advisory": "CVE-2026-34487",
+      "package": "Maven:org.apache.tomcat.embed:tomcat-embed-core",
+      "version": "10.1.48",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework.boot:spring-boot-starter-tomcat:3.5.7",
+        "org.apache.tomcat.embed:tomcat-embed-core:10.1.48"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "10.1.54",
+        "11.0.21",
+        "9.0.117"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-x4m4-345f-5h5g"
+    },
+    {
+      "advisory": "CVE-2026-24400",
+      "package": "Maven:org.assertj:assertj-core",
+      "version": "3.27.6",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-test:3.5.7",
+        "org.assertj:assertj-core:3.27.6"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "3.27.7"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-rqfh-9r24-8c9r"
+    },
+    {
+      "advisory": "CVE-2026-42198",
+      "package": "Maven:org.postgresql:postgresql",
+      "version": "42.7.8",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.postgresql:postgresql:42.7.8"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "42.7.11"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-98qh-xjc8-98pq"
+    },
+    {
+      "advisory": "CVE-2026-54291",
+      "package": "Maven:org.postgresql:postgresql",
+      "version": "42.7.8",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.postgresql:postgresql:42.7.8"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "42.7.12"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-j92g-9f8w-j867"
+    },
+    {
+      "advisory": "CVE-2026-40973",
+      "package": "Maven:org.springframework.boot:spring-boot",
+      "version": "3.5.7",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework.boot:spring-boot-starter:3.5.7",
+        "org.springframework.boot:spring-boot:3.5.7"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "3.5.14",
+        "4.0.6"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-wwpq-f5c3-7hvx"
+    },
+    {
+      "advisory": "CVE-2026-22731",
+      "package": "Maven:org.springframework.boot:spring-boot-starter-actuator",
+      "version": "3.5.7",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-actuator:3.5.7"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "3.5.12",
+        "4.0.4"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-8hfc-fq58-r658"
+    },
+    {
+      "advisory": "CVE-2026-22733",
+      "package": "Maven:org.springframework.boot:spring-boot-starter-actuator",
+      "version": "3.5.7",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-actuator:3.5.7"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "3.5.12",
+        "4.0.4"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-mgvc-8q2h-5pgc"
+    },
+    {
+      "advisory": "CVE-2026-22732",
+      "package": "Maven:org.springframework.security:spring-security-web",
+      "version": "6.5.6",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-security:3.5.7",
+        "org.springframework.security:spring-security-web:6.5.6"
+      ],
+      "severity": "CRITICAL",
+      "fixedVersions": [
+        "6.5.9",
+        "7.0.4"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-mf92-479x-3373"
+    },
+    {
+      "advisory": "CVE-2026-41850",
+      "package": "Maven:org.springframework:spring-expression",
+      "version": "6.2.12",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework:spring-webmvc:6.2.12",
+        "org.springframework:spring-expression:6.2.12"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "6.2.19",
+        "7.0.8"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-r5w3-xv2f-j59q"
+    },
+    {
+      "advisory": "CVE-2026-41845",
+      "package": "Maven:org.springframework:spring-webmvc",
+      "version": "6.2.12",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework:spring-webmvc:6.2.12"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "6.2.19",
+        "7.0.8"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-3chg-m5w7-qfv5"
+    },
+    {
+      "advisory": "CVE-2026-47890",
+      "package": "Maven:org.springframework:spring-webmvc",
+      "version": "6.2.12",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework:spring-webmvc:6.2.12"
+      ],
+      "severity": "CRITICAL",
+      "fixedVersions": [
+        "7.0.9"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-j9f9-w8pj-32f8"
+    },
+    {
+      "advisory": "CVE-2026-47884",
+      "package": "Maven:org.springframework:spring-webmvc",
+      "version": "6.2.12",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework:spring-webmvc:6.2.12"
+      ],
+      "severity": "CRITICAL",
+      "fixedVersions": [
+        "7.0.9"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-pc63-qcmh-9cmg"
+    },
+    {
+      "advisory": "CVE-2026-41842",
+      "package": "Maven:org.springframework:spring-webmvc",
+      "version": "6.2.12",
+      "dependencyPath": [
+        "kz.kunde:kunde-api:0.1.0-SNAPSHOT",
+        "org.springframework.boot:spring-boot-starter-web:3.5.7",
+        "org.springframework:spring-webmvc:6.2.12"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "6.2.19",
+        "7.0.8"
+      ],
+      "pathStatus": "observed",
+      "categories": [
+        "maven"
+      ],
+      "sourceAdvisory": "GHSA-x23c-287f-qqv5"
+    },
+    {
+      "advisory": "CVE-2026-102554",
+      "package": "Maven:com.google.guava:guava",
+      "version": "33.3.1-jre",
+      "dependencyPath": [
+        "baseline-flat-native-graph:com.google.guava:guava"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "33.7.2"
+      ],
+      "pathStatus": "native-configuration/path-unavailable-in-old-artifact",
+      "categories": [
+        "android-gradle"
+      ],
+      "sourceAdvisory": "GHSA-xxph-c9ww-hj94"
+    },
+    {
+      "advisory": "CVE-2024-29371",
+      "package": "Maven:org.bitbucket.b_c:jose4j",
+      "version": "0.9.5",
+      "dependencyPath": [
+        "baseline-flat-native-graph:org.bitbucket.b_c:jose4j"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "0.9.6"
+      ],
+      "pathStatus": "native-configuration/path-unavailable-in-old-artifact",
+      "categories": [
+        "android-gradle"
+      ],
+      "sourceAdvisory": "GHSA-3677-xxcr-wjqv"
+    },
+    {
+      "advisory": "CVE-2025-14813",
+      "package": "Maven:org.bouncycastle:bcprov-jdk18on",
+      "version": "1.79",
+      "dependencyPath": [
+        "baseline-flat-native-graph:org.bouncycastle:bcprov-jdk18on"
+      ],
+      "severity": "CRITICAL",
+      "fixedVersions": [
+        "1.80.2",
+        "1.81.1",
+        "1.84"
+      ],
+      "pathStatus": "native-configuration/path-unavailable-in-old-artifact",
+      "categories": [
+        "android-gradle"
+      ],
+      "sourceAdvisory": "GHSA-574f-3g2m-x479"
+    },
+    {
+      "advisory": "CVE-2026-8763",
+      "package": "Maven:org.bouncycastle:bcprov-jdk18on",
+      "version": "1.79",
+      "dependencyPath": [
+        "baseline-flat-native-graph:org.bouncycastle:bcprov-jdk18on"
+      ],
+      "severity": "CRITICAL",
+      "fixedVersions": [
+        "1.85"
+      ],
+      "pathStatus": "native-configuration/path-unavailable-in-old-artifact",
+      "categories": [
+        "android-gradle"
+      ],
+      "sourceAdvisory": "GHSA-9pwp-9qqc-pr26"
+    },
+    {
+      "advisory": "CVE-2026-5598",
+      "package": "Maven:org.bouncycastle:bcprov-jdk18on",
+      "version": "1.79",
+      "dependencyPath": [
+        "baseline-flat-native-graph:org.bouncycastle:bcprov-jdk18on"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "1.80.2",
+        "1.84"
+      ],
+      "pathStatus": "native-configuration/path-unavailable-in-old-artifact",
+      "categories": [
+        "android-gradle"
+      ],
+      "sourceAdvisory": "GHSA-p93r-85wp-75v3"
+    },
+    {
+      "advisory": "CVE-2026-13506",
+      "package": "Maven:org.bouncycastle:bcprov-jdk18on",
+      "version": "1.79",
+      "dependencyPath": [
+        "baseline-flat-native-graph:org.bouncycastle:bcprov-jdk18on"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "1.85"
+      ],
+      "pathStatus": "native-configuration/path-unavailable-in-old-artifact",
+      "categories": [
+        "android-gradle"
+      ],
+      "sourceAdvisory": "GHSA-qp49-qgx5-5m26"
+    },
+    {
+      "advisory": "CVE-2021-33813",
+      "package": "Maven:org.jdom:jdom2",
+      "version": "2.0.6",
+      "dependencyPath": [
+        "baseline-flat-native-graph:org.jdom:jdom2"
+      ],
+      "severity": "HIGH",
+      "fixedVersions": [
+        "2.0.6.1"
+      ],
+      "pathStatus": "native-configuration/path-unavailable-in-old-artifact",
+      "categories": [
+        "android-gradle"
+      ],
+      "sourceAdvisory": "GHSA-2363-cqg2-863c"
+    }
+  ]
+}

@@ -20,12 +20,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class ApiExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
-    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
-    public ResponseEntity<ApiError> handleAccessDenied(
-            org.springframework.security.access.AccessDeniedException exception, HttpServletRequest request) {
-        return response(HttpStatus.FORBIDDEN, "FORBIDDEN", "Access is not allowed", request);
-    }
-
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiError> handleApiException(ApiException exception, HttpServletRequest request) {
         return response(exception.status(), exception.code(), exception.getMessage(), request);
@@ -61,6 +55,12 @@ public class ApiExceptionHandler {
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ApiError> handleNotFound(NoResourceFoundException exception, HttpServletRequest request) {
         return response(HttpStatus.NOT_FOUND, "NOT_FOUND", "The requested resource was not found", request);
+    }
+
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ApiError> handleAccessDenied(
+            org.springframework.security.access.AccessDeniedException exception, HttpServletRequest request) {
+        return response(HttpStatus.FORBIDDEN, "FORBIDDEN", "Access is denied", request);
     }
 
     @ExceptionHandler(Exception.class)

@@ -15,3 +15,8 @@ and real deployment endpoints need owner-managed configuration.
 Use the current backend/Flutter test suites and hosted workflows as regression
 checks. The manual Android identity E2E workflow currently reports missing native
 scenario prerequisites; implement those before claiming native E2E success.
+
+Preserve the parallel TASK-046 security work from PR #4: supported container/native
+remediation, upstream SDK GHSA-r937-wjx7-w2jp tracking, audit coverage and bounded
+API abuse controls with 429/Retry-After. See docs/security/ci-vulnerability-ledger.md.
+No SDK source patches, vulnerability suppression or implied risk acceptance.

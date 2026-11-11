@@ -66,6 +66,24 @@ void main() {
     );
   });
   tearDown(() => auth.dispose());
+  test('profile sends the rotated bearer token', () async {
+    final client = MockClient((request) async {
+      expect(request.headers['Authorization'], 'Bearer new');
+      expect(request.url.path, '/api/v1/me');
+      return http.Response('{"id":"synthetic"}', 200);
+    });
+    final session = AuthRepository(
+      gateway: gateway,
+      vault: vault,
+      apiBase: Uri.parse('https://api.example.test/api/v1/'),
+      client: client,
+    );
+    addTearDown(session.dispose);
+    await session.login();
+    expect(await session.profile(), {'id': 'synthetic'});
+    expect(gateway.refreshes, 1);
+  });
+
   test(
     'parallel protected requests rotate once and replace persistent set',
     () async {

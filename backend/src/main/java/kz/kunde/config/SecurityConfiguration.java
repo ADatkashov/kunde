@@ -42,7 +42,20 @@ public class SecurityConfiguration {
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withIssuerLocation(issuerUri).build();
         decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
                 JwtValidators.createDefaultWithIssuer(issuerUri), audienceValidator(audience), requiredClaimsValidator()));
-        return decoder;
+        return encoded -> {
+            Jwt verified = decoder.decode(encoded);
+            // Nimbus normalizes registered claims, including non-string sub
+            // values. Verify the signed JSON type before binding an identity.
+            try {
+                var raw = com.nimbusds.jwt.SignedJWT.parse(encoded).getPayload().toJSONObject();
+                if (raw == null || !(raw.get("sub") instanceof String)) {
+                    throw new org.springframework.security.oauth2.jwt.BadJwtException("Invalid subject claim type");
+                }
+            } catch (java.text.ParseException malformed) {
+                throw new org.springframework.security.oauth2.jwt.BadJwtException("Invalid JWT claims", malformed);
+            }
+            return verified;
+        };
     }
 
     static boolean isLocalHttpIssuerAllowed(boolean propertyEnabled, Environment environment) {
