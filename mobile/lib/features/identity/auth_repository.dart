@@ -215,7 +215,7 @@ class AuthRepository extends ChangeNotifier {
     final access = await accessToken();
     final request = http.Request(method, apiBase.resolve('me'));
     request.headers.addAll(
-        {'Authorization': '***', 'Accept': 'application/json'});
+        {'Authorization': 'Bearer $access', 'Accept': 'application/json'});
     if (body != null) {
       request.headers['Content-Type'] = 'application/json';
       request.body = jsonEncode(body);
