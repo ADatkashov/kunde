@@ -30,6 +30,16 @@ jobs:
           dart format --output=none --set-exit-if-changed lib test
           flutter test --machine > flutter-tests.json
           python3 -c 'import json; e=[json.loads(s) for s in open("flutter-tests.json") if s.lstrip().startswith("{")]; assert any(x.get("type")=="done" and x.get("success") is True for x in e), "Missing successful test completion event"; t=[x for x in e if x.get("type")=="testDone" and not x.get("hidden",False)]; print("FLUTTER_TEST_SUMMARY",json.dumps({"tests":len(t),"success":sum(x.get("result")=="success" for x in t),"skipped":sum(x.get("skipped",False) for x in t)}))'
+      - name: Public-source formatting diagnostics on failure
+        if: failure()
+        working-directory: mobile
+        run: |
+          dart format lib/features/identity/auth_repository.dart test/features/identity/auth_repository_test.dart
+          python3 - <<'PY'
+          import pathlib,json
+          for name in ['lib/features/identity/auth_repository.dart','test/features/identity/auth_repository_test.dart']:
+              print('FORMATTED_PUBLIC_SOURCE',json.dumps({'path':'mobile/'+name,'content':pathlib.Path(name).read_text()}))
+          PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

@@ -57,6 +57,12 @@ public class ApiExceptionHandler {
         return response(HttpStatus.NOT_FOUND, "NOT_FOUND", "The requested resource was not found", request);
     }
 
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ApiError> handleAccessDenied(
+            org.springframework.security.access.AccessDeniedException exception, HttpServletRequest request) {
+        return response(HttpStatus.FORBIDDEN, "FORBIDDEN", "Access is denied", request);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleUnexpected(Exception exception, HttpServletRequest request) {
         log.error("Unhandled request failure correlationId={} type={}", correlationId(),
