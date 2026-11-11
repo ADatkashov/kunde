@@ -50,3 +50,13 @@ Design foundations/localization, repo/CI baseline, decision closure and vendor p
 
 EP-002 design deliverables and gates are tracked in [25-identity-ep002-design.md](25-identity-ep002-design.md). `TASK-005` remains blocked; a proposed recommendation is not provider approval.
 
+
+## GitHub-hosted verification migration — 2026-11-11
+
+TASK-003 advances on standard free hosted runners through PR1, with independent
+backend/Flutter/APK/security workflows and manual native E2E boundary. No paid,
+personal Windows or self-hosted requirement. Remote-only discovery confirms
+missing canonical identity/V2/abuse/Boot4 implementation; do not promote cloud
+narrative into recovered source. TASK-006/046 in_progress; vulnerability findings
+and native prerequisites remain open. [CI contract](../engineering-foundation/github-hosted-ci.md),
+[security ledger](../security/ci-vulnerability-ledger.md).

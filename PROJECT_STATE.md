@@ -1,43 +1,39 @@
 # KUNDE project state
 
-Last reviewed: 2026-11-10. See [`AGENTS.md`](AGENTS.md) for mandatory continuation rules and [`NEXT_TASK.md`](NEXT_TASK.md) for the next action.
+Reviewed2026-11-11 against GitHub, not recovered Codex filesystem.
 
-## GitHub publication
+## Source and architecture
 
-Repository: [ADatkashov/kunde](https://github.com/ADatkashov/kunde), public, licensed under Apache License 2.0. Commercial use is permitted under that license. The local `main` branch is tracked to `origin/main`; latest published commit is recorded by Git. Local identity POC `.env` files, test-account file and Maven truststore remain ignored and were excluded from the upload.
+Public repository [ADatkashov/kunde](https://github.com/ADatkashov/kunde).
+Main baseline5c3291a; CI migration on branch ci/github-hosted-migration-20261111,
+[draft PR1](https://github.com/ADatkashov/kunde/pull/1), not merged.
+Published backend remains Java21/Boot3.5.7/JDBC/PostgreSQL/FlywayV1. Flutter3.47
+contains Consumer shell and opt-in system-browser AppAuth PKCE POC.
+Existing EP-001/POC evidence preserved; no production readiness.
 
-## Product and architecture
+Missing from discovered remote baseline: cloud-only identity V2/canonical accounts/
+profile module, abuse controls, Boot4/ADR016 migration and native runner. Previous
+48/24-test/zero-vulnerability claims do not establish this repository's state.
+No recovery or recreation of those implementations is claimed by this CI change.
 
-KUNDE is at the Development Foundation stage, not a marketplace MVP. The repository contains a Java 21 / Spring Boot 3.5.7 modular-monolith API, PostgreSQL/Flyway foundation, and Flutter Consumer shell with localization scaffolding. API health/capabilities and currently empty categories/search are implemented. No production catalog, order, payment, AI, phone OTP, registration, or production identity lifecycle is enabled.
+## Hosted CI and open work
 
-The API's OIDC resource-server boundary validates configured JWTs and fails closed for protected routes when no issuer is configured. Identity POC-only HTTP issuer allowance and `/api/v1/poc/whoami` are restricted to the explicit `identity-poc` profile. Local provider POCs use separate Compose projects and loopback ports.
+Primary build target is standard free GitHub-hosted Ubuntu24.04, Java21,
+repository-compatible Flutter3.47. No personal Windows or self-hosted dependency.
+Independent backend/Flutter/APK/security/lightweight workflows; manual E2E checks
+actual prerequisites/KVM and never fabricates authentication success.
+KGP2.4.20 candidate applied with AGP9.1/Gradle9.3.1; verify actual APK/graph/OSV.
+Resource probes use actual free disk, not a60GiB prerequisite. Measured hosted
+worker4CPU/~16GB RAM/~86GiB free; no preinstalled tools deleted.
 
-## Implemented and checked
+Backend and Flutter hosted CI pass. APK verification evidence pending final run.
+OSV v2 actual baseline72 matches:10CRITICAL/27HIGH/26MODERATE/9LOW; build roots0.
+Trivy0.76.2 scans immutable bases successfully but reports runtime2HIGH/56MEDIUM/
+4LOW and build18HIGH/610MEDIUM/179LOW; raw exit10 each, jobs fail on findings.
+Gitleaks8.30.1 full-history redacted scan passes. Native E2E NOT_EXECUTED because
+published Consumer profile/isolated native scenario scripts are missing.
 
-- Foundation API, PostgreSQL/Flyway, health/readiness, correlation/error handling and OpenAPI have local verification documented in [`docs/engineering-foundation/implementation-status.md`](docs/engineering-foundation/implementation-status.md).
-- Flutter foundation shell is implemented; the identity POC screen uses AppAuth system-browser PKCE and secure storage, behind an opt-in build define.
-- Keycloak 26.8.2 positive Android → Flutter → real access JWT → Spring protected API flow completed with a synthetic user. API returned HTTP 200 after JWT signature, issuer, `kunde-api` audience, expiry and `kunde.poc` checks. Refresh and provider logout/login-form evidence are recorded. See [`docs/identity/poc/end-to-end-evidence.md`](docs/identity/poc/end-to-end-evidence.md).
-- ZITADEL 4.19.5 health/discovery passed; its project/client/test-user flow is not configured. No equivalent mobile/API flow has been demonstrated.
-- Previously completed Java 21 / Maven 3.9.9 / Spring Boot 3.5.7 `mvn verify`: 21 tests passed, 0 failures/errors/skips, as recorded in identity POC evidence. Spring fixture tests are not live provider negative-token tests. Flutter analyze and four tests passed in an earlier run; not rerun in the last identity recovery.
-- Secure Maven TLS bootstrap uses Windows-trusted public certificate roots, with Java TLS/hostname verification enabled. The local bootstrap is documented in [`docs/identity/poc/maven-tls.md`](docs/identity/poc/maven-tls.md); use PowerShell 7 (`pwsh`).
-
-## Open work and blockers
-
-- Complete equivalent ZITADEL Native OIDC app/project/user setup and Android PKCE → protected API verification.
-- Complete provider-backed negative JWT and token/session lifecycle tests for Keycloak; test access JWT behavior after logout, invalid refresh/replay/revocation and expiry.
-- Verify Android invalid callback/state, cancellation, network failure and full second login after logout.
-- Kazakhstan privacy/data-residency, commercial terms, operations, backup/restore, HA, upgrade, monitoring and production threat review remain open.
-- No production IdP is approved. POC result is partial overall.
-
-## Decisions and status
-
-- [ADR-013](docs/architecture/adr/ADR-013-foundation-security-boundary.md): accepted reversible fail-closed authentication boundary; no vendor approval.
-- [ADR-015](docs/architecture/adr/ADR-015-proposed-identity-provider.md): PROPOSED. Keycloak is a POC front-runner only; comparison is incomplete.
-- [EP-002 design gates](docs/roadmap/25-identity-ep002-design.md): owner, legal/privacy and operations gates remain. TASK-005 stays blocked pending provider/fallback decision approval; TASK-006 remains not started. The canonical backlog is [`tasks.yaml`](docs/roadmap/backlog/tasks.yaml).
-- ADR-001–012 include recommendations/proposals and accepted decisions; consult each status before treating it as binding.
-
-## Git and verification limits
-
-Git metadata was initialized for the created public repository and the existing remote `main` history was preserved. Keep checking `git status --short --branch`; do not reset, clean, or rewrite the published history. Detailed decisions remain in ADRs and roadmap files. The most recent push triggered Foundation CI; see the GitHub Actions run linked from the repository. Do not describe tests as passing until that run completes successfully.
-
-Do not count a built APK as mobile authentication proof, fixture JWT tests as provider verification, a discovery response as a completed login, logout token deletion as JWT revocation, or POC evidence as production readiness.
+TASK-003 partially_verified; TASK-006 and TASK-046 in_progress.
+[CI/security/coverage/artifact contract](docs/engineering-foundation/github-hosted-ci.md),
+[vulnerability ledger](docs/security/ci-vulnerability-ledger.md).
+No force push, main merge, branch-protection change, production deployment or risk acceptance.

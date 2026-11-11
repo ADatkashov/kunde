@@ -59,7 +59,7 @@
     "release": "REL-0",
     "user_story_id": "US-002",
     "implementation_status": "partially_verified",
-    "implementation_note": "GitHub Actions YAML parsed; Java 21, Maven verify, PostgreSQL service, cache and permissions inspected; local equivalent build passed. Remote workflow not executed; CI does not upload or publish build artifacts."
+    "implementation_note": "GitHub-hosted migration PR1: independent lightweight/backend/Flutter/APK/security/manual native workflows. Remote backend/Flutter pass; actual standard Ubuntu capacity measured. No workstation/self-hosted/paid runner dependency. Native identity implementation absent from remote baseline; security findings remain open. Exact run URLs and acceptance in docs/engineering-foundation/github-hosted-ci.md and docs/security/ci-vulnerability-ledger.md; final APK evidence pending."
   },
   {
     "id": "TASK-004",
@@ -122,8 +122,8 @@
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
     "user_story_id": "US-003",
-    "implementation_status": "not_started",
-    "implementation_note": "No registration, login, token issuance or session lifecycle."
+    "implementation_status": "in_progress",
+    "implementation_note": "Remote discovery found POC only: canonical account/profile/V2 and prior cloud-only native runner not published. Manual hosted E2E workflow gates on missing real implementation and isolated native-browser scripts; native TASK-006 scenario NOT_EXECUTED. No personal Windows/self-hosted requirement. No completion inferred from APK/fixture tests."
   },
   {
     "id": "TASK-007",
@@ -886,8 +886,8 @@
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
     "user_story_id": "US-022",
-    "implementation_status": "not_started",
-    "implementation_note": "Rate limiting/scanning not implemented; no public sensitive mutation route exists."
+    "implementation_status": "in_progress",
+    "implementation_note": "Hosted OSV graph/build-root, redacted Gitleaks and immutable-image Trivy audits implemented/executed in PR1. Published baseline Boot3.5.7 has72 advisory/package matches (10CRITICAL/27HIGH/26MODERATE/9LOW); original cloud-only Boot4/abuse remediation absent. KGP2.4.20 applied, native proof pending. Runtime/build base OS findings open, no suppression/accepted risks/production readiness."
   },
   {
     "id": "TASK-047",
@@ -1088,4 +1088,3 @@
     "implementation_note": "Backup/restore needs a selected environment and operations owner."
   }
 ]
-
