@@ -1,0 +1,36 @@
+name: Security baseline and vendor evidence
+on:
+  pull_request:
+    paths: ['scripts/ci/security_baseline.py', 'scripts/ci/vendor_evidence.py', '.github/workflows/security-baseline.yml']
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: security-baseline-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  baseline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Download immutable previous-run security reports
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 43032030110 --repo ADatkashov/kunde -n dependency-audits -D baseline/dependencies
+          gh run download 43032030110 --repo ADatkashov/kunde -n container-audits -D baseline/containers
+          gh run download 43032030047 --repo ADatkashov/kunde -n android-dependency-audit -D baseline/android-audit
+          gh run download 43032030047 --repo ADatkashov/kunde -n android-reports -D baseline/android
+      - name: Consolidate actual baseline, paths, aliases and patched ranges
+        run: python3 scripts/ci/security_baseline.py
+      - name: Official vendor/BOM metadata
+        run: python3 scripts/ci/vendor_evidence.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: security-baseline-ledger
+          path: reports/
+          retention-days: 14

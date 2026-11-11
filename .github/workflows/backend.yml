@@ -1,0 +1,61 @@
+name: Backend CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  backend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: kunde
+          POSTGRES_USER: kunde_ci
+          POSTGRES_PASSWORD: synthetic_ci_only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U kunde_ci -d kunde"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+      - name: Verify and package
+        working-directory: backend
+        env:
+          DB_URL: jdbc:postgresql://localhost:5432/kunde
+          DB_USERNAME: kunde_ci
+          DB_PASSWORD: synthetic_ci_only
+        run: |
+          mvn --batch-mode --no-transfer-progress clean verify
+          test -s target/kunde-api-0.1.0-SNAPSHOT.jar
+          jar tf target/kunde-api-0.1.0-SNAPSHOT.jar > target/jar-contents.txt
+          grep -q 'BOOT-INF/lib/' target/jar-contents.txt
+      - name: Packaged JAR HTTP and fail-closed smoke
+        env:
+          DB_URL: jdbc:postgresql://localhost:5432/kunde
+          DB_USERNAME: kunde_ci
+          DB_PASSWORD: synthetic_ci_only
+        run: python3 scripts/ci/smoke_backend.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: backend-reports
+          path: |
+            backend/target/surefire-reports/*.xml
+            reports/backend-smoke.json
+          retention-days: 3

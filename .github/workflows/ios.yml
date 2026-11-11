@@ -1,0 +1,26 @@
+name: iOS unsigned scaffold (manual)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ios-scaffold-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  ios:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: '3.47.0'
+          channel: stable
+          cache: false
+      - name: Retain previous unsigned Foundation CI capability without signing secrets
+        working-directory: mobile
+        run: |
+          flutter pub get --enforce-lockfile
+          flutter build ios --debug --no-codesign

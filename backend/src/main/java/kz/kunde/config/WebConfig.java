@@ -19,11 +19,10 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        if (!allowedOrigins.isEmpty()) {
-            registry.addMapping("/api/**").allowedOrigins(allowedOrigins.toArray(String[]::new))
+        // Register even an empty allowlist: preflight must fail closed explicitly.
+        registry.addMapping("/api/**").allowedOrigins(allowedOrigins.toArray(String[]::new))
                     .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                     .allowedHeaders("Content-Type", "Authorization", "X-Correlation-ID");
-        }
     }
 
     private static void validateOrigin(String origin) {

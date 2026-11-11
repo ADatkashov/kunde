@@ -59,14 +59,8 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleUnexpected(Exception exception, HttpServletRequest request) {
-        if (request.getRequestURI().startsWith("/api/v1/poc/")) {
-            // POC-only stack trace: it contains no request headers or token values and
-            // makes local identity integration failures diagnosable by correlation ID.
-            log.error("Unhandled identity POC request failure correlationId={}", correlationId(), exception);
-        } else {
-            log.error("Unhandled request failure correlationId={} type={}", correlationId(),
-                    exception.getClass().getSimpleName());
-        }
+        log.error("Unhandled request failure correlationId={} type={}", correlationId(),
+                exception.getClass().getSimpleName());
         return response(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "The request could not be completed", request);
     }
 

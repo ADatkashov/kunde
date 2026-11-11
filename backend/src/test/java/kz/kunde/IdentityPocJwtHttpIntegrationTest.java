@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -38,6 +38,7 @@ import org.springframework.test.context.DynamicPropertySource;
 
 /** Exercises the real Spring Security HTTP filter chain against a deterministic local OIDC/JWKS server. */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate
 @ActiveProfiles("identity-poc")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class IdentityPocJwtHttpIntegrationTest {
@@ -156,6 +157,21 @@ class IdentityPocJwtHttpIntegrationTest {
                 Instant.now().minusSeconds(5), Instant.now().plusSeconds(120), Instant.now().minusSeconds(5));
         assertThat(call(rotatedToken).getStatusCode().value()).isEqualTo(200);
         assertThat(JWKS_REQUESTS.get()).isGreaterThan(afterFirst);
+    }
+
+    @Test
+    @Order(7)
+    void malformedAndSymmetricAlgorithmConfusionTokensAreRejected() throws Exception {
+        assertThat(call("not-a-jwt").getStatusCode().value()).isEqualTo(401);
+        JWTClaimsSet claims = new JWTClaimsSet.Builder()
+                .issuer(ISSUER).subject("synthetic-algorithm-test").audience("kunde-api")
+                .issueTime(Date.from(Instant.now().minusSeconds(5)))
+                .expirationTime(Date.from(Instant.now().plusSeconds(120)))
+                .claim("scope", "kunde.poc").build();
+        SignedJWT token = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.HS256)
+                .keyID("poc-key-1").build(), claims);
+        token.sign(new com.nimbusds.jose.crypto.MACSigner(new byte[32]));
+        assertThat(call(token.serialize()).getStatusCode().value()).isEqualTo(401);
     }
 
     private ResponseEntity<Map> call(String token) {

@@ -9,7 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.flywaydb.core.Flyway;
@@ -18,6 +18,28 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest
 @AutoConfigureMockMvc
 class PlatformMigrationIntegrationTest {
+    @Test
+    void migrationPreservesErrorDatesStatelessnessAndSecurityHeaders() throws Exception {
+        mockMvc.perform(post("/api/v1/protected-test"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.timestamp").isString())
+                .andExpect(jsonPath("$.code").value("AUTHENTICATION_NOT_CONFIGURED"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("X-Content-Type-Options", "nosniff"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("X-Frame-Options", "DENY"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .doesNotExist("Set-Cookie"));
+    }
+
+    @Test
+    void untrustedCrossOriginPreflightCannotBypassAuthentication() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options("/api/v1/capabilities")
+                .header("Origin", "https://untrusted.example.test")
+                .header("Access-Control-Request-Method", "GET"))
+                .andExpect(status().isForbidden());
+    }
+
     @Autowired JdbcTemplate jdbcTemplate;
     @Autowired MockMvc mockMvc;
     @Autowired Flyway flyway;
