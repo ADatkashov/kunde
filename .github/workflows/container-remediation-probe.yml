@@ -1,5 +1,8 @@
 name: Container remediation candidates
 on:
+  push:
+    branches: [ci/github-hosted-migration-20261111]
+    paths: ['scripts/ci/container_alternatives.py', '.github/workflows/container-remediation-probe.yml']
   pull_request:
     paths: ['scripts/ci/container_alternatives.py', 'scripts/ci/registry_metadata.py', '.github/workflows/container-remediation-probe.yml']
 permissions:
