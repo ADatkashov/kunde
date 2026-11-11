@@ -1,0 +1,84 @@
+name: Publish verified Android phone preview
+on:
+  workflow_dispatch:
+    inputs:
+      run-id:
+        description: 'Successful Android APK CI run containing consumer-debug-universal'
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      SOURCE_RUN_ID: ${{ inputs.run-id }}
+    steps:
+      - name: Require a successful APK workflow from this repository
+        id: source
+        run: |
+          [[ "$SOURCE_RUN_ID" =~ ^[0-9]+$ ]]
+          gh api "repos/$GH_REPO/actions/runs/$SOURCE_RUN_ID" > source-run.json
+          python3 - <<'PY'
+          import json, os, re
+          run = json.load(open('source-run.json'))
+          assert run['conclusion'] == 'success', 'Source build must have succeeded'
+          assert run['path'] == '.github/workflows/android-apk.yml', 'Unexpected source workflow'
+          assert run['repository']['full_name'] == os.environ['GH_REPO'], 'Unexpected repository'
+          assert run['head_repository']['full_name'] == os.environ['GH_REPO'], 'Fork builds cannot be published'
+          assert re.fullmatch('[0-9a-f]{40}', run['head_sha'])
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('sha=' + run['head_sha'] + '\n')
+          PY
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: consumer-debug-universal
+          path: dist
+          run-id: ${{ inputs.run-id }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: android-reports
+          path: reports
+          run-id: ${{ inputs.run-id }}
+          github-token: ${{ github.token }}
+      - name: Verify original build hash and physical-phone architectures
+        run: |
+          python3 - <<'PY'
+          import hashlib, pathlib, zipfile
+          apk = pathlib.Path('dist/app-debug.apk')
+          digest = hashlib.sha256(apk.read_bytes()).hexdigest()
+          expected = pathlib.Path('reports/apk.sha256').read_text().split()[0]
+          assert digest == expected, 'APK differs from the verified build'
+          with zipfile.ZipFile(apk) as archive:
+              abis = {name.split('/')[1] for name in archive.namelist()
+                      if name.startswith('lib/') and name.endswith('/libflutter.so')}
+          assert abis == {'armeabi-v7a', 'arm64-v8a', 'x86_64'}, abis
+          apk = apk.rename('dist/kunde-android-universal-debug.apk')
+          pathlib.Path(str(apk) + '.sha256').write_text(digest + '  ' + apk.name + '\n')
+          print('Verified universal APK:', apk.stat().st_size, 'bytes;', digest)
+          PY
+      - name: Publish an explicitly marked development prerelease
+        env:
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+        run: |
+          tag="android-preview-${SOURCE_SHA:0:7}"
+          cat > notes.md <<EOF
+          Тестовая debug-сборка KUNDE для ручной установки на Android.
+
+          Универсальный APK: ARMv7, ARM64 и x86_64. Подпись проверена apksigner в исходной сборке; SHA-256 и архитектуры перепроверены перед публикацией.
+
+          Важно: публичные API и Keycloak ещё не настроены. Эта сборка открывает базовый экран; вход и профиль на телефоне пока недоступны. Mock-аутентификация не добавлялась.
+
+          Исходная сборка: https://github.com/$GH_REPO/actions/runs/$SOURCE_RUN_ID
+          Commit: $SOURCE_SHA
+          EOF
+          gh release create "$tag" dist/kunde-android-universal-debug.apk dist/kunde-android-universal-debug.apk.sha256 \
+            --target "$SOURCE_SHA" --prerelease \
+            --title 'KUNDE Android — тестовая сборка для телефона' --notes-file notes.md
