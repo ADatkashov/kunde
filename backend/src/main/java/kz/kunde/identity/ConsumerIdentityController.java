@@ -10,9 +10,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/me")
+@PreAuthorize("@consumerAccessPolicy.allowed(authentication)")
 @ConditionalOnProperty(name = "app.identity.consumer-enabled", havingValue = "true")
 public class ConsumerIdentityController {
     private final ConsumerIdentityService identity;
