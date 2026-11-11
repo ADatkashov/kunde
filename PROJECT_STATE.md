@@ -1,11 +1,15 @@
 # KUNDE project state
 
-Last reviewed 2026-11-11. Follow [AGENTS.md](AGENTS.md) and [NEXT_TASK.md](NEXT_TASK.md).
+Reviewed 2026-11-11 against the published GitHub branch, not recovered Cloud files.
 
-- KUNDE remains at Development Foundation. Java 21 / Spring Boot 3.5.7, PostgreSQL/Flyway and the Flutter Consumer shell provide health, capabilities and empty catalog/search. See [foundation status](docs/engineering-foundation/implementation-status.md).
-- [ADR-013](docs/architecture/adr/ADR-013-foundation-security-boundary.md) accepts the fail-closed OIDC resource-server boundary. Local HTTP and the protected POC endpoint require the `identity-poc` profile. Production login, registration and OTP remain disabled.
-- Keycloak 26.8.2 previously completed Android system-browser PKCE, real JWT validation and Spring API HTTP 200 before and after refresh. After logout, the next browser flow prompted for credentials.
-- ZITADEL 4.19.5 completed Android Chrome Custom Tab PKCE and issued a real JWT. The POC authorized the signed project/organization grant and returned HTTP 200 before and after refresh. After logout, selecting the remembered account required its password. A second login returned HTTP 200. Thirteen focused Spring security tests passed. See [4.0 runtime evidence](docs/identity/poc/end-to-end-evidence.md#final-evaluation-40).
-- The isolated [Keycloak readiness drill](docs/identity/keycloak-readiness/README.md) measured an approximately 60-second Spring tolerance after JWT `exp`, rejected online refresh replay, and verified live signing-key rotation and retirement. An isolated `mvn clean verify` passed 24 tests and produced the executable JAR used in the drill.
-- The [final evaluation](docs/identity/poc/final-provider-decision-report.md) recommends self-hosted Keycloak for review. [ADR-015](docs/architecture/adr/ADR-015-proposed-identity-provider.md) is **PROPOSED**, `TASK-005` is **blocked**, and `TASK-006` is **not started**. EP-002 implementation awaits the decision and applicable [release gates](docs/roadmap/25-identity-ep002-design.md).
-- The public Apache 2.0 repository is [ADatkashov/kunde](https://github.com/ADatkashov/kunde). Local `main` tracks `origin/main`. Local provider credentials and POC evidence stay in ignored files. The earlier CI run `42831424876` at `5c3291a` is historical evidence. No remote CI recheck was part of this evaluation. The local identity evaluation and Keycloak readiness changes are included in the 2026-11-11 main publication.
+Java21 / supported Spring Boot4.0.9 BOM resolves Framework7.0.10 and Security7.0.8. JDBC/PostgreSQL/FlywayV1 preserved. Flutter3.47.0 Consumer shell and existing Keycloak/ZITADEL POC/readiness evidence preserved. Cloud-only canonical profile/V2/abuse implementation is not present and is not recreated by TASK-046.
+
+[Current security ledger](docs/security/ci-vulnerability-ledger.md): historical baseline437 unique advisories (12 CRITICAL/38 HIGH maximum severities); observed current Maven/Pub/build roots and project Android graph OSV0, immutable UBI10 bases and both effective container stages Trivy0. Flutter SDK tooling retains one unique MODERATE GHSA-r937-wjx7-w2jp / two KGP versions; SDK/native/runtime binary coverage remains incomplete.
+
+Backend run43068283689:29 tests pass, executable JAR and HTTP smoke pass. Flutter run43068682084: analyze/test/format pass. Android run43043575387: APK/signature and project native OSV pass, KGP2.4.20/AGP9.1.1/Gradle9.3.1/Java21. Effective containers run43068558521: build/runtimeOS0, actual runtime health200/protected503. Security run43068682183: Maven/Pub/root and base scans/Gitleaks pass, SDK audit fails honestly on two MODERATE matches.
+
+PR1 was externally merged at2026-11-11T15:41:52Z; existing remediation branch continues separately. No main writes, force pushes, deployment or risk acceptance by this task. External merge reverted POC isolation; restored production exclusion while retaining signed ZITADEL grant validation;29 tests verify combined source. Earlier26-test result is historical. Do not call merged PR draft.
+
+TASK-003 partially_verified; TASK-046 and TASK-006 in_progress. Consumer canonical identity/profile and real native E2E remain open; historical provider POC is not TASK-006 acceptance. Provider policy approval was explicitly given in owner instructions; ADR-015 and old main tracking still require reconciliation in separately scoped identity work. No production readiness.
+
+[Runbook](docs/security/security-runbook.md) · [TASK-046](docs/security/TASK-046.md) · [Boot migration ADR](docs/architecture/adr/ADR-016-supported-spring-boot-4-security-migration.md).

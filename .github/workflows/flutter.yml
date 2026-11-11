@@ -29,6 +29,7 @@ jobs:
           flutter analyze --fatal-infos
           dart format --output=none --set-exit-if-changed lib test
           flutter test --machine > flutter-tests.json
+          python3 -c 'import json; e=[json.loads(s) for s in open("flutter-tests.json")]; t=[x for x in e if x.get("type")=="testDone" and not x.get("hidden",False)]; print("FLUTTER_TEST_SUMMARY",json.dumps({"tests":len(t),"success":sum(x.get("result")=="success" for x in t),"skipped":sum(x.get("skipped",False) for x in t)}))'
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

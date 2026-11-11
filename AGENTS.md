@@ -6,7 +6,7 @@ Before every new or resumed task, read [`PROJECT_STATE.md`](PROJECT_STATE.md) an
 
 ## Stack and layout
 
-- `backend/`: Java 21, Spring Boot 3.5.7, Maven, modular-monolith API, PostgreSQL/Flyway.
+- `backend/`: Java 21, Spring Boot 4.0.9, Maven, modular-monolith API, PostgreSQL/Flyway.
 - `mobile/`: Flutter/Dart consumer app, feature-oriented `lib/`, RU/KK/EN localization scaffolding.
 - `docs/`: product, architecture/ADR, design, business, identity, engineering foundation and roadmap/backlog.
 - Root `compose.yaml`: local API and PostgreSQL; identity provider POCs are separately isolated under `docs/identity/poc/`.
