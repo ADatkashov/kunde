@@ -1,7 +1,7 @@
 name: Android APK CI
 on:
   push:
-    branches: ['ci/**']
+    branches: [main]
     paths: ['mobile/**', 'scripts/ci/**', '.github/workflows/android-apk.yml']
   pull_request:
     paths: ['mobile/**', 'scripts/ci/**', '.github/workflows/android-apk.yml']
@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
-      GRADLE_USER_HOME: ${{ runner.temp }}/kunde-gradle
+      GRADLE_USER_HOME: /tmp/kunde-gradle
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:

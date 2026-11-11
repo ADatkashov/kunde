@@ -1,7 +1,7 @@
 name: Security CI
 on:
   push:
-    branches: [main, 'ci/**']
+    branches: [main]
     paths: ['backend/pom.xml', 'backend/Dockerfile', 'mobile/pubspec.*', 'mobile/android/**', 'scripts/ci/**', '.github/workflows/security.yml']
   pull_request:
     paths: ['backend/pom.xml', 'backend/Dockerfile', 'mobile/pubspec.*', 'mobile/android/**', 'scripts/ci/**', '.github/workflows/security.yml']
@@ -114,6 +114,20 @@ jobs:
           build_code=$?
           /tmp/kunde-trivy/trivy --cache-dir /tmp/kunde-trivy-db --version > reports/trivy-database.txt
           printf '{"runtime":%s,"build":%s,"findingExit":10}\n' "$runtime_code" "$build_code" > reports/trivy-exits.json
+          python3 - <<'PY'
+          import collections, json, pathlib
+          print(pathlib.Path('reports/trivy-database.txt').read_text())
+          print(pathlib.Path('reports/trivy-exits.json').read_text())
+          for name in ['runtime','build']:
+              p=pathlib.Path('reports/'+name+'-os.json')
+              if not p.exists(): continue
+              data=json.loads(p.read_text())
+              vulns=[v for result in data.get('Results',[]) for v in result.get('Vulnerabilities',[])]
+              print('IMAGE_REPORT',name,'DIGESTS',data.get('Metadata',{}).get('RepoDigests',[]),'SEVERITIES',dict(collections.Counter(v['Severity'] for v in vulns)))
+              for v in vulns:
+                  if v['Severity'] in ['CRITICAL','HIGH']:
+                      print('ACTIONABLE',name,v['VulnerabilityID'],v['PkgName'],v['InstalledVersion'],'fixed='+v.get('FixedVersion','UNAVAILABLE'),v['Severity'])
+          PY
           if [ "$runtime_code" -ne 0 ] && [ "$runtime_code" -ne 10 ]; then exit 2; fi
           if [ "$build_code" -ne 0 ] && [ "$build_code" -ne 10 ]; then exit 2; fi
           if [ "$runtime_code" -ne 0 ] || [ "$build_code" -ne 0 ]; then exit 1; fi

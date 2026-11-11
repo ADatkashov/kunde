@@ -80,5 +80,10 @@ def main():
     a.output.parent.mkdir(parents=True,exist_ok=True)
     a.output.write_text(json.dumps(report,indent=2)+"\n")
     print(json.dumps({"status":report["status"],"exitCode":code,"findings":len(report["findings"])}))
+    if code == 1:
+        import collections
+        print("SEVERITIES",dict(collections.Counter(v["severity"] for v in report["findings"])))
+        for finding in report["findings"]:
+            print("FINDING",json.dumps(finding))
     return code
 if __name__=="__main__": sys.exit(main())
