@@ -6,33 +6,63 @@ gradle.projectsEvaluated {
     root.tasks.register('kundeResolvedGraph') {
         doLast {
             def artifacts = [:]
-            def collect = { c ->
+            def contexts = [:].withDefault { [] }
+            def pathLimitReached = false
+            def visitedPaths = 0
+            def collect = { c, label ->
                 if (c != null && c.canBeResolved) {
                     def result = c.incoming.resolutionResult
                     def missing = result.allDependencies.findAll { it instanceof UnresolvedDependencyResult }
                     if (!missing.isEmpty()) throw new GradleException('Unresolved dependency graph: '+c.name)
+                    def visit
+                    visit = { component, path, seen ->
+                        if (++visitedPaths > 20000) { pathLimitReached = true; return }
+                        if (path.size() > 64) { pathLimitReached = true; return }
+                        def id = component.id
+                        def current = id instanceof ModuleComponentIdentifier ? id.group+':'+id.module+':'+id.version : id.displayName
+                        if (seen.contains(current)) return
+                        def next = path+[current]
+                        if (id instanceof ModuleComponentIdentifier) {
+                            def entry = [configuration:label, dependencyPath:next]
+                            if (contexts[current].size() < 200) {
+                                if (!contexts[current].contains(entry)) contexts[current].add(entry)
+                            } else { pathLimitReached = true }
+                        }
+                        component.dependencies.each { dependency ->
+                            if (!(dependency instanceof UnresolvedDependencyResult)) visit(dependency.selected, next, seen+[current])
+                        }
+                    }
+                    visit(result.rootComponent.get(), [], [] as Set)
                     result.allComponents.each { component ->
                         def id = component.id
                         if (id instanceof ModuleComponentIdentifier) {
-                            artifacts[id.group+':'+id.module+':'+id.version] = [groupId:id.group, artifactId:id.module, version:id.version]
+                            def key = id.group+':'+id.module+':'+id.version
+                            def labels = artifacts[key]?.configurations ?: []
+                            artifacts[key] = [groupId:id.group, artifactId:id.module, version:id.version, configurations:(labels+[label]).unique()]
                         }
                     }
                 }
             }
             root.allprojects.each { project ->
-                collect(project.buildscript.configurations.findByName('classpath'))
+                collect(project.buildscript.configurations.findByName('classpath'), project.path+':buildscript:classpath')
                 if (project.path == ':app') {
                     ['debugCompileClasspath','debugRuntimeClasspath'].each { name ->
                         def c = project.configurations.findByName(name)
                         if (c == null) throw new GradleException('Missing required configuration '+name)
-                        collect(c)
+                        collect(c, project.path+':'+name)
                     }
                 }
             }
             if (artifacts.isEmpty()) throw new GradleException('No resolved artifacts')
             def file = new File(root.projectDir, '../../reports/android-resolved.json')
             file.parentFile.mkdirs()
-            file.text = JsonOutput.prettyPrint(JsonOutput.toJson([groupId:'private.kunde',artifactId:'android',version:'local',children:artifacts.sort().values().toList()]))+'\n'
+            file.text = JsonOutput.prettyPrint(JsonOutput.toJson([groupId:'private.kunde',artifactId:'android',version:'local',children:artifacts.sort().values().toList(), contexts:contexts, pathLimitReached:pathLimitReached]))+'\n'
+            ['bcprov-jdk18on','bcpkix-jdk18on','guava','commons-lang3','jose4j','jdom2'].each { name ->
+                artifacts.values().findAll { it.artifactId == name }.each { item ->
+                    def coord = item.groupId+':'+item.artifactId+':'+item.version
+                    println('OWNERSHIP '+coord+' '+contexts[coord].collect { it.configuration }.unique()+' PATH '+contexts[coord].take(2))
+                }
+            }
             def kgp = artifacts.values().findAll { it.groupId == 'org.jetbrains.kotlin' && it.artifactId == 'kotlin-gradle-plugin' }
             println('KUNDE_RESOLVED_KGP '+kgp+' modules='+artifacts.size())
             if (kgp.isEmpty() || kgp.any { it.version != '2.4.20' }) throw new GradleException('Patched Kotlin plugin not exclusively resolved')
