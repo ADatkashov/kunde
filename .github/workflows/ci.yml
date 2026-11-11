@@ -1,7 +1,7 @@
 name: CI configuration
 on:
   push:
-    branches: [main]
+    branches: [main, ci/github-hosted-migration-20261111]
   pull_request:
   workflow_dispatch:
 permissions:

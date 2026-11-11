@@ -1,7 +1,7 @@
 name: Security CI
 on:
   push:
-    branches: [main]
+    branches: [main, ci/github-hosted-migration-20261111]
     paths: ['backend/pom.xml', 'backend/Dockerfile', 'mobile/pubspec.*', 'mobile/android/**', 'scripts/ci/**', '.github/workflows/security.yml']
   pull_request:
     paths: ['backend/pom.xml', 'backend/Dockerfile', 'mobile/pubspec.*', 'mobile/android/**', 'scripts/ci/**', '.github/workflows/security.yml']
