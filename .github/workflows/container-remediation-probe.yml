@@ -1,10 +1,10 @@
-name: Container remediation candidates
+name: Container build and security verification
 on:
   push:
     branches: [ci/github-hosted-migration-20261111]
-    paths: ['scripts/ci/container_alternatives.py', '.github/workflows/container-remediation-probe.yml']
+    paths: ['backend/Dockerfile', 'scripts/ci/container_effective.py', '.github/workflows/container-remediation-probe.yml']
   pull_request:
-    paths: ['scripts/ci/container_alternatives.py', 'scripts/ci/registry_metadata.py', '.github/workflows/container-remediation-probe.yml']
+    paths: ['backend/Dockerfile', 'scripts/ci/container_effective.py', '.github/workflows/container-remediation-probe.yml']
 permissions:
   contents: read
 concurrency:
@@ -13,7 +13,18 @@ concurrency:
 jobs:
   candidates:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: kunde
+          POSTGRES_USER: kunde_ci
+          POSTGRES_PASSWORD: synthetic_ci_only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U kunde_ci -d kunde"
+          --health-interval 5s --health-timeout 3s --health-retries 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -30,22 +41,8 @@ jobs:
           test -s selected.sha256
           sha256sum --check selected.sha256
           tar -xzf trivy_0.76.2_Linux-64bit.tar.gz trivy
-      - name: Diagnose vendor network without exposing inherited proxy values
-        run: python3 scripts/ci/container_network_evidence.py
-      - name: Scan maintained vendor alternatives (do not repeat blocked apt updates)
-        run: python3 scripts/ci/container_alternatives.py
-      - name: Verify official Apache Maven distribution metadata
-        run: |
-          python3 - <<'PY'
-          import urllib.request,hashlib,json,pathlib
-          url="https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.10.0/apache-maven-3.10.0-bin.zip"
-          data=urllib.request.urlopen(url,timeout=60).read()
-          expected=urllib.request.urlopen(url+".sha512",timeout=30).read().decode().split()[0]
-          assert hashlib.sha512(data).hexdigest()==expected
-          result={"url":url,"sha512":expected,"sha256":hashlib.sha256(data).hexdigest(),"size":len(data)}
-          pathlib.Path("reports/maven-distribution.json").write_text(json.dumps(result,indent=2))
-          print("MAVEN_DISTRIBUTION",json.dumps(result))
-          PY
+      - name: Build, smoke and scan effective images
+        run: python3 scripts/ci/container_effective.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
