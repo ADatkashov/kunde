@@ -4,6 +4,8 @@ out=pathlib.Path("reports"); out.mkdir(exist_ok=True)
 urls={
  "boot409":"https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-dependencies/4.0.9/spring-boot-dependencies-4.0.9.pom",
  "agp":"https://dl.google.com/dl/android/maven2/com/android/tools/build/gradle/maven-metadata.xml",
+ "bcpkix":"https://repo.maven.apache.org/maven2/org/bouncycastle/bcpkix-jdk18on/maven-metadata.xml",
+ "bcutil":"https://repo.maven.apache.org/maven2/org/bouncycastle/bcutil-jdk18on/maven-metadata.xml",
  "bcprov":"https://repo.maven.apache.org/maven2/org/bouncycastle/bcprov-jdk18on/maven-metadata.xml",
  "guava":"https://repo.maven.apache.org/maven2/com/google/guava/guava/maven-metadata.xml",
  "lang":"https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/maven-metadata.xml",

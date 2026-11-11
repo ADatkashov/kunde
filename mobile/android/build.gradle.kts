@@ -5,11 +5,11 @@ buildscript {
     dependencies {
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.20")
         // TASK-046: security maintenance constraints are buildscript-only.
-        // Keep the complete Bouncy Castle family on the same patched release.
+        // Keep the Bouncy Castle 1.85 maintenance family coherent; the provider has a separate hotfix.
         constraints {
             add("classpath", "org.bouncycastle:bcprov-jdk18on:1.85.2")
-            add("classpath", "org.bouncycastle:bcpkix-jdk18on:1.85.2")
-            add("classpath", "org.bouncycastle:bcutil-jdk18on:1.85.2")
+            add("classpath", "org.bouncycastle:bcpkix-jdk18on:1.85")
+            add("classpath", "org.bouncycastle:bcutil-jdk18on:1.85")
             add("classpath", "com.google.guava:guava:33.7.2-jre")
             add("classpath", "org.apache.commons:commons-lang3:3.18.0")
             add("classpath", "org.bitbucket.b_c:jose4j:0.9.6")
@@ -23,11 +23,11 @@ subprojects {
         dependencies {
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.20")
         // TASK-046: security maintenance constraints are buildscript-only.
-        // Keep the complete Bouncy Castle family on the same patched release.
+        // Keep the Bouncy Castle 1.85 maintenance family coherent; the provider has a separate hotfix.
         constraints {
             add("classpath", "org.bouncycastle:bcprov-jdk18on:1.85.2")
-            add("classpath", "org.bouncycastle:bcpkix-jdk18on:1.85.2")
-            add("classpath", "org.bouncycastle:bcutil-jdk18on:1.85.2")
+            add("classpath", "org.bouncycastle:bcpkix-jdk18on:1.85")
+            add("classpath", "org.bouncycastle:bcutil-jdk18on:1.85")
             add("classpath", "com.google.guava:guava:33.7.2-jre")
             add("classpath", "org.apache.commons:commons-lang3:3.18.0")
             add("classpath", "org.bitbucket.b_c:jose4j:0.9.6")

@@ -59,7 +59,7 @@ gradle.projectsEvaluated {
                     println('OWNERSHIP '+coord+' '+item.configurations+' PATH '+contexts[coord].take(2))
                 }
             }
-            def bcVersions = artifacts.values().findAll { it.groupId == 'org.bouncycastle' }.collect { it.version }.toSet()
+            def bcVersions = artifacts.values().findAll { it.groupId == 'org.bouncycastle' }.collect { it.version.tokenize('.').take(2).join('.') }.toSet()
             if (bcVersions.size() > 1) throw new GradleException('Incoherent Bouncy Castle buildscript family')
             def kgp = artifacts.values().findAll { it.groupId == 'org.jetbrains.kotlin' && it.artifactId == 'kotlin-gradle-plugin' }
             println('KUNDE_RESOLVED_KGP '+kgp+' modules='+artifacts.size())

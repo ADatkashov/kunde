@@ -27,8 +27,10 @@ jobs:
           test -s selected.sha256
           sha256sum --check selected.sha256
           tar -xzf trivy_0.76.2_Linux-64bit.tar.gz trivy
-      - name: Compare maintained bases and compatible signed OS updates
-        run: python3 scripts/ci/container_probe.py
+      - name: Diagnose vendor network without exposing inherited proxy values
+        run: python3 scripts/ci/container_network_evidence.py
+      - name: Scan maintained vendor alternatives (do not repeat blocked apt updates)
+        run: python3 scripts/ci/container_alternatives.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

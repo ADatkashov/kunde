@@ -64,6 +64,8 @@ jobs:
           import os, pathlib
           pathlib.Path('android/local.properties').write_text('flutter.sdk='+os.environ['FLUTTER_ROOT']+'\n'+'sdk.dir='+os.environ['ANDROID_HOME']+'\n')
           PY
+      - name: Verify security-maintenance artifact publication
+        run: python3 scripts/ci/verify_native_artifacts.py
       - name: Gradle configuration and actual resolved versions
         id: graph
         working-directory: mobile/android
