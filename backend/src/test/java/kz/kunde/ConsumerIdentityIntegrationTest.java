@@ -117,6 +117,22 @@ class ConsumerIdentityIntegrationTest {
     }
 
     @Test
+    void wrongClientScopeTokenTypeAndMissingSubjectAreDenied() throws Exception {
+        for (String claim : List.of("azp", "scope", "typ", "sub")) {
+            String token = UUID.randomUUID().toString();
+            Jwt original = jwt(token);
+            Jwt invalid = Jwt.withTokenValue(token).headers(h -> h.putAll(original.getHeaders()))
+                    .claims(claims -> {
+                        claims.putAll(original.getClaims());
+                        claims.put(claim, claim.equals("sub") ? "" : "wrong");
+                    }).build();
+            when(issuerJwtDecoder.decode(token)).thenReturn(invalid);
+            http.perform(get("/api/v1/me").header("Authorization", "Bearer " + token))
+                    .andExpect(status().isForbidden());
+        }
+    }
+
+    @Test
     void missingAuthenticationIsDenied() throws Exception {
         http.perform(get("/api/v1/me")).andExpect(status().isUnauthorized());
     }
