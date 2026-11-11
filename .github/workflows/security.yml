@@ -2,9 +2,7 @@ name: Security CI
 on:
   push:
     branches: [main]
-    paths: ['backend/pom.xml', 'backend/Dockerfile', 'mobile/pubspec.*', 'mobile/android/**', 'scripts/ci/**', '.github/workflows/security.yml']
   pull_request:
-    paths: ['backend/pom.xml', 'backend/Dockerfile', 'mobile/pubspec.*', 'mobile/android/**', 'scripts/ci/**', '.github/workflows/security.yml']
   workflow_dispatch:
 permissions:
   contents: read
