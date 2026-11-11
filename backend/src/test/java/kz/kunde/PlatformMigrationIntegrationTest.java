@@ -54,6 +54,14 @@ class PlatformMigrationIntegrationTest {
         assertThat(namespaces).containsExactly("identity", "marketplace", "payments", "profile", "support", "transactions");
         assertThat(jdbcTemplate.queryForObject(
                 "select count(*) from flyway_schema_history where version = '1' and success", Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject(
+                "select count(*) from flyway_schema_history where version = '2' and success", Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.tables where table_schema = 'identity' and table_name = 'external_bindings'",
+                Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.tables where table_schema = 'profile' and table_name = 'consumer_profiles'",
+                Integer.class)).isEqualTo(1);
         assertThat(flyway.migrate().migrationsExecuted).isZero();
     }
 
