@@ -1,12 +1,11 @@
-# Next task — review delivery and close remaining TASK-046 gates
+# Next task — remaining TASK-046 security gates
 
-Use GitHub branch ci/github-hosted-migration-20261111 and [current ledger](docs/security/ci-vulnerability-ledger.md). Owner explicitly authorized integration with main22c1ae8 and merge via PR4. Verify combined-source backend, Flutter, APK and security evidence before merging; never rewrite history.
+Main now includes owner-authorized [PR4](https://github.com/ADatkashov/kunde/pull/4), merge36ea51b. Preserve the published Consumer identity/profile/FlywayV2/auth repository and the supported Boot4/native/container remediation. Read PROJECT_STATE.md and the [security ledger](docs/security/ci-vulnerability-ledger.md).
 
-Highest-priority remaining TASK-046 work: evaluate a supported upstream Flutter SDK/tooling release that eliminates GHSA-r937-wjx7-w2jp (currently SDK KGP2.0.0/2.2.21; project2.4.20 clean). Do not patch SDK internals or suppress findings. Close Maven-distribution/runtime/native SDK binary coverage gaps and implement separately scoped, documented API abuse/rate/size controls absent from published code. Current observed CRITICAL/HIGH are eliminated; incomplete coverage is not zero risk.
+Next independent engineering work is TASK-046 API abuse controls already documented in the backlog: bounded request sizes, validated payloads, bounded rate limiting with trusted identity/proxy boundaries,429/Retry-After and deterministic negative regression tests. Inspect current source and TASK-045 prerequisites before implementation; do not recreate published identity modules.
 
-Reproduce with hosted Backend CI, Flutter CI, Android APK CI, Security CI and Container build and security verification. Backend29 tests/JAR/HTTP pass, APK/signature/native audit0, Maven/Pub/root0, both base/effectiveOS0; SDK audit remains exit1 with2 MODERATE matches of1 advisory. Preserve exact reports/run URLs in the ledger.
+Separately track upstream Flutter SDK GHSA-r937-wjx7-w2jp: projectKGP2.4.20 is verified, SDKKGP2.0.0/2.2.21 remains MODERATE. Use a supported upstream fix, no SDK source patches, unsupported forced combinations or suppression. Close distribution/runtime/native binary coverage gaps with explicit evidence.
 
-TASK-006 remains in_progress: main22c1ae8 has published canonical KUNDE UUID/profile/V2 and Flutter auth foundations. Validate these combined changes, then execute the real Consumer Android Keycloak/PKCE/JWT/profile/restart/refresh/logout/relogin scenario; native E2E remains unverified. Reconcile ADR-015 with explicit owner approval before the separately scoped implementation. No production readiness.
+Verification baseline: combined-tree backend36/36, Flutter10/10+analyze/format, APK/signature/nativeOSV0, Maven/Pub/buildroots0, base/effectiveOS0 and container/JAR smoke pass. SDK audit exit1 is a real open finding; do not call all security CI green. Exact run URLs are recorded in PROJECT_STATE/ledger/PR4.
 
-
-Combined-source review: PR4 preserves all main22c1ae8 identity/auth additions. Backend43070935843 passes36/36 tests, executable JAR and HTTP smoke after fixing method authorization denial from500 to403. Two published Dart files are formatted by pinned Flutter3.47 tooling; final Flutter/APK/security checks run on the combined source before the authorized merge. No native E2E or production-readiness claim. Push verification targets main; PR verification handles the integration branch without duplicate push jobs.
+TASK-006 remains in_progress pending required real Consumer Android Keycloak/PKCE/JWT/profile/restart/refresh/logout/relogin E2E and remaining acceptance. Historical provider POC or APK alone does not close it. TASK-046 remains in_progress. No production readiness.
