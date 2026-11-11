@@ -2,6 +2,14 @@
 
 Reviewed 2026-11-11. Follow AGENTS.md; code and current CI are authoritative.
 
+- Reconciled main 4595309 after PR #5 merge: Backend/Flutter/APK/configuration
+  runs 43078224891/43078224810/43078224874/43078224746 succeeded. All 56 existing
+  backlog tasks now have explicit states; no epic/release completion inferred.
+- TASK-003 native prerequisite gate now fails on missing scenario files and
+  retains NOT_EXECUTED evidence; regression tests run in configuration CI.
+  Hosted evidence for this increment is tracked in its PR. SDK vulnerability
+  and native Consumer E2E remain open.
+
 - Java 21 / Spring Boot 4.0.9, PostgreSQL/Flyway V1–V2 and Flutter 3.47.0.
 - ADR-015 is ACCEPTED for synthetic implementation: Keycloak primary, ZITADEL
   fallback. Production readiness, privacy, residency, operations and OTP remain gated.

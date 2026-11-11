@@ -59,7 +59,7 @@
     "release": "REL-0",
     "user_story_id": "US-002",
     "implementation_status": "partially_verified",
-    "implementation_note": "Free hosted backend/Flutter/APK/security jobs executed with artifacts. PR1 externally merged; follow-up remediation branch needs review. SDK audit intentionally fails on real MODERATE finding; no required merge gates or production deployment."
+    "implementation_note": "Main 4595309 hosted Backend/Flutter/APK/configuration pass (runs 43078224891/43078224810/43078224874/43078224746). Native E2E prerequisites falsely allowed a green skipped run; fail-closed correction and regression tests added. SDK GHSA-r937 remains open; no complete CI/merge-gate acceptance claimed."
   },
   {
     "id": "TASK-004",
@@ -101,7 +101,7 @@
     "release": "REL-0",
     "user_story_id": "US-003",
     "implementation_status": "blocked",
-    "implementation_note": "The 4.0 evaluation recommends self-hosted Keycloak 26.8.2 for review. See docs/identity/keycloak-readiness/README.md for the 1.0 security evidence, proposed token policy and outstanding operations, privacy and OTP gates. TASK-005 remains blocked pending explicit provider and fallback approval. ADR-015 remains PROPOSED."
+    "implementation_note": "ADR-015 owner approval (2026-11-11) accepts Keycloak primary/ZITADEL fallback for synthetic implementation. Production provider/privacy/residency/operations/OTP gates remain blocked; historical PROPOSED statements are superseded."
   },
   {
     "id": "TASK-006",
@@ -123,7 +123,7 @@
     "release": "REL-1",
     "user_story_id": "US-003",
     "implementation_status": "in_progress",
-    "implementation_note": "Main22c1ae8 publishes canonical UUID/profile/issuer-subject binding, FlywayV2 and Flutter auth repository/tests. Combined-source checks required; Consumer native E2E and remaining acceptance stay open. Preserve owner-published implementation."
+    "implementation_note": "PR #5 merged as 4595309: canonical identity/profile/V2, claim validation and localized Flutter auth/session UI. Main hosted Backend/Flutter/APK pass; Consumer native browser/device E2E and session administration remain incomplete."
   },
   {
     "id": "TASK-007",
@@ -141,7 +141,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-004"
+    "user_story_id": "US-004",
+    "implementation_status": "in_progress",
+    "implementation_note": "Consumer profile GET/PATCH and optimistic concurrency exist; consent lifecycle/contract remains absent."
   },
   {
     "id": "TASK-008",
@@ -161,7 +163,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-004"
+    "user_story_id": "US-004",
+    "implementation_status": "in_progress",
+    "implementation_note": "RU/KK/EN profile editing exists in PR #5; consent and native accessibility/device acceptance remain open."
   },
   {
     "id": "TASK-009",
@@ -179,7 +183,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-005"
+    "user_story_id": "US-005",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-010",
@@ -199,7 +205,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-005"
+    "user_story_id": "US-005",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-011",
@@ -217,7 +225,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-007"
+    "user_story_id": "US-007",
+    "implementation_status": "in_progress",
+    "implementation_note": "Empty read-only search scaffold exists; query/relevance behavior not implemented."
   },
   {
     "id": "TASK-012",
@@ -237,7 +247,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-007"
+    "user_story_id": "US-007",
+    "implementation_status": "in_progress",
+    "implementation_note": "Foundation discovery states exist; real search/serviceability UX remains open."
   },
   {
     "id": "TASK-013",
@@ -255,7 +267,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-006"
+    "user_story_id": "US-006",
+    "implementation_status": "in_progress",
+    "implementation_note": "V1 creates catalog schema only; category/offering constraints and model remain absent."
   },
   {
     "id": "TASK-014",
@@ -275,7 +289,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-006"
+    "user_story_id": "US-006",
+    "implementation_status": "in_progress",
+    "implementation_note": "Empty read-only catalog endpoint exists; real availability rules remain absent."
   },
   {
     "id": "TASK-015",
@@ -293,7 +309,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-006"
+    "user_story_id": "US-006",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-016",
@@ -313,7 +331,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-008"
+    "user_story_id": "US-008",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-017",
@@ -331,7 +351,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-011"
+    "user_story_id": "US-011",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-018",
@@ -351,7 +373,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-012"
+    "user_story_id": "US-012",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-019",
@@ -369,7 +393,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-0",
-    "user_story_id": "US-013"
+    "user_story_id": "US-013",
+    "implementation_status": "blocked",
+    "implementation_note": "D-02 provider operating model requires owner decision."
   },
   {
     "id": "TASK-020",
@@ -389,7 +415,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-2",
-    "user_story_id": "US-013"
+    "user_story_id": "US-013",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-021",
@@ -407,7 +435,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-010"
+    "user_story_id": "US-010",
+    "implementation_status": "blocked",
+    "implementation_note": "Order lifecycle/category and cancellation policy approvals remain open."
   },
   {
     "id": "TASK-022",
@@ -427,7 +457,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-009"
+    "user_story_id": "US-009",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-023",
@@ -445,7 +477,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-2",
-    "user_story_id": "US-028"
+    "user_story_id": "US-028",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-024",
@@ -465,7 +499,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-2",
-    "user_story_id": "US-028"
+    "user_story_id": "US-028",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-025",
@@ -483,7 +519,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-0",
-    "user_story_id": "US-014"
+    "user_story_id": "US-014",
+    "implementation_status": "blocked",
+    "implementation_note": "Payment provider and funds-flow approval remain open."
   },
   {
     "id": "TASK-026",
@@ -503,7 +541,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-014"
+    "user_story_id": "US-014",
+    "implementation_status": "blocked",
+    "implementation_note": "TASK-025 provider/funds-flow approval remains open."
   },
   {
     "id": "TASK-027",
@@ -521,7 +561,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-0",
-    "user_story_id": "US-015"
+    "user_story_id": "US-015",
+    "implementation_status": "blocked",
+    "implementation_note": "Refund policy and finance approval controls require owner decision."
   },
   {
     "id": "TASK-028",
@@ -541,7 +583,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-015"
+    "user_story_id": "US-015",
+    "implementation_status": "blocked",
+    "implementation_note": "TASK-027 approval controls and payment/funds-flow decision remain open."
   },
   {
     "id": "TASK-029",
@@ -559,7 +603,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-0",
-    "user_story_id": "US-016"
+    "user_story_id": "US-016",
+    "implementation_status": "blocked",
+    "implementation_note": "D-02 fulfillment responsibility requires owner decision."
   },
   {
     "id": "TASK-030",
@@ -579,7 +625,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-016"
+    "user_story_id": "US-016",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-031",
@@ -597,7 +645,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-017"
+    "user_story_id": "US-017",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-032",
@@ -617,7 +667,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-017"
+    "user_story_id": "US-017",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-033",
@@ -635,7 +687,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-2",
-    "user_story_id": "US-029"
+    "user_story_id": "US-029",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-034",
@@ -655,7 +709,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-2",
-    "user_story_id": "US-029"
+    "user_story_id": "US-029",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-035",
@@ -673,7 +729,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-2",
-    "user_story_id": "US-030"
+    "user_story_id": "US-030",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-036",
@@ -693,7 +751,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-2",
-    "user_story_id": "US-030"
+    "user_story_id": "US-030",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-037",
@@ -711,7 +771,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-018"
+    "user_story_id": "US-018",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-038",
@@ -731,7 +793,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-018"
+    "user_story_id": "US-018",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-039",
@@ -749,7 +813,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-019"
+    "user_story_id": "US-019",
+    "implementation_status": "blocked",
+    "implementation_note": "Staff roles, finance separation of duties and D-14 approvals remain open."
   },
   {
     "id": "TASK-040",
@@ -769,7 +835,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-019"
+    "user_story_id": "US-019",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-041",
@@ -787,7 +855,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-0",
-    "user_story_id": "US-020"
+    "user_story_id": "US-020",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-042",
@@ -807,7 +877,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-2",
-    "user_story_id": "US-032"
+    "user_story_id": "US-032",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-043",
@@ -825,7 +897,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-2",
-    "user_story_id": "US-021"
+    "user_story_id": "US-021",
+    "implementation_status": "blocked",
+    "implementation_note": "AI processor and privacy approval remain open."
   },
   {
     "id": "TASK-044",
@@ -845,7 +919,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-2",
-    "user_story_id": "US-033"
+    "user_story_id": "US-033",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-045",
@@ -927,7 +1003,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-023"
+    "user_story_id": "US-023",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-049",
@@ -945,7 +1023,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-0",
-    "user_story_id": "US-024"
+    "user_story_id": "US-024",
+    "implementation_status": "blocked",
+    "implementation_note": "Language/critical-copy owner approval is absent; scaffolding is not approval."
   },
   {
     "id": "TASK-050",
@@ -965,7 +1045,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-024"
+    "user_story_id": "US-024",
+    "implementation_status": "in_progress",
+    "implementation_note": "RU/KK/EN framework and identity copy exist; full formats and critical-copy approval remain open."
   },
   {
     "id": "TASK-051",
@@ -983,7 +1065,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-0",
-    "user_story_id": "US-025"
+    "user_story_id": "US-025",
+    "implementation_status": "blocked",
+    "implementation_note": "Hosting/residency procurement and legal approval remain open."
   },
   {
     "id": "TASK-052",
@@ -1003,7 +1087,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-025"
+    "user_story_id": "US-025",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-053",
@@ -1043,7 +1129,9 @@
     "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
-    "user_story_id": "US-026"
+    "user_story_id": "US-026",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-055",
