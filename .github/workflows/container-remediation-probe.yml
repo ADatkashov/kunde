@@ -1,0 +1,37 @@
+name: Container remediation candidates
+on:
+  pull_request:
+    paths: ['scripts/ci/container_probe.py', 'scripts/ci/registry_metadata.py', '.github/workflows/container-remediation-probe.yml']
+permissions:
+  contents: read
+concurrency:
+  group: container-remediation-probe-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  candidates:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Verify candidate build and database capacity
+        run: python3 scripts/ci/runner_resources.py --minimum-free-gib 8 --output reports/probe-capacity.json
+      - name: Checksum-verified Trivy 0.76.2
+        run: |
+          mkdir -p /tmp/kunde-trivy
+          cd /tmp/kunde-trivy
+          curl -fsSLO https://github.com/aquasecurity/trivy/releases/download/v0.76.2/trivy_0.76.2_Linux-64bit.tar.gz
+          curl -fsSLO https://github.com/aquasecurity/trivy/releases/download/v0.76.2/trivy_0.76.2_checksums.txt
+          awk '$2 == "trivy_0.76.2_Linux-64bit.tar.gz"' trivy_0.76.2_checksums.txt > selected.sha256
+          test -s selected.sha256
+          sha256sum --check selected.sha256
+          tar -xzf trivy_0.76.2_Linux-64bit.tar.gz trivy
+      - name: Compare maintained bases and compatible signed OS updates
+        run: python3 scripts/ci/container_probe.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: container-remediation-probe
+          path: reports/
+          retention-days: 14
