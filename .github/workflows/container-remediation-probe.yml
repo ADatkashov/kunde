@@ -1,7 +1,7 @@
 name: Container build and security verification
 on:
   push:
-    branches: [ci/github-hosted-migration-20261111]
+    branches: [main]
     paths: ['backend/Dockerfile', 'scripts/ci/container_effective.py', '.github/workflows/container-remediation-probe.yml']
   pull_request:
     paths: ['backend/Dockerfile', 'scripts/ci/container_effective.py', '.github/workflows/container-remediation-probe.yml']

@@ -1,7 +1,7 @@
 name: Backend CI
 on:
   push:
-    branches: [main, ci/github-hosted-migration-20261111]
+    branches: [main]
   pull_request:
   workflow_dispatch:
 permissions:

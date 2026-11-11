@@ -13,3 +13,6 @@ PR1 was externally merged at2026-11-11T15:41:52Z. Owner now explicitly authorize
 TASK-003 partially_verified; TASK-046 and TASK-006 in_progress. Canonical identity/profile implementation is now published; combined-source CI and real native E2E remain acceptance gates; historical provider POC is not TASK-006 acceptance. Provider policy approval was explicitly given in owner instructions; ADR-015 and old main tracking still require reconciliation in separately scoped identity work. No production readiness.
 
 [Runbook](docs/security/security-runbook.md) · [TASK-046](docs/security/TASK-046.md) · [Boot migration ADR](docs/architecture/adr/ADR-016-supported-spring-boot-4-security-migration.md).
+
+
+Combined-source review: PR4 preserves all main22c1ae8 identity/auth additions. Backend43070935843 passes36/36 tests, executable JAR and HTTP smoke after fixing method authorization denial from500 to403. Two published Dart files are formatted by pinned Flutter3.47 tooling; final Flutter/APK/security checks run on the combined source before the authorized merge. No native E2E or production-readiness claim. Push verification targets main; PR verification handles the integration branch without duplicate push jobs.

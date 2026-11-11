@@ -7,3 +7,6 @@ Highest-priority remaining TASK-046 work: evaluate a supported upstream Flutter 
 Reproduce with hosted Backend CI, Flutter CI, Android APK CI, Security CI and Container build and security verification. Backend29 tests/JAR/HTTP pass, APK/signature/native audit0, Maven/Pub/root0, both base/effectiveOS0; SDK audit remains exit1 with2 MODERATE matches of1 advisory. Preserve exact reports/run URLs in the ledger.
 
 TASK-006 remains in_progress: main22c1ae8 has published canonical KUNDE UUID/profile/V2 and Flutter auth foundations. Validate these combined changes, then execute the real Consumer Android Keycloak/PKCE/JWT/profile/restart/refresh/logout/relogin scenario; native E2E remains unverified. Reconcile ADR-015 with explicit owner approval before the separately scoped implementation. No production readiness.
+
+
+Combined-source review: PR4 preserves all main22c1ae8 identity/auth additions. Backend43070935843 passes36/36 tests, executable JAR and HTTP smoke after fixing method authorization denial from500 to403. Two published Dart files are formatted by pinned Flutter3.47 tooling; final Flutter/APK/security checks run on the combined source before the authorized merge. No native E2E or production-readiness claim. Push verification targets main; PR verification handles the integration branch without duplicate push jobs.
