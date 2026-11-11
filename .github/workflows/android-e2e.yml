@@ -1,0 +1,76 @@
+name: Android identity E2E (manual)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: android-identity-e2e-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  prerequisites:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - id: check
+        name: Require real Consumer implementation and isolated native-browser scenario
+        run: |
+          mkdir -p reports
+          ready=true
+          for file in backend/src/main/java/kz/kunde/identity/MeController.java scripts/ci/start_identity_test_stack.sh scripts/ci/run_consumer_identity_e2e.sh; do
+            if [ ! -f "$file" ]; then ready=false; fi
+          done
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+          if [ "$ready" != true ]; then
+            echo '{"status":"BLOCKED_MISSING_IMPLEMENTATION","nativeE2E":"NOT_EXECUTED"}' > reports/e2e-status.json
+            echo 'Native E2E BLOCKED: published Consumer profile and browser scenario absent. No authentication success inferred.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: identity-e2e-prerequisites
+          path: reports/
+          retention-days: 3
+  emulator:
+    needs: prerequisites
+    if: needs.prerequisites.outputs.ready == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Check KVM before emulator setup
+        run: |
+          test -c /dev/kvm
+          test -r /dev/kvm && test -w /dev/kvm
+          python3 scripts/ci/runner_resources.py --minimum-free-gib 6 --output reports/emulator-resources.json
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: '3.47.0'
+          channel: stable
+          cache: false
+      - name: Isolated synthetic Keycloak and backend stack
+        run: bash scripts/ci/start_identity_test_stack.sh
+      - uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 30
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+          script: bash scripts/ci/run_consumer_identity_e2e.sh
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: identity-e2e-sanitized
+          path: reports/e2e-status.json
+          retention-days: 3

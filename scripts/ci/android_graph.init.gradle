@@ -1,0 +1,34 @@
+import groovy.json.JsonOutput
+gradle.projectsEvaluated {
+    def root = gradle.rootProject
+    root.tasks.register('kundeResolvedGraph') {
+        doLast {
+            def artifacts = [:]
+            def collect = { c ->
+                if (c != null && c.canBeResolved) {
+                    c.resolvedConfiguration.rethrowFailure()
+                    c.resolvedConfiguration.resolvedArtifacts.each { a ->
+                        def id = a.moduleVersion.id
+                        artifacts[id.group+':'+id.name+':'+id.version] = [groupId:id.group, artifactId:id.name, version:id.version]
+                    }
+                }
+            }
+            root.allprojects.each { project ->
+                collect(project.buildscript.configurations.findByName('classpath'))
+                if (project.path == ':app') {
+                    ['debugCompileClasspath','debugRuntimeClasspath'].each { name ->
+                        def c = project.configurations.findByName(name)
+                        if (c == null) throw new GradleException('Missing required configuration '+name)
+                        collect(c)
+                    }
+                }
+            }
+            if (artifacts.isEmpty()) throw new GradleException('No resolved artifacts')
+            def file = new File(root.projectDir, '../../reports/android-resolved.json')
+            file.parentFile.mkdirs()
+            file.text = JsonOutput.prettyPrint(JsonOutput.toJson([groupId:'private.kunde',artifactId:'android',version:'local',children:artifacts.sort().values().toList()]))+'\n'
+            def kgp = artifacts.values().findAll { it.groupId == 'org.jetbrains.kotlin' && it.artifactId == 'kotlin-gradle-plugin' }
+            if (kgp.isEmpty() || kgp.any { it.version != '2.4.20' }) throw new GradleException('Patched Kotlin plugin not exclusively resolved')
+        }
+    }
+}
