@@ -65,6 +65,13 @@ for category in ["maven","flutter-dart","android-gradle","runtime-container","bu
     xs=[x for x in items if category in x["categories"]]
     summary["categories"][category]={"uniqueAdvisories":len({x["advisory"] for x in xs}),
         "instances":len(xs),"severities":dict(collections.Counter(x["severity"] for x in xs))}
+rank={"CRITICAL":4,"HIGH":3,"MODERATE":2,"MEDIUM":2,"LOW":1}
+worst={}
+for item in items:
+    key=item["advisory"]
+    severity=item["severity"]
+    if rank.get(severity,0)>rank.get(worst.get(key,""),-1): worst[key]=severity
+summary["uniqueAdvisoriesByMaxObservedSeverity"]=dict(collections.Counter(worst.values()))
 (out/"baseline-ledger.json").write_text(json.dumps({"summary":summary,"instances":items},indent=2)+"\n")
 (out/"baseline-advisory-details.json").write_text(json.dumps(details,indent=2)+"\n")
 print("BASELINE_SUMMARY",json.dumps(summary))

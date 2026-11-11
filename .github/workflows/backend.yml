@@ -45,9 +45,17 @@ jobs:
           test -s target/kunde-api-0.1.0-SNAPSHOT.jar
           jar tf target/kunde-api-0.1.0-SNAPSHOT.jar > target/jar-contents.txt
           grep -q 'BOOT-INF/lib/' target/jar-contents.txt
+      - name: Packaged JAR HTTP and fail-closed smoke
+        env:
+          DB_URL: jdbc:postgresql://localhost:5432/kunde
+          DB_USERNAME: kunde_ci
+          DB_PASSWORD: synthetic_ci_only
+        run: python3 scripts/ci/smoke_backend.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
           name: backend-reports
-          path: backend/target/surefire-reports/*.xml
+          path: |
+            backend/target/surefire-reports/*.xml
+            reports/backend-smoke.json
           retention-days: 3

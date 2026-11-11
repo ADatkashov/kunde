@@ -8,9 +8,6 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 jobs:
   changes:
     runs-on: ubuntu-24.04
@@ -29,6 +26,9 @@ jobs:
           EVENT_ACTION: ${{ github.event.action }}
         run: python3 scripts/ci/native_changes.py
   apk:
+    concurrency:
+      group: native-apk-${{ github.ref }}
+      cancel-in-progress: true
     needs: changes
     if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-24.04
@@ -79,6 +79,7 @@ jobs:
           flutter build apk --debug --target-platform android-x64
           test -s build/app/outputs/flutter-apk/app-debug.apk
           sha256sum build/app/outputs/flutter-apk/app-debug.apk > ../reports/apk.sha256
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose build/app/outputs/flutter-apk/app-debug.apk
       - name: Inspect debug APK package presence
         if: steps.apk_build.outcome == 'success'
         run: python3 scripts/ci/inspect_apk_dependencies.py
@@ -95,6 +96,9 @@ jobs:
           path: mobile/build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 1
   android-dependencies:
+    concurrency:
+      group: native-dependencies-${{ github.ref }}
+      cancel-in-progress: true
     needs: [changes, apk]
     if: always() && needs.changes.outputs.run == 'true'
     runs-on: ubuntu-24.04

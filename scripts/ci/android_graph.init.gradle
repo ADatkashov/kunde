@@ -8,31 +8,27 @@ gradle.projectsEvaluated {
             def artifacts = [:]
             def contexts = [:].withDefault { [] }
             def pathLimitReached = false
-            def visitedPaths = 0
             def collect = { c, label ->
                 if (c != null && c.canBeResolved) {
                     def result = c.incoming.resolutionResult
                     def missing = result.allDependencies.findAll { it instanceof UnresolvedDependencyResult }
                     if (!missing.isEmpty()) throw new GradleException('Unresolved dependency graph: '+c.name)
-                    def visit
-                    visit = { component, path, seen ->
-                        if (++visitedPaths > 20000) { pathLimitReached = true; return }
-                        if (path.size() > 64) { pathLimitReached = true; return }
+                    // One shortest real path per component/configuration; avoid exponential diamonds.
+                    def queue = new java.util.ArrayDeque()
+                    def seen = [] as Set
+                    queue.add([result.rootComponent.get(), []])
+                    while (!queue.isEmpty()) {
+                        def entry = queue.remove()
+                        def component = entry[0]
                         def id = component.id
                         def current = id instanceof ModuleComponentIdentifier ? id.group+':'+id.module+':'+id.version : id.displayName
-                        if (seen.contains(current)) return
-                        def next = path+[current]
-                        if (id instanceof ModuleComponentIdentifier) {
-                            def entry = [configuration:label, dependencyPath:next]
-                            if (contexts[current].size() < 200) {
-                                if (!contexts[current].contains(entry)) contexts[current].add(entry)
-                            } else { pathLimitReached = true }
-                        }
+                        if (!seen.add(current)) continue
+                        def path = entry[1]+[current]
+                        if (id instanceof ModuleComponentIdentifier) contexts[current].add([configuration:label, dependencyPath:path])
                         component.dependencies.each { dependency ->
-                            if (!(dependency instanceof UnresolvedDependencyResult)) visit(dependency.selected, next, seen+[current])
+                            if (!(dependency instanceof UnresolvedDependencyResult)) queue.add([dependency.selected,path])
                         }
                     }
-                    visit(result.rootComponent.get(), [], [] as Set)
                     result.allComponents.each { component ->
                         def id = component.id
                         if (id instanceof ModuleComponentIdentifier) {
@@ -56,13 +52,15 @@ gradle.projectsEvaluated {
             if (artifacts.isEmpty()) throw new GradleException('No resolved artifacts')
             def file = new File(root.projectDir, '../../reports/android-resolved.json')
             file.parentFile.mkdirs()
-            file.text = JsonOutput.prettyPrint(JsonOutput.toJson([groupId:'private.kunde',artifactId:'android',version:'local',children:artifacts.sort().values().toList(), contexts:contexts, pathLimitReached:pathLimitReached]))+'\n'
+            file.text = JsonOutput.prettyPrint(JsonOutput.toJson([groupId:'private.kunde',artifactId:'android',version:'local',children:artifacts.sort().values().toList(), contexts:contexts, pathLimitReached:false, pathPolicy:'one shortest path per component/configuration; alternate paths not exhaustive']))+'\n'
             ['bcprov-jdk18on','bcpkix-jdk18on','guava','commons-lang3','jose4j','jdom2'].each { name ->
                 artifacts.values().findAll { it.artifactId == name }.each { item ->
                     def coord = item.groupId+':'+item.artifactId+':'+item.version
-                    println('OWNERSHIP '+coord+' '+contexts[coord].collect { it.configuration }.unique()+' PATH '+contexts[coord].take(2))
+                    println('OWNERSHIP '+coord+' '+item.configurations+' PATH '+contexts[coord].take(2))
                 }
             }
+            def bcVersions = artifacts.values().findAll { it.groupId == 'org.bouncycastle' }.collect { it.version }.toSet()
+            if (bcVersions.size() > 1) throw new GradleException('Incoherent Bouncy Castle buildscript family')
             def kgp = artifacts.values().findAll { it.groupId == 'org.jetbrains.kotlin' && it.artifactId == 'kotlin-gradle-plugin' }
             println('KUNDE_RESOLVED_KGP '+kgp+' modules='+artifacts.size())
             if (kgp.isEmpty() || kgp.any { it.version != '2.4.20' }) throw new GradleException('Patched Kotlin plugin not exclusively resolved')

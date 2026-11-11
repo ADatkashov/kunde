@@ -20,8 +20,8 @@ try:
         entry["before"]=scan(["--image-src","remote",entry["reference"]],out/(role+"-vendor.json"))
         file=out/("candidate-"+role+".Dockerfile")
         file.write_text("FROM "+image+"@"+entry["platformDigest"]+"\n"
-            "RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y --no-install-recommends && rm -rf /var/lib/apt/lists/*\n")
-        subprocess.run(["docker","build","--pull","--platform","linux/amd64","-f",str(file),"-t","kunde-probe-"+role,"."],check=True)
+            "RUN apt-get -o APT::Update::Error-Mode=any update && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y --no-install-recommends && rm -rf /var/lib/apt/lists/*\n")
+        subprocess.run(["docker","build","--pull","--network=host","--platform","linux/amd64","-f",str(file),"-t","kunde-probe-"+role,"."],check=True)
         entry["rebuiltImageId"]=subprocess.check_output(["docker","image","inspect","kunde-probe-"+role,"--format","{{.Id}}"],text=True).strip()
         archive=pathlib.Path("/tmp/kunde-probe-"+role+".tar")
         subprocess.run(["docker","save","--output",str(archive),entry["rebuiltImageId"]],check=True)
