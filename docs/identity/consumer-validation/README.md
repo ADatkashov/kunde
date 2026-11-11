@@ -16,7 +16,7 @@ signed-token HTTP tests independently exercise the real security filter chain.
 Flutter 3.47.0: `flutter pub get --enforce-lockfile`,
 `flutter analyze --fatal-infos`,
 `dart format --output=none --set-exit-if-changed lib test`, and `flutter test`.
-32 tests passed, including browser gateway parameters, serialized refresh/logout,
+33 tests passed, including browser gateway parameters, serialized refresh/logout,
 restore, issuer context isolation, 401/403/409, offline recovery, route boundary,
 editing/discard, registration, locales and a phone-size welcome golden.
 Golden fonts come from the pinned Flutter SDK, not host-installed fonts.

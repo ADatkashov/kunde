@@ -215,9 +215,9 @@ class AuthRepository extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _invalidate() async {
+  Future<void> _invalidate({bool sessionExpired = true}) async {
     _tokens = null;
-    expired = true;
+    expired = sessionExpired;
     notifyListeners();
     await vault.clear();
   }
@@ -247,7 +247,7 @@ class AuthRepository extends ChangeNotifier {
           final tokens = await gateway.login(register: register);
           await _replace(tokens);
         } catch (_) {
-          await _invalidate();
+          await _invalidate(sessionExpired: false);
           rethrow;
         }
       });

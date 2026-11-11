@@ -301,4 +301,16 @@ void main() {
         findsOneWidget);
     expect(vault.value, isNull);
   });
+  testWidgets('failed first login does not claim an expired session',
+      (tester) async {
+    await start(tester);
+    gateway.cancelled = true;
+    await tester.tap(find.text('Sign in'));
+    await tester.pumpAndSettle();
+    expect(find.text('Cannot connect. Check your connection and try again.'),
+        findsOneWidget);
+    expect(find.text('Your session expired. Sign in again.'), findsNothing);
+    expect(auth.expired, false);
+    expect(find.text('Sign in'), findsOneWidget);
+  });
 }
