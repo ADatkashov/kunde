@@ -23,7 +23,7 @@ import org.springframework.security.web.SecurityFilterChain;
 
 /** Development-only protected endpoint used to compare local OIDC providers. */
 @Configuration
-@Profile("identity-poc")
+@Profile("identity-poc & !prod & !production")
 public class IdentityPocSecurityConfiguration {
     private static final String POC_AUTHORITY = "SCOPE_kunde.poc";
 
