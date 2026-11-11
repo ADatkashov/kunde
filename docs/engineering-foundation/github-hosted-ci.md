@@ -133,3 +133,8 @@ No failed run is erased or described as a pass.
 Scanner artifacts are accessible from the linked run pages for1–3 days; durable
 summary findings remain in the ledger. Native manual workflow is deliberately
 blocked until real missing implementation/scenario scripts are present.
+
+Actual-resolution guard caught selected KGP2.2.10 after a clean declared2.4.20
+scan. Explicit app Kotlin plugin application is added before Flutter. Upstream
+Flutter included-build Kotlin2.2.20/KGP2.0.0 exposure remains separately OPEN;
+project plugin remediation cannot certify the entire SDK toolchain.

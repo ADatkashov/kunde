@@ -26,7 +26,7 @@ KGP2.4.20 candidate applied with AGP9.1/Gradle9.3.1; verify actual APK/graph/OSV
 Resource probes use actual free disk, not a60GiB prerequisite. Measured hosted
 worker4CPU/~16GB RAM/~86GiB free; no preinstalled tools deleted.
 
-Backend and Flutter hosted CI pass. APK verification evidence pending final run.
+Backend and Flutter hosted CI pass. APK compilation passed, but strict graph found KGP2.2.10 despite declaration2.4.20. Explicit app plugin application is being verified. Flutter included-build older Kotlin exposure remains OPEN; no global GHSA closure.
 OSV v2 actual baseline72 matches:10CRITICAL/27HIGH/26MODERATE/9LOW; build roots0.
 Trivy0.76.2 scans immutable bases successfully but reports runtime2HIGH/56MEDIUM/
 4LOW and build18HIGH/610MEDIUM/179LOW; raw exit10 each, jobs fail on findings.

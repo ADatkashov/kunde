@@ -6,7 +6,7 @@ Do not recover old Codex Cloud or require a personal Windows/self-hosted runner.
 
 Review draft PR1 ci/github-hosted-migration-20261111; do not merge main without
 owner authorization. Finish APK/Gradle2.4.20/OSV evidence before calling Kotlin fixed.
-Backend/Flutter hosted checks pass. Security jobs correctly fail on genuine
+Backend/Flutter hosted checks pass. Strict native graph exposed selected KGP2.2.10 despite declaration2.4.20; explicit app plugin application is under verification. Flutter SDK's included older Kotlin dependencies remain OPEN and require supported upstream remediation. Security jobs correctly fail on genuine
 published Boot3.5.7/container findings; no suppression or accepted CRITICAL risks.
 Next engineering priority within TASK-046 is a supported, isolated-tested backend
 BOM and vendor-base OS remediation using these actual hosted reports.

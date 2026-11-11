@@ -43,11 +43,13 @@ jobs:
           test -s build/app/outputs/flutter-apk/app-debug.apk
           sha256sum build/app/outputs/flutter-apk/app-debug.apk > ../reports/apk.sha256
       - name: Gradle configuration and actual resolved versions
+        id: graph
         working-directory: mobile/android
         run: |
           ./gradlew --no-daemon --max-workers=2 help > ../../reports/gradle-help.txt
           ./gradlew --no-daemon --max-workers=2 -I ../../scripts/ci/android_graph.init.gradle kundeResolvedGraph
       - name: Audit actual Android graph
+        if: always() && steps.apk_build.outcome == 'success'
         run: python3 scripts/ci/osv_audit.py --maven reports/android-resolved.json --output reports/android-osv.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()

@@ -46,7 +46,8 @@ jobs:
           persist-credentials: false
       - name: Check KVM before emulator setup
         run: |
-          test -c /dev/kvm
+          if [ ! -c /dev/kvm ]; then echo "INFRASTRUCTURE_BLOCKED: no KVM device" >> "$GITHUB_STEP_SUMMARY"; exit 78; fi
+          if [ ! -r /dev/kvm ] || [ ! -w /dev/kvm ]; then sudo setfacl -m "u:$(id -un):rw" /dev/kvm; fi
           test -r /dev/kvm && test -w /dev/kvm
           python3 scripts/ci/runner_resources.py --minimum-free-gib 6 --output reports/emulator-resources.json
       - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
