@@ -22,11 +22,11 @@ Primary build target is standard free GitHub-hosted Ubuntu24.04, Java21,
 repository-compatible Flutter3.47. No personal Windows or self-hosted dependency.
 Independent backend/Flutter/APK/security/lightweight workflows; manual E2E checks
 actual prerequisites/KVM and never fabricates authentication success.
-KGP2.4.20 candidate applied with AGP9.1/Gradle9.3.1; verify actual APK/graph/OSV.
+Project KGP2.4.20 with AGP9.1/Gradle9.3.1/Java21/Flutter3.47 is verified by strict174-module graph, compilation and actual OSV. Global SDK tooling GHSA residual remains OPEN.
 Resource probes use actual free disk, not a60GiB prerequisite. Measured hosted
 worker4CPU/~16GB RAM/~86GiB free; no preinstalled tools deleted.
 
-Backend and Flutter hosted CI pass. APK compilation passed, but strict graph found KGP2.2.10 despite declaration2.4.20. Explicit app plugin application is being verified. Flutter included-build older Kotlin exposure remains OPEN; no global GHSA closure.
+Backend43030696166 and Flutter43030696329 pass. Android43030696091 apk job130556656253 passes, APK artifact available; independent native audit fails on10 remaining matches (2CRITICAL/5HIGH/3MODERATE), no project KGP GHSA. Overall Android workflow is red due to findings; not a compilation failure. Flutter included-tooling older Kotlin exposure remains OPEN.
 OSV v2 actual baseline72 matches:10CRITICAL/27HIGH/26MODERATE/9LOW; build roots0.
 Trivy0.76.2 scans immutable bases successfully but reports runtime2HIGH/56MEDIUM/
 4LOW and build18HIGH/610MEDIUM/179LOW; raw exit10 each, jobs fail on findings.

@@ -59,7 +59,7 @@
     "release": "REL-0",
     "user_story_id": "US-002",
     "implementation_status": "partially_verified",
-    "implementation_note": "GitHub-hosted migration PR1: independent lightweight/backend/Flutter/APK/security/manual native workflows. Remote backend/Flutter pass; actual standard Ubuntu capacity measured. No workstation/self-hosted/paid runner dependency. Native identity implementation absent from remote baseline; security findings remain open. Exact run URLs and acceptance in docs/engineering-foundation/github-hosted-ci.md and docs/security/ci-vulnerability-ledger.md; final APK evidence pending."
+    "implementation_note": "Hosted migration PR1: standard Ubuntu24.04, independent configuration/backend/Flutter/APK/security and manual E2E workflows, short artifacts, no personal PC/self-hosted/paid runner. Remote backend21/JAR, Flutter and APK job130556656253 in run43030696091 pass; strict174-module project KGP2.4.20 graph verified. Native audit10 findings and backend72/container findings correctly fail separate jobs. Manual E2E blocked by missing published implementation. Remains partially_verified pending review/default adoption/open gates. No production readiness."
   },
   {
     "id": "TASK-004",
@@ -874,7 +874,7 @@
     "name": "API abuse and vulnerability controls",
     "description": "Implement and document api abuse and vulnerability controls within approved architecture and scope.",
     "area": "security",
-    "priority": "P1",
+    "priority": "P0",
     "dependencies": [
       "TASK-045"
     ],
@@ -887,7 +887,7 @@
     "release": "REL-1",
     "user_story_id": "US-022",
     "implementation_status": "in_progress",
-    "implementation_note": "Hosted OSV graph/build-root, redacted Gitleaks and immutable-image Trivy audits implemented/executed in PR1. Published baseline Boot3.5.7 has72 advisory/package matches (10CRITICAL/27HIGH/26MODERATE/9LOW); original cloud-only Boot4/abuse remediation absent. KGP2.4.20 applied, native proof pending. Runtime/build base OS findings open, no suppression/accepted risks/production readiness."
+    "implementation_note": "Hosted OSV/Gitleaks/immutable Trivy executed. Backend72 matches (10CRITICAL/27HIGH/26MODERATE/9LOW), native10 (2CRITICAL/5HIGH/3MODERATE), OS-image findings OPEN. Project KGP2.4.20 verified by actual174-module resolution+APK+scan, removing project GHSA-r937. Global finding remains open for upstream Flutter included older Kotlin tooling; no SDK patch/suppression/risk acceptance. Published abuse/Boot4 implementation absent. TASK-046 in_progress; exact evidence in docs/security/ci-vulnerability-ledger.md."
   },
   {
     "id": "TASK-047",

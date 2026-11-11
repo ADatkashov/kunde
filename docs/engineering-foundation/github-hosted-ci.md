@@ -145,3 +145,28 @@ verifies the actual graph; the native vulnerability audit is an independent job,
 so compile success and security findings have separate conclusions. The initial
 full native graph found11 advisory/package matches including KGP2.2.10 and two
 Bouncy Castle CRITICAL matches. These remain visible in the ledger.
+
+## Completed hosted candidate evidence — c51a334, 2026-11-11
+
+- [Backend43030696166](https://github.com/ADatkashov/kunde/actions/runs/43030696166): success, published-baseline21 tests and JAR.
+- [Flutter43030696329](https://github.com/ADatkashov/kunde/actions/runs/43030696329): success, analyzer/formatter/tests and machine report.
+- [Configuration43030696325](https://github.com/ADatkashov/kunde/actions/runs/43030696325): success.
+- [Android43030696091](https://github.com/ADatkashov/kunde/actions/runs/43030696091): **apk job130556656253 success**. Strict174-module graph selected exclusively KGP2.4.20; x64 debug APK compiled and artifact13860469415 retained1 day (48,489,119-byte archive). Archive digest is not the APK file digest; reports/apk.sha256 contains the latter.
+- Same Android run's independent android-dependencies job130559757203: **failure on genuine findings**,10 matches (2CRITICAL/5HIGH/3MODERATE), no GHSA-r937 match in this observed project graph. Overall workflow conclusion failure must not be described as all-green.
+- [Security43030696129](https://github.com/ADatkashov/kunde/actions/runs/43030696129): executed, Gitleaks success, Maven/container findings keep security jobs red.
+
+Gradle setup is SHA-pinned and installs exact9.3.1 before pre-build configuration:
+wrapper scripts are absent from Git and Flutter normally generates them. This
+bootstrap issue was fixed without weakening version or graph checks.
+KGP project/classpath remediation is verified by resolution+compile+scan; **global**
+GHSA remains OPEN because upstream stable Flutter tooling declares older included
+dependencies, requiring supported upstream remediation. No SDK internals patched.
+
+Previous unsigned iOS scaffold build capability is retained as separate manual
+ios.yml; it was not executed in this migration. Android identity E2E also NOT_EXECUTED,
+blocked by missing published Consumer/scenario infrastructure. No production readiness.
+
+Maven cache uses repository/provider quota and eviction; no claim of unlimited
+public storage. No Gradle/Flutter persistent cache artifacts. Postgres test-service
+OS, hosted-runner OS, action Node dependencies, JDK tarball and SDK/native/included
+toolchains are not certified by these application/base-image scans.
