@@ -6,6 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 class SessionExpired implements Exception {}
+
 class IdentityUnavailable implements Exception {}
 
 class AuthTokens {
@@ -40,8 +41,10 @@ abstract interface class OAuthGateway {
 }
 
 class AppAuthGateway implements OAuthGateway {
-  AppAuthGateway({required this.issuer, required this.clientId,
-    this.redirect = 'com.kunde.mobile:/oauth2redirect'});
+  AppAuthGateway(
+      {required this.issuer,
+      required this.clientId,
+      this.redirect = 'com.kunde.mobile:/oauth2redirect'});
   final String issuer;
   final String clientId;
   final String redirect;
@@ -50,14 +53,17 @@ class AppAuthGateway implements OAuthGateway {
 
   bool get _allowHttp {
     final uri = Uri.parse(issuer);
-    return kDebugMode && uri.scheme == 'http' &&
+    return kDebugMode &&
+        uri.scheme == 'http' &&
         ['localhost', '127.0.0.1', '::1'].contains(uri.host);
   }
 
   void _validate() {
     final uri = Uri.parse(issuer);
-    if (clientId.isEmpty || uri.host.isEmpty ||
-        uri.userInfo.isNotEmpty || uri.hasFragment ||
+    if (clientId.isEmpty ||
+        uri.host.isEmpty ||
+        uri.userInfo.isNotEmpty ||
+        uri.hasFragment ||
         (uri.scheme != 'https' && !_allowHttp)) {
       throw IdentityUnavailable();
     }
@@ -77,9 +83,11 @@ class AppAuthGateway implements OAuthGateway {
   Future<AuthTokens> login({bool register = false}) async {
     _validate();
     return _tokens(await _auth.authorizeAndExchangeCode(
-      AuthorizationTokenRequest(clientId, redirect, issuer: issuer,
-        scopes: _scopes, allowInsecureConnections: _allowHttp,
-        additionalParameters: register ? {'kc_action': 'register'} : null),
+      AuthorizationTokenRequest(clientId, redirect,
+          issuer: issuer,
+          scopes: _scopes,
+          allowInsecureConnections: _allowHttp,
+          additionalParameters: register ? {'kc_action': 'register'} : null),
     ));
   }
 
@@ -87,26 +95,38 @@ class AppAuthGateway implements OAuthGateway {
   Future<AuthTokens> refresh(String refreshToken) async {
     _validate();
     return _tokens(await _auth.token(TokenRequest(clientId, redirect,
-      issuer: issuer, refreshToken: refreshToken, scopes: _scopes,
-      allowInsecureConnections: _allowHttp)));
+        issuer: issuer,
+        refreshToken: refreshToken,
+        scopes: _scopes,
+        allowInsecureConnections: _allowHttp)));
   }
 
   @override
   Future<void> logout(String? idToken) async {
     _validate();
     if (idToken == null) throw IdentityUnavailable();
-    await _auth.endSession(EndSessionRequest(issuer: issuer, idTokenHint: idToken,
-      postLogoutRedirectUrl: redirect, allowInsecureConnections: _allowHttp));
+    await _auth.endSession(EndSessionRequest(
+        issuer: issuer,
+        idTokenHint: idToken,
+        postLogoutRedirectUrl: redirect,
+        allowInsecureConnections: _allowHttp));
   }
 }
 
 class AuthRepository extends ChangeNotifier {
-  AuthRepository({required this.gateway, required this.vault,
-    required this.apiBase, http.Client? client}) : _client = client ?? http.Client() {
-    final local = kDebugMode && apiBase.scheme == 'http' &&
+  AuthRepository(
+      {required this.gateway,
+      required this.vault,
+      required this.apiBase,
+      http.Client? client})
+      : _client = client ?? http.Client() {
+    final local = kDebugMode &&
+        apiBase.scheme == 'http' &&
         ['localhost', '127.0.0.1', '10.0.2.2', '::1'].contains(apiBase.host);
     if ((apiBase.scheme != 'https' && !local) ||
-        apiBase.userInfo.isNotEmpty || apiBase.hasFragment || apiBase.hasQuery ||
+        apiBase.userInfo.isNotEmpty ||
+        apiBase.hasFragment ||
+        apiBase.hasQuery ||
         !apiBase.path.endsWith('/')) {
       throw IdentityUnavailable();
     }
@@ -127,8 +147,8 @@ class AuthRepository extends ChangeNotifier {
   }
 
   Future<void> _replace(AuthTokens tokens) async {
-    await vault.write(jsonEncode({'issuerVersion': 1,
-      'refresh': tokens.refresh, 'id': tokens.id}));
+    await vault.write(jsonEncode(
+        {'issuerVersion': 1, 'refresh': tokens.refresh, 'id': tokens.id}));
     _tokens = tokens;
     expired = false;
     notifyListeners();
@@ -142,58 +162,66 @@ class AuthRepository extends ChangeNotifier {
   }
 
   Future<void> restore() => _exclusive(() async {
-    try {
-      final saved = await vault.read();
-      if (saved == null) return;
-      final value = jsonDecode(saved) as Map<String, dynamic>;
-      final refresh = value['refresh'] as String;
-      await vault.clear();
-      await _replace(await gateway.refresh(refresh));
-    } catch (_) {
-      await _invalidate();
-    }
-  });
+        try {
+          final saved = await vault.read();
+          if (saved == null) return;
+          final value = jsonDecode(saved) as Map<String, dynamic>;
+          final refresh = value['refresh'] as String;
+          await vault.clear();
+          await _replace(await gateway.refresh(refresh));
+        } catch (_) {
+          await _invalidate();
+        }
+      });
 
   Future<void> login({bool register = false}) => _exclusive(() async {
-    try {
-      final tokens = await gateway.login(register: register);
-      await _replace(tokens);
-    } catch (_) {
-      await _invalidate();
-      rethrow;
-    }
-  });
+        try {
+          final tokens = await gateway.login(register: register);
+          await _replace(tokens);
+        } catch (_) {
+          await _invalidate();
+          rethrow;
+        }
+      });
 
   Future<String> accessToken() => _exclusive(() async {
-    final current = _tokens;
-    if (current == null) throw SessionExpired();
-    if (current.expires.isAfter(DateTime.now().add(const Duration(seconds: 30)))) {
-      return current.access;
-    }
-    try {
-      await vault.clear();
-      await _replace(await gateway.refresh(current.refresh));
-      return _tokens!.access;
-    } catch (_) {
-      await _invalidate();
-      throw SessionExpired();
-    }
-  });
+        final current = _tokens;
+        if (current == null) throw SessionExpired();
+        if (current.expires
+            .isAfter(DateTime.now().add(const Duration(seconds: 30)))) {
+          return current.access;
+        }
+        try {
+          await vault.clear();
+          await _replace(await gateway.refresh(current.refresh));
+          return _tokens!.access;
+        } catch (_) {
+          await _invalidate();
+          throw SessionExpired();
+        }
+      });
 
   Future<Map<String, dynamic>> profile() => _request('GET');
-  Future<Map<String, dynamic>> updateProfile(String name, String language, int version) =>
-      _request('PATCH', {'displayName': name, 'preferredLanguage': language, 'version': version});
+  Future<Map<String, dynamic>> updateProfile(
+          String name, String language, int version) =>
+      _request('PATCH', {
+        'displayName': name,
+        'preferredLanguage': language,
+        'version': version
+      });
 
-  Future<Map<String, dynamic>> _request(String method, [Map<String, dynamic>? body]) async {
+  Future<Map<String, dynamic>> _request(String method,
+      [Map<String, dynamic>? body]) async {
     final access = await accessToken();
     final request = http.Request(method, apiBase.resolve('me'));
-    request.headers.addAll({'Authorization': 'Bearer $access', 'Accept': 'application/json'});
+    request.headers.addAll(
+        {'Authorization': 'Bearer $access', 'Accept': 'application/json'});
     if (body != null) {
       request.headers['Content-Type'] = 'application/json';
       request.body = jsonEncode(body);
     }
     final response = await http.Response.fromStream(
-      await _client.send(request).timeout(const Duration(seconds: 15)));
+        await _client.send(request).timeout(const Duration(seconds: 15)));
     if (response.statusCode == 401) {
       await _exclusive(() async {
         if (_tokens?.access == access) await _invalidate();
@@ -207,18 +235,18 @@ class AuthRepository extends ChangeNotifier {
   }
 
   Future<bool> logout() => _exclusive(() async {
-    final id = _tokens?.id;
-    _tokens = null;
-    expired = false;
-    notifyListeners();
-    await vault.clear();
-    try {
-      await gateway.logout(id);
-      return true;
-    } catch (_) {
-      return false;
-    }
-  });
+        final id = _tokens?.id;
+        _tokens = null;
+        expired = false;
+        notifyListeners();
+        await vault.clear();
+        try {
+          await gateway.logout(id);
+          return true;
+        } catch (_) {
+          return false;
+        }
+      });
 
   @override
   void dispose() {

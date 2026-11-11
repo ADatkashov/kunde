@@ -19,3 +19,13 @@ Scope: account creation/login, OIDC callbacks, tokens, identity linking, OTP del
 | SMS vendor compromise/data exposure | OTP and phone metadata disclosure | Minimize payload/logs, contract/subprocessor review, secret rotation, adapter isolation, alerts and fallback plan | Vendor internal access and telecom route remain third-party risks. |
 
 Security basis: [OAuth 2.0 Security BCP RFC 9700](https://datatracker.ietf.org/doc/html/rfc9700), [native apps RFC 8252](https://datatracker.ietf.org/doc/html/rfc8252), [OWASP mobile authentication/session guidance](https://mas.owasp.org/MASTG/0x04e-Testing-Authentication-and-Session-Management/), [OWASP mobile storage](https://mas.owasp.org/MASTG/0x05d-Testing-Data-Storage/).
+
+
+## TASK-046 published supply-chain remediation — 2026-11-11
+
+See [current vulnerability ledger](../security/ci-vulnerability-ledger.md) and [runbook](../security/security-runbook.md). Threats include JWT algorithm confusion, untrusted CORS, accidental mixed production/POC profiles, signed project/organization grant confusion, exception-secret logging, compromised buildscript dependencies and shared Gradle caches. Negative regressions and ephemeral SDK audit caches address defined boundaries; no SDK risk is accepted. Actual project dependency scans and maintained rebuilt OS images are clean in observed scopes; SDK MODERATE remains open. API abuse controls, canonical account/BOLA boundaries and Consumer E2E remain implementation gates, not claims inherited from Cloud-only work.
+
+
+### Main integration review — 2026-11-11
+
+Main22c1ae8 now publishes Consumer canonical identity/profile, issuer/subject binding, FlywayV2, Consumer authorization and Flutter auth repository/tests. Earlier statements that these modules were absent describe the historical baseline only. Preserve these additions; do not replace them with the older branch. Owner explicitly authorized integration/merge through PR4. Combined-source checks are required; native Consumer E2E and API abuse controls remain open. TASK-006/TASK-046 stay in_progress; no production readiness.

@@ -3,8 +3,7 @@ import collections, json, pathlib, subprocess, sys
 from registry_metadata import resolve
 out=pathlib.Path("reports");out.mkdir(exist_ok=True)
 summary={"candidates":[],"coverage":"OS packages only; immutable official Linux/amd64 vendor images"};codes=[]
-candidates=[("runtime","eclipse-temurin:21-jre-ubi9-minimal"),("runtime","eclipse-temurin:21-jre-ubi10-minimal"),
-            ("build","maven:3.10.0-amazoncorretto-21-al2023"),("build","maven:3.10.0-amazoncorretto-21-debian-trixie")]
+candidates=[("build","eclipse-temurin:21-jdk-ubi10-minimal")]
 for index,(role,image) in enumerate(candidates):
     entry={"role":role,"image":image}
     try:

@@ -59,7 +59,7 @@
     "release": "REL-0",
     "user_story_id": "US-002",
     "implementation_status": "partially_verified",
-    "implementation_note": "GitHub Actions YAML parsed; Java 21, Maven verify, PostgreSQL service, cache and permissions inspected; local equivalent build passed. Remote workflow not executed; CI does not upload or publish build artifacts."
+    "implementation_note": "Free hosted backend/Flutter/APK/security jobs executed with artifacts. PR1 externally merged; follow-up remediation branch needs review. SDK audit intentionally fails on real MODERATE finding; no required merge gates or production deployment."
   },
   {
     "id": "TASK-004",
@@ -122,8 +122,8 @@
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
     "user_story_id": "US-003",
-    "implementation_status": "not_started",
-    "implementation_note": "Not started. After TASK-005 approval, begin with the canonical KUNDE UUID and verified issuer/subject mapping. Use docs/identity/keycloak-readiness/implementation-handoff.md for the approved-scope handoff and add account and session enforcement in subsequent increments."
+    "implementation_status": "in_progress",
+    "implementation_note": "Main22c1ae8 publishes canonical UUID/profile/issuer-subject binding, FlywayV2 and Flutter auth repository/tests. Combined-source checks required; Consumer native E2E and remaining acceptance stay open. Preserve owner-published implementation."
   },
   {
     "id": "TASK-007",
@@ -886,8 +886,8 @@
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
     "user_story_id": "US-022",
-    "implementation_status": "not_started",
-    "implementation_note": "Rate limiting/scanning not implemented; no public sensitive mutation route exists."
+    "implementation_status": "in_progress",
+    "implementation_note": "Supported Boot4 BOM and owned native dependencies remediated; actual project OSV0, immutable/effective container OS0; SDK GHSA-r937 MODERATE and coverage/API abuse controls open. See docs/security/TASK-046.md and ci-vulnerability-ledger.md."
   },
   {
     "id": "TASK-047",
@@ -1088,4 +1088,3 @@
     "implementation_note": "Backup/restore needs a selected environment and operations owner."
   }
 ]
-
