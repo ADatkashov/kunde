@@ -46,6 +46,8 @@ management:
     readinessstate:
       enabled: true
 app:
+  identity:
+    consumer-enabled: ${CONSUMER_IDENTITY_ENABLED:false}
   security:
     oidc:
       issuer-uri: ${OIDC_ISSUER_URI:}
