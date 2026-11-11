@@ -128,7 +128,22 @@ class ConsumerIdentityIntegrationTest {
                     }).build();
             when(issuerJwtDecoder.decode(token)).thenReturn(invalid);
             http.perform(get("/api/v1/me").header("Authorization", "Bearer " + token))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("FORBIDDEN"));
+        }
+    }
+
+    @Test
+    void malformedAuthorizationClaimsFailClosedWithoutProvisioning() throws Exception {
+        for (String claim : List.of("azp", "scope", "typ", "sub")) {
+            for (Object value : List.of(42, List.of("kunde.consumer"), Map.of("value", "Bearer"))) {
+                String token = UUID.randomUUID().toString();
+                Jwt original = jwt(token);
+                Jwt invalid = Jwt.withTokenValue(token).headers(h -> h.putAll(original.getHeaders()))
+                        .claims(claims -> { claims.putAll(original.getClaims()); claims.put(claim, value); }).build();
+                when(issuerJwtDecoder.decode(token)).thenReturn(invalid);
+                http.perform(get("/api/v1/me").header("Authorization", "Bearer " + token))
+                        .andExpect(status().isForbidden());
+            }
         }
     }
 
