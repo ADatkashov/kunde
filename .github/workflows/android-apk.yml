@@ -34,6 +34,20 @@ jobs:
           cache: false
       - name: Capacity after Flutter installation
         run: python3 scripts/ci/runner_resources.py --minimum-free-gib 4 --output reports/resources-after.json
+      - name: Resolve Flutter plugins and local SDK paths
+        working-directory: mobile
+        run: |
+          flutter pub get --enforce-lockfile
+          python3 - <<'PY'
+          import os, pathlib
+          pathlib.Path('android/local.properties').write_text('flutter.sdk='+os.environ['FLUTTER_ROOT']+'\n'+'sdk.dir='+os.environ['ANDROID_HOME']+'\n')
+          PY
+      - name: Gradle configuration and actual resolved versions
+        id: graph
+        working-directory: mobile/android
+        run: |
+          ./gradlew --no-daemon --max-workers=2 help > ../../reports/gradle-help.txt
+          ./gradlew --no-daemon --max-workers=2 -I ../../scripts/ci/android_graph.init.gradle kundeResolvedGraph
       - name: Build x86_64 debug APK (single architecture limits storage)
         id: apk_build
         working-directory: mobile
@@ -42,15 +56,6 @@ jobs:
           flutter build apk --debug --target-platform android-x64
           test -s build/app/outputs/flutter-apk/app-debug.apk
           sha256sum build/app/outputs/flutter-apk/app-debug.apk > ../reports/apk.sha256
-      - name: Gradle configuration and actual resolved versions
-        id: graph
-        working-directory: mobile/android
-        run: |
-          ./gradlew --no-daemon --max-workers=2 help > ../../reports/gradle-help.txt
-          ./gradlew --no-daemon --max-workers=2 -I ../../scripts/ci/android_graph.init.gradle kundeResolvedGraph
-      - name: Audit actual Android graph
-        if: always() && steps.apk_build.outcome == 'success'
-        run: python3 scripts/ci/osv_audit.py --maven reports/android-resolved.json --output reports/android-osv.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
@@ -63,3 +68,24 @@ jobs:
           name: consumer-debug-x64
           path: mobile/build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 1
+  android-dependencies:
+    needs: apk
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: android-reports
+          path: reports
+      - name: Audit actual native and buildscript component graph
+        run: python3 scripts/ci/osv_audit.py --maven reports/android-resolved.json --output reports/android-osv.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: android-dependency-audit
+          path: reports/android-osv.json
+          retention-days: 3

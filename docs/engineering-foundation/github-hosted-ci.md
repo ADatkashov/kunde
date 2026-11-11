@@ -138,3 +138,10 @@ Actual-resolution guard caught selected KGP2.2.10 after a clean declared2.4.20
 scan. Explicit app Kotlin plugin application is added before Flutter. Upstream
 Flutter included-build Kotlin2.2.20/KGP2.0.0 exposure remains separately OPEN;
 project plugin remediation cannot certify the entire SDK toolchain.
+
+AGP runtime classpaths require explicit patched buildscript dependency alignment,
+not only settings or app plugin declarations. A pre-build strict component check
+verifies the actual graph; the native vulnerability audit is an independent job,
+so compile success and security findings have separate conclusions. The initial
+full native graph found11 advisory/package matches including KGP2.2.10 and two
+Bouncy Castle CRITICAL matches. These remain visible in the ledger.

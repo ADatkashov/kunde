@@ -1,3 +1,16 @@
+// AGP9 has a runtime KGP dependency. Align actual buildscript classpaths,
+// not only plugin-management declarations, to the supported patched version.
+buildscript {
+    repositories { google(); mavenCentral() }
+    dependencies { classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.20") }
+}
+subprojects {
+    buildscript {
+        repositories { google(); mavenCentral() }
+        dependencies { classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.20") }
+    }
+}
+
 allprojects {
     repositories {
         google()
