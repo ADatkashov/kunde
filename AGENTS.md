@@ -6,7 +6,7 @@ Before every new or resumed task, read [`PROJECT_STATE.md`](PROJECT_STATE.md) an
 
 ## Stack and layout
 
-- `backend/`: Java 21, Spring Boot 3.5.7, Maven, modular-monolith API, PostgreSQL/Flyway.
+- `backend/`: Java 21, Spring Boot 4.0.9, Maven, modular-monolith API, PostgreSQL/Flyway.
 - `mobile/`: Flutter/Dart consumer app, feature-oriented `lib/`, RU/KK/EN localization scaffolding.
 - `docs/`: product, architecture/ADR, design, business, identity, engineering foundation and roadmap/backlog.
 - Root `compose.yaml`: local API and PostgreSQL; identity provider POCs are separately isolated under `docs/identity/poc/`.
@@ -16,7 +16,7 @@ Read the module README and relevant `docs/` contract before editing. Keep domain
 ## Architecture and decision discipline
 
 - Preserve modular monolith boundaries, PostgreSQL/Flyway ownership, Flutter client, API contracts, and the OIDC resource-server boundary.
-- ADR-013 accepts the reversible fail-closed security boundary; it does not approve an identity vendor. ADR-015 is PROPOSED. ADR-001–012 statuses vary; read each ADR before relying on its recommendation.
+- ADR-013 accepts the reversible fail-closed security boundary; it does not approve an identity vendor. ADR-015 is ACCEPTED for synthetic implementation; production readiness remains gated. ADR-001–012 statuses vary; read each ADR before relying on its recommendation.
 - Do not promote a recommendation, POC, roadmap item, or `implementation_status` into an accepted decision without its required owner approval/evidence.
 - Do not replace or bypass an existing architectural decision without a documented reason, impact analysis, and the repository's decision process. Prefer the smallest change consistent with accepted decisions.
 - Keep marketplace domains, login/OTP, payments, AI, and production integrations disabled unless their documented gates are met.

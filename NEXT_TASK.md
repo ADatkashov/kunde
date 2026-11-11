@@ -1,9 +1,17 @@
-# Next task — record the EP-002 provider and token policy decision
+# Next task — verify Consumer authentication on native devices
 
-Prepare the owner review for self-hosted Keycloak and its fallback using [ADR-015](docs/architecture/adr/ADR-015-proposed-identity-provider.md), the [provider evaluation](docs/identity/poc/final-provider-decision-report.md) and the [Keycloak readiness package](docs/identity/keycloak-readiness/README.md).
+After PR #5, validate the implemented Flutter authentication flow against the
+isolated Keycloak Consumer realm on Android and iOS. Preserve ADR-015 production
+gates. See docs/identity/consumer-validation/README.md for configuration and
+existing protocol/test evidence.
 
-1. Record the named product, security, operations and privacy/legal owners. Review the measured JWT acceptance window, online refresh policy, revocation SLO for sensitive actions and open privacy/operations/OTP gates.
-2. Record the explicit provider/fallback and policy decision in ADR-015 when the owners approve it. Until then keep ADR-015 PROPOSED, TASK-005 blocked and TASK-006 not started.
-3. After approval and the [D5 prerequisites](docs/roadmap/25-identity-ep002-design.md), begin TASK-006 with the Flyway schema and unique verified `(issuer, subject)` mapping to a canonical KUNDE UUID. Cover duplicate/concurrent creation and denial of malformed, unmapped or restricted principals.
+Acceptance: actual system-browser login and registration, PKCE callback, secure
+vault persistence after app restart, profile load/edit, rotated refresh, offline
+retry, session expiry, provider logout and subsequent credential prompt. Exercise
+RU/KK/EN, screen readers, keyboard and large text. Record screenshots and sanitized
+results; never publish tokens or synthetic-user passwords. iOS release signing
+and real deployment endpoints need owner-managed configuration.
 
-**Review checks.** From the repository root run `git diff --check` and `node --check docs/identity/keycloak-readiness/verify-keycloak.mjs`. Read the [implementation handoff](docs/identity/keycloak-readiness/implementation-handoff.md) and [operational follow-ups](docs/identity/keycloak-readiness/operational-requirements.md). Record approval or precise blocking evidence in ADR-015 and the linked backlog. Production launch requires separate evidence and approval.
+Use the current backend/Flutter test suites and hosted workflows as regression
+checks. The manual Android identity E2E workflow currently reports missing native
+scenario prerequisites; implement those before claiming native E2E success.

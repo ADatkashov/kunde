@@ -1,11 +1,22 @@
 # KUNDE project state
 
-Last reviewed 2026-11-11. Follow [AGENTS.md](AGENTS.md) and [NEXT_TASK.md](NEXT_TASK.md).
+Reviewed 2026-11-11. Follow AGENTS.md; code and current CI are authoritative.
 
-- KUNDE remains at Development Foundation. Java 21 / Spring Boot 3.5.7, PostgreSQL/Flyway and the Flutter Consumer shell provide health, capabilities and empty catalog/search. See [foundation status](docs/engineering-foundation/implementation-status.md).
-- [ADR-013](docs/architecture/adr/ADR-013-foundation-security-boundary.md) accepts the fail-closed OIDC resource-server boundary. Local HTTP and the protected POC endpoint require the `identity-poc` profile. Production login, registration and OTP remain disabled.
-- Keycloak 26.8.2 previously completed Android system-browser PKCE, real JWT validation and Spring API HTTP 200 before and after refresh. After logout, the next browser flow prompted for credentials.
-- ZITADEL 4.19.5 completed Android Chrome Custom Tab PKCE and issued a real JWT. The POC authorized the signed project/organization grant and returned HTTP 200 before and after refresh. After logout, selecting the remembered account required its password. A second login returned HTTP 200. Thirteen focused Spring security tests passed. See [4.0 runtime evidence](docs/identity/poc/end-to-end-evidence.md#final-evaluation-40).
-- The isolated [Keycloak readiness drill](docs/identity/keycloak-readiness/README.md) measured an approximately 60-second Spring tolerance after JWT `exp`, rejected online refresh replay, and verified live signing-key rotation and retirement. An isolated `mvn clean verify` passed 24 tests and produced the executable JAR used in the drill.
-- The [final evaluation](docs/identity/poc/final-provider-decision-report.md) recommends self-hosted Keycloak for review. [ADR-015](docs/architecture/adr/ADR-015-proposed-identity-provider.md) is **PROPOSED**, `TASK-005` is **blocked**, and `TASK-006` is **not started**. EP-002 implementation awaits the decision and applicable [release gates](docs/roadmap/25-identity-ep002-design.md).
-- The public Apache 2.0 repository is [ADatkashov/kunde](https://github.com/ADatkashov/kunde). Local `main` tracks `origin/main`. Local provider credentials and POC evidence stay in ignored files. The earlier CI run `42831424876` at `5c3291a` is historical evidence. No remote CI recheck was part of this evaluation. The local identity evaluation and Keycloak readiness changes are included in the 2026-11-11 main publication.
+- Java 21 / Spring Boot 4.0.9, PostgreSQL/Flyway V1–V2 and Flutter 3.47.0.
+- ADR-015 is ACCEPTED for synthetic implementation: Keycloak primary, ZITADEL
+  fallback. Production readiness, privacy, residency, operations and OTP remain gated.
+- PRs #1–#3 added hosted CI, Consumer Identity/Profile and tests. Main at 22c1ae8
+  had Backend/Flutter CI failures; PR #5 fixes Method Security 500s and formatting.
+- Consumer /me provisions an immutable UUID from verified issuer/subject, enforces
+  restricted status, scopes/client/token type and profile version. Sessions API
+  explicitly returns 503 pending implementation.
+- Flutter has real AppAuth browser authentication, secure token vault, serialized
+  refresh/logout, splash/restore, RU/KK/EN welcome/home/profile editing and errors.
+  Enable only with explicit development configuration; no production mock login.
+- Current local verification: 39 backend tests with PostgreSQL and 29 Flutter tests;
+  formatter/analyzer and packaged smoke passed. Real Keycloak protocol registration,
+  PKCE, profile, refresh/replay, logout and subsequent login passed with synthetic
+  data. This is not native browser/device E2E. See the reproducible
+  [verification package](docs/identity/consumer-validation/README.md).
+- Remote workflow results and merge status are recorded in PR #5. Earlier CI and
+  POC evidence remain historical; they do not establish production readiness.
