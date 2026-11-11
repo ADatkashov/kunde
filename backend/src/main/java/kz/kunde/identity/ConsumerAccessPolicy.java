@@ -19,13 +19,14 @@ public class ConsumerAccessPolicy {
     public boolean allowed(Authentication authentication) {
         if (!(authentication instanceof JwtAuthenticationToken token) || !token.isAuthenticated()) return false;
         var jwt = token.getToken();
-        String subject = jwt.getSubject();
-        String scope = jwt.getClaimAsString("scope");
-        String type = jwt.getClaimAsString("typ");
-        String authorizedParty = jwt.getClaimAsString("azp");
-        return subject != null && !subject.isBlank()
+        Object subject = jwt.getClaims().get("sub");
+        Object scope = jwt.getClaims().get("scope");
+        Object type = jwt.getClaims().get("typ");
+        Object authorizedParty = jwt.getClaims().get("azp");
+        return subject instanceof String value && !value.isBlank() && value.length() <= 255
                 && "Bearer".equals(type)
                 && consumerClientId.equals(authorizedParty)
-                && scope != null && java.util.Arrays.asList(scope.split("\\s+")).contains("kunde.consumer");
+                && scope instanceof String scopes
+                && java.util.Arrays.asList(scopes.split("\\s+")).contains("kunde.consumer");
     }
 }

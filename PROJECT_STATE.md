@@ -1,21 +1,36 @@
 # KUNDE project state
 
-Reviewed 2026-11-11 after owner-authorized [PR4 merge](https://github.com/ADatkashov/kunde/pull/4), commit36ea51be25c88c1ce3b4f60e5954617cd3ab701e. The merged tree exactly matches the verified combined branch2619faf. All main22c1ae8 user-published identity/auth changes and history were preserved.
+Reviewed 2026-11-11. Follow AGENTS.md; code and current CI are authoritative.
 
-Stack: Java21, official Spring Boot4.0.9 BOM / Framework7.0.10 / Security7.0.8; PostgreSQL/JDBC/FlywayV1+V2. Flutter3.47.0, projectKGP2.4.20/AGP9.1.1/Gradle9.3.1. Digest-pinned maintained Temurin21 UBI10 images and checksum-verified Apache Maven3.10.0.
+- Java 21 / Spring Boot 4.0.9, PostgreSQL/Flyway V1–V2 and Flutter 3.47.0.
+- ADR-015 is ACCEPTED for synthetic implementation: Keycloak primary, ZITADEL
+  fallback. Production readiness, privacy, residency, operations and OTP remain gated.
+- PRs #1–#3 added hosted CI, Consumer Identity/Profile and tests. Main at 22c1ae8
+  had Backend/Flutter CI failures; PR #5 fixes Method Security 500s and formatting.
+- Consumer /me provisions an immutable UUID from verified issuer/subject, enforces
+  restricted status, scopes/client/token type and profile version. Sessions API
+  explicitly returns 503 pending implementation.
+- Flutter has real AppAuth browser authentication, secure token vault, serialized
+  refresh/logout, splash/restore, RU/KK/EN welcome/home/profile editing and errors.
+  Enable only with explicit development configuration; no production mock login.
+- Current local verification: 40 backend tests with PostgreSQL and 33 Flutter tests;
+  formatter/analyzer and packaged smoke passed. Real Keycloak protocol registration,
+  PKCE, profile, refresh/replay, logout and subsequent login passed with synthetic
+  data. This is not native browser/device E2E. See the reproducible
+  [verification package](docs/identity/consumer-validation/README.md).
+- Remote workflow results and merge status are recorded in PR #5. Earlier CI and
+  POC evidence remain historical; they do not establish production readiness.
 
-Published Consumer foundations: canonical UUID, unique verified issuer/subject binding, concurrent provisioning/account audit, account-state and optimistic profile concurrency checks, Consumer scope/client/token-type policy and Flutter secure-storage/serialized refresh repository. Feature remains opt-in; session administration is explicitly unavailable. EP-001 and historical Keycloak/ZITADEL POC/readiness evidence preserved.
-
-Combined-source hosted verification:
-- Backend43072128234:36 tests,0 failures/errors/skips; executable JAR and HTTP smoke pass, FlywayV2 and concurrent provisioning covered.
-- Flutter43072128134:10 tests pass, analyze clean, formatter11 files/0 changes. New protected-profile test verifies rotated Bearer header.
-- Android43072128132: actual dependency graph, debugAPK/signature and nativeOSV0/exit0 pass.
-- Effective containers43072128200: both image builds/OS scans and runtime HTTP smoke pass.
-- Security43072128227: Maven/Pub/build-rootOSV0, baseOS scans0 and Gitleaks pass; SDK audit fails honestly on2 MODERATE matches of1 GHSA-r937-wjx7-w2jp in upstream Kotlin tooling.
-- Configuration43072128135 passes. These are actual pre-merge combined-tree checks; automatic main reruns are separate evidence.
-
-Integration fixed method-authorization denial returning500 rather than403. Dart formatting preserves main's auth logic; a diagnostic-log mask copied into the working branch was corrected and covered by a Bearer-header regression before merge. No raw credentials or tokens published.
-
-TASK-003 partially_verified; TASK-006/TASK-046 in_progress. Consumer native browser E2E not executed; SDK/native binary and Maven-distribution coverage gaps plus API abuse controls remain open. Provider decision records still need reconciliation with explicit owner approval in a separately scoped identity change. No production readiness, deployment, paid runner, force push or risk acceptance.
-
-[Current ledger](docs/security/ci-vulnerability-ledger.md) · [Security runbook](docs/security/security-runbook.md) · [TASK-046](docs/security/TASK-046.md).
+- Main advanced during PR #5 development to d929853, including owner-authorized
+  PR #4 and its supported Boot 4/container/native remediation. Those changes,
+  security regression tests and protected Bearer-header test are preserved in
+  the integration merge. The combined tree passes 40 backend and 33 Flutter tests locally;
+  PR #5 records fresh hosted results.
+- PR #4 verified digest-pinned Temurin 21 UBI10/Maven 3.10 container builds/scans,
+  native dependency OSV zero, Maven/Pub/build roots zero and Gitleaks. The upstream
+  Flutter SDK audit still has two MODERATE matches of GHSA-r937-wjx7-w2jp in Kotlin
+  tooling. Security CI is not globally green. TASK-003 remains partially_verified;
+  TASK-006 and TASK-046 remain in_progress. See the
+  [security ledger](docs/security/ci-vulnerability-ledger.md),
+  [runbook](docs/security/security-runbook.md) and [TASK-046](docs/security/TASK-046.md).
+  API abuse controls and distribution/native-binary audit coverage remain open.

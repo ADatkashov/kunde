@@ -1,6 +1,6 @@
 # KUNDE API
 
-Spring Boot 3.5 / Java 21 modular-monolith foundation. Current routes and access are documented in `src/main/resources/openapi/kunde-api-v1.yaml`.
+Spring Boot 4.0.9 / Java 21 modular-monolith foundation. Current routes and access are documented in `src/main/resources/openapi/kunde-api-v1.yaml`.
 
 ## Local run
 
@@ -13,3 +13,16 @@ With no `OIDC_ISSUER_URI`, only health, capabilities and empty read-only catalog
 ## Checks
 
 Run `mvn verify`. Local database is required for full application startup; unit tests do not need vendor credentials.
+
+## Consumer Identity and Profile
+
+Enable `CONSUMER_IDENTITY_ENABLED=true` with an approved development issuer and
+`OIDC_AUDIENCE=kunde-api`. `/api/v1/me` provisions/loads the authenticated user;
+PATCH requires displayName, preferredLanguage (ru/kk/en) and current version.
+Signed access tokens require issuer, audience, exp/iat/sub; consumer endpoints
+add `azp=kunde-consumer`, `typ=Bearer` and `kunde.consumer` scope. Spring uses
+60-second clock tolerance. API returns 401 for invalid authentication, 403 for
+authorization/account restrictions, and 409 for a stale profile version.
+Flyway V2 owns identity bindings, profile and account event tables. Session
+administration remains 503. See
+[verification and development setup](../docs/identity/consumer-validation/README.md).

@@ -16,7 +16,7 @@ Read the module README and relevant `docs/` contract before editing. Keep domain
 ## Architecture and decision discipline
 
 - Preserve modular monolith boundaries, PostgreSQL/Flyway ownership, Flutter client, API contracts, and the OIDC resource-server boundary.
-- ADR-013 accepts the reversible fail-closed security boundary; it does not approve an identity vendor. ADR-015 is PROPOSED. ADR-001–012 statuses vary; read each ADR before relying on its recommendation.
+- ADR-013 accepts the reversible fail-closed security boundary; it does not approve an identity vendor. ADR-015 is ACCEPTED for synthetic implementation; production readiness remains gated. ADR-001–012 statuses vary; read each ADR before relying on its recommendation.
 - Do not promote a recommendation, POC, roadmap item, or `implementation_status` into an accepted decision without its required owner approval/evidence.
 - Do not replace or bypass an existing architectural decision without a documented reason, impact analysis, and the repository's decision process. Prefer the smallest change consistent with accepted decisions.
 - Keep marketplace domains, login/OTP, payments, AI, and production integrations disabled unless their documented gates are met.
