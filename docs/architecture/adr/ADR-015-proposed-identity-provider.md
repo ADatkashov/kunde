@@ -1,6 +1,6 @@
 # ADR-015: Portable KUNDE identity with OIDC IdP boundary
 
-- **Status:** PROPOSED — not accepted; requires product, security, privacy/legal and operations review.
+- **Status:** ACCEPTED for implementation. Production readiness remains gated.
 - **Date:** 2026-11-10
 - **Related:** ADR-009 (provider TBD), ADR-013 (fail-closed security boundary), EP-002, PRD AUTH-001/AUTH-002.
 
@@ -53,3 +53,21 @@ Recovery causes: A persisted Keycloak realm was not overwritten by import, so th
 ZITADEL 4.19.5 recovery startup completed in 96.1s, all four services reported healthy, and discovery exposed consistent localhost issuer/auth/token/JWKS/end-session endpoints. Its project/native app/test user were not configured; no Android or token/API flow was performed. This is incomplete setup, not a failed authentication result. Live negative JWT cases, refresh replay/revocation, access JWT behavior after logout, session expiry, and equivalent ZITADEL flow remain outstanding.
 
 **POC conclusion:** Keycloak is the evidence-backed front-runner for continued integration, but comparison is incomplete and does not justify provider approval. ADR-015 remains **PROPOSED**. TASK-005 stays pending explicit owner approval; TASK-006 is not complete and production readiness is not established.
+
+## Final bounded evaluation 4.0 (2026-11-10)
+
+Recommend self-hosted Keycloak for owner review. The [4.0 decision report](../../identity/poc/final-provider-decision-report.md) and [weighted matrix](../../identity/provider-decision-matrix.md#40-evidence-adjusted-self-hosted-finalists) supersede the historical comparison above. ZITADEL's local Native client issues JWT access tokens. Its signed project and organization role semantics require a POC-specific authorization mapping. Keep the portable OIDC boundary and explicit owner, privacy/legal, commercial and operations gates. ADR-015 is **PROPOSED**.
+
+## Keycloak security hardening 1.0
+
+The [readiness package](../../identity/keycloak-readiness/README.md) records live browser logout and targeted session deletion. Both rejected online refresh immediately while Spring accepted the existing JWT until approximately `exp + 60 s`. The drill rejected refresh replay and accepted the new signing key without restarting Spring, then verified retirement of the old public key after expiry. The proposed policy combines online rotation, bounded access lifetime and clock tolerance, and KUNDE-owned restricted-account enforcement for actions requiring a faster revoke SLO. [Operational gates](../../identity/keycloak-readiness/production-readiness.md) and owner review remain open. ADR-015 stays **PROPOSED**.
+
+## Owner approval and implementation decision, 2026-11-11
+
+The project owner explicitly approved self-hosted Keycloak as primary IdP and ZITADEL as architectural fallback in the EP-002 Identity & Access Implementation 1.0 instruction. This approval supersedes the pending provider-selection statements in historical evaluation sections above.
+
+Use OIDC Authorization Code + PKCE through the system browser. Persist an immutable KUNDE UUID and bind verified issuer/subject pairs uniquely. Never automatically link accounts by matching email or phone.
+
+The development token policy is 300-second access tokens, refresh rotation with Max Reuse 0, 1800-second session idle and 43200-second maximum session. Verify actual runtime configuration and behavior before recording a pass. The earlier readiness drill measured approximately 60 seconds of JWT expiration tolerance. Implementation must document its configured tolerance and resulting acceptance window.
+
+Technical evidence is preserved in the final provider evaluation and Keycloak readiness package. Earlier results establish POC feasibility and are historical evidence only. Keycloak operations require patching, backups and restore rehearsal, signing-key rotation, availability planning, monitoring and named operations ownership. Privacy/legal, data location, OTP, recovery, abuse controls and production security gates remain open. Architecture approval authorizes development with synthetic users. Production rollout requires separate evidence and approval.

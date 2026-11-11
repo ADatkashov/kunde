@@ -1,5 +1,7 @@
 # Remaining identity POC risks — recovery 3.0
 
+See the [4.0 decision report](final-provider-decision-report.md#fit-risks-and-release-gates) for current risks. The list below is the historical checkpoint.
+
 The Keycloak primary Android-to-protected-API path now passes. The POC remains partial and does not authorize production provider selection.
 
 1. Configure ZITADEL project, Native application, role/audience scopes and synthetic user; complete the equivalent Android PKCE → API flow.

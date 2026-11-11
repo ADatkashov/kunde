@@ -1,6 +1,6 @@
 # Weighted provider decision matrix
 
-This is a transparent **preliminary architecture score**, not a vendor test or final selection. Score 1 (poor fit) to 5 (strong fit). A criterion depending on unverified Kazakhstan facts is capped at 3. Weighted total is `sum(weight × score) / 5`, on a 100-point scale. Change scores after POC and written vendor answers.
+Score 1 (poor fit) to 5 (strong fit). A criterion depending on unverified Kazakhstan facts is capped at 3 in the 4.0 finalist scores. Weighted total is `sum(weight × score) / 5`, on a 100-point scale. The original architecture estimates are retained for comparison. The 4.0 results below supersede those estimates for the two self-hosted finalists.
 
 | Criterion | Weight | Keycloak | ZITADEL | Auth0 | Cognito | Firebase |
 |---|---:|---:|---:|---:|---:|---:|
@@ -17,7 +17,26 @@ This is a transparent **preliminary architecture score**, not a vendor test or f
 | International scalability | 6 | 4 | 4 | 5 | 5 | 5 |
 | **Weighted total / 100** | **100** | **78.4** | **78.0** | **78.8** | **68.4** | **71.2** |
 
-The narrow numeric lead for Auth0 is not dispositive: current public plan detail and region suitability remain uncertain, while KUNDE has a material data-location question and a strong preference for portable identity. Keycloak and ZITADEL scores reflect capability and control, but lower certainty/ops overhead for custom phone flows. The matrix therefore recommends a **hybrid-compatible architecture** with Keycloak as first self-host POC and ZITADEL as a managed/self-host alternative; it does **not** approve either product.
+The original scores assumed features and operating models that require separate evidence. Auth0, Cognito and Firebase were outside this POC and their original estimates should not be ranked against the updated finalists.
+
+## 4.0 evidence-adjusted self-hosted finalists
+
+| Criterion | Weight | Keycloak | ZITADEL | Basis |
+|---|---:|---:|---:|---|
+| Security controls and standards | 14 | 4 | 4 | Signed JWT/JWKS and PKCE evidence. Live rotation, full lifecycle and production controls remain open. |
+| Flutter/native mobile fit | 10 | 4 | 4 | Both completed Android AppAuth PKCE, callback and token exchange. |
+| Spring/OIDC API fit | 10 | 5 | 4 | Keycloak uses the existing scope contract. ZITADEL JWT uses project audience and provider-specific signed role mapping. |
+| Phone OTP flexibility for KZ | 12 | 3 | 3 | Neither ran KZ phone onboarding or an SMS route. |
+| Data control/residency | 12 | 3 | 3 | Both self-host; end-to-end placement and legal review remain open. |
+| Operations / support burden | 10 | 3 | 3 | Keycloak had fewer local components. ZITADEL had lower measured idle memory. Neither ran operational drills. |
+| Cost predictability at scale | 8 | 3 | 3 | No quotes, support commitments, controlled sizing or SMS spend data. |
+| Customization / UX | 6 | 5 | 4 | Retained architecture estimates. Phone-first UX remains untested. |
+| Portability / lock-in | 6 | 4 | 4 | Portable OIDC boundary and documented export paths. Credential migration remains untested. |
+| Audit / lifecycle / extensibility | 6 | 4 | 4 | Partial local lifecycle evidence. Audit operations and recovery remain untested. |
+| International scalability | 6 | 4 | 4 | Retained architecture estimates. No load or multi-region evidence. |
+| **Weighted total / 100** | **100** | **74.8** | **71.6** | Advisory. The hard gates apply independently. |
+
+See the [4.0 decision report](poc/final-provider-decision-report.md) and [operational evidence](poc/operational-comparison.md).
 
 ## Hard gates (not averaged away)
 

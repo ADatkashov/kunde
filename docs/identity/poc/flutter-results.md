@@ -1,5 +1,7 @@
 # Flutter integration results — recovery 3.0
 
+**4.0 result.** ZITADEL passed Chrome Custom Tab PKCE, native callback, Flutter code exchange, protected API HTTP 200, refresh and another HTTP 200 on the same AVD. Logout returned to Flutter and cleared local tokens. Selecting the remembered account required the password. The second completed login again reached API HTTP 200. AppAuth also reported user cancellation when a Back input closed the Custom Tab in an earlier attempt. See the [4.0 end-to-end evidence](end-to-end-evidence.md#final-evaluation-40). The sections below retain the 3.0 Keycloak baseline.
+
 ## Keycloak real-device-emulator flow
 
 Verified on the existing Pixel 9 Pro AVD (Android 37.1 Google Play x86_64, emulator-5554). The debug app launched, AppAuth opened Chrome Custom Tab, the synthetic user authenticated, and Flutter displayed **Authorization Code + PKCE completed**. The callback was `com.kunde.mobile:/oauth2redirect`; Android's merged manifest contains AppAuth's redirect receiver for `com.kunde.mobile`. The Flutter app exchanged the code and held an authenticated session; it called the live Spring protected endpoint and received HTTP 200. See `end-to-end-evidence.md` and screenshots in `.local/`.

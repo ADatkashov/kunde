@@ -1,5 +1,7 @@
 # Spring Boot integration results — recovery 3.0
 
+**4.0 result.** ZITADEL's JWT had the correct signature, issuer, project audience and time claims, but lacked `scope`. The earlier POC returned HTTP 403. With access-token role assertion and the new project/organization grant mapping, a real Flutter access token returned HTTP 200 before and after refresh. The default decoder continues to check signature, issuer, audience and time. The role adapter is active only in the POC profile. See the [4.0 security matrix](security-results.md#final-evaluation-40).
+
 Spring Boot 3.5.7 / Java 21 resource server was run with the isolated `identity-poc` profile, strict issuer validation, `kunde-api` audience and POC scope enforcement. `GET /api/v1/poc/whoami` accepted a real Keycloak access token after signature/JWKS, issuer, audience, expiration and scope validation, returning **HTTP 200** with `authenticated:true`, the Keycloak issuer, `kunde-api` audience and scope names. A prior run of the same real token path returned 500 because Keycloak's token omitted `sub` and the controller used null-rejecting `Map.of`. The default `basic` scope Subject mapper was configured in the local realm, after which the same scenario passed.
 
 No raw token, authorization code, refresh token or credential is logged. Temporary POC diagnostics log only claim names and presence/shape, without values. The protected endpoint is local POC functionality only.

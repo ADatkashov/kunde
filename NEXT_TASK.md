@@ -1,47 +1,9 @@
-# Next task: complete equivalent ZITADEL identity POC
+# Next task — record the EP-002 provider and token policy decision
 
-**Priority:** continue EP-002 POC with synthetic data. Keep provider selection open; do not implement production login/session APIs or change security policy before decision approval.
+Prepare the owner review for self-hosted Keycloak and its fallback using [ADR-015](docs/architecture/adr/ADR-015-proposed-identity-provider.md), the [provider evaluation](docs/identity/poc/final-provider-decision-report.md) and the [Keycloak readiness package](docs/identity/keycloak-readiness/README.md).
 
-## Already done
+1. Record the named product, security, operations and privacy/legal owners. Review the measured JWT acceptance window, online refresh policy, revocation SLO for sensitive actions and open privacy/operations/OTP gates.
+2. Record the explicit provider/fallback and policy decision in ADR-015 when the owners approve it. Until then keep ADR-015 PROPOSED, TASK-005 blocked and TASK-006 not started.
+3. After approval and the [D5 prerequisites](docs/roadmap/25-identity-ep002-design.md), begin TASK-006 with the Flyway schema and unique verified `(issuer, subject)` mapping to a canonical KUNDE UUID. Cover duplicate/concurrent creation and denial of malformed, unmapped or restricted principals.
 
-- Keycloak 26.8.2 Android system-browser Authorization Code + PKCE, callback/code exchange, real JWT validation and protected Spring API HTTP 200 passed.
-- Keycloak refresh succeeded; logout produced a fresh login prompt on the next authorization.
-- ZITADEL 4.19.5 API, login UI, PostgreSQL and proxy were healthy; OIDC discovery endpoints responded. Native app/project/user are not configured.
-- Evidence is indexed in [`docs/identity/poc/test-results.md`](docs/identity/poc/test-results.md) and [`end-to-end-evidence.md`](docs/identity/poc/end-to-end-evidence.md).
-
-## Actions
-
-1. Read [`AGENTS.md`](AGENTS.md), [`PROJECT_STATE.md`](PROJECT_STATE.md), [`docs/identity/poc/README.md`](docs/identity/poc/README.md), [`zitadel-setup.md`](docs/identity/poc/zitadel-setup.md), [`android-networking.md`](docs/identity/poc/android-networking.md), [`provider-recommendation.md`](docs/identity/poc/provider-recommendation.md) and ADR-015.
-2. Check `git status --short --branch`; if Git metadata is still absent, record that and preserve the supplied workspace without creating a repository.
-3. Start only the isolated ZITADEL POC with `pwsh -NoProfile -File docs/identity/poc/Start-IdentityPoc.ps1 -Provider zitadel`; verify health/discovery/JWKS with `pwsh -NoProfile -File docs/identity/poc/Test-IdentityPoc.ps1 -Provider zitadel`.
-4. In the local console, configure a synthetic development project, Native public OIDC application, exact redirect `com.kunde.mobile:/oauth2redirect`, PKCE S256, API audience and required project role scopes; create a synthetic `.test` user. Follow `zitadel-setup.md`; no client secret in Flutter.
-5. Confirm discovery issuer consistency and use `adb reverse tcp:8280 tcp:8280` and `adb reverse tcp:8080 tcp:8080`. Start the backend with `pwsh -NoProfile -File docs/identity/poc/Start-BackendPoc.ps1 -Provider zitadel` in a separate terminal; use only loopback HTTP under the POC profile.
-6. Build/run the Flutter identity POC with matching ZITADEL issuer/client/redirect/scopes; complete Chrome Custom Tab login, callback, token exchange and protected API call. Capture sanitized HTTP/status evidence, never token values.
-7. Verify refresh and logout/relogin; then exercise available negative JWT/audience/scope and callback cases without weakening validation. Distinguish untested cases clearly.
-8. Update identity result/evidence docs and ADR-015 evidence while leaving ADR-015 PROPOSED, TASK-005 blocked and TASK-006 not started. Do not mark EP-002 complete.
-
-## Acceptance
-
-- ZITADEL's real Android PKCE callback completes on the existing emulator.
-- A ZITADEL real access token passes the configured strict Spring issuer/signature/audience/scope checks and the protected endpoint returns HTTP 200.
-- Refresh and logout outcomes are observed and documented; all unrun scenarios remain explicitly marked.
-- Provider comparison reflects equivalent evidence and keeps the decision proposed pending owner/legal/operations approval.
-
-If console/client setup is blocked, record the exact step, error and evidence, then complete independent security/lifecycle checks for Keycloak. Do not call the cross-provider POC complete.
-
-## Useful commands
-
-Run PowerShell 7 from repository root. For Maven TLS/verification when code or dependencies change, see [`maven-tls.md`](docs/identity/poc/maven-tls.md); bootstrap with `. .\docs\identity\poc\Initialize-MavenTrust.ps1`, then run `mvn --batch-mode --no-transfer-progress verify` from `backend/` in that shell. Do not repeat expensive suites without a relevant change.
-
-```powershell
-pwsh -NoProfile -File docs/identity/poc/Start-IdentityPoc.ps1 -Provider zitadel
-pwsh -NoProfile -File docs/identity/poc/Test-IdentityPoc.ps1 -Provider zitadel
-adb devices
-adb reverse tcp:8280 tcp:8280
-adb reverse tcp:8080 tcp:8080
-cd mobile
-flutter analyze --fatal-infos
-flutter test
-```
-
-For Flutter provider defines, API runtime, teardown and test-user setup, follow the linked POC docs rather than copying secrets or inventing client values here.
+**Review checks.** From the repository root run `git diff --check` and `node --check docs/identity/keycloak-readiness/verify-keycloak.mjs`. Read the [implementation handoff](docs/identity/keycloak-readiness/implementation-handoff.md) and [operational follow-ups](docs/identity/keycloak-readiness/operational-requirements.md). Record approval or precise blocking evidence in ADR-015 and the linked backlog. Production launch requires separate evidence and approval.

@@ -29,4 +29,4 @@ Observed on emulator `emulator-5554`: Chrome loaded Keycloak discovery JSON from
 
 ## ZITADEL
 
-The local ZITADEL proxy binds `127.0.0.1:8280` and advertises issuer `http://localhost:8280`. Equivalent mapping is `adb reverse tcp:8280 tcp:8280`. Its service health and discovery passed, but no configured Android client flow was completed. See `zitadel-setup.md`.
+The local ZITADEL proxy binds `127.0.0.1:8280` and advertises issuer `http://localhost:8280`. With `adb reverse tcp:8280 tcp:8280`, the Android discovery and JWKS requests returned HTTP 200 and the original issuer and endpoint URLs were preserved. Chrome Custom Tab, code exchange, refresh and logout used the same issuer. The Android APK used API port 8082 reversed to host loopback 18082, keeping the existing Keycloak API on 8080. See [4.0 evidence](end-to-end-evidence.md#final-evaluation-40).

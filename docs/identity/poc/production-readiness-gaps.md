@@ -1,5 +1,7 @@
 # Production readiness gaps — identity POC recovery 3.0
 
+See the [4.0 decision report](final-provider-decision-report.md#fit-risks-and-release-gates) for the current launch gates. Items below record 3.0.
+
 This local POC does not authorize production use.
 
 - Provider choice remains unapproved; ADR-015 remains PROPOSED.
