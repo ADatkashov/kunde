@@ -151,4 +151,26 @@ class ConsumerIdentityIntegrationTest {
     void missingAuthenticationIsDenied() throws Exception {
         http.perform(get("/api/v1/me")).andExpect(status().isUnauthorized());
     }
+
+    @Test
+    void simultaneousProfileUpdatesHaveOneWinnerAndOneConflict() throws Exception {
+        Jwt principal = jwt(UUID.randomUUID().toString());
+        identity.get(principal);
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var start = new CountDownLatch(1);
+            var futures = new ArrayList<Future<Integer>>();
+            for (String name : List.of("First", "Second")) {
+                futures.add(executor.submit(() -> {
+                    if (!start.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("Start timed out");
+                    try { identity.update(principal, name, "ru", 0); return 200; }
+                    catch (ApiException conflict) { return conflict.status().value(); }
+                }));
+            }
+            start.countDown();
+            var results = new ArrayList<Integer>();
+            for (var future : futures) results.add(future.get(20, TimeUnit.SECONDS));
+            assertThat(results).containsExactlyInAnyOrder(200, 409);
+            assertThat(identity.get(principal).version()).isEqualTo(1);
+        }
+    }
 }

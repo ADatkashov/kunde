@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kunde_mobile/features/identity/auth_repository.dart';
@@ -22,6 +24,7 @@ class Gateway implements OAuthGateway {
   int refreshes = 0;
   bool fail = false;
   bool logoutFail = false;
+  bool offline = false;
   @override
   Future<AuthTokens> login({bool register = false}) async => AuthTokens(
         'old',
@@ -33,6 +36,7 @@ class Gateway implements OAuthGateway {
   Future<AuthTokens> refresh(String refreshToken) async {
     refreshes++;
     await Future<void>.delayed(const Duration(milliseconds: 10));
+    if (offline) throw IdentityUnavailable();
     if (fail) throw SessionExpired();
     return AuthTokens(
       'new',
@@ -107,7 +111,11 @@ void main() {
     expect(vault.value, null);
   });
   test('restore rotates and malformed storage fails closed', () async {
-    vault.value = jsonEncode({'refresh': 'saved'});
+    vault.value = jsonEncode({
+      'issuerVersion': 2,
+      'context': auth.apiBase.toString(),
+      'refresh': 'saved'
+    });
     await auth.restore();
     expect(auth.authenticated, true);
     expect(gateway.refreshes, 1);
@@ -115,5 +123,66 @@ void main() {
     await auth.restore();
     expect(auth.authenticated, false);
     expect(vault.value, null);
+  });
+  test('temporary refresh outage preserves session for explicit retry',
+      () async {
+    await auth.login();
+    final saved = vault.value;
+    gateway.offline = true;
+    await expectLater(auth.accessToken(), throwsA(isA<IdentityUnavailable>()));
+    expect(vault.value, saved);
+    expect(auth.authenticated, true);
+    gateway.offline = false;
+    expect(await auth.accessToken(), 'new');
+  });
+  test('restore outage keeps refresh token and can be retried', () async {
+    await auth.login();
+    gateway.offline = true;
+    await expectLater(auth.restore(), throwsA(isA<IdentityUnavailable>()));
+    expect(vault.value, isNotNull);
+    gateway.offline = false;
+    await auth.restore();
+    expect(auth.authenticated, true);
+  });
+  test('foreign issuer configuration does not send stored refresh token',
+      () async {
+    vault.value = jsonEncode(
+        {'issuerVersion': 2, 'context': 'foreign', 'refresh': 'saved'});
+    await auth.restore();
+    expect(gateway.refreshes, 0);
+    expect(auth.authenticated, false);
+    expect(vault.value, isNull);
+  });
+  test('API 401 clears session while 403 and 409 preserve it', () async {
+    for (final status in [401, 403, 409]) {
+      final repository = AuthRepository(
+          gateway: gateway,
+          vault: vault,
+          apiBase: Uri.parse('https://api.example.test/api/v1/'),
+          client: MockClient((request) async {
+            expect(request.url.path, '/api/v1/me');
+            expect(request.headers['Authorization'], 'Bearer new');
+            return http.Response('{}', status);
+          }));
+      await repository.login();
+      await expectLater(
+          repository.profile(),
+          throwsA(
+              status == 401 ? isA<SessionExpired>() : isA<IdentityApiError>()));
+      expect(repository.authenticated, status != 401);
+      repository.dispose();
+    }
+  });
+  test('API offline request preserves session', () async {
+    final repository = AuthRepository(
+        gateway: gateway,
+        vault: vault,
+        apiBase: Uri.parse('https://api.example.test/api/v1/'),
+        client: MockClient((_) async => throw http.ClientException('offline')));
+    await repository.login();
+    await expectLater(
+        repository.profile(), throwsA(isA<IdentityUnavailable>()));
+    expect(repository.authenticated, true);
+    repository.dispose();
   });
 }

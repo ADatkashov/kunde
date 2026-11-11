@@ -37,7 +37,8 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 /** Exercises the real Spring Security HTTP filter chain against a deterministic local OIDC/JWKS server. */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = "app.identity.consumer-enabled=true")
 @org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate
 @ActiveProfiles("identity-poc")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -172,6 +173,44 @@ class IdentityPocJwtHttpIntegrationTest {
                 .keyID("poc-key-1").build(), claims);
         token.sign(new com.nimbusds.jose.crypto.MACSigner(new byte[32]));
         assertThat(call(token.serialize()).getStatusCode().value()).isEqualTo(401);
+    }
+
+    @Test
+    @Order(8)
+    void missingExpirySubjectAndFutureIssuedAtAreRejected() throws Exception {
+        for (String invalid : java.util.List.of("exp", "sub", "iat")) {
+            var claims = new JWTClaimsSet.Builder().issuer(ISSUER).audience("kunde-api")
+                    .claim("scope", "kunde.poc");
+            if (!invalid.equals("sub")) claims.subject("synthetic-required-claims");
+            if (!invalid.equals("exp")) claims.expirationTime(Date.from(Instant.now().plusSeconds(600)));
+            claims.issueTime(Date.from(Instant.now().plusSeconds(invalid.equals("iat") ? 300 : -5)));
+            var token = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(KEY_1.getKeyID()).build(), claims.build());
+            token.sign(new RSASSASigner(KEY_1.toPrivateKey()));
+            assertThat(call(token.serialize()).getStatusCode().value()).isEqualTo(401);
+        }
+    }
+
+    @Test
+    @Order(9)
+    void signedConsumerTokensPassTheProductionChainAndInvalidAuthorizationIsForbidden() throws Exception {
+        for (String invalid : java.util.List.of("valid", "azp", "scope", "typ")) {
+            var claims = new JWTClaimsSet.Builder().issuer(ISSUER).audience("kunde-api")
+                    .subject("signed-consumer-" + java.util.UUID.randomUUID())
+                    .issueTime(Date.from(Instant.now().minusSeconds(5)))
+                    .expirationTime(Date.from(Instant.now().plusSeconds(300)))
+                    .claim("azp", invalid.equals("azp") ? "other-client" : "kunde-consumer")
+                    .claim("typ", invalid.equals("typ") ? "ID" : "Bearer")
+                    .claim("scope", invalid.equals("scope") ? "openid" : "openid kunde.consumer").build();
+            var token = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(KEY_1.getKeyID()).build(), claims);
+            token.sign(new RSASSASigner(KEY_1.toPrivateKey()));
+            var headers = new HttpHeaders();
+            headers.setBearerAuth(token.serialize());
+            var response = http.exchange("http://localhost:" + port + "/api/v1/me", HttpMethod.GET,
+                    new HttpEntity<>(headers), Map.class);
+            assertThat(response.getStatusCode().value()).isEqualTo(invalid.equals("valid") ? 200 : 403);
+            if (invalid.equals("valid")) assertThat(response.getBody()).containsKeys("id", "version");
+            else assertThat(response.getBody()).containsEntry("code", "FORBIDDEN");
+        }
     }
 
     private ResponseEntity<Map> call(String token) {

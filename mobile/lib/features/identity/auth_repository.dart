@@ -25,7 +25,9 @@ abstract interface class TokenVault {
 }
 
 class SecureTokenVault implements TokenVault {
-  static const _storage = FlutterSecureStorage();
+  static const _storage = FlutterSecureStorage(
+      iOptions: IOSOptions(
+          accessibility: KeychainAccessibility.unlocked_this_device));
   static const _key = 'kunde.consumer.session.v1';
   @override
   Future<String?> read() => _storage.read(key: _key);
@@ -66,6 +68,7 @@ class AppAuthGateway implements OAuthGateway {
         uri.host.isEmpty ||
         uri.userInfo.isNotEmpty ||
         uri.hasFragment ||
+        uri.hasQuery ||
         (uri.scheme != 'https' && !_allowHttp)) {
       throw IdentityUnavailable();
     }
@@ -75,7 +78,11 @@ class AppAuthGateway implements OAuthGateway {
     final access = response.accessToken;
     final refresh = response.refreshToken;
     final expires = response.accessTokenExpirationDateTime;
-    if (access == null || refresh == null || expires == null) {
+    if (access == null ||
+        access.isEmpty ||
+        refresh == null ||
+        refresh.isEmpty ||
+        expires == null) {
       throw SessionExpired();
     }
     return AuthTokens(access, refresh, response.idToken, expires);
@@ -89,10 +96,17 @@ class AppAuthGateway implements OAuthGateway {
         AuthorizationTokenRequest(
           clientId,
           redirect,
-          issuer: issuer,
+          issuer: register ? null : issuer,
+          serviceConfiguration: register
+              ? AuthorizationServiceConfiguration(
+                  authorizationEndpoint:
+                      '$issuer/protocol/openid-connect/registrations',
+                  tokenEndpoint: '$issuer/protocol/openid-connect/token',
+                  endSessionEndpoint: '$issuer/protocol/openid-connect/logout',
+                )
+              : null,
           scopes: _scopes,
           allowInsecureConnections: _allowHttp,
-          additionalParameters: register ? {'kc_action': 'register'} : null,
         ),
       ),
     );
@@ -101,18 +115,32 @@ class AppAuthGateway implements OAuthGateway {
   @override
   Future<AuthTokens> refresh(String refreshToken) async {
     _validate();
-    return _tokens(
-      await _auth.token(
-        TokenRequest(
-          clientId,
-          redirect,
-          issuer: issuer,
-          refreshToken: refreshToken,
-          scopes: _scopes,
-          allowInsecureConnections: _allowHttp,
+    try {
+      return _tokens(
+        await _auth.token(
+          TokenRequest(
+            clientId,
+            redirect,
+            issuer: issuer,
+            refreshToken: refreshToken,
+            scopes: _scopes,
+            allowInsecureConnections: _allowHttp,
+          ),
         ),
-      ),
-    );
+      );
+    } on FlutterAppAuthPlatformException catch (error) {
+      final code = error.platformErrorDetails.error;
+      if (code == 'invalid_grant' || code == 'invalid_token') {
+        throw SessionExpired();
+      }
+      if (code == null ||
+          code == 'server_error' ||
+          code == 'temporarily_unavailable' ||
+          code == 'network_error') {
+        throw IdentityUnavailable();
+      }
+      throw SessionExpired();
+    }
   }
 
   @override
@@ -156,6 +184,9 @@ class AuthRepository extends ChangeNotifier {
   AuthTokens? _tokens;
   bool expired = false;
   bool get authenticated => _tokens != null;
+  String get _context => gateway is AppAuthGateway
+      ? '${(gateway as AppAuthGateway).issuer}|${(gateway as AppAuthGateway).clientId}|$apiBase'
+      : apiBase.toString();
 
   Future<T> _exclusive<T>(Future<T> Function() operation) {
     final result = _tail.then((_) => operation());
@@ -166,7 +197,8 @@ class AuthRepository extends ChangeNotifier {
   Future<void> _replace(AuthTokens tokens) async {
     await vault.write(
       jsonEncode({
-        'issuerVersion': 1,
+        'issuerVersion': 2,
+        'context': _context,
         'refresh': tokens.refresh,
         'id': tokens.id,
       }),
@@ -188,9 +220,16 @@ class AuthRepository extends ChangeNotifier {
           final saved = await vault.read();
           if (saved == null) return;
           final value = jsonDecode(saved) as Map<String, dynamic>;
+          if (value['issuerVersion'] != 2 || value['context'] != _context) {
+            throw SessionExpired();
+          }
           final refresh = value['refresh'] as String;
-          await vault.clear();
-          await _replace(await gateway.refresh(refresh));
+          if (refresh.isEmpty) throw SessionExpired();
+          final refreshed = await gateway.refresh(refresh);
+          await _replace(AuthTokens(refreshed.access, refreshed.refresh,
+              refreshed.id ?? value['id'] as String?, refreshed.expires));
+        } on IdentityUnavailable {
+          rethrow;
         } catch (_) {
           await _invalidate();
         }
@@ -215,9 +254,12 @@ class AuthRepository extends ChangeNotifier {
           return current.access;
         }
         try {
-          await vault.clear();
-          await _replace(await gateway.refresh(current.refresh));
+          final refreshed = await gateway.refresh(current.refresh);
+          await _replace(AuthTokens(refreshed.access, refreshed.refresh,
+              refreshed.id ?? current.id, refreshed.expires));
           return _tokens!.access;
+        } on IdentityUnavailable {
+          rethrow;
         } catch (_) {
           await _invalidate();
           throw SessionExpired();
@@ -250,9 +292,16 @@ class AuthRepository extends ChangeNotifier {
       request.headers['Content-Type'] = 'application/json';
       request.body = jsonEncode(body);
     }
-    final response = await http.Response.fromStream(
-      await _client.send(request).timeout(const Duration(seconds: 15)),
-    );
+    final http.Response response;
+    try {
+      response = await (() async =>
+              http.Response.fromStream(await _client.send(request)))()
+          .timeout(const Duration(seconds: 15));
+    } on TimeoutException {
+      throw IdentityUnavailable();
+    } on http.ClientException {
+      throw IdentityUnavailable();
+    }
     if (response.statusCode == 401) {
       await _exclusive(() async {
         if (_tokens?.access == access) await _invalidate();
