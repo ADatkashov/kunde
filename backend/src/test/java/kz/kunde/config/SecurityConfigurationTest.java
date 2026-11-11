@@ -58,6 +58,25 @@ class SecurityConfigurationTest {
                 Instant.now().minusSeconds(660), Instant.now().minusSeconds(600))).hasErrors()).isTrue();
     }
 
+    @Test
+    void productionProfilesCannotEnablePocHttpEvenWhenCombined() {
+        for (String production : java.util.List.of("prod", "production")) {
+            var environment = new StandardEnvironment();
+            environment.setActiveProfiles(production, "identity-poc");
+            assertThat(SecurityConfiguration.isLocalHttpIssuerAllowed(true, environment)).isFalse();
+            var context = new org.springframework.context.annotation.AnnotationConfigApplicationContext();
+            context.getEnvironment().setActiveProfiles(production, "identity-poc");
+            context.register(IdentityPocSecurityConfiguration.class, kz.kunde.platform.IdentityPocController.class);
+            context.refresh();
+            try {
+                assertThat(context.getBeansOfType(IdentityPocSecurityConfiguration.class)).isEmpty();
+                assertThat(context.getBeansOfType(kz.kunde.platform.IdentityPocController.class)).isEmpty();
+            } finally {
+                context.close();
+            }
+        }
+    }
+
     private Jwt jwtWithAudience(String audience) {
         return Jwt.withTokenValue("test-token")
                 .header("alg", "none")

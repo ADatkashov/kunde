@@ -46,7 +46,8 @@ public class SecurityConfiguration {
     }
 
     static boolean isLocalHttpIssuerAllowed(boolean propertyEnabled, Environment environment) {
-        return propertyEnabled && environment.acceptsProfiles(Profiles.of("identity-poc"));
+        return propertyEnabled && environment.acceptsProfiles(Profiles.of("identity-poc"))
+                && !environment.acceptsProfiles(Profiles.of("prod", "production"));
     }
 
     static URI validatedIssuer(String issuerUri, boolean allowLocalHttp) {

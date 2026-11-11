@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** Returns a minimal token-validation result only in the isolated identity POC profile. */
 @RestController
-@Profile("identity-poc")
+@Profile("identity-poc & !prod & !production")
 @RequestMapping("/api/v1/poc")
 public class IdentityPocController {
     private static final Logger log = LoggerFactory.getLogger(IdentityPocController.class);

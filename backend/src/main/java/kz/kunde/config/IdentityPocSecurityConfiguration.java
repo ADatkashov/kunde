@@ -20,7 +20,7 @@ import org.springframework.security.web.SecurityFilterChain;
 
 /** Development-only protected endpoint used to compare local OIDC providers. */
 @Configuration
-@Profile("identity-poc")
+@Profile("identity-poc & !prod & !production")
 public class IdentityPocSecurityConfiguration {
     @Bean
     @Order(0)
