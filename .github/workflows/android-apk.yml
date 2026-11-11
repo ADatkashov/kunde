@@ -6,6 +6,11 @@ on:
   pull_request:
     paths: ['mobile/**', 'scripts/ci/**', '.github/workflows/android-apk.yml']
   workflow_dispatch:
+    inputs:
+      phone-apk:
+        description: 'Build a universal APK for installation on a physical phone'
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -73,12 +78,14 @@ jobs:
           gradle --version
           gradle --no-daemon --max-workers=2 help > ../../reports/gradle-help.txt 2>&1 || { cat ../../reports/gradle-help.txt; exit 1; }
           gradle --no-daemon --max-workers=2 -I ../../scripts/ci/android_graph.init.gradle kundeResolvedGraph
-      - name: Build x86_64 debug APK (single architecture limits storage)
+      - name: Build debug APK (universal for manual phone builds)
         id: apk_build
         working-directory: mobile
+        env:
+          APK_PLATFORMS: ${{ inputs.phone-apk && 'android-arm,android-arm64,android-x64' || 'android-x64' }}
         run: |
           flutter pub get --enforce-lockfile
-          flutter build apk --debug --target-platform android-x64
+          flutter build apk --debug --target-platform "$APK_PLATFORMS"
           test -s build/app/outputs/flutter-apk/app-debug.apk
           sha256sum build/app/outputs/flutter-apk/app-debug.apk > ../reports/apk.sha256
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose build/app/outputs/flutter-apk/app-debug.apk
@@ -94,9 +101,9 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always() && steps.apk_build.outcome == 'success'
         with:
-          name: consumer-debug-x64
+          name: consumer-debug-${{ inputs.phone-apk && 'universal' || 'x64' }}
           path: mobile/build/app/outputs/flutter-apk/app-debug.apk
-          retention-days: 1
+          retention-days: 7
   android-dependencies:
     concurrency:
       group: native-dependencies-${{ github.ref }}
