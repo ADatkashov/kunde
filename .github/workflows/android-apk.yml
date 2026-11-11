@@ -34,6 +34,10 @@ jobs:
           cache: false
       - name: Capacity after Flutter installation
         run: python3 scripts/ci/runner_resources.py --minimum-free-gib 4 --output reports/resources-after.json
+      - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d
+        with:
+          gradle-version: '9.3.1'
+          cache-disabled: true
       - name: Resolve Flutter plugins and local SDK paths
         working-directory: mobile
         run: |
@@ -46,8 +50,9 @@ jobs:
         id: graph
         working-directory: mobile/android
         run: |
-          ./gradlew --no-daemon --max-workers=2 help > ../../reports/gradle-help.txt
-          ./gradlew --no-daemon --max-workers=2 -I ../../scripts/ci/android_graph.init.gradle kundeResolvedGraph
+          gradle --version
+          gradle --no-daemon --max-workers=2 help > ../../reports/gradle-help.txt 2>&1 || { cat ../../reports/gradle-help.txt; exit 1; }
+          gradle --no-daemon --max-workers=2 -I ../../scripts/ci/android_graph.init.gradle kundeResolvedGraph
       - name: Build x86_64 debug APK (single architecture limits storage)
         id: apk_build
         working-directory: mobile
