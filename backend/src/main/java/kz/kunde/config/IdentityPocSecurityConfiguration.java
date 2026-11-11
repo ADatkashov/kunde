@@ -1,6 +1,10 @@
 package kz.kunde.config;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import kz.kunde.platform.ApiSecurityErrorWriter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -9,41 +13,38 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.stream.Stream;
 import org.springframework.security.web.SecurityFilterChain;
 
 /** Development-only protected endpoint used to compare local OIDC providers. */
 @Configuration
-@Profile("identity-poc & !prod & !production")
+@Profile("identity-poc")
 public class IdentityPocSecurityConfiguration {
+    private static final String POC_AUTHORITY = "SCOPE_kunde.poc";
+
     @Bean
     @Order(0)
-    SecurityFilterChain identityPocApi(HttpSecurity http, ApiSecurityErrorWriter errors, JwtDecoder issuerJwtDecoder)
+    SecurityFilterChain identityPocApi(HttpSecurity http, ApiSecurityErrorWriter errors, JwtDecoder issuerJwtDecoder,
+            @Value("${app.security.oidc.audience}") String audience,
+            @Value("${app.security.oidc.poc-zitadel-organization:}") String zitadelOrganization)
             throws Exception {
-        JwtGrantedAuthoritiesConverter defaultScopes = new JwtGrantedAuthoritiesConverter();
         JwtAuthenticationConverter pocAuthorities = new JwtAuthenticationConverter();
-        pocAuthorities.setJwtGrantedAuthoritiesConverter(jwt -> {
-            Collection<org.springframework.security.core.GrantedAuthority> mapped =
-                    new ArrayList<>(defaultScopes.convert(jwt));
-            String scopeClaim = jwt.getClaimAsString("scope");
-            boolean hasPocRoleScope = scopeClaim != null && Stream.of(scopeClaim.split("\\s+"))
-                    .anyMatch(scope -> scope.equals("kunde.poc") ||
-                            scope.equals("urn:zitadel:iam:org:project:role:kunde.poc"));
-            if (hasPocRoleScope) mapped.add(new SimpleGrantedAuthority("SCOPE_kunde.poc"));
-            return mapped;
-        });
+        if (zitadelOrganization.isBlank()) {
+            pocAuthorities.setJwtGrantedAuthoritiesConverter(new JwtGrantedAuthoritiesConverter());
+        } else {
+            pocAuthorities.setJwtGrantedAuthoritiesConverter(jwt -> zitadelAuthorities(jwt, audience, zitadelOrganization));
+        }
         return http
                 .securityMatcher("/api/v1/poc/**")
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        .anyRequest().hasAuthority("SCOPE_kunde.poc"))
+                        .anyRequest().hasAuthority(POC_AUTHORITY))
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, failure) -> errors.write(
                                 request, response, HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "A valid bearer token is required"))
@@ -54,5 +55,17 @@ public class IdentityPocSecurityConfiguration {
                                 request, response, HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "A valid bearer token is required"))
                         .jwt(jwt -> jwt.decoder(issuerJwtDecoder).jwtAuthenticationConverter(pocAuthorities)))
                 .build();
+    }
+
+    static Collection<GrantedAuthority> zitadelAuthorities(Jwt jwt, String project, String organization) {
+        Object claim = jwt.getClaims().get("urn:zitadel:iam:org:project:" + project + ":roles");
+        // ZITADEL 4.19.5 places jti on JWT access tokens. Its ID tokens can share the project audience.
+        if (jwt.getId() != null && !jwt.getId().isBlank()
+                && claim instanceof Map<?, ?> roles
+                && roles.get("kunde.poc") instanceof Map<?, ?> grants
+                && grants.get(organization) instanceof String domain && !domain.isBlank()) {
+            return List.of(new SimpleGrantedAuthority(POC_AUTHORITY));
+        }
+        return List.of();
     }
 }

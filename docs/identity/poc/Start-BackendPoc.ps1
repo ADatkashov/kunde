@@ -21,6 +21,14 @@ $audience = if ($Provider -eq 'keycloak') {
 } else {
     Read-Host 'Enter the KUNDE POC project ID used as the ZITADEL token audience'
 }
+if ($Provider -eq 'zitadel') {
+    $env:POC_ZITADEL_ORGANIZATION_ID = Read-Host 'Enter the ZITADEL development organization ID'
+    if ([string]::IsNullOrWhiteSpace($env:POC_ZITADEL_ORGANIZATION_ID)) {
+        throw 'ZITADEL development organization ID is required.'
+    }
+} else {
+    Remove-Item Env:POC_ZITADEL_ORGANIZATION_ID -ErrorAction SilentlyContinue
+}
 
 Push-Location $dbDir
 try {

@@ -2,4 +2,5 @@ app:
   security:
     oidc:
       allow-insecure-http-issuer: ${POC_ALLOW_HTTP_ISSUER:false}
+      poc-zitadel-organization: ${POC_ZITADEL_ORGANIZATION_ID:}
 

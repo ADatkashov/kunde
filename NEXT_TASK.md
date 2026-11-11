@@ -1,21 +1,9 @@
-# Next task — finish hosted CI evidence, then remediate published security baseline
+# Next task — record the EP-002 provider and token policy decision
 
-Read AGENTS.md, PROJECT_STATE.md, [CI contract](docs/engineering-foundation/github-hosted-ci.md)
-and [ledger](docs/security/ci-vulnerability-ledger.md). GitHub is the source of truth.
-Do not recover old Codex Cloud or require a personal Windows/self-hosted runner.
+Prepare the owner review for self-hosted Keycloak and its fallback using [ADR-015](docs/architecture/adr/ADR-015-proposed-identity-provider.md), the [provider evaluation](docs/identity/poc/final-provider-decision-report.md) and the [Keycloak readiness package](docs/identity/keycloak-readiness/README.md).
 
-Review draft PR1 ci/github-hosted-migration-20261111; do not merge main without
-owner authorization. APK/Gradle/KGP2.4.20 project graph+compile+scan proof completed in run43030696091; APK job passed, independent audit fails on10 other matches. Global GHSA remains OPEN for Flutter included-tooling residual. Backend/Flutter hosted checks pass. Do not repeat declaration-only fixes or patch SDK internals. Security jobs correctly fail on genuine
-published Boot3.5.7/container findings; no suppression or accepted CRITICAL risks.
-Next engineering priority within TASK-046 is a supported, isolated-tested backend
-BOM and vendor-base OS remediation using these actual hosted reports.
+1. Record the named product, security, operations and privacy/legal owners. Review the measured JWT acceptance window, online refresh policy, revocation SLO for sensitive actions and open privacy/operations/OTP gates.
+2. Record the explicit provider/fallback and policy decision in ADR-015 when the owners approve it. Until then keep ADR-015 PROPOSED, TASK-005 blocked and TASK-006 not started.
+3. After approval and the [D5 prerequisites](docs/roadmap/25-identity-ep002-design.md), begin TASK-006 with the Flyway schema and unique verified `(issuer, subject)` mapping to a canonical KUNDE UUID. Cover duplicate/concurrent creation and denial of malformed, unmapped or restricted principals.
 
-TASK-006 stays in_progress: canonical account/profile/V2 implementation and actual
-native-browser E2E scripts were not published. Reimplement missing approved identity
-foundation in a separate scoped change, then execute manual hosted Keycloak/PKCE/
-JWT/profile/restart/refresh/logout/relogin scenario on real emulator with KVM.
-An APK or fixture JWT test cannot satisfy this acceptance.
-
-TASK-003 partially_verified pending review/default-branch adoption and remaining gates;
-TASK-046 in_progress; no production readiness. Artifacts expire1–3 days, so preserve
-sanitized summary evidence/run URLs in docs, never credentials/raw tokens/databases.
+**Review checks.** From the repository root run `git diff --check` and `node --check docs/identity/keycloak-readiness/verify-keycloak.mjs`. Read the [implementation handoff](docs/identity/keycloak-readiness/implementation-handoff.md) and [operational follow-ups](docs/identity/keycloak-readiness/operational-requirements.md). Record approval or precise blocking evidence in ADR-015 and the linked backlog. Production launch requires separate evidence and approval.

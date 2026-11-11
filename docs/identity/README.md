@@ -32,6 +32,8 @@ This package translates PRD AUTH-001/AUTH-002 and ADR-009 into an implementation
 
 The proposed architecture ADR is [ADR-015 (PROPOSED)](../architecture/adr/ADR-015-proposed-identity-provider.md). No accepted ADR was changed. Roadmap changes are recorded in [EP-002 sequencing](../roadmap/25-identity-ep002-design.md).
 
+See the [Keycloak security and readiness package](keycloak-readiness/README.md) for live lifecycle checks, the proposed token policy and the implementation handoff.
+
 ## Read this before implementation
 
 - Use OIDC Authorization Code + PKCE in the system browser for Flutter; never use an embedded WebView or a native client secret.

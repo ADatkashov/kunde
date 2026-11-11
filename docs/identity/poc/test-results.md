@@ -1,5 +1,7 @@
 # Identity POC test results — recovery 3.0
 
+**4.0 outcome.** Both providers have Android PKCE, native callback and live Spring HTTP 200 before and after refresh. The new ZITADEL run also verified JWT issuance, signed project role enforcement, Android discovery/JWKS, logout return and a second login with a password prompt. Thirteen focused Spring tests passed, and live ZITADEL protocol probes checked missing bearer, missing grant, wrong PKCE verifier, ID-token rejection and refresh replay/revocation. See the [decision report](final-provider-decision-report.md) and [security matrix](security-results.md#final-evaluation-40). The table below records the previous run.
+
 Execution date: 2026-11-10 (local Windows development environment). Synthetic identity only; no production services or customer data used. This supersedes the previous “verification 2.0” outcome where appropriate.
 
 ## Evidence summary

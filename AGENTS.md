@@ -33,7 +33,7 @@ Read the module README and relevant `docs/` contract before editing. Keep domain
 ## Git and change handling
 
 - At task start, check `git status --short --branch` and inspect recent history/diff when Git metadata exists. Preserve user changes; do not reset, clean, overwrite or stage unrelated work.
-- This supplied workspace snapshot previously had no `.git` directory; Git status/history was unavailable. Recheck before assuming that limitation persists. Do not initialize a repository or invent a clean state.
+- This repository is initialized on `main` and tracks the public `origin` repository. Never initialize or replace its Git history. If Git metadata or the remote is unavailable in a future workspace, report that limitation and preserve the supplied files.
 - Use the existing branch/workflow. Do not commit, push, rewrite history, or change branches unless explicitly requested.
 - Keep diffs minimal and review the final diff/status before reporting. If Git remains unavailable, state that verification limitation.
 

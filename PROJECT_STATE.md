@@ -1,39 +1,11 @@
 # KUNDE project state
 
-Reviewed2026-11-11 against GitHub, not recovered Codex filesystem.
+Last reviewed 2026-11-11. Follow [AGENTS.md](AGENTS.md) and [NEXT_TASK.md](NEXT_TASK.md).
 
-## Source and architecture
-
-Public repository [ADatkashov/kunde](https://github.com/ADatkashov/kunde).
-Main baseline5c3291a; CI migration on branch ci/github-hosted-migration-20261111,
-[draft PR1](https://github.com/ADatkashov/kunde/pull/1), not merged.
-Published backend remains Java21/Boot3.5.7/JDBC/PostgreSQL/FlywayV1. Flutter3.47
-contains Consumer shell and opt-in system-browser AppAuth PKCE POC.
-Existing EP-001/POC evidence preserved; no production readiness.
-
-Missing from discovered remote baseline: cloud-only identity V2/canonical accounts/
-profile module, abuse controls, Boot4/ADR016 migration and native runner. Previous
-48/24-test/zero-vulnerability claims do not establish this repository's state.
-No recovery or recreation of those implementations is claimed by this CI change.
-
-## Hosted CI and open work
-
-Primary build target is standard free GitHub-hosted Ubuntu24.04, Java21,
-repository-compatible Flutter3.47. No personal Windows or self-hosted dependency.
-Independent backend/Flutter/APK/security/lightweight workflows; manual E2E checks
-actual prerequisites/KVM and never fabricates authentication success.
-Project KGP2.4.20 with AGP9.1/Gradle9.3.1/Java21/Flutter3.47 is verified by strict174-module graph, compilation and actual OSV. Global SDK tooling GHSA residual remains OPEN.
-Resource probes use actual free disk, not a60GiB prerequisite. Measured hosted
-worker4CPU/~16GB RAM/~86GiB free; no preinstalled tools deleted.
-
-Backend43030696166 and Flutter43030696329 pass. Android43030696091 apk job130556656253 passes, APK artifact available; independent native audit fails on10 remaining matches (2CRITICAL/5HIGH/3MODERATE), no project KGP GHSA. Overall Android workflow is red due to findings; not a compilation failure. Flutter included-tooling older Kotlin exposure remains OPEN.
-OSV v2 actual baseline72 matches:10CRITICAL/27HIGH/26MODERATE/9LOW; build roots0.
-Trivy0.76.2 scans immutable bases successfully but reports runtime2HIGH/56MEDIUM/
-4LOW and build18HIGH/610MEDIUM/179LOW; raw exit10 each, jobs fail on findings.
-Gitleaks8.30.1 full-history redacted scan passes. Native E2E NOT_EXECUTED because
-published Consumer profile/isolated native scenario scripts are missing.
-
-TASK-003 partially_verified; TASK-006 and TASK-046 in_progress.
-[CI/security/coverage/artifact contract](docs/engineering-foundation/github-hosted-ci.md),
-[vulnerability ledger](docs/security/ci-vulnerability-ledger.md).
-No force push, main merge, branch-protection change, production deployment or risk acceptance.
+- KUNDE remains at Development Foundation. Java 21 / Spring Boot 3.5.7, PostgreSQL/Flyway and the Flutter Consumer shell provide health, capabilities and empty catalog/search. See [foundation status](docs/engineering-foundation/implementation-status.md).
+- [ADR-013](docs/architecture/adr/ADR-013-foundation-security-boundary.md) accepts the fail-closed OIDC resource-server boundary. Local HTTP and the protected POC endpoint require the `identity-poc` profile. Production login, registration and OTP remain disabled.
+- Keycloak 26.8.2 previously completed Android system-browser PKCE, real JWT validation and Spring API HTTP 200 before and after refresh. After logout, the next browser flow prompted for credentials.
+- ZITADEL 4.19.5 completed Android Chrome Custom Tab PKCE and issued a real JWT. The POC authorized the signed project/organization grant and returned HTTP 200 before and after refresh. After logout, selecting the remembered account required its password. A second login returned HTTP 200. Thirteen focused Spring security tests passed. See [4.0 runtime evidence](docs/identity/poc/end-to-end-evidence.md#final-evaluation-40).
+- The isolated [Keycloak readiness drill](docs/identity/keycloak-readiness/README.md) measured an approximately 60-second Spring tolerance after JWT `exp`, rejected online refresh replay, and verified live signing-key rotation and retirement. An isolated `mvn clean verify` passed 24 tests and produced the executable JAR used in the drill.
+- The [final evaluation](docs/identity/poc/final-provider-decision-report.md) recommends self-hosted Keycloak for review. [ADR-015](docs/architecture/adr/ADR-015-proposed-identity-provider.md) is **PROPOSED**, `TASK-005` is **blocked**, and `TASK-006` is **not started**. EP-002 implementation awaits the decision and applicable [release gates](docs/roadmap/25-identity-ep002-design.md).
+- The public Apache 2.0 repository is [ADatkashov/kunde](https://github.com/ADatkashov/kunde). Local `main` tracks `origin/main`. Local provider credentials and POC evidence stay in ignored files. The earlier CI run `42831424876` at `5c3291a` is historical evidence. No remote CI recheck was part of this evaluation. The local identity evaluation and Keycloak readiness changes are included in the 2026-11-11 main publication.

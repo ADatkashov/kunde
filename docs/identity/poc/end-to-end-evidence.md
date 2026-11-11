@@ -24,3 +24,23 @@ ZITADEL 4.19.5 Compose startup completed in 96.1 seconds. Postgres, API, Login U
 ## Boundaries
 
 The existing `mvn verify` result (21 tests passed) and six deterministic JWT/JWKS HTTP scenarios are fixture/build evidence, not live provider negative-token testing. Live Keycloak wrong-issuer/audience, invalid signature, expired/not-before, scope-denial variants were not submitted. Refresh replay, invalid refresh, revocation endpoint behavior, and whether an already issued access JWT survives logout were not verified. ZITADEL equivalence is open. Keep overall POC partial.
+
+## Final evaluation 4.0
+
+- Reused the running Pixel 9 Pro AVD (`emulator-5554`) and installed the ZITADEL-specific x86_64 debug APK. The Android application ID is `com.example.kunde_mobile`. The AppAuth callback is separately registered as `com.kunde.mobile:/oauth2redirect`.
+- Compose confirmed existing ZITADEL 4.19.5 services healthy in 10 seconds. The host discovery document advertised exact issuer `http://localhost:8280`, authorization `/oauth/v2/authorize`, token `/oauth/v2/token`, JWKS `/oauth/v2/keys` and end-session `/oidc/v1/end_session`; the JWKS contained two keys.
+- ZITADEL Login V2 rendered the synthetic-account form in Chrome Custom Tab through `adb reverse tcp:8280 tcp:8280`. The existing Keycloak 8180 and API 8080 mappings were preserved. The ZITADEL API mapping is `adb reverse tcp:8082 tcp:18082`. Host 8082 was unavailable when replacing the original runtime, so the new Spring process listens on host loopback 18082.
+- An Android HTTP probe through the same reverse mapping returned HTTP 200 for discovery and JWKS. Discovery reported the same issuer and endpoints as on the host.
+- The unrelated Pixel Launcher ANR initially obscured Flutter and Chrome. Closing that overlay exposed the browser. An Android Back input cancelled the Custom Tab and Flutter reported `FlutterAppAuthUserCancelledException`. This is a directly observed cancellation result.
+- The independent protocol probe used provider Session and OIDC APIs for the synthetic login, with an S256 verifier and the same native redirect URI. It exchanged a real authorization code and received a signed JWT access token. The issuer matched exactly and the signing `kid` appeared in live JWKS. This probe is distinct from the Flutter callback.
+
+| Android action | Observed 4.0 outcome |
+|---|---|
+| Sign in with system browser | Chrome Custom Tab opened on `localhost:8280`. ZITADEL accepted the synthetic credentials. |
+| Native callback and exchange | Flutter reported **Authorization Code + PKCE completed**. |
+| Protected API | Flutter reported **API returned HTTP 200** against the Spring instance configured for ZITADEL. |
+| Refresh and repeat API | Flutter reported **Refresh completed**, then **API returned HTTP 200**. |
+| Logout | Flutter reported **Local tokens cleared; provider logout requested** after the end-session return. |
+| Next authorization | Selecting the remembered account required the password. Flutter completed a second PKCE exchange and the API returned HTTP 200. A second logout cleared local tokens. |
+
+See [security results](security-results.md#final-evaluation-40) for per-case HTTP outcomes and evidence limits.

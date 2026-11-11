@@ -2,6 +2,8 @@
 
 **Local development only.** Two separately named Compose projects and databases; no production service, external paid service, real personal data or SMS channel is used. Container versions are pinned: Keycloak 26.8.2, ZITADEL 4.19.5, PostgreSQL 17.10-alpine, Traefik 3.7.7. The ZITADEL 4.20.0 release notes contained an instruction to skip that release, so this POC pins the preceding patched 4.19.5 line instead. Re-evaluate versions before repeating the POC.
 
+Start with the [final provider decision report 4.0](final-provider-decision-report.md) for the outcome and approval gates.
+
 ## Prerequisites
 
 - Docker Desktop/Engine with Compose v2 and at least 4 GB available RAM if both providers run together.
@@ -43,7 +45,7 @@ mvn spring-boot:run
 Pop-Location
 ```
 
-For ZITADEL, set `OIDC_ISSUER_URI=http://localhost:8280` and `OIDC_AUDIENCE` to the KUNDE POC project ID configured in its token audience scope.
+For ZITADEL, set `OIDC_ISSUER_URI=http://localhost:8280`, `OIDC_AUDIENCE` to the POC project ID and `POC_ZITADEL_ORGANIZATION_ID` to the development organization ID. The launcher prompts for these IDs. See [ZITADEL setup](zitadel-setup.md) for the signed role claim contract.
 
 The Windows Java TLS fix and exact Maven `verify` steps are documented in [maven-tls.md](maven-tls.md). `Initialize-MavenTrust.ps1` derives a local truststore only from a certificate chain already validated by Windows; no certificate-check bypass is used.
 

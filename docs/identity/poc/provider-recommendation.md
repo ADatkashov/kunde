@@ -1,5 +1,7 @@
 # Provider recommendation — recovery 3.0
 
+This is the historical 3.0 checkpoint. The [final provider decision report 4.0](final-provider-decision-report.md) supersedes its recommendation and ZITADEL status.
+
 **Recommendation: do not approve a production provider yet.** Keycloak 26.8.2 is the only provider with demonstrated Android Flutter Authorization Code + PKCE, real provider JWT validation by Spring Security, HTTP 200 on the protected API, refresh renewal, and logout followed by an interactive login form. That is meaningful evidence for the priority integration path, and makes Keycloak the current POC front-runner for further validation, not a production selection.
 
 ZITADEL 4.19.5 now starts cleanly and serves discovery/JWKS with all four local containers healthy. Its native app, project, role/audience scopes and test user are not configured, so it has not been fairly compared on Flutter compatibility, Spring token mapping, lifecycle or security. Earlier discovery timeout occurred under host pressure; this run's startup completed in 96.1 seconds and discovery returned promptly after health checks. Do not score that setup gap as an authentication failure.
