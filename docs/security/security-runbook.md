@@ -1,6 +1,6 @@
 # Security verification and response runbook
 
-Run GitHub-hosted Backend CI, Flutter CI, Android APK CI and Security CI. Run Container build and security verification for Dockerfile changes. Use Java 21 and pinned Flutter 3.47.0, Gradle 9.3.1, AGP 9.1.1, KGP 2.4.20. Inspect actual free capacity before downloads. No personal host or self-hosted runner is required.
+Run GitHub-hosted Backend CI, Flutter CI, Android APK CI and Security CI. Run Container build and security verification for Dockerfile changes. Use Java 21 and pinned Flutter 3.47.9, Gradle 9.3.1, AGP 9.1.1, KGP 2.4.20. Inspect actual free capacity before downloads. No personal host or self-hosted runner is required.
 
 Commands and coverage:
 - Backend: `cd backend && mvn -B -ntp clean verify`; package smoke: `python3 scripts/ci/smoke_backend.py`, with synthetic PostgreSQL.
