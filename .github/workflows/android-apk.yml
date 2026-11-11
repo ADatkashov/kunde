@@ -35,6 +35,7 @@ jobs:
       - name: Capacity after Flutter installation
         run: python3 scripts/ci/runner_resources.py --minimum-free-gib 4 --output reports/resources-after.json
       - name: Build x86_64 debug APK (single architecture limits storage)
+        id: apk_build
         working-directory: mobile
         run: |
           flutter pub get --enforce-lockfile
@@ -55,7 +56,7 @@ jobs:
           path: reports/
           retention-days: 3
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        if: success()
+        if: always() && steps.apk_build.outcome == 'success'
         with:
           name: consumer-debug-x64
           path: mobile/build/app/outputs/flutter-apk/app-debug.apk
