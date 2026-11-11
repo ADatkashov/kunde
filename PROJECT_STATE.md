@@ -13,7 +13,7 @@ Reviewed 2026-11-11. Follow AGENTS.md; code and current CI are authoritative.
 - Flutter has real AppAuth browser authentication, secure token vault, serialized
   refresh/logout, splash/restore, RU/KK/EN welcome/home/profile editing and errors.
   Enable only with explicit development configuration; no production mock login.
-- Current local verification: 39 backend tests with PostgreSQL and 29 Flutter tests;
+- Current local verification: 39 backend tests with PostgreSQL and 31 Flutter tests;
   formatter/analyzer and packaged smoke passed. Real Keycloak protocol registration,
   PKCE, profile, refresh/replay, logout and subsequent login passed with synthetic
   data. This is not native browser/device E2E. See the reproducible

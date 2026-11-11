@@ -63,7 +63,8 @@ void main() {
       'Roboto': 'Roboto-Regular.ttf',
       'MaterialIcons': 'MaterialIcons-Regular.otf'
     }.entries) {
-      final uri = flutter.replace(path: '${flutter.path}/')
+      final uri = flutter
+          .replace(path: '${flutter.path}/')
           .resolve('../../bin/cache/artifacts/material_fonts/${entry.value}');
       final loader = FontLoader(entry.key)
         ..addFont(File.fromUri(uri)

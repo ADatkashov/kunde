@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -45,10 +46,12 @@ abstract interface class OAuthGateway {
 
 class AppAuthGateway implements OAuthGateway {
   AppAuthGateway({
-    required this.issuer,
+    required String issuer,
     required this.clientId,
     this.redirect = 'com.kunde.mobile:/oauth2redirect',
-  });
+  }) : issuer = issuer.endsWith('/')
+            ? issuer.substring(0, issuer.length - 1)
+            : issuer;
   final String issuer;
   final String clientId;
   final String redirect;
@@ -82,7 +85,8 @@ class AppAuthGateway implements OAuthGateway {
         access.isEmpty ||
         refresh == null ||
         refresh.isEmpty ||
-        expires == null) {
+        expires == null ||
+        !expires.isAfter(DateTime.now())) {
       throw SessionExpired();
     }
     return AuthTokens(access, refresh, response.idToken, expires);
@@ -140,6 +144,9 @@ class AppAuthGateway implements OAuthGateway {
         throw IdentityUnavailable();
       }
       throw SessionExpired();
+    } on PlatformException {
+      // Native transport errors without OAuth details do not confirm revocation.
+      throw IdentityUnavailable();
     }
   }
 

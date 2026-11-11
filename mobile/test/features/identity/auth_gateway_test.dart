@@ -7,12 +7,17 @@ void main() {
   const channel = MethodChannel('crossingthestreams.io/flutter_appauth');
   late List<MethodCall> calls;
   String? error;
+  bool unstructured = false;
   setUp(() {
     calls = [];
     error = null;
+    unstructured = false;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (call) async {
       calls.add(call);
+      if (unstructured) {
+        throw PlatformException(code: "transport_failed");
+      }
       if (error != null) {
         throw PlatformException(
             code: 'token_failed', details: {'error': error});
@@ -85,5 +90,18 @@ void main() {
         gateway('https://identity.example.test?redirect=evil').login(),
         throwsA(isA<IdentityUnavailable>()));
     expect(calls, isEmpty);
+  });
+  test('unstructured native transport failure remains recoverable', () async {
+    unstructured = true;
+    await expectLater(
+        gateway().refresh('saved'), throwsA(isA<IdentityUnavailable>()));
+  });
+  test('trailing slash is normalized for registration endpoints', () async {
+    await gateway('https://identity.example.test/realms/kunde/')
+        .login(register: true);
+    final config =
+        (calls.single.arguments as Map)['serviceConfiguration'] as Map;
+    expect(config['authorizationEndpoint'],
+        'https://identity.example.test/realms/kunde/protocol/openid-connect/registrations');
   });
 }
