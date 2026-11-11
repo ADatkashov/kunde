@@ -123,7 +123,7 @@
     "release": "REL-1",
     "user_story_id": "US-003",
     "implementation_status": "in_progress",
-    "implementation_note": "Owner approved Keycloak/PKCE architecture in task instructions. Published canonical UUID/profile/V2 and Consumer native E2E remain incomplete; prior POC/readiness evidence preserved. Security/APK success does not satisfy acceptance."
+    "implementation_note": "Main22c1ae8 publishes canonical UUID/profile/issuer-subject binding, FlywayV2 and Flutter auth repository/tests. Combined-source checks required; Consumer native E2E and remaining acceptance stay open. Preserve owner-published implementation."
   },
   {
     "id": "TASK-007",

@@ -17,3 +17,8 @@ For a new advisory: identify package/version/path/owning execution context, auth
 Artifacts: APK one day, normal reports three days, investigation ledgers 14 days; retain sanitized findings/run URLs in source. Do not store Gradle caches as artifacts. Effective local image IDs and archive hashes are immutable evidence, not published registry digests. Maven distribution embedded libraries, JDK native code, Flutter/Dart SDK binaries, Android SDK/NDK and host OS need additional coverage; OS scans do not certify them.
 
 PR #1 was externally merged on 2026-11-11 at 15:41:52Z. Later remediation commits remain on the existing branch and require a new reviewed delivery; no reopening/merge or main write is performed by these checks.
+
+
+### Main integration review — 2026-11-11
+
+Main22c1ae8 now publishes Consumer canonical identity/profile, issuer/subject binding, FlywayV2, Consumer authorization and Flutter auth repository/tests. Earlier statements that these modules were absent describe the historical baseline only. Preserve these additions; do not replace them with the older branch. Owner explicitly authorized integration/merge through PR4. Combined-source checks are required; native Consumer E2E and API abuse controls remain open. TASK-006/TASK-046 stay in_progress; no production readiness.
