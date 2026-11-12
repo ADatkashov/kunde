@@ -1,4 +1,4 @@
-# Next task — TASK-006 / ADA-72 native session failure-path verification
+# Next task — TASK-006 / ADA-72 remaining device/accessibility/session-admin verification
 
 Last main merge: `af61a2e586db2bed382677fad4aa5be869a5d99a` (2026-11-12).
 Consent API (PR #23), Flutter consent UI (PR #24), and Flutter saved addresses
@@ -7,27 +7,20 @@ tasks without remaining product/privacy/UX acceptance evidence.
 
 ## Current in-review implementation
 
-- Draft PR #27 adds an Android emulator Keycloak network interruption/recovery probe and regression assertions. This verifies network reachability and profile continuity only; it does **not** establish refresh failure/recovery while a token request is in flight. Native execution and CI review are still required.
-- Remaining refresh replay, provider outage during refresh, access/session expiry and recovery must retain NOT_EXECUTED until verified in the actual Android35/Chrome/AppAuth workflow. Do not merge #27 without that evidence.
+- Draft PR #28 adds native refresh-outage, replay, access-expiry and token-secrecy checks
+  to the existing harness; hosted run 43270980722 passed (17 checks, sanitized artifact).
+  Required CI and CodeRabbit review must be confirmed before merge.
 
 ## Next controlled implementation
 
-1. Read `AGENTS.md`, `PROJECT_STATE.md`,
-   `docs/identity/consumer-validation/README.md`,
-   `scripts/ci/consumer_native_e2e.py`, its tests and the canonical backlog.
-2. Extend the **existing** synthetic Android35/Chrome/AppAuth native harness
-   with deterministic refresh-token replay rejection, provider outage/recovery
-   and access/session expiry evidence. Reuse the fixture and existing secure
-   redaction/evidence pipeline. Do not create a new authentication architecture.
-3. Keep PKCE S256, issuer/audience/time validation, strict `invalid_grant`
-   handling, token redaction, account binding and negative assertions.
-   Unit/protocol checks already cover some cases; do not label them native E2E.
-4. Execute relevant Python/Flutter/backend checks and hosted native workflow;
-   retain only sanitized evidence. If a device scenario cannot execute, mark it
-   **NOT_EXECUTED**, never successful.
-5. Keep iOS, TalkBack, large text, full RU/KK journeys, physical-device
-   coverage and session administration explicitly open until actually verified.
-   The existing session-admin API returns 503.
+1. Read `AGENTS.md`, `PROJECT_STATE.md`, `docs/identity/consumer-validation/README.md`,
+   `scripts/ci/consumer_native_e2e.py` and the canonical backlog.
+2. Remaining TASK-006 gaps (all currently NOT_EXECUTED, never successful by default):
+   iOS, TalkBack/large text, full RU/KK profile journeys, physical devices and account
+   session administration (existing API returns 503). Native checks need real devices/OS.
+3. Keep PKCE S256, issuer/audience/time validation, strict `invalid_grant` handling,
+   token redaction, account binding and negative assertions; do not label unit/protocol
+   checks as native E2E.
 
 ## Parallel remaining acceptance gates
 
