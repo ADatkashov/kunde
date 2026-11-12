@@ -22,7 +22,7 @@ SAFE_LABELS = {"Sign in", "Sign In", "Sign out", "Profile", "Home", "Edit profil
                "Welcome to Chrome", "Make Chrome your own", "Sign in to your account", "Username or email",
                "Username", "Password", "Your connection is not private", "This site can’t be reached",
                "This site can't be reached", "Checking your session…", "Sign in did not complete. Try again."}
-NOT_EXECUTED = ["refresh replay capture", "provider outage", "session expiry",
+NOT_EXECUTED = ["refresh replay capture", "provider outage during refresh", "session expiry",
                 "iOS", "TalkBack", "large text", "full RU/KK profile journeys", "physical devices"]
 
 
@@ -196,6 +196,26 @@ class Scenario:
             raise AssertionError("Expected one canonical synthetic identity")
         return json.loads(rows[0])
 
+    def provider_network_recovery(self):
+        """Exercise emulator-to-provider isolation without modifying credentials."""
+        self.stage = "provider_network_outage"
+        adb("reverse", "--remove", "tcp:8180")
+        try:
+            offline = network_diagnostics().get("8180", {})
+            if offline.get("httpStatus") is not None:
+                raise AssertionError("Provider must be unreachable from Android")
+        finally:
+            adb("reverse", "tcp:8180", "tcp:8180")
+        self.stage = "provider_network_recovery"
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline:
+            if network_diagnostics().get("8180", {}).get("httpStatus") == 200:
+                self.profile()
+                self.completed.append("native provider network outage and recovery with profile retained")
+                return
+            time.sleep(1)
+        raise AssertionError("Provider did not recover on Android")
+
     def login_form(self):
         adb("forward", "tcp:19222", "localabstract:chrome_devtools_remote")
         deadline = time.monotonic() + 60
@@ -347,6 +367,7 @@ class Scenario:
         if original["id"] == self.state["subject"]:
             raise AssertionError("Canonical UUID must not equal IdP subject")
         self.completed.append("system-browser login and native PKCE callback to verified API")
+        self.provider_network_recovery()
         self.stage = "profile_edit"
         self.profile()
         self.tap_label("Edit profile", package=PACKAGE)
