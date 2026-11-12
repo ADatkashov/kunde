@@ -26,7 +26,7 @@ SAFE_LABELS = {"Sign in", "Sign In", "Sign out", "Profile", "Home", "Edit profil
 NOT_EXECUTED = ["iOS", "TalkBack", "large text", "full RU/KK profile journeys", "physical devices",
                 "account session administration (API returns 503)"]
 JWT = re.compile(rb"eyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}")
-CLOCK_JUMP_SECONDS = 600
+CLOCK_JUMP_SECONDS = 400  # > 300 s access lifetime + 30 s skew, < 10 min ID-token iat tolerance
 
 
 def adb(*args):

@@ -192,7 +192,7 @@ class SessionFailurePathTests(unittest.TestCase):
         with patch("consumer_native_e2e.adb"), patch.object(scenario, "device_epoch", side_effect=lambda: next(epochs)), \
              patch.object(scenario, "set_clock") as clock:
             scenario.access_token_expiry()
-        self.assertEqual(clock.call_args_list[-1].args, (400,))
+        self.assertEqual(clock.call_args_list[-1].args, (600,))
         self.assertEqual(scenario.completed, [])
         self.assertEqual(len(scenario.not_executed), 1)
 
