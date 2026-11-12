@@ -26,7 +26,8 @@ SAFE_LABELS = {"Sign in", "Sign In", "Sign out", "Profile", "Home", "Edit profil
 NOT_EXECUTED = ["iOS", "TalkBack", "large text", "full RU/KK profile journeys", "physical devices",
                 "account session administration (API returns 503)"]
 JWT = re.compile(rb"eyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}")
-CLOCK_JUMP_SECONDS = 400  # > 300 s access lifetime + 30 s skew, < 10 min ID-token iat tolerance
+ACCESS_TOKEN_LIFETIME_SECONDS = 300  # realm fixture accessTokenLifespan
+EXPIRY_WAIT_SECONDS = ACCESS_TOKEN_LIFETIME_SECONDS + 10
 
 
 def adb(*args):
@@ -342,39 +343,21 @@ class Scenario:
             raise AssertionError("Replay recovery changed canonical account")
         self.completed.append("same-canonical-account relogin after rejected refresh-token replay")
 
-    def set_clock(self, epoch):
-        adb("shell", "settings", "put", "global", "auto_time", "0")
-        adb("shell", "cmd", "alarm", "set-time", str(int(epoch) * 1000))
-
-    def device_epoch(self):
-        return int(adb("shell", "date", "+%s").strip())
-
     def access_token_expiry(self):
-        self.stage = "access_token_expiry"
-        start = self.device_epoch()
-        target = start + CLOCK_JUMP_SECONDS
-        try:
-            self.set_clock(target)
-            if self.device_epoch() < target:
-                self.not_executed.append("access token expiry (emulator clock control unavailable)")
-                return
-            # The in-memory token is now expired for the device; saving must refresh first.
-            self.profile()
-            self.tap_label("Edit profile", package=PACKAGE)
-            self.enter(self.wait(lambda tree: editable(tree)), "ExpiredRefreshed")
-            self.tap_label("English", package=PACKAGE)
-            self.tap_label("Save changes", package=PACKAGE)
-            self.app_label("Profile saved")
-            if self.db_profile()["name"] != "ExpiredRefreshed":
-                raise AssertionError("Refreshed access token did not authorize profile update")
-            self.completed.append("expired access token refreshed natively before authorized profile update")
-        finally:
-            # Always try to restore the clock without masking the original failure.
-            try:
-                self.set_clock(self.device_epoch() - CLOCK_JUMP_SECONDS)
-                adb("shell", "settings", "put", "global", "auto_time", "1")
-            except Exception:
-                self.not_executed.append("emulator clock restore failed")
+        """Wait out the real access-token lifetime (no clock manipulation), then require a native refresh."""
+        self.stage = "access_token_expiry_wait"
+        # No app refresh happens while idle; the in-memory token was issued before this wait.
+        time.sleep(EXPIRY_WAIT_SECONDS)
+        self.stage = "access_token_expiry_update"
+        self.profile()
+        self.tap_label("Edit profile", package=PACKAGE)
+        self.enter(self.wait(lambda tree: editable(tree)), "ExpiredRefreshed")
+        self.tap_label("English", package=PACKAGE)
+        self.tap_label("Save changes", package=PACKAGE)
+        self.app_label("Profile saved")
+        if self.db_profile()["name"] != "ExpiredRefreshed":
+            raise AssertionError("Refreshed access token did not authorize profile update")
+        self.completed.append("expired access token refreshed natively before authorized profile update")
 
     def token_secrecy(self):
         self.stage = "token_secrecy"

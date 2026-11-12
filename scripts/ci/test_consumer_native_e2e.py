@@ -187,15 +187,25 @@ class SessionFailurePathTests(unittest.TestCase):
             with self.assertRaises(AssertionError):
                 scenario.vault_file()
 
-    def test_expiry_always_restores_clock_and_records_unavailable_control(self):
+    def test_expiry_waits_real_token_lifetime_then_requires_authorized_update(self):
         scenario = Scenario({})
-        epochs = iter([1000, 1000, 1000])
-        with patch("consumer_native_e2e.adb"), patch.object(scenario, "device_epoch", side_effect=lambda: next(epochs)), \
-             patch.object(scenario, "set_clock") as clock:
+        with patch("consumer_native_e2e.time.sleep") as sleep, patch.object(scenario, "profile"), \
+             patch.object(scenario, "tap_label"), patch.object(scenario, "enter"), \
+             patch.object(scenario, "wait"), patch.object(scenario, "app_label"), \
+             patch.object(scenario, "db_profile", return_value={"name": "ExpiredRefreshed"}):
             scenario.access_token_expiry()
-        self.assertEqual(clock.call_args_list[-1].args, (600,))
+        sleep.assert_called_once_with(310)
+        self.assertEqual(len(scenario.completed), 1)
+
+    def test_expiry_fails_when_update_was_not_persisted(self):
+        scenario = Scenario({})
+        with patch("consumer_native_e2e.time.sleep"), patch.object(scenario, "profile"), \
+             patch.object(scenario, "tap_label"), patch.object(scenario, "enter"), \
+             patch.object(scenario, "wait"), patch.object(scenario, "app_label"), \
+             patch.object(scenario, "db_profile", return_value={"name": "Other"}):
+            with self.assertRaisesRegex(AssertionError, "authorize"):
+                scenario.access_token_expiry()
         self.assertEqual(scenario.completed, [])
-        self.assertEqual(len(scenario.not_executed), 1)
 
     def test_token_secrecy_detects_jwt_in_log_or_vault_without_echoing_it(self):
         scenario = Scenario({})
@@ -209,17 +219,6 @@ class SessionFailurePathTests(unittest.TestCase):
              patch("consumer_native_e2e.adb", side_effect=[b"clean", b"opaque"]):
             scenario.token_secrecy()
         self.assertEqual(len(scenario.completed), 1)
-
-    def test_expiry_clock_restore_failure_does_not_mask_original_error(self):
-        scenario = Scenario({})
-        epochs = iter([1000, 1600, 1600, 1600])
-        with patch("consumer_native_e2e.adb"), \
-             patch.object(scenario, "device_epoch", side_effect=lambda: next(epochs)), \
-             patch.object(scenario, "set_clock", side_effect=[None, RuntimeError("restore")]), \
-             patch.object(scenario, "profile", side_effect=AssertionError("original")):
-            with self.assertRaisesRegex(AssertionError, "original"):
-                scenario.access_token_expiry()
-        self.assertIn("emulator clock restore failed", scenario.not_executed)
 
     def test_hide_keyboard_retries_transient_dumpsys_failure_and_never_presses_back_blindly(self):
         scenario = Scenario({})
