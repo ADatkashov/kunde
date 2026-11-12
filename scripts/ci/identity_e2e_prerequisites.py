@@ -11,6 +11,8 @@ REQUIRED = (
     "scripts/ci/stop_identity_test_stack.sh",
     "scripts/ci/native_identity_stack.py",
     "scripts/ci/consumer_native_e2e.py",
+    "scripts/ci/native_browser.py",
+    "scripts/ci/native-e2e-requirements.txt",
     "docs/identity/consumer-validation/realm.json",
 )
 

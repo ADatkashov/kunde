@@ -10,6 +10,7 @@ import urllib.request
 import urllib.parse
 
 from native_identity_stack import docker
+import native_browser
 
 PACKAGE = "com.example.kunde_mobile"
 APP = PACKAGE + "/.MainActivity"
@@ -107,6 +108,10 @@ def network_diagnostics():
         opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
         with opener.open("http://127.0.0.1:19222/json/list", timeout=3) as response:
             targets = json.load(response)
+        try:
+            result["browserDOM"] = native_browser.page_state()
+        except Exception as error:
+            result["browserDOMError"] = type(error).__name__
         result["chromePages"] = [{"type": t.get("type") if t.get("type") in {"page", "other", "background_page"} else "unknown",
                                   "location": "fixture" if urllib.parse.urlparse(t.get("url", "")).hostname == "localhost"
                                   else "chrome_error" if t.get("url", "").startswith("chrome-error:") else "other"}
@@ -184,18 +189,20 @@ class Scenario:
         return json.loads(rows[0])
 
     def login_form(self):
-        def form(tree):
-            known_form = any(n.get("resource-id", "").endswith("username") or matches(n, ["Username", "Username or email"])
-                             for n in tree.iter("node"))
-            return (editable(tree), editable(tree, True)) if known_form and editable(tree) is not None and editable(tree, True) is not None else None
-        return self.wait(form)
+        adb("forward", "tcp:19222", "localabstract:chrome_devtools_remote")
+        deadline = time.monotonic() + 60
+        while time.monotonic() < deadline:
+            try:
+                if native_browser.form_present():
+                    return
+            except Exception:
+                pass  # Details may include authorization URLs. Report only safe diagnostics.
+            time.sleep(1)
+        raise TimeoutError("Fixture credential form unavailable in Chrome")
 
     def login(self):
-        username, _ = self.login_form()
-        self.enter(username, self.state["username"])
-        password = self.wait(lambda tree: editable(tree, True))
-        self.enter(password, self.state["password"])
-        self.tap_label("Sign in", "Log in", package="com.android.chrome")
+        self.login_form()
+        native_browser.submit(self.state["username"], self.state["password"])
         self.app_label("Profile")
 
     def run(self):
