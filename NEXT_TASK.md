@@ -1,28 +1,25 @@
-# Next task — TASK-006 native registration verification
+# Next task — TASK-006 remaining native session failure-path verification
 
-Verify the ADA-72 registration extension on its PR, then resolve any native failures.
-The harness now includes cancellation, mismatched-password validation, registration
-callback, canonical UUID/profile persistence and registered-user relogin. Execution
-evidence is pending; do not count these as passed.
+PR #17 merged as afdab129 on 2026-11-12. Hosted Android E2E run
+43219354337 completed successfully (prerequisites and emulator); its sanitized
+artifact records the expanded eleven-check registration/login/profile suite.
+Do not repeat native registration as an unverified next task.
 
-Extend the existing Android35/Chrome scenario with the Consumer's real registration
-flow and callback. Source db13a26 passed six targeted login/profile/vault/offline/
-logout checks in hosted run 43209945677. Reuse the disposable fixture, real AppAuth
-PKCE and canonical identity/profile checks; do not replace them with protocol mocks.
+Next controlled work: test refresh replay rejection, provider outage/recovery,
+and session expiry using the isolated synthetic Android35/Chrome/AppAuth fixture.
+Keep PKCE, fail-closed JWT issuer/audience/time validation and token redaction.
+Use deterministic negative tests and retain evidence from executed native runs;
+do not mistake fixture protocol mocks for native proof.
 
-Acceptance: launch Create account from Flutter, submit a fresh synthetic account
-in the real provider form, return through the native PKCE callback, verify the
-canonical profile and same-account relogin. Cover the provider's explicit validation
-failure without logging credentials, tokens or authorization URLs. Preserve all
-six existing native checks, 68 backend and 33 Flutter regression tests and the
-hash-pinned Python dependency audit. See docs/identity/consumer-validation/README.md.
+Parallel independent roadmap lanes (separate branches):
+- ADA-73 / TASK-007: implement the consent contract before TASK-008 completion.
+- ADA-75 / TASK-009: address/serviceability model; no real addresses or
+  unapproved service zone/provider assumptions.
+- ADA-119 / TASK-053: CI speed/quality, PR #18 in review.
 
-TASK-006 stays in_progress: native replay capture, provider outage/expiry, iOS,
+TASK-006 remains in_progress: refresh replay, provider outage/expiry, iOS,
 TalkBack, large text, full RU/KK profile journeys, physical devices and session
-administration remain open. Production identity/OTP is not approved by this work.
-
-TASK-045 stays partially_verified and TASK-046 in_progress: trusted device identity,
-canonical-account-wide quotas across IdP aliases and distributed-edge controls need
-binding/operational contracts. Do not invent a trusted device from caller headers,
-select unapproved hosting, or suppress SDK GHSA-r937. The local IP/body/verified
-identity controls are foundation safeguards, not pilot/production readiness.
+administration remain open. TASK-045 partially_verified; TASK-046 in_progress.
+GHSA-r937 is unresolved. Production identity/OTP, privacy/residency and provider
+operations are not approved. Read PROJECT_STATE.md, AGENTS.md, the canonical
+backlog and docs/identity/consumer-validation/README.md before implementation.
