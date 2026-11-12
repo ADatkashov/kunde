@@ -293,7 +293,29 @@ class AuthRepository extends ChangeNotifier {
   }
 
   Future<Map<String, dynamic>> setConsent(String policyId, bool granted) async {
-    if (!RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}
+    final segments = policyId.split('-');
+    if (segments.length != 5 ||
+        segments.map((s) => s.length).join(',') != '8,4,4,4,12' ||
+        !RegExp(r'^[0-9a-fA-F]+').hasMatch(policyId.replaceAll('-', '')) ||
+        policyId.replaceAll('-', '').length != 32) {
+      throw ArgumentError.value(policyId, 'policyId', 'Invalid policy ID');
+    }
+    return (await _requestJson(
+        granted ? 'PUT' : 'DELETE', 'me/consents/$policyId'))
+        as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> _request(
+    String method, [
+    Map<String, dynamic>? body,
+  ]) async =>
+      (await _requestJson(method, 'me', body)) as Map<String, dynamic>;
+
+  Future<dynamic> _requestJson(
+    String method,
+    String path, [
+    Map<String, dynamic>? body,
+  ]) async {
     final access = await accessToken();
     final request = http.Request(method, apiBase.resolve(path));
     request.headers.addAll({
@@ -324,83 +346,6 @@ class AuthRepository extends ChangeNotifier {
       throw IdentityApiError(response.statusCode);
     }
     return jsonDecode(response.body);
-  }
-
-  Future<bool> logout() => _exclusive(() async {
-        final id = _tokens?.id;
-        _tokens = null;
-        expired = false;
-        notifyListeners();
-        await vault.clear();
-        try {
-          await gateway.logout(id);
-          return true;
-        } catch (_) {
-          return false;
-        }
-      });
-
-  @override
-  void dispose() {
-    _client.close();
-    super.dispose();
-  }
-}
-
-class IdentityApiError implements Exception {
-  IdentityApiError(this.status);
-  final int status;
-}
-)
-        .hasMatch(policyId)) {
-      throw ArgumentError.value(policyId, 'policyId', 'Invalid policy ID');
-    }
-    return (await _requestJson(
-        granted ? 'PUT' : 'DELETE', 'me/consents/$policyId'))
-        as Map<String, dynamic>;
-  }
-
-  Future<Map<String, dynamic>> _request(
-    String method, [
-    Map<String, dynamic>? body,
-  ]) async =>
-      (await _requestJson(method, 'me', body)) as Map<String, dynamic>;
-
-  Future<dynamic> _requestJson(
-    String method,
-    String path, [
-    Map<String, dynamic>? body,
-  ]) async {
-    final access = await accessToken();
-    final request = http.Request(method, apiBase.resolve('me'));
-    request.headers.addAll({
-      'Authorization': 'Bearer $access',
-      'Accept': 'application/json',
-    });
-    if (body != null) {
-      request.headers['Content-Type'] = 'application/json';
-      request.body = jsonEncode(body);
-    }
-    final http.Response response;
-    try {
-      response = await (() async =>
-              http.Response.fromStream(await _client.send(request)))()
-          .timeout(const Duration(seconds: 15));
-    } on TimeoutException {
-      throw IdentityUnavailable();
-    } on http.ClientException {
-      throw IdentityUnavailable();
-    }
-    if (response.statusCode == 401) {
-      await _exclusive(() async {
-        if (_tokens?.access == access) await _invalidate();
-      });
-      throw SessionExpired();
-    }
-    if (response.statusCode != 200) {
-      throw IdentityApiError(response.statusCode);
-    }
-    return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
   Future<bool> logout() => _exclusive(() async {
