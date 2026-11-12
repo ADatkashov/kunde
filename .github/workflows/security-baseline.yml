@@ -1,7 +1,6 @@
 name: Security baseline and vendor evidence
 on:
-  pull_request:
-    paths: ['scripts/ci/security_baseline.py', 'scripts/ci/vendor_evidence.py', '.github/workflows/security-baseline.yml']
+  workflow_dispatch:
 permissions:
   contents: read
   actions: read

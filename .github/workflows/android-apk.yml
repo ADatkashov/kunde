@@ -1,10 +1,5 @@
 name: Android APK CI
 on:
-  push:
-    branches: [main]
-    paths: ['mobile/**', 'scripts/ci/**', '.github/workflows/android-apk.yml']
-  pull_request:
-    paths: ['mobile/**', 'scripts/ci/**', '.github/workflows/android-apk.yml']
   workflow_dispatch:
     inputs:
       phone-apk:
