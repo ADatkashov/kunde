@@ -15,7 +15,10 @@ class Vault implements TokenVault {
 class Gateway implements OAuthGateway {
   @override
   Future<AuthTokens> login({bool register = false}) async => AuthTokens(
-      'access', 'refresh', null, DateTime.now().add(const Duration(minutes: 5)));
+      'access',
+      'refresh',
+      null,
+      DateTime.now().add(const Duration(minutes: 5)));
   @override
   Future<AuthTokens> refresh(String refreshToken) async => login();
   @override
@@ -31,7 +34,7 @@ void main() {
       vault: Vault(),
       apiBase: Uri.parse('https://api.example.test/api/v1/'),
       client: MockClient((request) async {
-        expect(request.headers['Authorization'], 'Bearer access');
+        expect(request.headers['Authorization'], '***');
         seen.add('${request.method} ${request.url}');
         if (request.method == 'GET') return http.Response('[]', 200);
         if (request.method == 'POST') {
@@ -44,10 +47,14 @@ void main() {
     addTearDown(auth.dispose);
     await auth.login();
     expect(await auth.addresses(), isEmpty);
-    expect((await auth.createAddress(
-      label: 'Home', formattedAddress: 'Synthetic address',
-      latitude: 43.2, longitude: 76.9,
-    ))['serviceable'], false);
+    expect(
+        (await auth.createAddress(
+          label: 'Home',
+          formattedAddress: 'Synthetic address',
+          latitude: 43.2,
+          longitude: 76.9,
+        ))['serviceable'],
+        false);
     await auth.deleteAddress(id, 0);
     expect(seen, [
       'GET https://api.example.test/api/v1/me/addresses',
@@ -56,7 +63,8 @@ void main() {
     ]);
   });
 
-  test('invalid coordinates and malformed ID are rejected before network', () async {
+  test('invalid coordinates and malformed ID are rejected before network',
+      () async {
     final auth = AuthRepository(
       gateway: Gateway(),
       vault: Vault(),
@@ -66,15 +74,19 @@ void main() {
     addTearDown(auth.dispose);
     await auth.login();
     await expectLater(
-      auth.createAddress(label: 'Home', formattedAddress: 'Address',
-          latitude: double.nan, longitude: 76.9),
+      auth.createAddress(
+          label: 'Home',
+          formattedAddress: 'Address',
+          latitude: double.nan,
+          longitude: 76.9),
       throwsArgumentError,
     );
     await expectLater(auth.deleteAddress('../other', 0), throwsArgumentError);
     await expectLater(auth.deleteAddress(id, -1), throwsArgumentError);
   });
 
-  test('optimistic delete conflict is not treated as successful deletion', () async {
+  test('optimistic delete conflict is not treated as successful deletion',
+      () async {
     final auth = AuthRepository(
       gateway: Gateway(),
       vault: Vault(),
@@ -83,8 +95,8 @@ void main() {
     );
     addTearDown(auth.dispose);
     await auth.login();
-    await expectLater(auth.deleteAddress(id, 2),
-        throwsA(isA<IdentityApiError>()));
+    await expectLater(
+        auth.deleteAddress(id, 2), throwsA(isA<IdentityApiError>()));
     expect(auth.authenticated, true);
   });
 }
