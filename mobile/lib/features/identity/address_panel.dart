@@ -28,13 +28,18 @@ class _AddressPanelState extends State<AddressPanel> {
 
   String _t(String ru, String kk, String en) {
     final lang = Localizations.localeOf(context).languageCode;
-    return lang == 'kk' ? kk : lang == 'en' ? en : ru;
+    return lang == 'kk'
+        ? kk
+        : lang == 'en'
+            ? en
+            : ru;
   }
 
   void _error() {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(_t('Не удалось выполнить действие. Повторите попытку.',
+        content: Text(_t(
+            'Не удалось выполнить действие. Повторите попытку.',
             'Әрекет орындалмады. Қайталап көріңіз.',
             'Action failed. Please try again.'))));
   }
@@ -66,8 +71,8 @@ class _AddressPanelState extends State<AddressPanel> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(_t('Удалить адрес?', 'Мекенжайды жою керек пе?',
-            'Delete address?')),
+        title: Text(_t(
+            'Удалить адрес?', 'Мекенжайды жою керек пе?', 'Delete address?')),
         content: Text(item['formattedAddress'] as String),
         actions: [
           TextButton(
@@ -82,8 +87,8 @@ class _AddressPanelState extends State<AddressPanel> {
     if (confirmed != true || !mounted) return;
     setState(() => _busy = true);
     try {
-      await widget.auth.deleteAddress(
-          item['id'] as String, item['version'] as int);
+      await widget.auth
+          .deleteAddress(item['id'] as String, item['version'] as int);
       if (mounted) setState(_refresh);
     } on IdentityApiError catch (error) {
       _error();
@@ -115,7 +120,8 @@ class _AddressPanelState extends State<AddressPanel> {
               if (snapshot.hasError) {
                 return TextButton(
                   onPressed: () => setState(_refresh),
-                  child: Text(_t('Повторить загрузку', 'Қайта жүктеу', 'Retry')),
+                  child:
+                      Text(_t('Повторить загрузку', 'Қайта жүктеу', 'Retry')),
                 );
               }
               final items = snapshot.data ?? [];
@@ -167,7 +173,8 @@ class _AddressPanelState extends State<AddressPanel> {
                   validator: (v) {
                     final n = double.tryParse(v ?? '');
                     return n == null || !n.isFinite || n < -90 || n > 90
-                        ? _t('Неверная широта', 'Қате ендік', 'Invalid latitude')
+                        ? _t(
+                            'Неверная широта', 'Қате ендік', 'Invalid latitude')
                         : null;
                   },
                 )),
@@ -182,7 +189,8 @@ class _AddressPanelState extends State<AddressPanel> {
                   validator: (v) {
                     final n = double.tryParse(v ?? '');
                     return n == null || !n.isFinite || n < -180 || n > 180
-                        ? _t('Неверная долгота', 'Қате бойлық', 'Invalid longitude')
+                        ? _t('Неверная долгота', 'Қате бойлық',
+                            'Invalid longitude')
                         : null;
                   },
                 )),
@@ -190,8 +198,8 @@ class _AddressPanelState extends State<AddressPanel> {
               const SizedBox(height: 12),
               FilledButton(
                   onPressed: _busy ? null : _create,
-                  child: Text(_t('Добавить адрес', 'Мекенжай қосу',
-                      'Add address'))),
+                  child: Text(
+                      _t('Добавить адрес', 'Мекенжай қосу', 'Add address'))),
             ]),
           ),
         ],
