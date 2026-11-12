@@ -78,6 +78,26 @@ class NativeFixtureTests(unittest.TestCase):
         self.assertNotIn("callback", report)
 
 
+    def test_provider_outage_restores_reverse_even_on_failed_assertion(self):
+        scenario = Scenario({})
+        with patch("consumer_native_e2e.adb") as adb_call, \
+             patch("consumer_native_e2e.network_diagnostics", return_value={"8180": {"httpStatus": 200}}):
+            with self.assertRaisesRegex(AssertionError, "unreachable"):
+                scenario.provider_network_recovery()
+        self.assertEqual(adb_call.call_args_list[0].args, ("reverse", "--remove", "tcp:8180"))
+        self.assertEqual(adb_call.call_args_list[-1].args, ("reverse", "tcp:8180", "tcp:8180"))
+        self.assertEqual(scenario.completed, [])
+
+    def test_provider_recovery_requires_real_device_probe_and_profile(self):
+        scenario = Scenario({})
+        with patch("consumer_native_e2e.adb"), \
+             patch("consumer_native_e2e.network_diagnostics", side_effect=[
+                 {"8180": {"httpStatus": None}}, {"8180": {"httpStatus": 200}}]), \
+             patch.object(scenario, "profile") as profile:
+            scenario.provider_network_recovery()
+        profile.assert_called_once()
+        self.assertEqual(len(scenario.completed), 1)
+
     def test_registration_binding_count_excludes_backend_test_issuers(self):
         scenario = Scenario({'marker': 'kunde-native-012345abcdef'})
         with patch('consumer_native_e2e.docker', return_value='1') as execute:
