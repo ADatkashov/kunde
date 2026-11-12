@@ -170,3 +170,19 @@ This is `PASSED_EXECUTED_SCENARIOS` / `EXECUTED_PARTIAL`, not complete TASK-006 
 Native registration/replay/outage/expiry, iOS, TalkBack, large text, full RU/KK
 profile journeys, physical devices and session administration remain open. The
 next existing-backlog action is native registration verification under TASK-006.
+
+
+### ADA-72 registration extension (verification pending)
+
+The existing harness additionally opens Create account in Flutter, cancels the
+system browser and retries, submits mismatched passwords to the real provider,
+then registers a fresh synthetic identity. It requires a native AppAuth callback,
+exactly one new canonical binding in the isolated database, distinct valid account
+and provider UUIDs, a profile save and same-account credential relogin. The six
+previous scenarios remain intact. The gate now requires ten completed checks.
+No password, token, authorization URL or raw browser DOM is retained.
+
+Local Python regression: 16 passed. Hosted native/backend/Flutter verification is
+pending on the ADA-72 branch. The earlier six-check JSON remains historical
+evidence and does not establish registration success. TASK-006 stays in_progress;
+GHSA-r937 and the remaining device/session/security acceptance gaps remain open.
