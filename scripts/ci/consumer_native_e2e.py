@@ -21,13 +21,21 @@ SAFE_LABELS = {"Sign in", "Sign In", "Sign out", "Profile", "Home", "Edit profil
                "Accept & continue", "Use without an account", "No thanks", "Continue", "Wait", "Close app",
                "Welcome to Chrome", "Make Chrome your own", "Sign in to your account", "Username or email",
                "Username", "Password", "Your connection is not private", "This site can’t be reached",
+               "Your session expired. Sign in again.",
                "This site can't be reached", "Checking your session…", "Sign in did not complete. Try again."}
-NOT_EXECUTED = ["refresh replay capture", "provider outage during refresh", "session expiry",
-                "iOS", "TalkBack", "large text", "full RU/KK profile journeys", "physical devices"]
+NOT_EXECUTED = ["iOS", "TalkBack", "large text", "full RU/KK profile journeys", "physical devices",
+                "account session administration (API returns 503)"]
+JWT = re.compile(rb"eyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}")
+ACCESS_TOKEN_LIFETIME_SECONDS = 300  # realm fixture accessTokenLifespan
+EXPIRY_WAIT_SECONDS = ACCESS_TOKEN_LIFETIME_SECONDS + 10
 
 
 def adb(*args):
     return subprocess.run(["adb", *args], check=True, capture_output=True, timeout=30).stdout
+
+
+def adb_input(data, *args):
+    return subprocess.run(["adb", *args], check=True, capture_output=True, input=data, timeout=30).stdout
 
 
 def hierarchy():
@@ -82,6 +90,8 @@ def safe_diagnostics(tree):
     return {"nodeCount": len(nodes),
             "editableCount": sum(n.get("class", "").endswith("EditText") for n in nodes),
             "safeVisibleLabels": sorted({v for n in nodes for v in labels(n) if v in SAFE_LABELS}),
+            "disabledSafeLabels": sorted({v for n in nodes if n.get("enabled", "true") != "true"
+                                          for v in labels(n) if v in SAFE_LABELS}),
             "packages": sorted({n.get("package") for n in nodes if n.get("package") in
                                 {PACKAGE, "com.android.chrome", "android", "com.android.systemui", "com.google.android.gms"}}),
             "resourceIds": sorted({n.get("resource-id") for n in nodes if re.fullmatch(
@@ -130,6 +140,9 @@ class Scenario:
         self.completed = []
         self.last_tree = None
         self.environment = {}
+        self.not_executed = []
+        self.vault_paths = []
+        self.trace = []
 
     def wait(self, predicate, seconds=60):
         end = time.monotonic() + seconds
@@ -155,8 +168,14 @@ class Scenario:
         return self.wait(lambda tree: find_label(tree, [label], PACKAGE))
 
     def hide_keyboard(self):
-        status = adb("shell", "dumpsys", "input_method").decode(errors="replace")
-        if re.search(r"(?:mInputShown|isInputViewShown|mIsInputViewShown)=true", status):
+        status = None
+        for _ in range(3):
+            try:
+                status = adb("shell", "dumpsys", "input_method").decode(errors="replace")
+                break
+            except subprocess.CalledProcessError:
+                time.sleep(1)  # The service can be briefly unavailable right after a clock change.
+        if status is not None and re.search(r"(?:mInputShown|isInputViewShown|mIsInputViewShown)=true", status):
             adb("shell", "input", "keyevent", "4")
 
     def enter(self, node, value):
@@ -173,8 +192,16 @@ class Scenario:
 
     def profile(self):
         self.app_label("Profile")
-        self.tap_label("Profile", package=PACKAGE)
-        self.app_label("Edit profile")
+        # A tap right after a navigation/redirect can be swallowed; retry before failing.
+        for attempt in range(3):
+            self.tap_label("Profile", package=PACKAGE)
+            try:
+                self.wait(lambda tree: find_label(tree, ["Edit profile"], PACKAGE), 20)
+                return
+            except TimeoutError:
+                if attempt == 2:
+                    raise
+        raise TimeoutError("Profile screen did not open")
 
     def db_profile(self, registered=False):
         # Inputs are generated UUID/constant issuer; no arbitrary user SQL or tokens.
@@ -215,6 +242,136 @@ class Scenario:
                 return
             time.sleep(1)
         raise AssertionError("Provider did not recover on Android")
+
+    def vault_file(self):
+        """Locate the encrypted secure-storage file of the debug app (never read or print its content)."""
+        listing = adb("shell", "run-as", PACKAGE, "find", ".", "-maxdepth", "3", "-type", "f").decode(errors="replace")
+        paths = [line.strip() for line in listing.splitlines() if re.fullmatch(r"[A-Za-z0-9_./-]+", line.strip())]
+        self.vault_paths = paths
+        found = [p[2:] for p in paths if "FlutterSecureStorage" in p and p.endswith(".xml")]
+        if len(found) != 1:
+            raise AssertionError("Expected exactly one secure-storage preference file")
+        return found[0]
+
+    def vault_snapshot(self):
+        """Opaque encrypted bytes kept only in memory so a rotated token can be replayed natively."""
+        adb("shell", "am", "force-stop", PACKAGE)
+        data = adb("exec-out", "run-as", PACKAGE, "cat", self.vault_file())
+        if not data:
+            raise AssertionError("Secure vault snapshot is empty")
+        return data
+
+    def vault_restore(self, data):
+        adb("shell", "am", "force-stop", PACKAGE)
+        target = self.vault_file()
+        if not re.fullmatch(r"shared_prefs/[A-Za-z0-9_.-]+", target):
+            raise AssertionError("Unexpected vault path")
+        # One remote command string so the redirect runs as the app user, not the outer adb shell.
+        adb_input(data, "shell", "run-as " + PACKAGE + " sh -c 'cat > " + target + "'")
+
+    def sign_in_again(self):
+        """Sign in after a cleared session; an alive provider SSO session may return straight to the app."""
+        adb("forward", "tcp:19222", "localabstract:chrome_devtools_remote")
+        started = time.monotonic()
+        deadline = started + 120
+        next_tap = 0
+        taps = 0
+        seen = None
+        while time.monotonic() < deadline:
+            try:
+                tree = hierarchy()
+                self.last_tree = tree
+                packages = {n.get("package") for n in tree.iter("node") if n.get("package")}
+                if packages != seen and len(self.trace) < 40:
+                    seen = packages
+                    self.trace.append({"t": int(time.monotonic() - started), "taps": taps,
+                                       "packages": sorted(packages)})
+                if any(matches(n, ["Profile"]) and n.get("package") == PACKAGE for n in tree.iter("node")):
+                    return  # Signed in; a still-disabled (busy) navigation bar is awaited by profile().
+                if "com.android.chrome" in packages:
+                    if native_browser.form_present():
+                        self.login()
+                        return
+                elif time.monotonic() >= next_tap:
+                    # The Custom Tab may not have started yet (or the tap was swallowed); tap again.
+                    button = find_label(tree, ["Sign in"], PACKAGE)
+                    if button is not None:
+                        self.tap(button)
+                        taps += 1
+                    next_tap = time.monotonic() + 20
+            except Exception:
+                pass
+            time.sleep(1)
+        raise TimeoutError("Re-authentication did not complete")
+
+    def provider_outage_during_refresh(self, saved):
+        self.stage = "provider_outage_during_refresh"
+        adb("shell", "am", "force-stop", PACKAGE)
+        adb("reverse", "--remove", "tcp:8180")
+        try:
+            # Process start always refreshes the vault token; the provider is unreachable now.
+            adb("shell", "am", "start", "-n", APP)
+            self.app_label("Cannot connect. Check your connection and try again.")
+        finally:
+            adb("reverse", "tcp:8180", "tcp:8180")
+        self.tap_label("Try again", package=PACKAGE)
+        self.profile()
+        self.app_label("NativeValidated")
+        if self.db_profile() != saved:
+            raise AssertionError("Provider outage changed canonical profile")
+        self.completed.append("provider outage during refresh keeps vault session and recovers without relogin")
+
+    def refresh_replay(self, saved):
+        self.stage = "refresh_replay_snapshot"
+        before = self.vault_snapshot()
+        self.stage = "refresh_replay_rotate"
+        self.launch()
+        self.profile()  # Restore rotates the refresh token; the snapshot is now already used.
+        self.stage = "refresh_replay_restore_old_vault"
+        self.vault_restore(before)
+        self.stage = "refresh_replay_present_old_token"
+        self.launch()
+        self.app_label("Your session expired. Sign in again.")
+        self.completed.append("replayed rotated refresh token rejected natively and session cleared")
+        self.stage = "refresh_replay_relogin"
+        self.sign_in_again()
+        self.stage = "refresh_replay_relogin_profile"
+        self.profile()
+        self.stage = "refresh_replay_relogin_identity"
+        self.app_label("NativeValidated")
+        if self.db_profile() != saved or self.binding_count() != 1:
+            raise AssertionError("Replay recovery changed canonical account")
+        self.completed.append("same-canonical-account relogin after rejected refresh-token replay")
+
+    def access_token_expiry(self):
+        """Wait out the real access-token lifetime (no clock manipulation), then require a native refresh."""
+        self.stage = "access_token_expiry_wait"
+        # No app refresh happens while idle; the in-memory token was issued before this wait.
+        time.sleep(EXPIRY_WAIT_SECONDS)
+        self.stage = "access_token_expiry_update"
+        self.profile()
+        self.tap_label("Edit profile", package=PACKAGE)
+        self.enter(self.wait(lambda tree: editable(tree)), "ExpiredRefreshed")
+        self.tap_label("English", package=PACKAGE)
+        self.tap_label("Save changes", package=PACKAGE)
+        self.app_label("Profile saved")
+        if self.db_profile()["name"] != "ExpiredRefreshed":
+            raise AssertionError("Refreshed access token did not authorize profile update")
+        self.completed.append("expired access token refreshed natively before authorized profile update")
+
+    def token_secrecy(self):
+        self.stage = "token_secrecy"
+        logs = adb("logcat", "-d")
+        vault = adb("exec-out", "run-as", PACKAGE, "cat", self.vault_file())
+        if JWT.search(logs) or JWT.search(vault):
+            raise AssertionError("Token material is exposed in logs or plaintext vault")
+        self.completed.append("no JWT material in device log or plaintext secure-storage file")
+
+    def session_failure_paths(self, saved):
+        self.provider_outage_during_refresh(saved)
+        self.refresh_replay(saved)
+        self.access_token_expiry()
+        self.token_secrecy()
 
     def login_form(self):
         adb("forward", "tcp:19222", "localabstract:chrome_devtools_remote")
@@ -412,6 +569,7 @@ class Scenario:
         if self.db_profile() != saved:
             raise AssertionError("Logout/relogin changed canonical profile")
         self.completed.append("provider logout, subsequent credential form and same-account relogin")
+        self.session_failure_paths(saved)
         self.registration()
 
 
@@ -424,12 +582,19 @@ def main():
     try:
         scenario.run()
         result["status"] = "PASSED_EXECUTED_SCENARIOS"
-        result["notExecuted"] = NOT_EXECUTED
+        result["notExecuted"] = scenario.not_executed + NOT_EXECUTED
     except Exception as error:
         result.update(stage=scenario.stage, errorClass=type(error).__name__)
+        if isinstance(error, subprocess.CalledProcessError) and isinstance(error.cmd, (list, tuple)):
+            # Only the leading adb arguments (no stdin or output) are reported.
+            result["failedCommand"] = {"args": [str(a)[:40] for a in error.cmd[:5]], "returnCode": error.returncode}
         result["networkDiagnostics"] = network_diagnostics()
         if scenario.last_tree is not None:
             result["diagnostics"] = safe_diagnostics(scenario.last_tree)
+    if scenario.vault_paths and result["status"] != "PASSED_EXECUTED_SCENARIOS":
+        result["appFiles"] = scenario.vault_paths[:40]  # file names only, never contents
+    if scenario.trace and result["status"] != "PASSED_EXECUTED_SCENARIOS":
+        result["reloginTrace"] = scenario.trace  # package names and counters only
     result["environment"] = scenario.environment
     if scenario.completed:
         result["nativeE2E"] = "EXECUTED_PARTIAL"

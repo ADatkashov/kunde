@@ -123,7 +123,7 @@
     "release": "REL-1",
     "user_story_id": "US-003",
     "implementation_status": "in_progress",
-    "implementation_note": "PR #5 established canonical identity/profile/V2 and Flutter auth/session. PR #14 hosted Android35/Chrome124 verified six native PKCE/login/profile/vault/offline/logout checks (run 43209945677). PR #17 merged as afdab129; hosted Android native E2E run 43219354337 succeeded with eleven completed checks including registration cancellation, validation, canonical UUID/profile save, duplicate rejection and same-account relogin. Sanitized artifact identity-e2e-sanitized retained in Actions. TASK-006 remains in_progress: refresh replay, provider outage/expiry, iOS/accessibility/physical devices and session administration not yet verified; GHSA-r937 remains open."
+    "implementation_note": "PR #5 established canonical identity/profile/V2 and Flutter auth/session. PR #14 and #17 verified native PKCE/login/profile/vault/offline/logout and registration checks. PR #28 (hosted Android35/Chrome124 run 43270980722, source 5159ae7, sanitized artifact identity-e2e-sanitized) extends the native harness to 17 completed checks: provider outage during refresh with recovery, rotated refresh-token replay rejected with session cleared, same-canonical-account relogin, expired access token refreshed natively (real 310 s wait), and no JWT material in device log/plaintext vault file. TASK-006 remains in_progress: iOS, TalkBack/large text, full RU/KK journeys, physical devices and session administration (API returns 503) are NOT_EXECUTED; GHSA-r937 remains open."
   },
   {
     "id": "TASK-007",

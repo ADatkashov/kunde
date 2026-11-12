@@ -18,3 +18,4 @@ docs/identity/poc/**/test-output/
 docs/identity/poc/**/.env
 docs/identity/poc/**/.local/
 docs/identity/poc/**/test-output/
+__pycache__/
