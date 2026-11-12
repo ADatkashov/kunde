@@ -35,7 +35,7 @@ void main() {
       vault: TestVault(),
       apiBase: Uri.parse('https://api.example.test/api/v1/'),
       client: MockClient((request) async {
-        expect(request.headers['Authorization'], '***');
+        expect(request.headers['Authorization'], 'Bearer test-access');
         methods.add('${request.method} ${request.url.path}');
         if (request.method == 'GET') {
           return http.Response('[{"policyId":"$policy","granted":false}]', 200);
