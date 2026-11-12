@@ -963,7 +963,7 @@
     "release": "REL-1",
     "user_story_id": "US-022",
     "implementation_status": "in_progress",
-    "implementation_note": "Supported Boot4 BOM and owned native dependencies remediated; actual project OSV0, immutable/effective container OS0; SDK GHSA-r937 MODERATE and coverage/API abuse controls open. See docs/security/TASK-046.md and ci-vulnerability-ledger.md."
+    "implementation_note": "Bounded per-process peer-IP quota implemented with correlated 429/RATE_LIMITED, Retry-After, aggregate denial counter, fail-closed active-table capacity and untrusted forwarded-header rejection. Cloud Java21/PostgreSQL16 clean verify passed 47 tests, zero skips, including concurrency and real HTTP filter-chain checks. SDK GHSA-r937, account/device/edge quotas, body-size and audit-coverage gates remain open; no production readiness."
   },
   {
     "id": "TASK-047",

@@ -12,6 +12,14 @@ With no `OIDC_ISSUER_URI`, only health, capabilities and empty read-only catalog
 
 ## Checks
 
+API requests have a bounded per-process peer-IP quota: by default 120 requests
+per 60 seconds, with at most 4096 peer entries. Exhaustion returns 429 with
+`Retry-After` and the existing JSON error envelope. Health probes are excluded.
+Forwarded headers are not trusted; reverse-proxy peers share a quota. Configure
+`API_RATE_LIMIT_REQUESTS`, `API_RATE_LIMIT_WINDOW_SECONDS` (1–3600), and
+`API_RATE_LIMIT_MAX_CLIENTS`. See [TASK-046](../docs/security/TASK-046.md) for
+deployment limits and remaining account/device/edge controls.
+
 Run `mvn verify`. Local database is required for full application startup; unit tests do not need vendor credentials.
 
 ## Consumer Identity and Profile

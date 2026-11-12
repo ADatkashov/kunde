@@ -4,6 +4,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import kz.kunde.platform.ApiSecurityErrorWriter;
+import kz.kunde.platform.ApiRateLimitFilter;
+import org.springframework.web.filter.CorsFilter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,6 +32,7 @@ public class IdentityPocSecurityConfiguration {
     @Bean
     @Order(0)
     SecurityFilterChain identityPocApi(HttpSecurity http, ApiSecurityErrorWriter errors, JwtDecoder issuerJwtDecoder,
+            ApiRateLimitFilter limiter,
             @Value("${app.security.oidc.audience}") String audience,
             @Value("${app.security.oidc.poc-zitadel-organization:}") String zitadelOrganization)
             throws Exception {
@@ -42,6 +45,7 @@ public class IdentityPocSecurityConfiguration {
         return http
                 .securityMatcher("/api/v1/poc/**")
                 .csrf(AbstractHttpConfigurer::disable)
+                .addFilterAfter(limiter, CorsFilter.class)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .anyRequest().hasAuthority(POC_AUTHORITY))

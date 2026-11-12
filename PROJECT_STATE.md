@@ -1,6 +1,6 @@
 # KUNDE project state
 
-Reviewed 2026-11-11. Follow AGENTS.md; code and current CI are authoritative.
+Reviewed 2026-11-12. Follow AGENTS.md; code and current CI are authoritative.
 
 - Reconciled main 4595309 after PR #5 merge: Backend/Flutter/APK/configuration
   runs 43078224891/43078224810/43078224874/43078224746 succeeded. All 56 existing
@@ -10,7 +10,17 @@ Reviewed 2026-11-11. Follow AGENTS.md; code and current CI are authoritative.
   Hosted evidence for this increment is tracked in its PR. SDK vulnerability
   and native Consumer E2E remain open.
 
-- Java 21 / Spring Boot 4.0.9, PostgreSQL/Flyway V1–V2 and Flutter 3.47.0.
+- TASK-046 branch increment (2026-11-12): bounded per-process API peer-IP quota,
+  429/Retry-After, aggregate denial metric and forwarded-header rejection added.
+  Cloud Java21/PostgreSQL16 clean verify passes 47 tests with no skips, including
+  real HTTP and concurrency checks. Hosted evidence will be recorded in its PR.
+  Account/device/edge quotas, body-size controls and SDK advisory remain open.
+- Main advanced externally to 1d367bf: PR #7 merged as397676d, plus APK preview
+  publication, CodeRabbit configuration and repository-wide Security CI (PRs8–10).
+  Those changes are preserved in this branch integration. This task did not merge
+  PR #7 after automatic approval review rejected it for the SDK security failure.
+
+- Java 21 / Spring Boot 4.0.9, PostgreSQL/Flyway V1–V2 and Flutter 3.47.9 (updated in main).
 - ADR-015 is ACCEPTED for synthetic implementation: Keycloak primary, ZITADEL
   fallback. Production readiness, privacy, residency, operations and OTP remain gated.
 - PRs #1–#3 added hosted CI, Consumer Identity/Profile and tests. Main at 22c1ae8

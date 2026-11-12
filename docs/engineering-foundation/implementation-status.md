@@ -40,3 +40,17 @@ Two executable regression tests cover each absent prerequisite and the ready cas
 presence alone never claims E2E success. Security CI still fails honestly on the
 upstream Flutter SDK GHSA-r937 tooling finding. TASK-003 remains partially_verified;
 TASK-006 and TASK-046 remain in_progress.
+
+# TASK-046 API quota verification — 2026-11-12
+
+Branch increment started on main `095ce75`, then integrated main `1d367bf`; not a claim of merged source or release
+readiness. `mvn --batch-mode --no-transfer-progress clean verify` in GPT Cloud,
+using checksum-verified Java21 JDK/Maven and isolated PostgreSQL16.15, passed
+47 tests with zero failures/errors/skips and built the executable JAR. Six new
+deterministic quota tests and a real embedded-server HTTP test cover allowed and
+denied requests, concurrency, spoofed headers, Retry-After and probes. See
+[TASK-046](../security/TASK-046.md) for exact scope and configuration.
+
+TASK-046 remains in_progress: the SDK GHSA-r937 finding, account/device/distributed
+edge quotas, request-body limits and supply-chain coverage remain open. The packaged JAR smoke passed health200, protected-without-issuer503
+and OpenAPI200 after the final CORS fix; hosted checks are recorded in the PR.
