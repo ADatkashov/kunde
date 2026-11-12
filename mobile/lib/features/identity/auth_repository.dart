@@ -285,8 +285,90 @@ class AuthRepository extends ChangeNotifier {
         'version': version,
       });
 
+  Future<List<Map<String, dynamic>>> consents() async {
+    final result = await _requestJson('GET', 'me/consents');
+    return (result as List<dynamic>)
+        .map((entry) => entry as Map<String, dynamic>)
+        .toList(growable: false);
+  }
+
+  Future<Map<String, dynamic>> setConsent(String policyId, bool granted) async {
+    if (!RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}
+    final access = await accessToken();
+    final request = http.Request(method, apiBase.resolve(path));
+    request.headers.addAll({
+      'Authorization': 'Bearer $access',
+      'Accept': 'application/json',
+    });
+    if (body != null) {
+      request.headers['Content-Type'] = 'application/json';
+      request.body = jsonEncode(body);
+    }
+    final http.Response response;
+    try {
+      response = await (() async =>
+              http.Response.fromStream(await _client.send(request)))()
+          .timeout(const Duration(seconds: 15));
+    } on TimeoutException {
+      throw IdentityUnavailable();
+    } on http.ClientException {
+      throw IdentityUnavailable();
+    }
+    if (response.statusCode == 401) {
+      await _exclusive(() async {
+        if (_tokens?.access == access) await _invalidate();
+      });
+      throw SessionExpired();
+    }
+    if (response.statusCode != 200) {
+      throw IdentityApiError(response.statusCode);
+    }
+    return jsonDecode(response.body);
+  }
+
+  Future<bool> logout() => _exclusive(() async {
+        final id = _tokens?.id;
+        _tokens = null;
+        expired = false;
+        notifyListeners();
+        await vault.clear();
+        try {
+          await gateway.logout(id);
+          return true;
+        } catch (_) {
+          return false;
+        }
+      });
+
+  @override
+  void dispose() {
+    _client.close();
+    super.dispose();
+  }
+}
+
+class IdentityApiError implements Exception {
+  IdentityApiError(this.status);
+  final int status;
+}
+)
+        .hasMatch(policyId)) {
+      throw ArgumentError.value(policyId, 'policyId', 'Invalid policy ID');
+    }
+    return (await _requestJson(
+        granted ? 'PUT' : 'DELETE', 'me/consents/$policyId'))
+        as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> _request(
     String method, [
+    Map<String, dynamic>? body,
+  ]) async =>
+      (await _requestJson(method, 'me', body)) as Map<String, dynamic>;
+
+  Future<dynamic> _requestJson(
+    String method,
+    String path, [
     Map<String, dynamic>? body,
   ]) async {
     final access = await accessToken();
