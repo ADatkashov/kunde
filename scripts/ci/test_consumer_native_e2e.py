@@ -1,8 +1,9 @@
 import json
 import unittest
+from unittest.mock import patch, Mock
 import xml.etree.ElementTree as ET
 
-from consumer_native_e2e import center, editable, find_label, safe_diagnostics
+from consumer_native_e2e import center, editable, find_label, safe_diagnostics, network_diagnostics
 from native_identity_stack import realm_fixture
 
 
@@ -54,6 +55,24 @@ class NativeFixtureTests(unittest.TestCase):
         tree.append(node(text="Profile"))
         report = json.dumps(safe_diagnostics(tree))
         self.assertIn("Profile", report)
+        self.assertNotIn("password-sentinel", report)
+        self.assertNotIn("secret-sentinel", report)
+        self.assertNotIn("callback", report)
+
+    def test_network_diagnostics_drop_raw_logs_urls_and_response_bodies(self):
+        response = Mock()
+        response.__enter__ = Mock(return_value=response)
+        response.__exit__ = Mock(return_value=False)
+        response.read.return_value = b'[{"type":"page","url":"http://localhost/callback?code=secret-sentinel","title":"password-sentinel"}]'
+        opener = Mock()
+        opener.open.return_value = response
+        with patch("consumer_native_e2e.subprocess.run", return_value=Mock(
+                returncode=0, stdout=b"HTTP/1.0 200 OK\r\npassword-sentinel", stderr=b"")), \
+             patch("consumer_native_e2e.adb", return_value=b"net::ERR_CONNECTION_REFUSED secret-sentinel"), \
+             patch("consumer_native_e2e.urllib.request.build_opener", return_value=opener):
+            report = json.dumps(network_diagnostics())
+        self.assertIn("ERR_CONNECTION_REFUSED", report)
+        self.assertIn("fixture", report)
         self.assertNotIn("password-sentinel", report)
         self.assertNotIn("secret-sentinel", report)
         self.assertNotIn("callback", report)

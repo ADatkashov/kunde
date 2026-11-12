@@ -6,6 +6,8 @@ import re
 import subprocess
 import time
 import xml.etree.ElementTree as ET
+import urllib.request
+import urllib.parse
 
 from native_identity_stack import docker
 
@@ -82,6 +84,36 @@ def safe_diagnostics(tree):
             "resourceIds": sorted({n.get("resource-id") for n in nodes if re.fullmatch(
                 r"(?:com\.android\.chrome|android):id/[a-zA-Z0-9_]+|username|password|kc-login", n.get("resource-id", ""))})}
 
+
+
+def network_diagnostics():
+    # Fixed loopback probes only. Raw command output and browser URLs never escape.
+    result = {}
+    for port, path in ((8180, "/realms/kunde-consumer-check/.well-known/openid-configuration"),
+                       (8081, "/actuator/health")):
+        request = f"GET {path} HTTP/1.0\r\nHost: localhost:{port}\r\n\r\n"
+        script = "{ printf '" + request.replace("\r", "\\r").replace("\n", "\\n") + "'; sleep 1; } | toybox nc -w 5 127.0.0.1 " + str(port)
+        try:
+            probe = subprocess.run(["adb", "shell", script], capture_output=True, timeout=10)
+            match = re.search(rb"HTTP/\d\.\d (\d{3})", probe.stdout)
+            result[str(port)] = {"exitCode": probe.returncode, "httpStatus": int(match[1]) if match else None,
+                                 "ncUnsupported": b"Unknown command" in probe.stderr or b"Unknown option" in probe.stderr}
+        except subprocess.TimeoutExpired:
+            result[str(port)] = {"timeout": True}
+    try:
+        log = adb("logcat", "-d", "-s", "chromium:I").decode(errors="replace")
+        result["chromeNetErrors"] = sorted(set(re.findall(r"net::ERR_[A-Z_]+", log)))
+        adb("forward", "tcp:19222", "localabstract:chrome_devtools_remote")
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        with opener.open("http://127.0.0.1:19222/json/list", timeout=3) as response:
+            targets = json.load(response)
+        result["chromePages"] = [{"type": t.get("type") if t.get("type") in {"page", "other", "background_page"} else "unknown",
+                                  "location": "fixture" if urllib.parse.urlparse(t.get("url", "")).hostname == "localhost"
+                                  else "chrome_error" if t.get("url", "").startswith("chrome-error:") else "other"}
+                                 for t in targets]
+    except Exception as error:
+        result["chromeDiagnosticsError"] = type(error).__name__
+    return result
 
 
 class Scenario:
@@ -253,6 +285,7 @@ def main():
         result["status"] = "PASSED_EXECUTED_SCENARIOS"
     except Exception as error:
         result.update(stage=scenario.stage, errorClass=type(error).__name__)
+        result["networkDiagnostics"] = network_diagnostics()
         if scenario.last_tree is not None:
             result["diagnostics"] = safe_diagnostics(scenario.last_tree)
     if scenario.completed:
