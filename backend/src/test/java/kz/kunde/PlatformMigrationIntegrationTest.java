@@ -66,6 +66,38 @@ class PlatformMigrationIntegrationTest {
     }
 
     @Test
+    @org.springframework.transaction.annotation.Transactional
+    void addressSchemaStartsWithoutApprovedServiceZones() {
+        assertThat(jdbcTemplate.queryForObject(
+                "select count(*) from flyway_schema_history where version = '3' and success", Integer.class))
+                .isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.tables where table_schema = 'profile' and table_name = 'consumer_addresses'",
+                Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject(
+                "select count(*) from information_schema.tables where table_schema = 'serviceability' and table_name = 'zones'",
+                Integer.class)).isEqualTo(1);
+
+        java.util.UUID owner = jdbcTemplate.queryForObject(
+                "insert into identity.users default values returning id", java.util.UUID.class);
+        java.util.UUID address = jdbcTemplate.queryForObject("""
+                insert into profile.consumer_addresses (user_id, label, formatted_address, latitude, longitude)
+                values (?, 'Synthetic', 'Synthetic test address', 43.238949, 76.889709) returning id
+                """, java.util.UUID.class, owner);
+        assertThat(address).isNotNull();
+        assertThat(jdbcTemplate.queryForObject(
+                "select count(*) from serviceability.zone_addresses where address_id = ?", Integer.class, address))
+                .isZero();
+        java.util.UUID zone = jdbcTemplate.queryForObject(
+                "insert into serviceability.zones (code) values (?) returning id",
+                java.util.UUID.class, "synthetic-zone-" + owner.toString().substring(0, 8));
+        assertThat(jdbcTemplate.queryForObject(
+                "select enabled from serviceability.zones where id = ?", Boolean.class, zone)).isFalse();
+        assertThat(jdbcTemplate.queryForObject(
+                "select count(*) from serviceability.zones where enabled", Integer.class)).isZero();
+    }
+
+    @Test
     void publicCapabilitiesAreAvailableButProtectedRoutesFailClosedWithoutIssuer() throws Exception {
         mockMvc.perform(get("/api/v1/capabilities"))
                 .andExpect(status().isOk())
