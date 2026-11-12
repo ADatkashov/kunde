@@ -1,5 +1,30 @@
 # KUNDE project state
 
+## Current verified main snapshot — 2026-11-12
+
+- Latest verified merge: `af61a2e586db2bed382677fad4aa5be869a5d99a` (PR #25).
+- PR #23 / ADA-73: protected Consumer consent API, Flyway V4 ledger,
+  approval-only policies, owner-scoped immutable grant/withdrawal history,
+  active-user row lock; merged as `6d098c5`. Backend/Security/config CI green.
+- PR #24 / ADA-74: Flutter authenticated consent management with RU/KK/EN,
+  confirmation, fail-closed session behavior and tests; merged as `f85c7e0`.
+  Flutter/Security/config CI green.
+- PR #25 / ADA-76: Flutter saved addresses, manual WGS84 input,
+  optimistic delete conflict handling, honest serviceability state and tests;
+  merged as `af61a2e`. Flutter/Security/config CI green.
+- Linear ADA-73, ADA-74 and ADA-76 remain **In Progress** where acceptance
+  remains incomplete: legal/privacy policy approval, consent withdrawal effects,
+  policy presentation, native accessibility, real zone/map UX and device checks.
+  Do not infer Done from merged PRs.
+- Next critical verification is ADA-72 / TASK-006: **native** refresh replay,
+  provider outage/recovery, expiry, iOS, TalkBack/large text, physical devices
+  and account session administration. Protocol and unit tests are not native proof.
+- GHSA-r937 remains unresolved; no scanner suppression or production sign-off.
+- The paragraphs below are retained as historical evidence and must not be read
+  as the current main commit or current test count.
+
+## Historical engineering notes
+
 Reviewed 2026-11-12. Follow AGENTS.md; code and current CI are authoritative.
 
 - ADA-72 PR #17 merged as afdab129 (2026-11-12). Hosted Android native E2E
