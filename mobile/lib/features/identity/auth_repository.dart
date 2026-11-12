@@ -285,6 +285,45 @@ class AuthRepository extends ChangeNotifier {
         'version': version,
       });
 
+  Future<List<Map<String, dynamic>>> addresses() async {
+    final result = await _requestJson('GET', 'me/addresses');
+    return (result as List<dynamic>)
+        .map((entry) => entry as Map<String, dynamic>)
+        .toList(growable: false);
+  }
+
+  Future<Map<String, dynamic>> createAddress({
+    required String label,
+    required String formattedAddress,
+    required double latitude,
+    required double longitude,
+  }) async {
+    if (label.trim().isEmpty || label.length > 80 ||
+        formattedAddress.trim().isEmpty || formattedAddress.length > 500 ||
+        !latitude.isFinite || !longitude.isFinite ||
+        latitude < -90 || latitude > 90 || longitude < -180 ||
+        longitude > 180) {
+      throw ArgumentError('Invalid address');
+    }
+    return (await _requestJson('POST', 'me/addresses', {
+      'label': label.trim(),
+      'formattedAddress': formattedAddress.trim(),
+      'latitude': latitude,
+      'longitude': longitude,
+    }, {201})) as Map<String, dynamic>;
+  }
+
+  Future<void> deleteAddress(String id, int version) async {
+    final pieces = id.split('-');
+    if (pieces.map((s) => s.length).join(',') != '8,4,4,4,12' ||
+        !RegExp(r'^[0-9a-fA-F]+').hasMatch(id.replaceAll('-', '')) ||
+        id.replaceAll('-', '').length != 32 || version < 0) {
+      throw ArgumentError('Invalid address identity or version');
+    }
+    await _requestJson('DELETE',
+        'me/addresses/$id?version=$version', null, {204});
+  }
+
   Future<List<Map<String, dynamic>>> consents() async {
     final result = await _requestJson('GET', 'me/consents');
     return (result as List<dynamic>)
@@ -315,6 +354,7 @@ class AuthRepository extends ChangeNotifier {
     String method,
     String path, [
     Map<String, dynamic>? body,
+    Set<int> expected = const {200},
   ]) async {
     final access = await accessToken();
     final request = http.Request(method, apiBase.resolve(path));
@@ -342,9 +382,10 @@ class AuthRepository extends ChangeNotifier {
       });
       throw SessionExpired();
     }
-    if (response.statusCode != 200) {
+    if (!expected.contains(response.statusCode)) {
       throw IdentityApiError(response.statusCode);
     }
+    if (response.statusCode == 204) return null;
     return jsonDecode(response.body);
   }
 
