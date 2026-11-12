@@ -183,8 +183,16 @@ class Scenario:
 
     def profile(self):
         self.app_label("Profile")
-        self.tap_label("Profile", package=PACKAGE)
-        self.app_label("Edit profile")
+        # A tap right after a navigation/redirect can be swallowed; retry before failing.
+        for attempt in range(3):
+            self.tap_label("Profile", package=PACKAGE)
+            try:
+                self.wait(lambda tree: find_label(tree, ["Edit profile"], PACKAGE), 20)
+                return
+            except TimeoutError:
+                if attempt == 2:
+                    raise
+        raise TimeoutError("Profile screen did not open")
 
     def db_profile(self, registered=False):
         # Inputs are generated UUID/constant issuer; no arbitrary user SQL or tokens.
@@ -318,7 +326,9 @@ class Scenario:
         self.completed.append("replayed rotated refresh token rejected natively and session cleared")
         self.stage = "refresh_replay_relogin"
         self.sign_in_again()
+        self.stage = "refresh_replay_relogin_profile"
         self.profile()
+        self.stage = "refresh_replay_relogin_identity"
         self.app_label("NativeValidated")
         if self.db_profile() != saved or self.binding_count() != 1:
             raise AssertionError("Replay recovery changed canonical account")
