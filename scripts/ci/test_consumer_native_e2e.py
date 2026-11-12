@@ -100,7 +100,7 @@ class NativeFixtureTests(unittest.TestCase):
     def test_registered_profile_rejects_multiple_canonical_bindings(self):
         scenario = Scenario({'marker': 'kunde-native-012345abcdef',
                              'subject': '11111111-1111-4111-8111-111111111111'})
-        with patch('consumer_native_e2e.docker', return_value='{}\\n{}'):
+        with patch('consumer_native_e2e.docker', return_value='\n'.join(['{}', '{}'])):
             with self.assertRaisesRegex(AssertionError, 'Expected one canonical synthetic identity'):
                 scenario.db_profile(registered=True)
 
