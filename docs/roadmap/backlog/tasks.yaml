@@ -143,7 +143,7 @@
     "release": "REL-1",
     "user_story_id": "US-004",
     "implementation_status": "in_progress",
-    "implementation_note": "Consumer profile GET/PATCH and optimistic concurrency exist; consent lifecycle/contract remains absent."
+    "implementation_note": "PR #23 merged to main as 6d098c5 (2026-11-12). Protected consent list/grant/withdraw and immutable V4 ledger are implemented; Backend/Security/config CI green. Legal policy approval, retention, disclosure and downstream withdrawal effects remain unverified; not Done. Historical: Consumer profile GET/PATCH and optimistic concurrency exist; consent lifecycle/contract remains absent."
   },
   {
     "id": "TASK-008",
@@ -165,7 +165,7 @@
     "release": "REL-1",
     "user_story_id": "US-004",
     "implementation_status": "in_progress",
-    "implementation_note": "RU/KK/EN profile editing exists in PR #5; consent and native accessibility/device acceptance remain open."
+    "implementation_note": "PR #24 merged to main as f85c7e0 (2026-11-12). Flutter localized profile consent UI, explicit confirmation, authenticated API and tests; Flutter/Security/config CI green. Policy presentation and native accessibility/device acceptance remain open; not Done. Historical: RU/KK/EN profile editing exists in PR #5; consent and native accessibility/device acceptance remain open."
   },
   {
     "id": "TASK-009",
@@ -206,8 +206,8 @@
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
     "user_story_id": "US-005",
-    "implementation_status": "not_started",
-    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
+    "implementation_status": "in_progress",
+    "implementation_note": "PR #25 merged to main as af61a2e (2026-11-12). Flutter address list/create/delete with manual WGS84 coordinates, optimistic version, serviceability disclaimer and tests; Flutter/Security/config CI green. Map-based selection, real zone/out-of-zone UX and device acceptance remain open; not Done. Historical: No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-011",
