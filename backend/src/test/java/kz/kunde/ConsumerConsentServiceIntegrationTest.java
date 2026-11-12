@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest(properties = {
@@ -24,6 +26,7 @@ class ConsumerConsentServiceIntegrationTest {
     @Autowired ConsumerIdentityService identity;
     @Autowired ConsumerConsentService consents;
     @Autowired JdbcTemplate db;
+    @MockitoBean JwtDecoder issuerJwtDecoder;
 
     private Jwt jwt() {
         return Jwt.withTokenValue("fixture").header("alg", "RS256")
