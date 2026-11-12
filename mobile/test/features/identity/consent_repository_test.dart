@@ -15,7 +15,10 @@ class TestVault implements TokenVault {
 class TestGateway implements OAuthGateway {
   @override
   Future<AuthTokens> login({bool register = false}) async => AuthTokens(
-      'test-access', 'test-refresh', null, DateTime.now().add(const Duration(minutes: 5)));
+      'test-access',
+      'test-refresh',
+      null,
+      DateTime.now().add(const Duration(minutes: 5)));
   @override
   Future<AuthTokens> refresh(String refreshToken) async => login();
   @override
@@ -24,7 +27,8 @@ class TestGateway implements OAuthGateway {
 
 void main() {
   const policy = '11111111-2222-3333-4444-555555555555';
-  test('consent client scopes requests to current bearer and correct methods', () async {
+  test('consent client scopes requests to current bearer and correct methods',
+      () async {
     final methods = <String>[];
     final auth = AuthRepository(
       gateway: TestGateway(),
