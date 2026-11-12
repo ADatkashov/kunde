@@ -131,3 +131,80 @@ class NativeFixtureTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'Unexpected synthetic subject'):
                 scenario.db_profile(registered=True)
         execute.assert_not_called()
+
+
+class SessionFailurePathTests(unittest.TestCase):
+    saved = {"id": "x", "name": "NativeValidated"}
+
+    def test_outage_during_refresh_restores_reverse_and_requires_retry_without_relogin(self):
+        scenario = Scenario({})
+        with patch("consumer_native_e2e.adb") as adb_call, \
+             patch.object(scenario, "app_label", side_effect=TimeoutError()):
+            with self.assertRaises(TimeoutError):
+                scenario.provider_outage_during_refresh(self.saved)
+        self.assertEqual(adb_call.call_args_list[-1].args, ("reverse", "tcp:8180", "tcp:8180"))
+        self.assertEqual(scenario.completed, [])
+
+    def test_outage_recovery_asserts_canonical_profile_unchanged(self):
+        scenario = Scenario({})
+        with patch("consumer_native_e2e.adb"), patch.object(scenario, "app_label"), \
+             patch.object(scenario, "tap_label"), patch.object(scenario, "profile"), \
+             patch.object(scenario, "db_profile", return_value={"id": "other"}):
+            with self.assertRaisesRegex(AssertionError, "canonical"):
+                scenario.provider_outage_during_refresh(self.saved)
+
+    def test_replay_restores_snapshot_taken_before_rotation_and_requires_expired_ui(self):
+        scenario = Scenario({"marker": "kunde-native-012345abcdef"})
+        order = []
+        with patch.object(scenario, "vault_snapshot", side_effect=lambda: order.append("snapshot") or b"opaque"), \
+             patch.object(scenario, "launch", side_effect=lambda: order.append("launch")), \
+             patch.object(scenario, "profile", side_effect=lambda: order.append("rotate")), \
+             patch.object(scenario, "vault_restore", side_effect=lambda data: order.append(("restore", data))), \
+             patch.object(scenario, "app_label", side_effect=lambda label: order.append(label)), \
+             patch.object(scenario, "sign_in_again"), patch.object(scenario, "binding_count", return_value=1), \
+             patch.object(scenario, "db_profile", return_value=self.saved):
+            scenario.refresh_replay(self.saved)
+        self.assertEqual(order[:5], ["snapshot", "launch", "rotate", ("restore", b"opaque"), "launch"])
+        self.assertEqual(order[5], "Your session expired. Sign in again.")
+        self.assertEqual(len(scenario.completed), 1)
+
+    def test_replay_fails_if_relogin_changes_account(self):
+        scenario = Scenario({})
+        with patch.object(scenario, "vault_snapshot", return_value=b"x"), patch.object(scenario, "launch"), \
+             patch.object(scenario, "profile"), patch.object(scenario, "vault_restore"), \
+             patch.object(scenario, "app_label"), patch.object(scenario, "sign_in_again"), \
+             patch.object(scenario, "binding_count", return_value=2), \
+             patch.object(scenario, "db_profile", return_value=self.saved):
+            with self.assertRaisesRegex(AssertionError, "canonical"):
+                scenario.refresh_replay(self.saved)
+
+    def test_vault_file_requires_single_secure_storage_file(self):
+        scenario = Scenario({})
+        with patch("consumer_native_e2e.adb", return_value=b"FlutterSecureStorage.xml\nother.xml\n"):
+            self.assertEqual(scenario.vault_file(), "shared_prefs/FlutterSecureStorage.xml")
+        with patch("consumer_native_e2e.adb", return_value=b"other.xml\n"):
+            with self.assertRaises(AssertionError):
+                scenario.vault_file()
+
+    def test_expiry_always_restores_clock_and_records_unavailable_control(self):
+        scenario = Scenario({})
+        epochs = iter([1000, 1000, 1000])
+        with patch("consumer_native_e2e.adb"), patch.object(scenario, "device_epoch", side_effect=lambda: next(epochs)), \
+             patch.object(scenario, "set_clock") as clock:
+            scenario.access_token_expiry()
+        self.assertEqual(clock.call_args_list[-1].args, (400,))
+        self.assertEqual(scenario.completed, [])
+        self.assertEqual(len(scenario.not_executed), 1)
+
+    def test_token_secrecy_detects_jwt_in_log_or_vault_without_echoing_it(self):
+        scenario = Scenario({})
+        jwt = b"eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJzZWNyZXQifQ.signature"
+        with patch.object(scenario, "vault_file", return_value="shared_prefs/FlutterSecureStorage.xml"), \
+             patch("consumer_native_e2e.adb", side_effect=[b"log " + jwt, b"vault"]):
+            with self.assertRaises(AssertionError) as raised:
+                scenario.token_secrecy()
+        self.assertNotIn("eyJ", str(raised.exception))
+        with patch.object(scenario, "vault_file", return_value="shared_prefs/FlutterSecureStorage.xml"), \
+             patch("consumer_native_e2e.adb", side_effect=[b"clean", b"opaque"]):
+            scenario.token_secrecy()
+        self.assertEqual(len(scenario.completed), 1)

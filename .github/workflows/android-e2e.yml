@@ -91,7 +91,7 @@ jobs:
           report=json.load(open('reports/e2e-status.json'))
           assert report['status']=='PASSED_EXECUTED_SCENARIOS'
           assert report['nativeE2E']=='EXECUTED_PARTIAL'
-          assert len(report['completed'])==11
+          assert len(report['completed'])>=14
           assert report['notExecuted']
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
