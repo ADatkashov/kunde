@@ -34,6 +34,24 @@ only permits execution and never establishes native E2E success. Configuration C
 runs the executable prerequisite regression suite. Historical migration statements
 below describe their original snapshots; current main includes PRs #1–#5.
 
+## Quality-gate evidence matrix — 2026-11-12 (TASK-053)
+
+Observed from GitHub Actions on `main`; green is not a production sign-off.
+
+| Gate | Trigger | Evidence | Gap |
+|---|---|---|---|
+| `ci.yml` syntax, whitespace, Python tests, secret markers | automatic | success on `d442393`; PR #31 run 43296287972 failed on `git diff --check` (trailing blank line) and passed after the fix, so the gate does block | markers are a bounded scan, not entropy or history discovery |
+| `backend.yml` Maven verify, JAR, HTTP smoke | automatic, backend paths | success on `d442393` | none observed |
+| `security.yml` dependencies, containers, secrets | automatic | success on `d442393` | `sdk-tooling` is manual; GHSA-r937 stays OPEN |
+| `flutter.yml` analyze, format, tests | automatic, mobile paths | last automatic run `af61a2e` success; mobile inputs unchanged since | not re-run in this session |
+| `android-apk.yml`, `android-e2e.yml`, `ios.yml` | manual only | native E2E run 43270980722 passed (17 checks); APK last run `adfc2be`; no iOS run observed | iOS, TalkBack, devices unverified |
+
+`scripts/ci/check_secrets.py` now has regression tests (`test_check_secrets.py`): each marker
+family is detected, near-misses and oversized files are ignored, the output withholds content,
+and a mutated pattern fails the tests. Not verified: branch protection and required status
+contexts (the API returned 403 to this integration), coverage thresholds (none configured),
+static analysis beyond analyzers, and automated CodeRabbit review (manual trigger only).
+
 KUNDE uses standard free GitHub-hosted Ubuntu24.04 runners as the primary
 verification target. No Windows workstation, persistent agent, self-hosted runner,
 paid larger runner, production deployment or branch-protection change is required.
