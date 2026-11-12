@@ -1,6 +1,5 @@
 package kz.kunde.identity;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import kz.kunde.platform.ApiException;
@@ -47,6 +46,16 @@ public class ConsumerConsentService {
         db.query("SELECT pg_advisory_xact_lock(hashtext(?), hashtext(?))",
                 (org.springframework.jdbc.core.RowCallbackHandler) rs -> {},
                 userId.toString(), policyId.toString());
+        // Hold a row lock until commit: account restrictions cannot race a grant.
+        Boolean active = db.query("""
+                SELECT true FROM identity.users
+                WHERE id = ? AND status = 'ACTIVE'
+                FOR SHARE
+                """, rs -> rs.next() ? Boolean.TRUE : Boolean.FALSE, userId);
+        if (!Boolean.TRUE.equals(active)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "ACCOUNT_UNAVAILABLE",
+                    "Active consumer account required");
+        }
         List<ConsentStatus> policies = db.query("""
                 SELECT id, purpose, policy_version, locale, document_sha256
                 FROM profile.consent_policies WHERE id = ? AND approved_at IS NOT NULL
