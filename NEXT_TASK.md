@@ -5,6 +5,11 @@ Consent API (PR #23), Flutter consent UI (PR #24), and Flutter saved addresses
 (PR #25) are already merged. Do **not** rebuild them or close their canonical
 tasks without remaining product/privacy/UX acceptance evidence.
 
+## Current in-review implementation
+
+- Draft PR #27 adds an Android emulator Keycloak network interruption/recovery probe and regression assertions. This verifies network reachability and profile continuity only; it does **not** establish refresh failure/recovery while a token request is in flight. Native execution and CI review are still required.
+- Remaining refresh replay, provider outage during refresh, access/session expiry and recovery must retain NOT_EXECUTED until verified in the actual Android35/Chrome/AppAuth workflow. Do not merge #27 without that evidence.
+
 ## Next controlled implementation
 
 1. Read `AGENTS.md`, `PROJECT_STATE.md`,
