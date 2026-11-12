@@ -3,6 +3,8 @@ import json
 import os
 from pathlib import Path
 import re
+import secrets
+import uuid
 import subprocess
 import time
 import xml.etree.ElementTree as ET
@@ -20,7 +22,7 @@ SAFE_LABELS = {"Sign in", "Sign In", "Sign out", "Profile", "Home", "Edit profil
                "Welcome to Chrome", "Make Chrome your own", "Sign in to your account", "Username or email",
                "Username", "Password", "Your connection is not private", "This site can’t be reached",
                "This site can't be reached", "Checking your session…", "Sign in did not complete. Try again."}
-NOT_EXECUTED = ["native registration", "refresh replay capture", "provider outage", "session expiry",
+NOT_EXECUTED = ["refresh replay capture", "provider outage", "session expiry",
                 "iOS", "TalkBack", "large text", "full RU/KK profile journeys", "physical devices"]
 
 
@@ -174,15 +176,20 @@ class Scenario:
         self.tap_label("Profile", package=PACKAGE)
         self.app_label("Edit profile")
 
-    def db_profile(self):
+    def db_profile(self, registered=False):
         # Inputs are generated UUID/constant issuer; no arbitrary user SQL or tokens.
         subject = self.state["subject"]
         if not re.fullmatch(r"[a-f0-9-]{36}", subject):
             raise ValueError("Unexpected synthetic subject")
         query = ("SELECT json_build_object('id',p.user_id,'name',p.display_name,'language',p.preferred_language,"
-                 "'version',p.version) FROM profile.consumer_profiles p JOIN identity.external_bindings b "
+                 "'version',p.version,'subject',b.subject) FROM profile.consumer_profiles p JOIN identity.external_bindings b "
                  "ON b.user_id=p.user_id WHERE b.issuer='http://localhost:8180/realms/kunde-consumer-check' "
                  "AND b.subject='" + subject + "'")
+        if registered:
+            # Fresh owned fixture has only the seed binding and the new registration.
+            # Require exactly one new binding rather than infer identity from UI labels.
+            query = query.replace("AND b.subject='" + subject + "'",
+                                  "AND b.subject<>'" + subject + "'")
         rows = docker("exec", self.state["marker"] + "-db", "psql", "-U", "kunde_ci", "-d", "kunde",
                       "-Atq", "-c", query).splitlines()
         if len(rows) != 1:
@@ -205,6 +212,106 @@ class Scenario:
         self.login_form()
         native_browser.submit(self.state["username"], self.state["password"])
         self.app_label("Profile")
+
+    def binding_count(self):
+        return int(docker("exec", self.state["marker"] + "-db", "psql", "-U", "kunde_ci",
+                          "-d", "kunde", "-Atq", "-c", "SELECT count(*) FROM identity.external_bindings "
+                          "WHERE issuer='http://localhost:8180/realms/kunde-consumer-check'"))
+
+    def registration_form(self):
+        adb("forward", "tcp:19222", "localabstract:chrome_devtools_remote")
+        deadline = time.monotonic() + 60
+        while time.monotonic() < deadline:
+            try:
+                if native_browser.registration_state()["form"]:
+                    return
+            except Exception:
+                pass
+            time.sleep(1)
+        raise TimeoutError("Fixture registration form unavailable")
+
+    def cancel_registration(self):
+        # Back can traverse the POST/validation history instead of dismissing AppAuth.
+        close = self.wait(lambda tree: next((n for n in tree.iter("node")
+            if n.get("package") == "com.android.chrome" and
+            n.get("resource-id") == "com.android.chrome:id/close_button" and center(n)), None))
+        self.tap(close)
+        self.app_label("Create account")
+
+    def registration(self):
+        self.stage = "registration_fixture"
+        if self.binding_count() != 1:
+            raise AssertionError("Expected fresh seed-only fixture")
+        self.stage = "registration_cancel"
+        self.tap_label("Sign out", package=PACKAGE)
+        self.app_label("Create account")
+        self.tap_label("Create account", package=PACKAGE)
+        self.registration_form()
+        self.cancel_registration()
+        self.completed.append("native registration cancellation returns to signed-out Flutter")
+        self.stage = "registration_validation"
+        self.tap_label("Create account", package=PACKAGE)
+        self.registration_form()
+        username = "native-" + secrets.token_hex(8)
+        password = "NativeA9" + secrets.token_hex(20)
+        native_browser.register(username, password, password + "Mismatch")
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline:
+            state = native_browser.registration_state()
+            if state["form"] and state["invalid"]:
+                break
+            time.sleep(1)
+        else:
+            raise AssertionError("Provider did not reject mismatched registration passwords")
+        if self.binding_count() != 1:
+            raise AssertionError("Cancelled or invalid registration provisioned an account")
+        self.completed.append("real provider registration rejects mismatched passwords")
+        self.stage = "registration_callback"
+        native_browser.register(username, password, password)
+        self.app_label("Profile")
+        registered = self.db_profile(registered=True)
+        uuid.UUID(registered["id"])
+        uuid.UUID(registered["subject"])
+        if registered["id"] == registered["subject"]:
+            raise AssertionError("Registration must use canonical account UUID")
+        self.state.update(username=username, password=password, subject=registered["subject"])
+        self.profile()
+        self.tap_label("Edit profile", package=PACKAGE)
+        self.enter(self.wait(lambda tree: editable(tree)), "RegisteredNative")
+        self.tap_label("English", package=PACKAGE)
+        self.tap_label("Save changes", package=PACKAGE)
+        self.app_label("Profile saved")
+        saved = self.db_profile()
+        if saved["id"] != registered["id"] or saved["name"] != "RegisteredNative":
+            raise AssertionError("Registered profile was not persisted")
+        self.completed.append("real registration native PKCE callback canonical UUID and profile save")
+        self.stage = "duplicate_registration"
+        self.tap_label("Sign out", package=PACKAGE)
+        self.app_label("Create account")
+        self.tap_label("Create account", package=PACKAGE)
+        self.registration_form()
+        native_browser.register(username, password, password)
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline:
+            state = native_browser.registration_state()
+            if state["form"] and state["invalid"]:
+                break
+            time.sleep(1)
+        else:
+            raise AssertionError("Provider did not reject duplicate registration")
+        if self.binding_count() != 2 or self.db_profile() != saved:
+            raise AssertionError("Duplicate registration changed canonical identity")
+        self.stage = "duplicate_registration_cancel"
+        self.cancel_registration()
+        self.completed.append("duplicate registration rejected without canonical account changes")
+        self.stage = "registered_logout_relogin"
+        self.tap_label("Sign in", package=PACKAGE)
+        self.login()
+        self.profile()
+        self.app_label("RegisteredNative")
+        if self.db_profile() != saved:
+            raise AssertionError("Registered relogin changed canonical account")
+        self.completed.append("registered user logout and same-canonical-account relogin")
 
     def run(self):
         self.stage = "chrome_setup"
@@ -284,6 +391,7 @@ class Scenario:
         if self.db_profile() != saved:
             raise AssertionError("Logout/relogin changed canonical profile")
         self.completed.append("provider logout, subsequent credential form and same-account relogin")
+        self.registration()
 
 
 def main():
@@ -291,10 +399,11 @@ def main():
     state = json.loads((Path(os.environ["KUNDE_NATIVE_DIR"]) / "fixture.json").read_text())
     scenario = Scenario(state)
     result = {"status": "FAILED", "nativeE2E": "NOT_EXECUTED", "completed": scenario.completed,
-              "notExecuted": NOT_EXECUTED, "productionReadiness": "NOT_APPROVED"}
+              "notExecuted": ["native registration", *NOT_EXECUTED], "productionReadiness": "NOT_APPROVED"}
     try:
         scenario.run()
         result["status"] = "PASSED_EXECUTED_SCENARIOS"
+        result["notExecuted"] = NOT_EXECUTED
     except Exception as error:
         result.update(stage=scenario.stage, errorClass=type(error).__name__)
         result["networkDiagnostics"] = network_diagnostics()

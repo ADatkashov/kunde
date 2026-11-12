@@ -123,7 +123,7 @@
     "release": "REL-1",
     "user_story_id": "US-003",
     "implementation_status": "in_progress",
-    "implementation_note": "PR #5 merged as 4595309: canonical identity/profile/V2, claim validation and localized Flutter auth/session UI. PR #14 source db13a26 passes six targeted native Android35/Chrome124 checks in hosted run 43209945677: welcome RU/KK/EN, real browser/PKCE callback/API, canonical profile edit, two vault/rotated-refresh restores, API offline retry, provider logout/credential-prompt relogin. TASK-006 remains in_progress: native registration, replay/outage/expiry, iOS/accessibility/device acceptance and session administration remain incomplete. Sanitized evidence: docs/identity/consumer-validation/native-evidence-2026-11-12.json."
+    "implementation_note": "PR #5 merged as 4595309: canonical identity/profile/V2, claim validation and localized Flutter auth/session UI. PR #14 source db13a26 passes six targeted native Android35/Chrome124 checks in hosted run 43209945677: welcome RU/KK/EN, real browser/PKCE callback/API, canonical profile edit, two vault/rotated-refresh restores, API offline retry, provider logout/credential-prompt relogin. ADA-72 adds a native registration/cancellation/validation/profile/relogin harness; hosted verification pending, local Python 16 passed. TASK-006 remains in_progress: native registration, replay/outage/expiry, iOS/accessibility/device acceptance and session administration remain incomplete. Sanitized evidence: docs/identity/consumer-validation/native-evidence-2026-11-12.json."
   },
   {
     "id": "TASK-007",

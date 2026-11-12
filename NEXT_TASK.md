@@ -1,5 +1,10 @@
 # Next task — TASK-006 native registration verification
 
+Verify the ADA-72 registration extension on its PR, then resolve any native failures.
+The harness now includes cancellation, mismatched-password validation, registration
+callback, canonical UUID/profile persistence and registered-user relogin. Execution
+evidence is pending; do not count these as passed.
+
 Extend the existing Android35/Chrome scenario with the Consumer's real registration
 flow and callback. Source db13a26 passed six targeted login/profile/vault/offline/
 logout checks in hosted run 43209945677. Reuse the disposable fixture, real AppAuth

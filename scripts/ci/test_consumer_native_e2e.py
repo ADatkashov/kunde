@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch, Mock
 import xml.etree.ElementTree as ET
 
-from consumer_native_e2e import center, editable, find_label, safe_diagnostics, network_diagnostics
+from consumer_native_e2e import Scenario, center, editable, find_label, safe_diagnostics, network_diagnostics
 from native_identity_stack import realm_fixture
 
 
@@ -76,3 +76,11 @@ class NativeFixtureTests(unittest.TestCase):
         self.assertNotIn("password-sentinel", report)
         self.assertNotIn("secret-sentinel", report)
         self.assertNotIn("callback", report)
+
+
+    def test_registration_binding_count_excludes_backend_test_issuers(self):
+        scenario = Scenario({'marker': 'kunde-native-012345abcdef'})
+        with patch('consumer_native_e2e.docker', return_value='1') as execute:
+            self.assertEqual(scenario.binding_count(), 1)
+        query = execute.call_args.args[-1]
+        self.assertIn("WHERE issuer='http://localhost:8180/realms/kunde-consumer-check'", query)

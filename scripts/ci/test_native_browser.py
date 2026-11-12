@@ -41,3 +41,24 @@ class NativeBrowserTests(unittest.TestCase):
         connection.recv.return_value = json.dumps({'id': 1, 'error': {'message': 'secret-sentinel'}})
         with self.assertRaisesRegex(RuntimeError, '^Browser evaluation failed$'):
             browser.evaluate(connection, 'document.readyState')
+
+
+    def test_registration_refuses_unavailable_form(self):
+        connection = Mock()
+        with patch.object(browser, 'connect', return_value=connection), patch.object(browser, 'evaluate', return_value=False):
+            with self.assertRaisesRegex(RuntimeError, '^Fixture registration form unavailable$'):
+                browser.register('native-synthetic', 'secret-sentinel', 'different')
+        connection.send.assert_not_called()
+        connection.close.assert_called_once()
+
+    def test_registration_click_has_user_gesture_without_secrets(self):
+        connection = Mock()
+        with patch.object(browser, 'connect', return_value=connection), patch.object(browser, 'evaluate', return_value=True) as evaluate:
+            browser.register('native-synthetic', 'secret-sentinel', 'different')
+        script = evaluate.call_args.args[1]
+        self.assertIn("new URL(form.action).origin !== location.origin", script)
+        self.assertIn("field.type !== 'password'", script)
+        message = json.loads(connection.send.call_args.args[0])
+        self.assertTrue(message['params']['userGesture'])
+        self.assertNotIn('secret-sentinel', message['params']['expression'])
+        connection.close.assert_called_once()

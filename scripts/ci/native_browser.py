@@ -91,3 +91,47 @@ def page_state():
         })()""")
     finally:
         connection.close()
+
+
+def registration_state():
+    connection = connect()
+    try:
+        return evaluate(connection, """(() => ({
+          form: !!document.querySelector('#kc-register-form'),
+          invalid: !!document.querySelector('[aria-invalid="true"], .kc-feedback-text, #input-error')
+        }))()""")
+    finally:
+        connection.close()
+
+
+def register(username, password, confirmation):
+    connection = connect()
+    try:
+        values = json.dumps({'username': username, 'email': username + '@example.invalid',
+                             'firstName': 'Synthetic', 'lastName': 'Consumer',
+                             'password': password, 'password-confirm': confirmation})
+        script = """(() => {
+          if (location.origin !== 'http://localhost:8180' ||
+              !location.pathname.startsWith('/realms/kunde-consumer-check/')) return false;
+          const form = document.getElementById('kc-register-form');
+          if (!form || new URL(form.action).origin !== location.origin) return false;
+          const values = VALUES;
+          for (const id of Object.keys(values)) {
+            const field = document.getElementById(id);
+            if (!field || (id.startsWith('password') && field.type !== 'password')) return false;
+          }
+          for (const [id, value] of Object.entries(values)) {
+            const field = document.getElementById(id);
+            field.value = value;
+            field.dispatchEvent(new Event('input', {bubbles: true}));
+            field.dispatchEvent(new Event('change', {bubbles: true}));
+          }
+          return !!form.querySelector('[type=submit]');
+        })()""".replace('VALUES', values)
+        if evaluate(connection, script) is not True:
+            raise RuntimeError('Fixture registration form unavailable')
+        connection.send(json.dumps({'id': 2, 'method': 'Runtime.evaluate', 'params': {
+            'expression': "document.querySelector('#kc-register-form [type=submit]').click()",
+            'userGesture': True}}))
+    finally:
+        connection.close()

@@ -2,6 +2,10 @@
 
 Reviewed 2026-11-12. Follow AGENTS.md; code and current CI are authoritative.
 
+- ADA-72 registration harness extends the existing six checks; fresh hosted Android,
+  backend and Flutter runs are pending. Local Python: 16 passed, zero failures.
+  No new native registration result is established yet.
+
 - Owner requested essential automatic CI: configuration, scoped backend/Flutter,
   and dependency/secret/container security checks. APK, SDK tooling and diagnostic
   workflows are manual; their evidence/DoD requirements remain. See
