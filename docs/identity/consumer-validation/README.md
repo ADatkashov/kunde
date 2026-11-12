@@ -179,7 +179,8 @@ system browser and retries, submits mismatched passwords to the real provider,
 then registers a fresh synthetic identity. It requires a native AppAuth callback,
 exactly one new canonical binding in the isolated database, distinct valid account
 and provider UUIDs, a profile save and same-account credential relogin. The six
-previous scenarios remain intact. The gate now requires ten completed checks.
+previous scenarios remain intact. Duplicate registration must be rejected without changing the account or binding
+count. The gate now requires eleven completed checks.
 No password, token, authorization URL or raw browser DOM is retained.
 
 Local Python regression: 16 passed. Hosted native/backend/Flutter verification is

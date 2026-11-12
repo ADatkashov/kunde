@@ -214,6 +214,10 @@ class Scenario:
         self.app_label("Profile")
 
 
+    def binding_count(self):
+        return int(docker("exec", self.state["marker"] + "-db", "psql", "-U", "kunde_ci",
+                          "-d", "kunde", "-Atq", "-c", "SELECT count(*) FROM identity.external_bindings"))
+
     def registration_form(self):
         adb("forward", "tcp:19222", "localabstract:chrome_devtools_remote")
         deadline = time.monotonic() + 60
@@ -227,6 +231,8 @@ class Scenario:
         raise TimeoutError("Fixture registration form unavailable")
 
     def registration(self):
+        if self.binding_count() != 1:
+            raise AssertionError("Expected fresh seed-only fixture")
         self.stage = "registration_cancel"
         self.tap_label("Sign out", package=PACKAGE)
         self.app_label("Create account")
@@ -249,6 +255,8 @@ class Scenario:
             time.sleep(1)
         else:
             raise AssertionError("Provider did not reject mismatched registration passwords")
+        if self.binding_count() != 1:
+            raise AssertionError("Cancelled or invalid registration provisioned an account")
         self.completed.append("real provider registration rejects mismatched passwords")
         self.stage = "registration_callback"
         native_browser.register(username, password, password)
@@ -269,9 +277,26 @@ class Scenario:
         if saved["id"] != registered["id"] or saved["name"] != "RegisteredNative":
             raise AssertionError("Registered profile was not persisted")
         self.completed.append("real registration native PKCE callback canonical UUID and profile save")
-        self.stage = "registered_logout_relogin"
+        self.stage = "duplicate_registration"
         self.tap_label("Sign out", package=PACKAGE)
+        self.app_label("Create account")
+        self.tap_label("Create account", package=PACKAGE)
+        self.registration_form()
+        native_browser.register(username, password, password)
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline:
+            state = native_browser.registration_state()
+            if state["form"] and state["invalid"]:
+                break
+            time.sleep(1)
+        else:
+            raise AssertionError("Provider did not reject duplicate registration")
+        if self.binding_count() != 2 or self.db_profile() != saved:
+            raise AssertionError("Duplicate registration changed canonical identity")
+        adb("shell", "input", "keyevent", "4")
         self.app_label("Sign in")
+        self.completed.append("duplicate registration rejected without canonical account changes")
+        self.stage = "registered_logout_relogin"
         self.tap_label("Sign in", package=PACKAGE)
         self.login()
         self.profile()
