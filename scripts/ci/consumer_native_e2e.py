@@ -24,7 +24,7 @@ NOT_EXECUTED = ["native registration", "refresh replay capture", "provider outag
 
 
 def adb(*args):
-    return subprocess.run(["adb", *args], check=True, capture_output=True).stdout
+    return subprocess.run(["adb", *args], check=True, capture_output=True, timeout=30).stdout
 
 
 def hierarchy():
@@ -207,7 +207,7 @@ class Scenario:
         adb("shell", "cmd", "role", "add-role-holder", "android.app.role.BROWSER", "com.android.chrome")
         # Fresh emulator only; no user browser/profile is touched.
         adb("shell", "am", "set-debug-app", "--persistent", "com.android.chrome")
-        adb("shell", "echo 'chrome --no-first-run --disable-fre --no-default-browser-check' > /data/local/tmp/chrome-command-line")
+        adb("shell", "echo 'chrome --no-first-run --disable-fre --no-default-browser-check --force-renderer-accessibility' > /data/local/tmp/chrome-command-line")
         adb("shell", "am", "force-stop", "com.android.chrome")
         adb("reverse", "tcp:8180", "tcp:8180")
         adb("reverse", "tcp:8081", "tcp:8081")
