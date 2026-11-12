@@ -213,10 +213,10 @@ class Scenario:
         native_browser.submit(self.state["username"], self.state["password"])
         self.app_label("Profile")
 
-
     def binding_count(self):
         return int(docker("exec", self.state["marker"] + "-db", "psql", "-U", "kunde_ci",
-                          "-d", "kunde", "-Atq", "-c", "SELECT count(*) FROM identity.external_bindings"))
+                          "-d", "kunde", "-Atq", "-c", "SELECT count(*) FROM identity.external_bindings "
+                          "WHERE issuer='http://localhost:8180/realms/kunde-consumer-check'"))
 
     def registration_form(self):
         adb("forward", "tcp:19222", "localabstract:chrome_devtools_remote")
@@ -231,6 +231,7 @@ class Scenario:
         raise TimeoutError("Fixture registration form unavailable")
 
     def registration(self):
+        self.stage = "registration_fixture"
         if self.binding_count() != 1:
             raise AssertionError("Expected fresh seed-only fixture")
         self.stage = "registration_cancel"
@@ -391,10 +392,11 @@ def main():
     state = json.loads((Path(os.environ["KUNDE_NATIVE_DIR"]) / "fixture.json").read_text())
     scenario = Scenario(state)
     result = {"status": "FAILED", "nativeE2E": "NOT_EXECUTED", "completed": scenario.completed,
-              "notExecuted": NOT_EXECUTED, "productionReadiness": "NOT_APPROVED"}
+              "notExecuted": ["native registration", *NOT_EXECUTED], "productionReadiness": "NOT_APPROVED"}
     try:
         scenario.run()
         result["status"] = "PASSED_EXECUTED_SCENARIOS"
+        result["notExecuted"] = NOT_EXECUTED
     except Exception as error:
         result.update(stage=scenario.stage, errorClass=type(error).__name__)
         result["networkDiagnostics"] = network_diagnostics()
