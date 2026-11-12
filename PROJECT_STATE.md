@@ -23,6 +23,8 @@
 - The paragraphs below are retained as historical evidence and must not be read
   as the current main commit or current test count.
 
+- Draft PR #27 (ADA-72) introduces a provider network outage/recovery probe and regression checks on a feature branch; no hosted native execution or merge verified. Network reachability alone is not proof of refresh-outage behavior. TASK-006 remains in_progress.
+
 ## Historical engineering notes
 
 Reviewed 2026-11-12. Follow AGENTS.md; code and current CI are authoritative.
