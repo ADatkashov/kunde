@@ -42,7 +42,7 @@ public class ConsumerAddressController {
                               boolean serviceable) {}
 
     @GetMapping
-    @Transactional(readOnly = true)
+    @Transactional
     public ResponseEntity<List<AddressView>> list(@AuthenticationPrincipal Jwt principal) {
         UUID user = identity.get(principal).id();
         List<AddressView> result = db.query("""
