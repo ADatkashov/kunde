@@ -40,7 +40,7 @@ jobs:
       - name: OSV graph and declared build-root audits (retain both exit codes)
         run: |
           set +e
-          python3 scripts/ci/osv_audit.py --maven reports/maven.json --pub reports/pub.json --output reports/dependencies-osv.json
+          python3 scripts/ci/osv_audit.py --maven reports/maven.json --pub reports/pub.json --python-requirements scripts/ci/native-e2e-requirements.txt --output reports/dependencies-osv.json
           dependencies_code=$?
           python3 scripts/ci/osv_audit.py --effective reports/effective-pom.xml --settings mobile/android/settings.gradle.kts --output reports/build-roots-osv.json
           roots_code=$?
