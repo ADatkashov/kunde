@@ -74,7 +74,7 @@ def submit(username, password):
         # Navigation may destroy the debugger before its response. The native callback
         # and verified API profile are the success criterion, not a debugger reply.
         connection.send(json.dumps({"id": 2, "method": "Runtime.evaluate", "params": {
-            "expression": "document.getElementById('kc-login').click()"}}))
+            "expression": "document.getElementById('kc-login').click()", "userGesture": True}}))
     finally:
         connection.close()
 

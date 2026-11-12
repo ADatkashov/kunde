@@ -78,7 +78,7 @@ jobs:
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify build/app/outputs/flutter-apk/app-debug.apk
       - uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
         with:
-          api-level: 30
+          api-level: 35
           arch: x86_64
           target: google_apis
           disable-animations: true

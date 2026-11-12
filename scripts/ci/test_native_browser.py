@@ -31,6 +31,7 @@ class NativeBrowserTests(unittest.TestCase):
         self.assertIn("location.origin !== 'http://localhost:8180'", script)
         message = json.loads(connection.send.call_args.args[0])
         self.assertEqual(message['method'], 'Runtime.evaluate')
+        self.assertTrue(message['params']['userGesture'])
         self.assertIn("getElementById('kc-login').click()", message['params']['expression'])
         self.assertNotIn('synthetic-password', message['params']['expression'])
         connection.close.assert_called_once()

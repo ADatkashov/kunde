@@ -127,6 +127,7 @@ class Scenario:
         self.stage = "setup"
         self.completed = []
         self.last_tree = None
+        self.environment = {}
 
     def wait(self, predicate, seconds=60):
         end = time.monotonic() + seconds
@@ -210,11 +211,15 @@ class Scenario:
         if adb("shell", "getprop", "ro.kernel.qemu").strip() != b"1":
             raise ValueError("Only an isolated Android emulator is allowed")
         adb("shell", "pm", "path", "com.android.chrome")
+        version = re.search(rb"versionName=([0-9.]+)", adb("shell", "dumpsys", "package", "com.android.chrome"))
+        api = adb("shell", "getprop", "ro.build.version.sdk").strip()
+        self.environment = {"chromeVersion": version[1].decode() if version else "unknown",
+                            "androidApi": int(api) if api.isdigit() else "unknown"}
         adb("shell", "settings", "put", "secure", "show_ime_with_hard_keyboard", "1")
         adb("shell", "cmd", "role", "add-role-holder", "android.app.role.BROWSER", "com.android.chrome")
         # Fresh emulator only; no user browser/profile is touched.
         adb("shell", "am", "set-debug-app", "--persistent", "com.android.chrome")
-        adb("shell", "echo 'chrome --no-first-run --disable-fre --no-default-browser-check --force-renderer-accessibility' > /data/local/tmp/chrome-command-line")
+        adb("shell", "echo 'chrome --no-first-run --disable-fre --no-default-browser-check' > /data/local/tmp/chrome-command-line")
         adb("shell", "am", "force-stop", "com.android.chrome")
         adb("reverse", "tcp:8180", "tcp:8180")
         adb("reverse", "tcp:8081", "tcp:8081")
@@ -295,6 +300,7 @@ def main():
         result["networkDiagnostics"] = network_diagnostics()
         if scenario.last_tree is not None:
             result["diagnostics"] = safe_diagnostics(scenario.last_tree)
+    result["environment"] = scenario.environment
     if scenario.completed:
         result["nativeE2E"] = "EXECUTED_PARTIAL"
     Path("reports/e2e-status.json").write_text(json.dumps(result, indent=2) + "\n")
