@@ -84,3 +84,30 @@ class NativeFixtureTests(unittest.TestCase):
             self.assertEqual(scenario.binding_count(), 1)
         query = execute.call_args.args[-1]
         self.assertIn("WHERE issuer='http://localhost:8180/realms/kunde-consumer-check'", query)
+
+    def test_registered_profile_query_excludes_seed_subject(self):
+        scenario = Scenario({'marker': 'kunde-native-012345abcdef',
+                             'subject': '11111111-1111-4111-8111-111111111111'})
+        response = json.dumps({'id': '22222222-2222-4222-8222-222222222222',
+                               'subject': '33333333-3333-4333-8333-333333333333'})
+        with patch('consumer_native_e2e.docker', return_value=response) as execute:
+            profile = scenario.db_profile(registered=True)
+        self.assertEqual(profile['subject'], '33333333-3333-4333-8333-333333333333')
+        query = execute.call_args.args[-1]
+        self.assertIn("AND b.subject<>'11111111-1111-4111-8111-111111111111'", query)
+        self.assertIn("b.issuer='http://localhost:8180/realms/kunde-consumer-check'", query)
+
+    def test_registered_profile_rejects_multiple_canonical_bindings(self):
+        scenario = Scenario({'marker': 'kunde-native-012345abcdef',
+                             'subject': '11111111-1111-4111-8111-111111111111'})
+        with patch('consumer_native_e2e.docker', return_value='\n'.join(['{}', '{}'])):
+            with self.assertRaisesRegex(AssertionError, 'Expected one canonical synthetic identity'):
+                scenario.db_profile(registered=True)
+
+    def test_registered_profile_rejects_untrusted_subject_before_sql(self):
+        scenario = Scenario({'marker': 'kunde-native-012345abcdef',
+                             'subject': "anything' OR true --"})
+        with patch('consumer_native_e2e.docker') as execute:
+            with self.assertRaisesRegex(ValueError, 'Unexpected synthetic subject'):
+                scenario.db_profile(registered=True)
+        execute.assert_not_called()
