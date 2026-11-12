@@ -1,5 +1,13 @@
 # GitHub-hosted CI/CD migration 1.0
 
+Current TASK-003 correction (2026-11-11): `identity_e2e_prerequisites.py`
+returns exit 1 when any native scenario prerequisite is missing. The manual run
+must be red/blocked rather than green with a skipped emulator. Its sanitized
+NOT_EXECUTED report is still uploaded with `always()`. Prerequisites being present
+only permits execution and never establishes native E2E success. Configuration CI
+runs the executable prerequisite regression suite. Historical migration statements
+below describe their original snapshots; current main includes PRs #1–#5.
+
 KUNDE uses standard free GitHub-hosted Ubuntu24.04 runners as the primary
 verification target. No Windows workstation, persistent agent, self-hosted runner,
 paid larger runner, production deployment or branch-protection change is required.

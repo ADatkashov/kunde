@@ -18,17 +18,7 @@ jobs:
           persist-credentials: false
       - id: check
         name: Require real Consumer implementation and isolated native-browser scenario
-        run: |
-          mkdir -p reports
-          ready=true
-          for file in backend/src/main/java/kz/kunde/identity/ConsumerIdentityController.java scripts/ci/start_identity_test_stack.sh scripts/ci/run_consumer_identity_e2e.sh; do
-            if [ ! -f "$file" ]; then ready=false; fi
-          done
-          echo "ready=$ready" >> "$GITHUB_OUTPUT"
-          if [ "$ready" != true ]; then
-            echo '{"status":"BLOCKED_MISSING_IMPLEMENTATION","nativeE2E":"NOT_EXECUTED"}' > reports/e2e-status.json
-            echo 'Native E2E BLOCKED: required native browser scenario prerequisites absent. No authentication success inferred.' >> "$GITHUB_STEP_SUMMARY"
-          fi
+        run: python3 scripts/ci/identity_e2e_prerequisites.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
@@ -56,7 +46,7 @@ jobs:
           java-version: '21'
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
         with:
-          flutter-version: '3.47.0'
+          flutter-version: '3.47.9'
           channel: stable
           cache: false
       - name: Isolated synthetic Keycloak and backend stack

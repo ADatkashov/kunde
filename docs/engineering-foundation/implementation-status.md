@@ -16,10 +16,34 @@
 Backend verification record (2026-11-10): system Maven CLI/wrapper and local dependency cache were absent. Docker Hub had previously aborted Maven image authorization. Apache Maven 3.9.9 was downloaded from the official Apache archive and SHA-512 verified. Maven Central initially failed Java PKIX validation; a temporary Java truststore populated from Windows trusted roots restored normal TLS validation without disabling certificate checks. From `backend/`, final command `..\.ep001-maven-tmp\apache-maven-3.9.9\bin\mvn.cmd --batch-mode --no-transfer-progress -Dmaven.repo.local=..\.ep001-maven-tmp\m2 verify` completed **BUILD SUCCESS** with 14 tests (0 failures/errors/skips). Compose command `docker compose --project-name kunde-ep001-verify --env-file .ep001-maven-tmp/verification.env config --quiet` passed; isolated PostgreSQL 16.15 applied V1 and repeated migration was idempotent. The packaged app ran with `DB_URL=jdbc:postgresql://localhost:5432/kunde` and `PORT=18080`; live health, readiness, liveness, correlation ID, fail-closed route, validation envelope and OpenAPI 3.1 YAML checks passed. Temporary app/container/volume/network and Maven artifacts were verification-only. Workflow and OpenAPI YAML parsed with SnakeYAML; workflow structure was reviewed, but no remote run was possible because this checkout has no Git remote. No dependency vulnerability scan, production deployment or live OIDC provider/token verification is claimed.
 
 **EP-001 backend verification: complete locally.** This does not mark the entire project epic/release approved: governance decisions, remote CI execution and live identity-provider verification remain open.
+# Current main reconciliation — 2026-11-11
+
+This section supersedes historical workstation/no-remote statements below.
+Reviewed main `4595309` (merged PR #5). Hosted Backend
+[43078224891](https://github.com/ADatkashov/kunde/actions/runs/43078224891), Flutter
+[43078224810](https://github.com/ADatkashov/kunde/actions/runs/43078224810), Android
+[43078224874](https://github.com/ADatkashov/kunde/actions/runs/43078224874) and configuration
+[43078224746](https://github.com/ADatkashov/kunde/actions/runs/43078224746) succeeded.
+PR #5 records 40 backend and 33 Flutter tests and separate protocol evidence.
+These are remote evidence, not tests rerun in this Cloud checkout.
+
+All 56 existing TASK IDs now have explicit implementation states in the canonical
+backlog. Profile/consent and localization are partial; empty catalog/search and
+schema scaffolds are partial, not completed features. Unimplemented domains remain
+not_started; unresolved business/legal approvals remain blocked. TASK-005's
+synthetic provider selection is accepted by ADR-015, while production gates remain
+blocked. No release or epic is declared complete.
+
+TASK-003 correction: manual native E2E now fails when any required controller or
+scenario script is absent, writes NOT_EXECUTED evidence and retains the artifact.
+Two executable regression tests cover each absent prerequisite and the ready case;
+presence alone never claims E2E success. Security CI still fails honestly on the
+upstream Flutter SDK GHSA-r937 tooling finding. TASK-003 remains partially_verified;
+TASK-006 and TASK-046 remain in_progress.
 
 # TASK-046 API quota verification — 2026-11-12
 
-Branch increment based on main `095ce75`; not a claim of merged source or release
+Branch increment started on main `095ce75`, then integrated main `1d367bf`; not a claim of merged source or release
 readiness. `mvn --batch-mode --no-transfer-progress clean verify` in GPT Cloud,
 using checksum-verified Java21 JDK/Maven and isolated PostgreSQL16.15, passed
 47 tests with zero failures/errors/skips and built the executable JAR. Six new
