@@ -89,6 +89,8 @@ def safe_diagnostics(tree):
     return {"nodeCount": len(nodes),
             "editableCount": sum(n.get("class", "").endswith("EditText") for n in nodes),
             "safeVisibleLabels": sorted({v for n in nodes for v in labels(n) if v in SAFE_LABELS}),
+            "disabledSafeLabels": sorted({v for n in nodes if n.get("enabled", "true") != "true"
+                                          for v in labels(n) if v in SAFE_LABELS}),
             "packages": sorted({n.get("package") for n in nodes if n.get("package") in
                                 {PACKAGE, "com.android.chrome", "android", "com.android.systemui", "com.google.android.gms"}}),
             "resourceIds": sorted({n.get("resource-id") for n in nodes if re.fullmatch(
@@ -277,8 +279,8 @@ class Scenario:
                     seen = packages
                     self.trace.append({"t": int(time.monotonic() - started), "taps": taps,
                                        "packages": sorted(packages)})
-                if find_label(tree, ["Profile"], PACKAGE):
-                    return
+                if any(matches(n, ["Profile"]) and n.get("package") == PACKAGE for n in tree.iter("node")):
+                    return  # Signed in; a still-disabled (busy) navigation bar is awaited by profile().
                 if "com.android.chrome" in packages:
                     if native_browser.form_present():
                         self.login()
