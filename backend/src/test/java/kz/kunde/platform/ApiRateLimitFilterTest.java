@@ -26,6 +26,7 @@ class ApiRateLimitFilterTest {
 
     private MockHttpServletResponse call(ApiRateLimitFilter filter, String ip, String path) throws Exception {
         var request = new MockHttpServletRequest("GET", path);
+        request.setServletPath(path);
         request.setRemoteAddr(ip);
         request.addHeader("X-Forwarded-For", "spoof-" + java.util.UUID.randomUUID());
         request.addHeader("Forwarded", "for=another-client");

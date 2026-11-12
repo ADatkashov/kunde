@@ -49,6 +49,8 @@ class ApiRateLimitHttpIntegrationTest {
         assertThat(body.get("code").asText()).isEqualTo("RATE_LIMITED");
         assertThat(body.get("timestamp").isTextual()).isTrue();
         assertThat(body.get("correlationId").asText()).isEqualTo("rate-limit-http-check");
+        assertThat(http.getForEntity(java.net.URI.create(base + "/%61pi/v1/categories"), String.class)
+                .getStatusCode().value()).isEqualTo(429);
         assertThat(http.getForEntity(base + "/api/v1/health", String.class).getStatusCode().value()).isEqualTo(200);
         assertThat(http.getForEntity(base + "/actuator/health/liveness", String.class).getStatusCode().value()).isEqualTo(200);
     }

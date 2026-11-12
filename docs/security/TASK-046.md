@@ -8,8 +8,10 @@ Status: **in_progress**. Production readiness: not approved.
 assignment and CORS/header handling, before JWT verification. Servlet auto-registration
 is disabled to avoid duplicate execution and preserve allowed-origin CORS on 429.
 It limits `/api/v1` and descendants, except `/api/v1/health`, by transport peer IP.
-Actuator probes are outside this quota. Defaults: 120 requests per 60-second
-fixed window, at most 4096 client entries per API process. Configuration:
+Actuator probes are outside this quota. Servlet-decoded paths are used so an
+encoded API prefix cannot bypass the quota. CORS preflights are handled by CORS
+before quota admission. Defaults: 120 requests per 60-second fixed window, at most
+4096 client entries per API process. Configuration:
 `API_RATE_LIMIT_REQUESTS`, `API_RATE_LIMIT_WINDOW_SECONDS` (1–3600), and
 `API_RATE_LIMIT_MAX_CLIENTS`; nonpositive values fail startup.
 
@@ -36,7 +38,10 @@ TASK-046 stays in_progress. No OTP/provider cost protection is inferred.
 Verification: deterministic filter tests cover isolation, spoofed headers, expiry,
 Retry-After rounding, bounded-table saturation, probes and concurrent admission.
 A real embedded-server HTTP test covers filter order, the existing 503 denied
-route, 429/error headers and health availability. Execution results belong in the
+route, encoded-prefix bypass rejection, CORS/429 headers and health availability.
+The encoded-prefix check reproduced 200 before using the servlet-decoded path;
+the final complete Cloud suite passes 47 tests without failures or skips.
+Execution results belong in the
 PR and implementation-status evidence; this test list alone is not a pass claim.
 
 This increment remediates the actual published dependency baseline, not missing Cloud-only identity/abuse code. See [ledger](ci-vulnerability-ledger.md), [runbook](security-runbook.md) and [ADR-016](../architecture/adr/ADR-016-supported-spring-boot-4-security-migration.md).

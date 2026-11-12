@@ -51,7 +51,9 @@ public class ApiRateLimitFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getRequestURI().substring(request.getContextPath().length());
+        // The container decodes this path just as it does for controller/security routing.
+        // Raw requestURI would let an encoded API prefix bypass the quota.
+        String path = request.getServletPath();
         return !(path.equals("/api/v1") || path.startsWith("/api/v1/"))
                 || path.equals("/api/v1/health");
     }
