@@ -285,12 +285,39 @@ class AuthRepository extends ChangeNotifier {
         'version': version,
       });
 
+  Future<List<Map<String, dynamic>>> consents() async {
+    final result = await _requestJson('GET', 'me/consents');
+    return (result as List<dynamic>)
+        .map((entry) => entry as Map<String, dynamic>)
+        .toList(growable: false);
+  }
+
+  Future<Map<String, dynamic>> setConsent(String policyId, bool granted) async {
+    final segments = policyId.split('-');
+    if (segments.length != 5 ||
+        segments.map((s) => s.length).join(',') != '8,4,4,4,12' ||
+        !RegExp(r'^[0-9a-fA-F]+').hasMatch(policyId.replaceAll('-', '')) ||
+        policyId.replaceAll('-', '').length != 32) {
+      throw ArgumentError.value(policyId, 'policyId', 'Invalid policy ID');
+    }
+    return (await _requestJson(
+            granted ? 'PUT' : 'DELETE', 'me/consents/$policyId'))
+        as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> _request(
     String method, [
     Map<String, dynamic>? body,
+  ]) async =>
+      (await _requestJson(method, 'me', body)) as Map<String, dynamic>;
+
+  Future<dynamic> _requestJson(
+    String method,
+    String path, [
+    Map<String, dynamic>? body,
   ]) async {
     final access = await accessToken();
-    final request = http.Request(method, apiBase.resolve('me'));
+    final request = http.Request(method, apiBase.resolve(path));
     request.headers.addAll({
       'Authorization': 'Bearer $access',
       'Accept': 'application/json',
@@ -318,7 +345,7 @@ class AuthRepository extends ChangeNotifier {
     if (response.statusCode != 200) {
       throw IdentityApiError(response.statusCode);
     }
-    return jsonDecode(response.body) as Map<String, dynamic>;
+    return jsonDecode(response.body);
   }
 
   Future<bool> logout() => _exclusive(() async {
