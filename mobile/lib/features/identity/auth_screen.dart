@@ -327,8 +327,6 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                     subtitle: Text(_profile!['preferredLanguage'] as String? ??
                         Localizations.localeOf(context).languageCode)),
                 const SizedBox(height: 24),
-                ConsentPanel(auth: widget.auth),
-                const SizedBox(height: 24),
                 FilledButton(
                     onPressed: _busy
                         ? null
@@ -344,6 +342,8 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                 TextButton(
                     onPressed: _busy ? null : () => _run(_load),
                     child: Text(s.reload)),
+                const SizedBox(height: 24),
+                ConsentPanel(auth: widget.auth),
               ] else
                 Form(
                     key: _form,
