@@ -1,17 +1,20 @@
-# Next task — TASK-006 native Consumer verification
+# Next task — TASK-006 native registration verification
 
-After the TASK-046 verified-identity quota PR is reviewed/merged, implement the
-missing isolated native-browser scenario required by android-e2e.yml. This verifies
-existing Consumer behavior under ADR-015's synthetic-development approval; it does
-not enable production identity/OTP. Use docs/identity/consumer-validation/README.md
-and the existing POC networking guidance; do not replace PKCE with password grants.
+Extend the existing Android35/Chrome scenario with the Consumer's real registration
+flow and callback. Source db13a26 passed six targeted login/profile/vault/offline/
+logout checks in hosted run 43209945677. Reuse the disposable fixture, real AppAuth
+PKCE and canonical identity/profile checks; do not replace them with protocol mocks.
 
-Acceptance: real system-browser login/registration and callback, secure-vault
-restore, profile load/edit, rotation/replay handling, offline/expiry recovery,
-logout and credential prompt, RU/KK/EN and supported accessibility checks. Produce
-sanitized evidence without token/password logs. A protocol fixture or APK build
-alone is not native Consumer E2E. iOS/device/accessibility prerequisites must remain
-explicit when unavailable. Preserve current API/JWT/profile/security regressions.
+Acceptance: launch Create account from Flutter, submit a fresh synthetic account
+in the real provider form, return through the native PKCE callback, verify the
+canonical profile and same-account relogin. Cover the provider's explicit validation
+failure without logging credentials, tokens or authorization URLs. Preserve all
+six existing native checks, 68 backend and 33 Flutter regression tests and the
+hash-pinned Python dependency audit. See docs/identity/consumer-validation/README.md.
+
+TASK-006 stays in_progress: native replay capture, provider outage/expiry, iOS,
+TalkBack, large text, full RU/KK profile journeys, physical devices and session
+administration remain open. Production identity/OTP is not approved by this work.
 
 TASK-045 stays partially_verified and TASK-046 in_progress: trusted device identity,
 canonical-account-wide quotas across IdP aliases and distributed-edge controls need

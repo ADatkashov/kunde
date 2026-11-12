@@ -9,8 +9,21 @@ def request(path, body=None):
     with urllib.request.urlopen(req, timeout=30) as response:
         return json.load(response)
 
+def python_requirements(path):
+    coordinates = set()
+    for line in path.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"): continue
+        match = re.fullmatch(r"([A-Za-z0-9][A-Za-z0-9_.-]*)==([A-Za-z0-9_.+!-]+) --hash=sha256:[a-f0-9]{64}", line)
+        if not match: raise ValueError("Python requirement must have an exact version and SHA-256")
+        coordinates.add(("PyPI", re.sub(r"[-_.]+", "-", match[1]).lower(), match[2]))
+    if not coordinates: raise ValueError("Empty Python requirements")
+    return coordinates
+
+
 def main():
     p=argparse.ArgumentParser()
+    p.add_argument("--python-requirements", type=pathlib.Path)
     p.add_argument("--maven", type=pathlib.Path)
     p.add_argument("--pub", type=pathlib.Path)
     p.add_argument("--effective", type=pathlib.Path)
@@ -25,7 +38,7 @@ def main():
     code=2
     try:
         coordinates=set()
-        for file in [a.maven,a.pub,a.effective,a.settings]:
+        for file in [a.maven,a.pub,a.effective,a.settings,a.python_requirements]:
             if file: report["inputSha256"][str(file)]=hashlib.sha256(file.read_bytes()).hexdigest()
         def visit(node):
             version=node["version"]
@@ -56,6 +69,7 @@ def main():
                 match=re.search(r'id\("'+re.escape(identifier)+r'"\)\s+version\s+"([^"]+)"',text)
                 if not match or "$" in match[1]: raise ValueError("Missing explicit plugin version")
                 coordinates.add(("Maven",name,match[1]))
+        if a.python_requirements: coordinates.update(python_requirements(a.python_requirements))
         coordinates=sorted(coordinates)
         if not coordinates: raise ValueError("Empty audit graph")
         report["coordinates"]=[{"ecosystem":e,"name":n,"version":v} for e,n,v in coordinates]
