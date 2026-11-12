@@ -24,7 +24,11 @@ class _ConsentPanelState extends State<ConsentPanel> {
 
   String _translate(String ru, String kk, String en) {
     final locale = Localizations.localeOf(context).languageCode;
-    return locale == 'kk' ? kk : locale == 'en' ? en : ru;
+    return locale == 'kk'
+        ? kk
+        : locale == 'en'
+            ? en
+            : ru;
   }
 
   Future<void> _change(Map<String, dynamic> policy, bool grant) async {
@@ -32,13 +36,15 @@ class _ConsentPanelState extends State<ConsentPanel> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(_translate('Подтвердить действие', 'Әрекетті растау',
-            'Confirm action')),
+        title: Text(_translate(
+            'Подтвердить действие', 'Әрекетті растау', 'Confirm action')),
         content: Text(grant
-            ? _translate('Предоставить согласие для этой версии политики?',
+            ? _translate(
+                'Предоставить согласие для этой версии политики?',
                 'Осы саясат нұсқасына келісім бересіз бе?',
                 'Grant consent to this policy version?')
-            : _translate('Отозвать согласие для этой версии политики?',
+            : _translate(
+                'Отозвать согласие для этой версии политики?',
                 'Осы саясат нұсқасына келісімді қайтарып аласыз ба?',
                 'Withdraw consent for this policy version?')),
         actions: [
@@ -59,8 +65,8 @@ class _ConsentPanelState extends State<ConsentPanel> {
     } on SessionExpired {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(_translate('Сессия истекла', 'Сессия аяқталды',
-              'Session expired')),
+          content: Text(_translate(
+              'Сессия истекла', 'Сессия аяқталды', 'Session expired')),
         ));
       }
     } catch (_) {
