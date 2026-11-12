@@ -36,6 +36,8 @@ jobs:
           persist-credentials: false
       - name: Check KVM before emulator setup
         run: |
+          mkdir -p reports
+          echo '{"status":"NOT_STARTED","nativeE2E":"NOT_EXECUTED","productionReadiness":"NOT_APPROVED"}' > reports/e2e-status.json
           if [ ! -c /dev/kvm ]; then echo "INFRASTRUCTURE_BLOCKED: no KVM device" >> "$GITHUB_STEP_SUMMARY"; exit 78; fi
           if [ ! -r /dev/kvm ] || [ ! -w /dev/kvm ]; then sudo setfacl -m "u:$(id -un):rw" /dev/kvm; fi
           test -r /dev/kvm && test -w /dev/kvm
@@ -49,8 +51,31 @@ jobs:
           flutter-version: '3.47.9'
           channel: stable
           cache: false
+      - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d
+        with:
+          gradle-version: '9.3.1'
+          cache-disabled: true
       - name: Isolated synthetic Keycloak and backend stack
         run: bash scripts/ci/start_identity_test_stack.sh
+      - name: Build and verify Consumer debug APK for loopback fixture
+        working-directory: mobile
+        env:
+          GRADLE_USER_HOME: /tmp/kunde-gradle
+        run: |
+          flutter pub get --enforce-lockfile
+          python3 - <<'PY'
+          import os, pathlib
+          pathlib.Path('android/local.properties').write_text('flutter.sdk='+os.environ['FLUTTER_ROOT']+'\n'+'sdk.dir='+os.environ['ANDROID_HOME']+'\n')
+          PY
+          cd android
+          gradle --no-daemon --max-workers=2 help
+          cd ..
+          flutter build apk --debug --target-platform android-x64 \
+            --dart-define=CONSUMER_IDENTITY_ENABLED=true \
+            --dart-define=OIDC_ISSUER_URI=http://localhost:8180/realms/kunde-consumer-check \
+            --dart-define=OIDC_CLIENT_ID=kunde-consumer \
+            --dart-define=API_BASE_URL=http://localhost:8081/api/v1/
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify build/app/outputs/flutter-apk/app-debug.apk
       - uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
         with:
           api-level: 30
@@ -59,9 +84,24 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
           script: bash scripts/ci/run_consumer_identity_e2e.sh
+      - name: Require executed scenario evidence
+        run: |
+          python3 - <<'PY'
+          import json
+          report=json.load(open('reports/e2e-status.json'))
+          assert report['status']=='PASSED_EXECUTED_SCENARIOS'
+          assert report['nativeE2E']=='EXECUTED_PARTIAL'
+          assert len(report['completed'])==6
+          assert report['notExecuted']
+          PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
           name: identity-e2e-sanitized
-          path: reports/e2e-status.json
+          path: |
+            reports/e2e-status.json
+            reports/native-profile.png
           retention-days: 3
+      - name: Stop owned synthetic fixture
+        if: always()
+        run: bash scripts/ci/stop_identity_test_stack.sh

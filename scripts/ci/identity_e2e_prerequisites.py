@@ -8,6 +8,10 @@ REQUIRED = (
     "backend/src/main/java/kz/kunde/identity/ConsumerIdentityController.java",
     "scripts/ci/start_identity_test_stack.sh",
     "scripts/ci/run_consumer_identity_e2e.sh",
+    "scripts/ci/stop_identity_test_stack.sh",
+    "scripts/ci/native_identity_stack.py",
+    "scripts/ci/consumer_native_e2e.py",
+    "docs/identity/consumer-validation/realm.json",
 )
 
 
