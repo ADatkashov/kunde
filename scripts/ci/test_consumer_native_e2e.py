@@ -208,3 +208,14 @@ class SessionFailurePathTests(unittest.TestCase):
              patch("consumer_native_e2e.adb", side_effect=[b"clean", b"opaque"]):
             scenario.token_secrecy()
         self.assertEqual(len(scenario.completed), 1)
+
+    def test_expiry_clock_restore_failure_does_not_mask_original_error(self):
+        scenario = Scenario({})
+        epochs = iter([1000, 1600, 1600, 1600])
+        with patch("consumer_native_e2e.adb"), \
+             patch.object(scenario, "device_epoch", side_effect=lambda: next(epochs)), \
+             patch.object(scenario, "set_clock", side_effect=[None, RuntimeError("restore")]), \
+             patch.object(scenario, "profile", side_effect=AssertionError("original")):
+            with self.assertRaisesRegex(AssertionError, "original"):
+                scenario.access_token_expiry()
+        self.assertIn("emulator clock restore failed", scenario.not_executed)

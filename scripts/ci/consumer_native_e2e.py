@@ -363,8 +363,12 @@ class Scenario:
                 raise AssertionError("Refreshed access token did not authorize profile update")
             self.completed.append("expired access token refreshed natively before authorized profile update")
         finally:
-            self.set_clock(self.device_epoch() - CLOCK_JUMP_SECONDS)
-            adb("shell", "settings", "put", "global", "auto_time", "1")
+            # Always try to restore the clock without masking the original failure.
+            try:
+                self.set_clock(self.device_epoch() - CLOCK_JUMP_SECONDS)
+                adb("shell", "settings", "put", "global", "auto_time", "1")
+            except Exception:
+                self.not_executed.append("emulator clock restore failed")
 
     def token_secrecy(self):
         self.stage = "token_secrecy"
@@ -592,6 +596,9 @@ def main():
         result["notExecuted"] = scenario.not_executed + NOT_EXECUTED
     except Exception as error:
         result.update(stage=scenario.stage, errorClass=type(error).__name__)
+        if isinstance(error, subprocess.CalledProcessError) and isinstance(error.cmd, (list, tuple)):
+            # Only the leading adb arguments (no stdin or output) are reported.
+            result["failedCommand"] = {"args": [str(a)[:40] for a in error.cmd[:5]], "returnCode": error.returncode}
         result["networkDiagnostics"] = network_diagnostics()
         if scenario.last_tree is not None:
             result["diagnostics"] = safe_diagnostics(scenario.last_tree)
