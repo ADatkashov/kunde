@@ -123,7 +123,7 @@
     "release": "REL-1",
     "user_story_id": "US-003",
     "implementation_status": "in_progress",
-    "implementation_note": "PR #5 merged as 4595309: canonical identity/profile/V2, claim validation and localized Flutter auth/session UI. PR #14 source db13a26 passes six targeted native Android35/Chrome124 checks in hosted run 43209945677: welcome RU/KK/EN, real browser/PKCE callback/API, canonical profile edit, two vault/rotated-refresh restores, API offline retry, provider logout/credential-prompt relogin. ADA-72 adds a native registration/cancellation/validation/profile/relogin harness; hosted verification pending, local Python 16 passed. TASK-006 remains in_progress: native registration, replay/outage/expiry, iOS/accessibility/device acceptance and session administration remain incomplete. Sanitized evidence: docs/identity/consumer-validation/native-evidence-2026-11-12.json."
+    "implementation_note": "PR #5 established canonical identity/profile/V2 and Flutter auth/session. PR #14 hosted Android35/Chrome124 verified six native PKCE/login/profile/vault/offline/logout checks (run 43209945677). PR #17 merged as afdab129; hosted Android native E2E run 43219354337 succeeded with eleven completed checks including registration cancellation, validation, canonical UUID/profile save, duplicate rejection and same-account relogin. Sanitized artifact identity-e2e-sanitized retained in Actions. TASK-006 remains in_progress: refresh replay, provider outage/expiry, iOS/accessibility/physical devices and session administration not yet verified; GHSA-r937 remains open."
   },
   {
     "id": "TASK-007",
@@ -963,7 +963,7 @@
     "release": "REL-1",
     "user_story_id": "US-022",
     "implementation_status": "in_progress",
-    "implementation_note": "Peer-IP and body guards merged through PRs #11\u2013#12. Verified external issuer/subject quota added after JWT authentication, shared across security chains and independent of token rotation/IP/caller identity headers. Cloud Java 21/PostgreSQL16.15 clean verify passed 68 tests, zero failures/skips; packaged no-issuer/body smoke passed. Canonical account/alias-wide, trusted device, distributed edge, production and SDK/audit gates remain open; no production readiness."
+    "implementation_note": "Peer-IP and body guards merged through PRs #11–#12. Verified external issuer/subject quota added after JWT authentication, shared across security chains and independent of token rotation/IP/caller identity headers. Cloud Java 21/PostgreSQL16.15 clean verify passed 68 tests, zero failures/skips; packaged no-issuer/body smoke passed. Canonical account/alias-wide, trusted device, distributed edge, production and SDK/audit gates remain open; no production readiness."
   },
   {
     "id": "TASK-047",

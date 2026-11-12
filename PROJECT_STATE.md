@@ -2,9 +2,11 @@
 
 Reviewed 2026-11-12. Follow AGENTS.md; code and current CI are authoritative.
 
-- ADA-72 registration harness extends the existing six checks; fresh hosted Android,
-  backend and Flutter runs are pending. Local Python: 16 passed, zero failures.
-  No new native registration result is established yet.
+- ADA-72 PR #17 merged as afdab129 (2026-11-12). Hosted Android native E2E
+  run 43219354337 succeeded with prerequisites and emulator jobs; the registration
+  harness extends six prior checks to eleven. Sanitized CI artifact is retained.
+  TASK-006 remains in_progress: replay, outage/expiry, iOS, accessibility,
+  physical-device and session-administration evidence are still missing.
 
 - Owner requested essential automatic CI: configuration, scoped backend/Flutter,
   and dependency/secret/container security checks. APK, SDK tooling and diagnostic
