@@ -78,3 +78,24 @@ and smoke Python syntax parse. Hosted current-head evidence belongs in the PR.
 TASK-046 remains in_progress: account/device/edge controls, read-timeout/concurrency
 budgets, SDK GHSA-r937 and supply-chain coverage remain open. No provider, native
 Consumer E2E or production-readiness claim is made. See [TASK-046](../security/TASK-046.md).
+
+## TASK-045/046 verified-identity quota — 2026-11-12
+
+The initial HTTP reproduction on main bb5619b returned 200 after a configured
+identity budget was exhausted. Local clean verify of the new guard passes 68 tests
+with no failures/errors/skips, including all existing 57 tests. The 11 new tests
+cover actual signed-RSA/JWKS HTTP, rotation, forged signature rejection without
+victim budget consumption, distinct identities, cross-chain budgets, peer changes,
+claim shape, bounded saturation, expiry/rounding and concurrent admission.
+These are local synthetic signed-token fixtures, not live IdP/native E2E proof.
+
+Existing peer-IP semantics are preserved through shared FixedWindowQuota; the
+original 6 filter regressions remain green. Packaged JAR smoke passes unchanged
+health 200, protected 503 without issuer, OpenAPI 200, body-boundary 200 and fixed/
+chunked 413 checks. Hosted results belong in the current PR.
+
+TASK-045's stale build-pending note is corrected to partially_verified, with a
+[technical threat/evidence matrix](authentication-and-security.md). Formal privacy,
+production threat, operational ownership and supply-chain coverage reviews remain
+open. TASK-046 stays in_progress for canonical-account/device/distributed-edge and
+production controls; SDK GHSA-r937 is still open. No release is promoted.

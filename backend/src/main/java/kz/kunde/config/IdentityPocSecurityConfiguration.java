@@ -6,6 +6,8 @@ import java.util.Map;
 import kz.kunde.platform.ApiSecurityErrorWriter;
 import kz.kunde.platform.ApiRateLimitFilter;
 import kz.kunde.platform.ApiBodyLimitFilter;
+import kz.kunde.platform.AuthenticatedRateLimitFilter;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.web.filter.CorsFilter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -33,7 +35,7 @@ public class IdentityPocSecurityConfiguration {
     @Bean
     @Order(0)
     SecurityFilterChain identityPocApi(HttpSecurity http, ApiSecurityErrorWriter errors, JwtDecoder issuerJwtDecoder,
-            ApiRateLimitFilter limiter, ApiBodyLimitFilter bodies,
+            ApiRateLimitFilter limiter, ApiBodyLimitFilter bodies, AuthenticatedRateLimitFilter authenticated,
             @Value("${app.security.oidc.audience}") String audience,
             @Value("${app.security.oidc.poc-zitadel-organization:}") String zitadelOrganization)
             throws Exception {
@@ -48,6 +50,7 @@ public class IdentityPocSecurityConfiguration {
                 .csrf(AbstractHttpConfigurer::disable)
                 .addFilterAfter(limiter, CorsFilter.class)
                 .addFilterAfter(bodies, ApiRateLimitFilter.class)
+                .addFilterAfter(authenticated, BearerTokenAuthenticationFilter.class)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .anyRequest().hasAuthority(POC_AUTHORITY))

@@ -88,7 +88,7 @@ components:
           schema:
             $ref: '#/components/schemas/ApiError'
     RateLimited:
-      description: Per-process client quota or bounded client table exhausted. Retry after the indicated delay; health probes remain available.
+      description: Per-process peer-IP or verified issuer/subject quota exhausted, or its bounded table is full. Token rotation does not reset an identity budget. Retry after the indicated delay; health probes remain available.
       headers:
         Retry-After:
           description: Positive delay in seconds, rounded up to the next available window.

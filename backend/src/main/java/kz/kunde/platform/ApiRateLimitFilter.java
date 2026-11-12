@@ -7,8 +7,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.function.LongSupplier;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,12 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class ApiRateLimitFilter extends OncePerRequestFilter {
     private final ApiSecurityErrorWriter errors;
     private final Counter denied;
-    private final int requests;
-    private final int maxClients;
-    private final long windowNanos;
-    private final LongSupplier clock;
-    // Insertion order is expiry order. Active entries are never evicted to admit new clients.
-    private final LinkedHashMap<String, Window> clients = new LinkedHashMap<>();
+    private final FixedWindowQuota<String> quota;
 
     @Autowired
     public ApiRateLimitFilter(ApiSecurityErrorWriter errors, MeterRegistry metrics,
@@ -38,15 +31,9 @@ public class ApiRateLimitFilter extends OncePerRequestFilter {
 
     ApiRateLimitFilter(ApiSecurityErrorWriter errors, MeterRegistry metrics, int requests,
             int windowSeconds, int maxClients, LongSupplier clock) {
-        if (requests < 1 || windowSeconds < 1 || windowSeconds > 3600 || maxClients < 1) {
-            throw new IllegalArgumentException("API rate limits must be positive; window must be at most 3600 seconds");
-        }
         this.errors = errors;
         this.denied = metrics.counter("kunde.api.rate_limit.denied");
-        this.requests = requests;
-        this.windowNanos = TimeUnit.SECONDS.toNanos(windowSeconds);
-        this.maxClients = maxClients;
-        this.clock = clock;
+        this.quota = new FixedWindowQuota<>(requests, windowSeconds, maxClients, clock);
     }
 
     @Override
@@ -62,7 +49,7 @@ public class ApiRateLimitFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
             FilterChain chain) throws ServletException, IOException {
         // Never trust caller-controlled Forwarded/X-Forwarded-For or token contents here.
-        long retryAfter = acquire(request.getRemoteAddr());
+        long retryAfter = quota.acquire(request.getRemoteAddr());
         if (retryAfter > 0) {
             denied.increment();
             response.setHeader("Retry-After", Long.toString(retryAfter));
@@ -75,35 +62,4 @@ public class ApiRateLimitFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
 
-    private synchronized long acquire(String client) {
-        long now = clock.getAsLong();
-        var iterator = clients.entrySet().iterator();
-        while (iterator.hasNext()) {
-            if (now - iterator.next().getValue().start < windowNanos) break;
-            iterator.remove();
-        }
-        Window window = clients.get(client);
-        if (window == null) {
-            if (clients.size() >= maxClients) {
-                return retryAfter(now, clients.firstEntry().getValue().start);
-            }
-            window = new Window(now);
-            clients.put(client, window);
-        }
-        if (window.used >= requests) return retryAfter(now, window.start);
-        window.used++;
-        return 0;
-    }
-
-    private long retryAfter(long now, long start) {
-        long remaining = windowNanos - (now - start);
-        return Math.max(1, (remaining + TimeUnit.SECONDS.toNanos(1) - 1) / TimeUnit.SECONDS.toNanos(1));
-    }
-
-    private static final class Window {
-        private final long start;
-        private int used;
-
-        private Window(long start) { this.start = start; }
-    }
 }

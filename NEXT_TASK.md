@@ -1,21 +1,20 @@
-# Next task — TASK-046 authenticated abuse controls
+# Next task — TASK-006 native Consumer verification
 
-Finish reviewing/merging the bounded request-body increment, then continue the
-existing TASK-046 account/device/edge quota scope. Keep peer-IP admission and body
-bounds before expensive JWT/controller work; authenticated account keys must derive
-from verified identity, never caller-supplied headers or unverified claims.
-See docs/security/TASK-046.md for configuration, deployment limits and open gates.
+After the TASK-046 verified-identity quota PR is reviewed/merged, implement the
+missing isolated native-browser scenario required by android-e2e.yml. This verifies
+existing Consumer behavior under ADR-015's synthetic-development approval; it does
+not enable production identity/OTP. Use docs/identity/consumer-validation/README.md
+and the existing POC networking guidance; do not replace PKCE with password grants.
 
-Current body-limit acceptance: known and streamed excess returns safe correlated
-413 before downstream effects; exact byte boundary and bounded UTF-8 JSON remain
-intact; CORS and empty probes work; no more than limit+1 bytes are read. Cloud
-clean verify passes 57 tests; require current-head hosted backend/configuration,
-Flutter and security results plus packaged-JAR Content-Length/chunked smoke.
+Acceptance: real system-browser login/registration and callback, secure-vault
+restore, profile load/edit, rotation/replay handling, offline/expiry recovery,
+logout and credential prompt, RU/KK/EN and supported accessibility checks. Produce
+sanitized evidence without token/password logs. A protocol fixture or APK build
+alone is not native Consumer E2E. iOS/device/accessibility prerequisites must remain
+explicit when unavailable. Preserve current API/JWT/profile/security regressions.
 
-TASK-046 remains in_progress. SDK GHSA-r937, distributed edge/concurrency/read-timeout
-controls, production thresholds and audit coverage are not closed by a local quota.
-Do not suppress security failures or modify upstream SDK sources.
-
-TASK-006 Consumer native verification follows the security prerequisites; implement
-the isolated native scenario before claiming Android/iOS browser/vault/accessibility
-acceptance. See docs/identity/consumer-validation/README.md.
+TASK-045 stays partially_verified and TASK-046 in_progress: trusted device identity,
+canonical-account-wide quotas across IdP aliases and distributed-edge controls need
+binding/operational contracts. Do not invent a trusted device from caller headers,
+select unapproved hosting, or suppress SDK GHSA-r937. The local IP/body/verified
+identity controls are foundation safeguards, not pilot/production readiness.
