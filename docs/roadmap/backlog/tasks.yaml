@@ -1150,8 +1150,8 @@
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-0",
     "user_story_id": "US-027",
-    "implementation_status": "implemented_unverified",
-    "implementation_note": "PostgreSQL/Flyway schemas and integration test added; Docker Hub blocked Maven image build."
+    "implementation_status": "partially_verified",
+    "implementation_note": "Flyway V1-V4 (domain schemas identity/profile/marketplace/transactions/payments/support/serviceability, constraints, indexes) run on PostgreSQL 16 in Backend CI (green on main). 2026-11-12: DomainSchemaOwnershipIntegrationTest (7 tests) verifies schema ownership of every table, primary keys, the reviewed cross-schema FK allow-list, no cascading/nullifying FKs, contiguous successful Flyway history, and CHECK/FK rejection of invalid rows with valid controls; checked by mutation (rogue table, extra FK, dropped CHECK/FK made it fail). Local mvn clean verify on PostgreSQL 16.15: 83 tests, 0 failures. Open: per-module migration roles/repositories (docs/architecture/11), PITR/backup and restore evidence (TASK-056), runbook, rollout/rollback procedure; not Done. Superseded earlier note about a Docker Hub image-build block."
   },
   {
     "id": "TASK-056",
