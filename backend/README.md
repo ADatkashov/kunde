@@ -20,6 +20,14 @@ Forwarded headers are not trusted; reverse-proxy peers share a quota. Configure
 `API_RATE_LIMIT_MAX_CLIENTS`. See [TASK-046](../docs/security/TASK-046.md) for
 deployment limits and remaining account/device/edge controls.
 
+After bearer JWT verification, a separate budget limits each exact `(issuer,
+subject)` pair to 60 API requests per 60 seconds by default, with at most 4096
+identity entries per process. Configure `API_AUTH_RATE_LIMIT_REQUESTS`,
+`API_AUTH_RATE_LIMIT_WINDOW_SECONDS` (1–3600), and
+`API_AUTH_RATE_LIMIT_MAX_IDENTITIES`. Token rotation, peer-IP changes and caller
+account/device headers cannot reset this budget. This does not merge IdP aliases
+into the canonical KUNDE account or provide distributed/device quotas.
+
 API bodies are bounded before JWT verification and controller execution. Set
 `API_MAX_BODY_BYTES` (default 65536; allowed range 1–1048576). Excessive declared
 or streamed bodies return 413 / `PAYLOAD_TOO_LARGE` with the existing correlated

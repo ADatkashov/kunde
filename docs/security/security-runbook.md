@@ -34,3 +34,16 @@ origins retain CORS; rate-limit 429 can take precedence over 413. Empty health p
 remain available. Production ingress upload/idle timeouts and concurrency budgets
 are separate controls. Extend and verify form/multipart/nonblocking/compression
 contracts before enabling those endpoint types. See [TASK-046](TASK-046.md).
+
+## Authenticated API quota
+
+After bearer verification, `(issuer, subject)` gets a separate per-process budget:
+`API_AUTH_RATE_LIMIT_REQUESTS` (default 60),
+`API_AUTH_RATE_LIMIT_WINDOW_SECONDS` (default 60, range 1–3600), and
+`API_AUTH_RATE_LIMIT_MAX_IDENTITIES` (default 4096). Token rotation and peer changes
+retain the quota. Caller user/device headers are ignored. Observe aggregate
+`kunde.api.authenticated_rate_limit.denied`; do not add issuer/subject/token labels
+or log cache keys. Saturation returns the existing 429/RATE_LIMITED and Retry-After;
+anonymous/invalid bearer calls cannot fill this identity table. Earlier IP 429/body 413
+can still take precedence. Device and canonical cross-IdP account budgets require
+their own verified binding contracts; never substitute a caller-supplied identifier.

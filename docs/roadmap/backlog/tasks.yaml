@@ -940,8 +940,8 @@
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-0",
     "user_story_id": "US-022",
-    "implementation_status": "implemented_unverified",
-    "implementation_note": "Fail-closed security boundary and safe errors added; backend build/security review pending."
+    "implementation_status": "partially_verified",
+    "implementation_note": "Technical threat/default review mapped to current main bb5619b: hosted backend 57 tests and packaged smoke, signed-JWT/issuer/audience/time, profile/BOLA, CORS, logging, IP/body guards and constraint tests verified. Formal privacy/production threat, operational and supply-chain coverage reviews remain open. See docs/engineering-foundation/authentication-and-security.md; no production approval."
   },
   {
     "id": "TASK-046",
@@ -963,7 +963,7 @@
     "release": "REL-1",
     "user_story_id": "US-022",
     "implementation_status": "in_progress",
-    "implementation_note": "PR #11 peer-IP quota merged as 5e8c182 with explicit owner permission for the open SDK finding. Body-limit increment adds bounded pre-parser Content-Length/actual-stream checks, safe 413, aggregate metrics and unchanged JSON/CORS behavior. Cloud Java 21/PostgreSQL16.15 clean verify passed 57 tests, zero failures/skips; packaged JAR fixed/chunked body-limit smoke passed. Account/device/edge, production thresholds, SDK GHSA-r937 and audit coverage remain open; no production readiness."
+    "implementation_note": "Peer-IP and body guards merged through PRs #11\u2013#12. Verified external issuer/subject quota added after JWT authentication, shared across security chains and independent of token rotation/IP/caller identity headers. Cloud Java 21/PostgreSQL16.15 clean verify passed 68 tests, zero failures/skips; packaged no-issuer/body smoke passed. Canonical account/alias-wide, trusted device, distributed edge, production and SDK/audit gates remain open; no production readiness."
   },
   {
     "id": "TASK-047",

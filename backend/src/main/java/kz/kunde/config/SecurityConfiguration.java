@@ -25,6 +25,8 @@ import org.springframework.security.web.SecurityFilterChain;
 import kz.kunde.platform.ApiSecurityErrorWriter;
 import kz.kunde.platform.ApiRateLimitFilter;
 import kz.kunde.platform.ApiBodyLimitFilter;
+import kz.kunde.platform.AuthenticatedRateLimitFilter;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.web.filter.CorsFilter;
 import org.springframework.http.HttpStatus;
@@ -32,6 +34,13 @@ import org.springframework.http.HttpStatus;
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfiguration {
+    @Bean
+    FilterRegistrationBean<AuthenticatedRateLimitFilter> authenticatedQuotaRegistration(AuthenticatedRateLimitFilter limiter) {
+        var registration = new FilterRegistrationBean<>(limiter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
     @Bean
     FilterRegistrationBean<ApiBodyLimitFilter> bodyLimitRegistration(ApiBodyLimitFilter limiter) {
         var registration = new FilterRegistrationBean<>(limiter);
@@ -115,12 +124,13 @@ public class SecurityConfiguration {
     @Order(1)
     @ConditionalOnExpression("'${app.security.oidc.issuer-uri:}' != ''")
     SecurityFilterChain oidcApi(HttpSecurity http, ApiSecurityErrorWriter errors, JwtDecoder issuerJwtDecoder,
-            ApiRateLimitFilter limiter, ApiBodyLimitFilter bodies) throws Exception {
+            ApiRateLimitFilter limiter, ApiBodyLimitFilter bodies, AuthenticatedRateLimitFilter authenticated) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .addFilterAfter(limiter, CorsFilter.class)
                 .addFilterAfter(bodies, ApiRateLimitFilter.class)
+                .addFilterAfter(authenticated, BearerTokenAuthenticationFilter.class)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/v1/health", "/api/v1/capabilities", "/api/v1/categories", "/api/v1/search", "/api/v1/openapi.yaml",
@@ -144,12 +154,13 @@ public class SecurityConfiguration {
     @Order(2)
     @ConditionalOnExpression("'${app.security.oidc.issuer-uri:}' == ''")
     SecurityFilterChain foundationOnlyApi(HttpSecurity http, ApiSecurityErrorWriter errors,
-            ApiRateLimitFilter limiter, ApiBodyLimitFilter bodies) throws Exception {
+            ApiRateLimitFilter limiter, ApiBodyLimitFilter bodies, AuthenticatedRateLimitFilter authenticated) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .addFilterAfter(limiter, CorsFilter.class)
                 .addFilterAfter(bodies, ApiRateLimitFilter.class)
+                .addFilterAfter(authenticated, BearerTokenAuthenticationFilter.class)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/v1/health", "/api/v1/capabilities", "/api/v1/categories", "/api/v1/search", "/api/v1/openapi.yaml",
