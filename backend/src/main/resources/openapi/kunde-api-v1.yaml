@@ -24,6 +24,8 @@ paths:
     get:
       operationId: getPlatformCapabilities
       responses:
+        '429':
+          $ref: '#/components/responses/RateLimited'
         '200':
           description: Enabled platform capabilities; does not expose secrets or operational details.
           content:
@@ -40,6 +42,8 @@ paths:
     get:
       operationId: listAvailableCategories
       responses:
+        '429':
+          $ref: '#/components/responses/RateLimited'
         '200':
           description: Available categories. Empty until an approved catalog is implemented and configured.
           content:
@@ -55,6 +59,8 @@ paths:
           in: query
           schema: { type: string, maxLength: 200 }
       responses:
+        '429':
+          $ref: '#/components/responses/RateLimited'
         '200':
           description: Search results; empty until an approved catalog is implemented.
           content:
@@ -63,6 +69,19 @@ paths:
                 type: array
                 items: { type: object }
 components:
+  responses:
+    RateLimited:
+      description: Per-process client quota or bounded client table exhausted. Retry after the indicated delay; health probes remain available.
+      headers:
+        Retry-After:
+          description: Positive delay in seconds, rounded up to the next available window.
+          schema: { type: integer, minimum: 1 }
+        Cache-Control:
+          schema: { type: string, const: no-store }
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
   schemas:
     ApiError:
       type: object

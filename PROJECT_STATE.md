@@ -2,6 +2,15 @@
 
 Reviewed 2026-11-11. Follow AGENTS.md; code and current CI are authoritative.
 
+- TASK-046 branch increment (2026-11-12): bounded per-process API peer-IP quota,
+  429/Retry-After, aggregate denial metric and forwarded-header rejection added.
+  Cloud Java21/PostgreSQL16 clean verify passes 47 tests with no skips, including
+  real HTTP and concurrency checks. Hosted evidence will be recorded in its PR.
+  Account/device/edge quotas, body-size controls and SDK advisory remain open.
+- Main 095ce75 includes PR #6 universal APK preview support. PR #7's CI prerequisite
+  correction remains a separate open PR; automatic approval review rejected its
+  merge because Security CI still reports the known Flutter SDK GHSA-r937.
+
 - Java 21 / Spring Boot 4.0.9, PostgreSQL/Flyway V1–V2 and Flutter 3.47.0.
 - ADR-015 is ACCEPTED for synthetic implementation: Keycloak primary, ZITADEL
   fallback. Production readiness, privacy, residency, operations and OTP remain gated.

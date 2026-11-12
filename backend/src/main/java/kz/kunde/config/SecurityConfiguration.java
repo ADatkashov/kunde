@@ -23,11 +23,22 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import kz.kunde.platform.ApiSecurityErrorWriter;
+import kz.kunde.platform.ApiRateLimitFilter;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.web.filter.CorsFilter;
 import org.springframework.http.HttpStatus;
 
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfiguration {
+    @Bean
+    FilterRegistrationBean<ApiRateLimitFilter> rateLimitRegistration(ApiRateLimitFilter limiter) {
+        var registration = new FilterRegistrationBean<>(limiter);
+        // Run only inside the selected security chain, after CORS/header writers and before JWT work.
+        registration.setEnabled(false);
+        return registration;
+    }
+
     @Bean
     @ConditionalOnExpression("'${app.security.oidc.issuer-uri:}' != ''")
     JwtDecoder issuerJwtDecoder(@Value("${app.security.oidc.issuer-uri}") String issuerUri,
@@ -95,10 +106,12 @@ public class SecurityConfiguration {
     @Bean
     @Order(1)
     @ConditionalOnExpression("'${app.security.oidc.issuer-uri:}' != ''")
-    SecurityFilterChain oidcApi(HttpSecurity http, ApiSecurityErrorWriter errors, JwtDecoder issuerJwtDecoder) throws Exception {
+    SecurityFilterChain oidcApi(HttpSecurity http, ApiSecurityErrorWriter errors, JwtDecoder issuerJwtDecoder,
+            ApiRateLimitFilter limiter) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
+                .addFilterAfter(limiter, CorsFilter.class)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/v1/health", "/api/v1/capabilities", "/api/v1/categories", "/api/v1/search", "/api/v1/openapi.yaml",
@@ -121,10 +134,12 @@ public class SecurityConfiguration {
     @Bean
     @Order(2)
     @ConditionalOnExpression("'${app.security.oidc.issuer-uri:}' == ''")
-    SecurityFilterChain foundationOnlyApi(HttpSecurity http, ApiSecurityErrorWriter errors) throws Exception {
+    SecurityFilterChain foundationOnlyApi(HttpSecurity http, ApiSecurityErrorWriter errors,
+            ApiRateLimitFilter limiter) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
+                .addFilterAfter(limiter, CorsFilter.class)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/v1/health", "/api/v1/capabilities", "/api/v1/categories", "/api/v1/search", "/api/v1/openapi.yaml",
