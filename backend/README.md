@@ -20,6 +20,13 @@ Forwarded headers are not trusted; reverse-proxy peers share a quota. Configure
 `API_RATE_LIMIT_MAX_CLIENTS`. See [TASK-046](../docs/security/TASK-046.md) for
 deployment limits and remaining account/device/edge controls.
 
+API bodies are bounded before JWT verification and controller execution. Set
+`API_MAX_BODY_BYTES` (default 65536; allowed range 1–1048576). Excessive declared
+or streamed bodies return 413 / `PAYLOAD_TOO_LARGE` with the existing correlated
+JSON envelope. CORS and empty health probes retain their behavior. This bounds
+the current synchronous JSON API; upload/form/nonblocking endpoints and ingress
+upload/idle timeouts require separate review before enabling those capabilities.
+
 Run `mvn verify`. Local database is required for full application startup; unit tests do not need vendor credentials.
 
 ## Consumer Identity and Profile

@@ -50,6 +50,7 @@ app:
   identity:
     consumer-enabled: ${CONSUMER_IDENTITY_ENABLED:false}
   security:
+    max-body-bytes: ${API_MAX_BODY_BYTES:65536}
     rate-limit:
       requests: ${API_RATE_LIMIT_REQUESTS:120}
       window-seconds: ${API_RATE_LIMIT_WINDOW_SECONDS:60}
