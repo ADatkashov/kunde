@@ -180,9 +180,9 @@ class SessionFailurePathTests(unittest.TestCase):
 
     def test_vault_file_requires_single_secure_storage_file(self):
         scenario = Scenario({})
-        with patch("consumer_native_e2e.adb", return_value=b"FlutterSecureStorage.xml\nother.xml\n"):
+        with patch("consumer_native_e2e.adb", return_value=b"./shared_prefs/FlutterSecureStorage.xml\n./shared_prefs/other.xml\n"):
             self.assertEqual(scenario.vault_file(), "shared_prefs/FlutterSecureStorage.xml")
-        with patch("consumer_native_e2e.adb", return_value=b"other.xml\n"):
+        with patch("consumer_native_e2e.adb", return_value=b"./shared_prefs/other.xml\n"):
             with self.assertRaises(AssertionError):
                 scenario.vault_file()
 

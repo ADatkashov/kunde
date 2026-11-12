@@ -138,6 +138,7 @@ class Scenario:
         self.last_tree = None
         self.environment = {}
         self.not_executed = []
+        self.vault_paths = []
 
     def wait(self, predicate, seconds=60):
         end = time.monotonic() + seconds
@@ -226,11 +227,13 @@ class Scenario:
 
     def vault_file(self):
         """Locate the encrypted secure-storage file of the debug app (never read or print its content)."""
-        names = adb("shell", "run-as", PACKAGE, "ls", "shared_prefs").decode(errors="replace").split()
-        found = [n for n in names if "FlutterSecureStorage" in n and n.endswith(".xml")]
+        listing = adb("shell", "run-as", PACKAGE, "find", ".", "-maxdepth", "3", "-type", "f").decode(errors="replace")
+        paths = [line.strip() for line in listing.splitlines() if re.fullmatch(r"[A-Za-z0-9_./-]+", line.strip())]
+        self.vault_paths = paths
+        found = [p[2:] for p in paths if "FlutterSecureStorage" in p and p.endswith(".xml")]
         if len(found) != 1:
             raise AssertionError("Expected exactly one secure-storage preference file")
-        return "shared_prefs/" + found[0]
+        return found[0]
 
     def vault_snapshot(self):
         """Opaque encrypted bytes kept only in memory so a rotated token can be replayed natively."""
@@ -553,6 +556,8 @@ def main():
         result["networkDiagnostics"] = network_diagnostics()
         if scenario.last_tree is not None:
             result["diagnostics"] = safe_diagnostics(scenario.last_tree)
+    if scenario.vault_paths and result["status"] != "PASSED_EXECUTED_SCENARIOS":
+        result["appFiles"] = scenario.vault_paths[:40]  # file names only, never contents
     result["environment"] = scenario.environment
     if scenario.completed:
         result["nativeE2E"] = "EXECUTED_PARTIAL"
