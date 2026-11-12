@@ -245,7 +245,11 @@ class Scenario:
 
     def vault_restore(self, data):
         adb("shell", "am", "force-stop", PACKAGE)
-        adb_input(data, "shell", "run-as", PACKAGE, "sh", "-c", "cat > " + self.vault_file())
+        target = self.vault_file()
+        if not re.fullmatch(r"shared_prefs/[A-Za-z0-9_.-]+", target):
+            raise AssertionError("Unexpected vault path")
+        # One remote command string so the redirect runs as the app user, not the outer adb shell.
+        adb_input(data, "shell", "run-as " + PACKAGE + " sh -c 'cat > " + target + "'")
 
     def sign_in_again(self):
         """Sign in after a cleared session; an alive provider SSO session may return straight to the app."""
@@ -282,11 +286,14 @@ class Scenario:
         self.completed.append("provider outage during refresh keeps vault session and recovers without relogin")
 
     def refresh_replay(self, saved):
-        self.stage = "refresh_replay"
+        self.stage = "refresh_replay_snapshot"
         before = self.vault_snapshot()
+        self.stage = "refresh_replay_rotate"
         self.launch()
         self.profile()  # Restore rotates the refresh token; the snapshot is now already used.
+        self.stage = "refresh_replay_restore_old_vault"
         self.vault_restore(before)
+        self.stage = "refresh_replay_present_old_token"
         self.launch()
         self.app_label("Your session expired. Sign in again.")
         self.stage = "refresh_replay_relogin"
