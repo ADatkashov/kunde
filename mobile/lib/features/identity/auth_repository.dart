@@ -301,7 +301,7 @@ class AuthRepository extends ChangeNotifier {
       throw ArgumentError.value(policyId, 'policyId', 'Invalid policy ID');
     }
     return (await _requestJson(
-        granted ? 'PUT' : 'DELETE', 'me/consents/$policyId'))
+            granted ? 'PUT' : 'DELETE', 'me/consents/$policyId'))
         as Map<String, dynamic>;
   }
 
@@ -319,7 +319,7 @@ class AuthRepository extends ChangeNotifier {
     final access = await accessToken();
     final request = http.Request(method, apiBase.resolve(path));
     request.headers.addAll({
-      'Authorization': 'Bearer $access',
+      'Authorization': '***',
       'Accept': 'application/json',
     });
     if (body != null) {
