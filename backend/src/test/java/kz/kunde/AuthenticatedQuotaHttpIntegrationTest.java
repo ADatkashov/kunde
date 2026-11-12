@@ -111,7 +111,8 @@ class AuthenticatedQuotaHttpIntegrationTest {
         String subject = UUID.randomUUID().toString();
         String first = token(subject, KEY);
         String rotated = token(subject, KEY);
-        assertThat(first).isNotEqualTo(rotated);
+        // On failure report only a boolean, never serialized bearer values.
+        assertThat(first.equals(rotated)).isFalse();
         assertThat(call("/api/v1/categories", first).getStatusCode().value()).isEqualTo(200);
         assertThat(call("/api/v1/categories", rotated).getStatusCode().value()).isEqualTo(200);
         var denied = call("/%61pi/v1/categories", token(subject, KEY));
