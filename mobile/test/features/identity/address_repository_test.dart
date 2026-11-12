@@ -34,7 +34,7 @@ void main() {
       vault: Vault(),
       apiBase: Uri.parse('https://api.example.test/api/v1/'),
       client: MockClient((request) async {
-        expect(request.headers['Authorization'], '***');
+        expect(request.headers['Authorization'], 'Bearer access');
         seen.add('${request.method} ${request.url}');
         if (request.method == 'GET') return http.Response('[]', 200);
         if (request.method == 'POST') {
