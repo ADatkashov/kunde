@@ -230,6 +230,14 @@ class Scenario:
             time.sleep(1)
         raise TimeoutError("Fixture registration form unavailable")
 
+    def cancel_registration(self):
+        # Back can traverse the POST/validation history instead of dismissing AppAuth.
+        close = self.wait(lambda tree: next((n for n in tree.iter("node")
+            if n.get("package") == "com.android.chrome" and
+            n.get("resource-id") == "com.android.chrome:id/close_button" and center(n)), None))
+        self.tap(close)
+        self.app_label("Create account")
+
     def registration(self):
         self.stage = "registration_fixture"
         if self.binding_count() != 1:
@@ -239,8 +247,7 @@ class Scenario:
         self.app_label("Create account")
         self.tap_label("Create account", package=PACKAGE)
         self.registration_form()
-        adb("shell", "input", "keyevent", "4")
-        self.app_label("Create account")
+        self.cancel_registration()
         self.completed.append("native registration cancellation returns to signed-out Flutter")
         self.stage = "registration_validation"
         self.tap_label("Create account", package=PACKAGE)
@@ -294,8 +301,8 @@ class Scenario:
             raise AssertionError("Provider did not reject duplicate registration")
         if self.binding_count() != 2 or self.db_profile() != saved:
             raise AssertionError("Duplicate registration changed canonical identity")
-        adb("shell", "input", "keyevent", "4")
-        self.app_label("Sign in")
+        self.stage = "duplicate_registration_cancel"
+        self.cancel_registration()
         self.completed.append("duplicate registration rejected without canonical account changes")
         self.stage = "registered_logout_relogin"
         self.tap_label("Sign in", package=PACKAGE)
