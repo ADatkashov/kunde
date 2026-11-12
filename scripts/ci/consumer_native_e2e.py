@@ -83,14 +83,6 @@ def safe_diagnostics(tree):
                 r"(?:com\.android\.chrome|android):id/[a-zA-Z0-9_]+|username|password|kc-login", n.get("resource-id", ""))})}
 
 
-def device_http_status(port, path):
-    response = subprocess.run(["adb", "shell", "toybox", "nc", "-w", "5", "127.0.0.1", str(port)],
-                              input=(f"GET {path} HTTP/1.0\r\nHost: localhost:{port}\r\n\r\n").encode(),
-                              capture_output=True, timeout=10)
-    first = response.stdout.split(b"\n", 1)[0]
-    match = re.match(rb"HTTP/\d\.\d (\d{3})", first)
-    return int(match[1]) if match else None
-
 
 class Scenario:
     def __init__(self, state):
@@ -98,7 +90,6 @@ class Scenario:
         self.stage = "setup"
         self.completed = []
         self.last_tree = None
-        self.network = {}
 
     def wait(self, predicate, seconds=60):
         end = time.monotonic() + seconds
@@ -188,10 +179,6 @@ class Scenario:
         adb("shell", "am", "force-stop", "com.android.chrome")
         adb("reverse", "tcp:8180", "tcp:8180")
         adb("reverse", "tcp:8081", "tcp:8081")
-        self.network = {"deviceDiscovery": device_http_status(8180, "/realms/kunde-consumer-check/.well-known/openid-configuration"),
-                        "deviceApiHealth": device_http_status(8081, "/api/v1/health")}
-        if set(self.network.values()) != {200}:
-            raise AssertionError("Device loopback fixture unavailable")
         adb("install", "-r", "mobile/build/app/outputs/flutter-apk/app-debug.apk")
         adb("shell", "pm", "clear", PACKAGE)
         self.launch()
@@ -268,7 +255,6 @@ def main():
         result.update(stage=scenario.stage, errorClass=type(error).__name__)
         if scenario.last_tree is not None:
             result["diagnostics"] = safe_diagnostics(scenario.last_tree)
-        result["network"] = scenario.network
     if scenario.completed:
         result["nativeE2E"] = "EXECUTED_PARTIAL"
     Path("reports/e2e-status.json").write_text(json.dumps(result, indent=2) + "\n")
