@@ -2,6 +2,11 @@
 
 Reviewed 2026-11-12. Follow AGENTS.md; code and current CI are authoritative.
 
+- Owner requested essential automatic CI: configuration, scoped backend/Flutter,
+  and dependency/secret/container security checks. APK, SDK tooling and diagnostic
+  workflows are manual; their evidence/DoD requirements remain. See
+  docs/engineering-foundation/github-hosted-ci.md. GHSA-r937 remains OPEN.
+
 - Main 51374d1 includes PRs #11–#13: bounded peer-IP admission and request body
   guard before JWT/controllers, followed by verified `(issuer, subject)` quotas.
   Backend 68/Flutter 33 checks pass; SDK GHSA-r937 remains open.

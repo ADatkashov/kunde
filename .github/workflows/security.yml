@@ -136,6 +136,7 @@ jobs:
           path: reports/
           retention-days: 3
   sdk-tooling:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:

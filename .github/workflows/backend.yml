@@ -2,7 +2,9 @@ name: Backend CI
 on:
   push:
     branches: [main]
+    paths: ['backend/**', 'scripts/ci/smoke_backend.py', '.github/workflows/backend.yml']
   pull_request:
+    paths: ['backend/**', 'scripts/ci/smoke_backend.py', '.github/workflows/backend.yml']
   workflow_dispatch:
 permissions:
   contents: read

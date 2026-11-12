@@ -1,5 +1,31 @@
 # GitHub-hosted CI/CD migration 1.0
 
+## Essential automatic checks — 2026-11-12
+
+Owner requested retaining only core automatic CI. This section supersedes earlier
+trigger/caching descriptions below; historical evidence remains unchanged.
+
+- `ci.yml`: automatic PR/main syntax, whitespace, Python regression tests and
+  bounded secret markers for every change.
+- `backend.yml`: automatic PR/main Maven/JAR/HTTP checks for backend inputs and
+  its smoke script/workflow; manual dispatch remains available.
+- `flutter.yml`: automatic PR/main analyze/format/tests for mobile inputs and
+  its workflow; manual dispatch remains available.
+- `security.yml`: automatic PR/main dependency, secret and base-container scans.
+  The separate upstream SDK tooling job runs only on manual dispatch.
+
+APK build/native dependency audit, Android native E2E, unsigned iOS, vendor baseline,
+container remediation probe and preview publishing are manual only. Their scripts,
+assertions and failure exit codes are retained. Run APK/native checks when native
+behavior or build inputs change, and before asserting the corresponding DoD; this
+trigger simplification does not establish unexecuted verification. Dispatch Security
+CI to repeat the full SDK audit. GHSA-r937 stays OPEN with its existing evidence;
+a skipped automatic SDK job is not a clean SDK scan. No branch protection or
+vulnerability suppression is changed. Backend and Flutter path filters assume these
+jobs are not unconditional required branch-protection contexts; review that setting
+before adding required contexts in future.
+
+
 Current TASK-003 correction (2026-11-11): `identity_e2e_prerequisites.py`
 returns exit 1 when any native scenario prerequisite is missing. The manual run
 must be red/blocked rather than green with a skipped emulator. Its sanitized

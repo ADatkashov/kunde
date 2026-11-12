@@ -2,7 +2,9 @@ name: Flutter CI
 on:
   push:
     branches: [main]
+    paths: ['mobile/**', '.github/workflows/flutter.yml']
   pull_request:
+    paths: ['mobile/**', '.github/workflows/flutter.yml']
   workflow_dispatch:
 permissions:
   contents: read
