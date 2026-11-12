@@ -1109,7 +1109,7 @@
     "release": "REL-0",
     "user_story_id": "US-026",
     "implementation_status": "partially_verified",
-    "implementation_note": "Flutter analyze, 4 tests and Android debug build passed; backend tests/build pending."
+    "implementation_note": "Automatic GitHub-hosted gates (ci, backend, security, flutter) exist and passed on main d442393 / af61a2e; the CI whitespace gate demonstrably blocked PR #31 until fixed. 2026-11-12: check_secrets.py refactored without behavior change and covered by regression tests (4 tests, mutation-checked; scripts/ci suite 35 tests). Evidence matrix in docs/engineering-foundation/github-hosted-ci.md. Open, not Done: branch protection/required status contexts unverified (API 403), manual-only APK/E2E/iOS gates, no coverage threshold, no SAST, entropy/history secret discovery limited to the security.yml scanner, automated review not configured; GHSA-r937 open. Superseded note: 'backend tests/build pending'."
   },
   {
     "id": "TASK-054",
