@@ -167,8 +167,14 @@ class Scenario:
         return self.wait(lambda tree: find_label(tree, [label], PACKAGE))
 
     def hide_keyboard(self):
-        status = adb("shell", "dumpsys", "input_method").decode(errors="replace")
-        if re.search(r"(?:mInputShown|isInputViewShown|mIsInputViewShown)=true", status):
+        status = None
+        for _ in range(3):
+            try:
+                status = adb("shell", "dumpsys", "input_method").decode(errors="replace")
+                break
+            except subprocess.CalledProcessError:
+                time.sleep(1)  # The service can be briefly unavailable right after a clock change.
+        if status is not None and re.search(r"(?:mInputShown|isInputViewShown|mIsInputViewShown)=true", status):
             adb("shell", "input", "keyevent", "4")
 
     def enter(self, node, value):

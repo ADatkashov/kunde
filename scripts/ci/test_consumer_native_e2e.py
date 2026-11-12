@@ -1,4 +1,5 @@
 import json
+import subprocess
 import unittest
 from unittest.mock import patch, Mock
 import xml.etree.ElementTree as ET
@@ -219,3 +220,15 @@ class SessionFailurePathTests(unittest.TestCase):
             with self.assertRaisesRegex(AssertionError, "original"):
                 scenario.access_token_expiry()
         self.assertIn("emulator clock restore failed", scenario.not_executed)
+
+    def test_hide_keyboard_retries_transient_dumpsys_failure_and_never_presses_back_blindly(self):
+        scenario = Scenario({})
+        failure = subprocess.CalledProcessError(255, ["adb"])
+        with patch("consumer_native_e2e.time.sleep"), \
+             patch("consumer_native_e2e.adb", side_effect=[failure, failure, failure]) as adb_call:
+            scenario.hide_keyboard()
+        self.assertEqual(adb_call.call_count, 3)
+        with patch("consumer_native_e2e.time.sleep"), \
+             patch("consumer_native_e2e.adb", side_effect=[failure, b"mInputShown=true", b""]) as adb_call:
+            scenario.hide_keyboard()
+        self.assertEqual(adb_call.call_args_list[-1].args, ("shell", "input", "keyevent", "4"))
