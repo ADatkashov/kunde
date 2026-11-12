@@ -1,6 +1,6 @@
 # Implementation Status
 
-Latest branch evidence: [TASK-046 body limit](#task-046-body-limit-verification--2026-11-12).
+Latest branch evidence: [TASK-006 native scenario](#task-006-native-scenario--2026-11-12).
 Historical snapshots below retain their original source and test scope.
 
 **Implemented** means source/config added; **verified** requires a command actually run; **scaffolded** means a boundary exists without a real provider/flow; **blocked** means a decision/external dependency is missing; **not started** means absent.
@@ -99,3 +99,29 @@ TASK-045's stale build-pending note is corrected to partially_verified, with a
 production threat, operational ownership and supply-chain coverage reviews remain
 open. TASK-046 stays in_progress for canonical-account/device/distributed-edge and
 production controls; SDK GHSA-r937 is still open. No release is promoted.
+
+## TASK-006 native scenario — 2026-11-12
+
+Main 51374d1 includes PRs #11–#13 and the 68-test backend/33-test Flutter baseline.
+PR #14 adds a disposable loopback Keycloak26.8.2/PostgreSQL/API stack, a signed
+Consumer debug APK and six targeted Android/Chrome session checks. Cloud bootstrap
+`clean verify` passes 68 tests. Fourteen local Python tests pass; the pinned Python
+DevTools transport is now included in existing Security CI OSV scanning, with no
+known findings. Independent Cloud Chromium real form submission, S256 exchange and
+protected `/me`200 pass. This is not native callback/vault evidence.
+
+Hosted Android30 runs pass welcome RU/KK/EN, then fail before credentials.
+[43208441308](https://github.com/ADatkashov/kunde/actions/runs/43208441308) diagnoses
+Keycloak Cookie not found with zero DOM inputs, while both device HTTP probes return
+200. [43209945677](https://github.com/ADatkashov/kunde/actions/runs/43209945677),
+source db13a26, passes all six targeted checks on Android35/Chrome124.0.6367.219:
+welcome RU/KK/EN, system-browser login/PKCE callback/API, canonical profile edit,
+two vault/rotated-refresh restores, API offline retry and provider logout followed
+by credential-form relogin. The sanitized report and screenshot were inspected;
+fixture cleanup succeeded. The report remains EXECUTED_PARTIAL and is retained in
+[the evidence snapshot](../identity/consumer-validation/native-evidence-2026-11-12.json).
+TASK-006 remains in_progress; native registration/replay/expiry/provider outage,
+iOS, TalkBack, large text, full RU/KK profile journeys, physical devices and session
+administration are still incomplete. SDK GHSA-r937 remains open; no production/release readiness follows.
+Detailed commands, sanitized evidence and limits are in the
+[Consumer verification record](../identity/consumer-validation/README.md).

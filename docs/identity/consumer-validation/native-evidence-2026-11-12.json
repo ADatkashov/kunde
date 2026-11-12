@@ -1,0 +1,36 @@
+{
+  "status": "PASSED_EXECUTED_SCENARIOS",
+  "nativeE2E": "EXECUTED_PARTIAL",
+  "completed": [
+    "native RU/KK/EN welcome labels",
+    "system-browser login and native PKCE callback to verified API",
+    "native profile edit persisted to same canonical account",
+    "two process restarts with secure-vault restore and rotated refresh persistence",
+    "native API offline state and retry without account loss",
+    "provider logout, subsequent credential form and same-account relogin"
+  ],
+  "notExecuted": [
+    "native registration",
+    "refresh replay capture",
+    "provider outage",
+    "session expiry",
+    "iOS",
+    "TalkBack",
+    "large text",
+    "full RU/KK profile journeys",
+    "physical devices"
+  ],
+  "productionReadiness": "NOT_APPROVED",
+  "environment": {
+    "chromeVersion": "124.0.6367.219",
+    "androidApi": 35
+  },
+  "evidence": {
+    "sourceCommit": "db13a26f8af7a3d85e14e311387618400807d970",
+    "run": "https://github.com/ADatkashov/kunde/actions/runs/43209945677",
+    "artifactId": 13941316956,
+    "profileScreenshotSha256": "9e5f20e7e493adaab5dce4b6ac2f8d03ac11314d1d6de0ed372938291df19315",
+    "artifactRetentionDays": 3,
+    "scope": "Six targeted checks; TASK-006 remains in_progress"
+  }
+}

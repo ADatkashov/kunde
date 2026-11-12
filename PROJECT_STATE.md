@@ -2,14 +2,15 @@
 
 Reviewed 2026-11-12. Follow AGENTS.md; code and current CI are authoritative.
 
-- Main bb5619b includes merged PRs #11–#12: bounded peer-IP admission and request
-  body guard before JWT/controllers. Main hosted Backend 57/Flutter 33 and APK/native
-  checks pass; SDK tooling remains red. See those PRs for exact evidence.
-- Current TASK-046 branch adds post-JWT per-process `(issuer, subject)` budgets:
-  token rotation, peer changes and caller identity/device headers cannot reset them.
-  Cloud Java 21/PostgreSQL16.15 clean verify passes 68 tests with no failures/skips;
-  signed-JWT/JWKS HTTP and existing packaged JAR smoke pass. This branch evidence
-  does not claim live IdP/native/device E2E or production readiness.
+- Main 51374d1 includes PRs #11–#13: bounded peer-IP admission and request body
+  guard before JWT/controllers, followed by verified `(issuer, subject)` quotas.
+  Backend 68/Flutter 33 checks pass; SDK GHSA-r937 remains open.
+- TASK-006 PR #14 verifies six targeted native checks on source db13a26:
+  Android35/Chrome124.0.6367.219 system-browser login/PKCE callback, profile edit,
+  two vault/rotated-refresh restores, API offline retry, provider logout/relogin,
+  plus welcome RU/KK/EN. Hosted run 43209945677 succeeds; sanitized report is
+  retained in docs/identity/consumer-validation/native-evidence-2026-11-12.json.
+  Fourteen local Python tests and separate Cloud Chromium S256/API checks pass.
 - TASK-045 is partially_verified after a documented technical threat/default review;
   formal privacy/production threat, operations and audit coverage gates remain open.
   TASK-046 and TASK-006 stay in_progress. All 56 canonical TASK IDs are preserved.
@@ -25,9 +26,9 @@ Reviewed 2026-11-12. Follow AGENTS.md; code and current CI are authoritative.
   Owner permitted merges #11 and #12 with this known finding; no production approval
   or scanner suppression follows. Trusted device, canonical-account-wide and
   distributed-edge/read-timeout/concurrency controls still need their contracts.
-- Missing native scenario prerequisites make the manual E2E gate fail with
-  NOT_EXECUTED evidence. Next controlled verification work is TASK-006's actual
-  isolated Android system-browser scenario. See NEXT_TASK.md and
+- Native scenario prerequisites now exist on PR #14. The manual gate requires six
+  executed checks and keeps all remaining native/device/accessibility gaps explicit.
+  TASK-006 remains the next controlled verification task. See NEXT_TASK.md,
   [security evidence](docs/security/TASK-046.md),
   [technical baseline](docs/engineering-foundation/authentication-and-security.md),
   [Consumer fixture](docs/identity/consumer-validation/README.md).
