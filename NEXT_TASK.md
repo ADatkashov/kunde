@@ -1,15 +1,15 @@
 # Next task — TASK-006 / ADA-72 remaining device/accessibility/session-admin verification
 
-Last main merge: `af61a2e586db2bed382677fad4aa5be869a5d99a` (2026-11-12).
+Last main merge: `5de31848538267105e23edddc17303dc75140887` (PR #28, 2026-11-12).
 Consent API (PR #23), Flutter consent UI (PR #24), and Flutter saved addresses
 (PR #25) are already merged. Do **not** rebuild them or close their canonical
 tasks without remaining product/privacy/UX acceptance evidence.
 
-## Current in-review implementation
+## Latest merged verification
 
-- Draft PR #28 adds native refresh-outage, replay, access-expiry and token-secrecy checks
-  to the existing harness; hosted run 43270980722 passed (17 checks, sanitized artifact).
-  Required CI and CodeRabbit review must be confirmed before merge.
+- PR #28 (merged `5de3184`) added native refresh-outage, replay, access-expiry and
+  token-secrecy checks to the existing harness; hosted run 43270980722 passed
+  (17 checks, sanitized artifact). CodeRabbit did not review; merge was owner-approved.
 
 ## Next controlled implementation
 

@@ -24,14 +24,14 @@
   as the current main commit or current test count.
 
 - PR #27 (ADA-72) is merged (`b91cad0`): provider network outage/recovery probe only.
-- PR #28 (ADA-72, draft) extends the Android35/Chrome124/AppAuth/Keycloak native harness.
+- PR #28 (ADA-72) is merged (`5de3184`, 2026-11-12) and extends the Android35/Chrome124/AppAuth/Keycloak native harness.
   Hosted run 43270980722 (source `5159ae7`) passed with 17 completed checks, adding:
   provider outage **during refresh** with recovery, rotated refresh-token **replay**
   rejected natively (session cleared), same-canonical-account relogin, expired access
   token refreshed natively (real 310 s wait; no clock manipulation) and no JWT material in
   device log or plaintext vault file. Sanitized artifact `identity-e2e-sanitized` is retained.
-  Merge, CodeRabbit review and required CI on PR #28 are not yet confirmed. TASK-006 stays
-  in_progress; NOT_EXECUTED: iOS, TalkBack, large text, full RU/KK journeys, physical devices,
+  Required CI (configuration, dependencies, containers, secrets) passed; CodeRabbit did not
+  review (manual trigger only) and the merge was owner-approved. TASK-006 stays in_progress; NOT_EXECUTED: iOS, TalkBack, large text, full RU/KK journeys, physical devices,
   account session administration (API returns 503). GHSA-r937 remains open.
 - Linear ADA-72/ADA-73 were found in Done and returned to In Progress on 2026-11-12.
 
