@@ -22,3 +22,15 @@ PR #1 was externally merged on 2026-11-11 at 15:41:52Z. Later remediation commit
 ### Main integration review — 2026-11-11
 
 Main22c1ae8 now publishes Consumer canonical identity/profile, issuer/subject binding, FlywayV2, Consumer authorization and Flutter auth repository/tests. Earlier statements that these modules were absent describe the historical baseline only. Preserve these additions; do not replace them with the older branch. Owner explicitly authorized integration/merge through PR4. Combined-source checks are required; native Consumer E2E and API abuse controls remain open. TASK-006/TASK-046 stay in_progress; no production readiness.
+
+# API request-body guard
+
+`API_MAX_BODY_BYTES` configures the current synchronous JSON API budget (default
+65536; range 1–1048576). `PAYLOAD_TOO_LARGE`/413 is emitted before JWT/controllers
+for excessive declared or streamed bodies. Check the aggregate
+`kunde.api.body_limit.denied` counter and correlation ID; do not log request bodies.
+Measure encoded byte counts when investigating UTF-8 or chunked requests. Allowed
+origins retain CORS; rate-limit 429 can take precedence over 413. Empty health probes
+remain available. Production ingress upload/idle timeouts and concurrency budgets
+are separate controls. Extend and verify form/multipart/nonblocking/compression
+contracts before enabling those endpoint types. See [TASK-046](TASK-046.md).

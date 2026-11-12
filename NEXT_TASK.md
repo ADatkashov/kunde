@@ -1,18 +1,21 @@
-# Next task — complete TASK-046 foundation abuse controls
+# Next task — TASK-046 authenticated abuse controls
 
-Continue the existing TASK-046 security work before advancing dependent pilot
-features. See docs/security/TASK-046.md and the vulnerability ledger for scope.
-The per-process peer-IP quota increment needs current-head hosted verification;
-account/device/edge quotas, request-body size controls and the upstream Flutter
-SDK GHSA-r937 finding remain open. Do not suppress the audit or patch SDK sources.
+Finish reviewing/merging the bounded request-body increment, then continue the
+existing TASK-046 account/device/edge quota scope. Keep peer-IP admission and body
+bounds before expensive JWT/controller work; authenticated account keys must derive
+from verified identity, never caller-supplied headers or unverified claims.
+See docs/security/TASK-046.md for configuration, deployment limits and open gates.
 
-Acceptance for the quota increment: allowed requests retain current behavior;
-exhaustion and active-table capacity return correlated 429 with Retry-After;
-spoofed forwarding headers do not bypass limits; health probes remain available;
-concurrent admission stays bounded. Run backend `mvn clean verify`, packaged JAR
-smoke and the hosted configuration/backend/security workflows. Keep TASK-046
-in_progress and record remaining production/owner gates explicitly.
+Current body-limit acceptance: known and streamed excess returns safe correlated
+413 before downstream effects; exact byte boundary and bounded UTF-8 JSON remain
+intact; CORS and empty probes work; no more than limit+1 bytes are read. Cloud
+clean verify passes 57 tests; require current-head hosted backend/configuration,
+Flutter and security results plus packaged-JAR Content-Length/chunked smoke.
 
-TASK-006 Consumer native E2E remains the following identity verification step:
-use docs/identity/consumer-validation/README.md and implement the missing isolated
-native scenario before claiming Android/iOS browser, vault or accessibility passes.
+TASK-046 remains in_progress. SDK GHSA-r937, distributed edge/concurrency/read-timeout
+controls, production thresholds and audit coverage are not closed by a local quota.
+Do not suppress security failures or modify upstream SDK sources.
+
+TASK-006 Consumer native verification follows the security prerequisites; implement
+the isolated native scenario before claiming Android/iOS browser/vault/accessibility
+acceptance. See docs/identity/consumer-validation/README.md.

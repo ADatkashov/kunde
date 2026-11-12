@@ -963,7 +963,7 @@
     "release": "REL-1",
     "user_story_id": "US-022",
     "implementation_status": "in_progress",
-    "implementation_note": "Bounded per-process peer-IP quota implemented with correlated 429/RATE_LIMITED, Retry-After, aggregate denial counter, fail-closed active-table capacity and untrusted forwarded-header rejection. Cloud Java21/PostgreSQL16 clean verify passed 47 tests, zero skips, including concurrency and real HTTP filter-chain checks. SDK GHSA-r937, account/device/edge quotas, body-size and audit-coverage gates remain open; no production readiness."
+    "implementation_note": "PR #11 peer-IP quota merged as 5e8c182 with explicit owner permission for the open SDK finding. Body-limit increment adds bounded pre-parser Content-Length/actual-stream checks, safe 413, aggregate metrics and unchanged JSON/CORS behavior. Cloud Java 21/PostgreSQL16.15 clean verify passed 57 tests, zero failures/skips; packaged JAR fixed/chunked body-limit smoke passed. Account/device/edge, production thresholds, SDK GHSA-r937 and audit coverage remain open; no production readiness."
   },
   {
     "id": "TASK-047",

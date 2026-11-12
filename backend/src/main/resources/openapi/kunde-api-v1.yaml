@@ -10,6 +10,8 @@ paths:
     get:
       operationId: getApiHealth
       responses:
+        '413':
+          $ref: '#/components/responses/RequestBodyTooLarge'
         '200':
           description: API process is serving requests.
           content:
@@ -24,6 +26,8 @@ paths:
     get:
       operationId: getPlatformCapabilities
       responses:
+        '413':
+          $ref: '#/components/responses/RequestBodyTooLarge'
         '429':
           $ref: '#/components/responses/RateLimited'
         '200':
@@ -42,6 +46,8 @@ paths:
     get:
       operationId: listAvailableCategories
       responses:
+        '413':
+          $ref: '#/components/responses/RequestBodyTooLarge'
         '429':
           $ref: '#/components/responses/RateLimited'
         '200':
@@ -59,6 +65,8 @@ paths:
           in: query
           schema: { type: string, maxLength: 200 }
       responses:
+        '413':
+          $ref: '#/components/responses/RequestBodyTooLarge'
         '429':
           $ref: '#/components/responses/RateLimited'
         '200':
@@ -70,6 +78,15 @@ paths:
                 items: { type: object }
 components:
   responses:
+    RequestBodyTooLarge:
+      description: API request body exceeds the configured byte limit (65536 bytes by default). Applies to declared and streamed bodies before parsing or controller execution.
+      headers:
+        Cache-Control:
+          schema: { type: string, const: no-store }
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
     RateLimited:
       description: Per-process client quota or bounded client table exhausted. Retry after the indicated delay; health probes remain available.
       headers:

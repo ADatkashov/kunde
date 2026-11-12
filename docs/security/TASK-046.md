@@ -2,6 +2,43 @@
 
 Status: **in_progress**. Production readiness: not approved.
 
+## API body limit increment — 2026-11-12
+
+`ApiBodyLimitFilter` runs after CORS and peer-IP rate admission, before JWT work
+and controller execution in all three security chains. Servlet auto-registration
+is disabled so each request is checked once. The servlet-decoded API path prevents
+encoded-prefix bypass. `/api/v1` and descendants, including API health, are covered;
+empty health probes remain available and Actuator is outside this API boundary.
+
+`API_MAX_BODY_BYTES` defaults to 65536 bytes, with a hard configuration range of
+1–1048576. Larger declared Content-Length is rejected without opening the input.
+Otherwise the filter reads at most limit+1 bytes, independent of advertised length
+or HTTP chunking, before any downstream handler can run. Overflow returns 413 /
+`PAYLOAD_TOO_LARGE`, no-store and the existing safe correlated error envelope;
+approved-origin CORS/security headers are preserved. Accepted bytes are buffered
+and passed to the synchronous JSON parser unchanged. UTF-8 is counted in bytes.
+The aggregate `kunde.api.body_limit.denied` counter has no identity/body labels;
+bodies are neither persisted nor logged.
+
+This is the boundary for the current synchronous JSON API. Form/multipart parsing,
+nonblocking request streams, compressed-content expansion and upload endpoints
+require separate contracts and verification before activation. The quota bounds
+buffered bytes, not upload duration; production ingress read/idle timeouts,
+connection/concurrency limits and equivalent edge limits remain owner gates.
+The default is a foundation budget, not an approved production workload policy.
+
+Acceptance evidence includes actual fixed-length and chunked HTTP requests,
+encoded API paths, safe CORS errors, unchanged bounded JSON conversion and denied
+authentication, plus unit tests for understated lengths, byte boundaries, reader
+semantics, UTF-8, invalid configuration and limit+1 reads from an unbounded stream.
+The initial real HTTP regression reproduced 200 instead of 413 on main5e8c182.
+Actual final command/run results are recorded in implementation-status and the PR.
+TASK-046 remains in_progress for account/device/edge controls, SDK and coverage gaps.
+
+PR #11 peer-IP quota was merged as 5e8c182 after explicit owner permission to merge
+with the known open GHSA-r937. That is a bounded merge exception; the vulnerability
+is still open and production readiness is not approved.
+
 ## Per-process API quota increment — 2026-11-12
 
 `ApiRateLimitFilter` runs inside the selected security chain, after correlation

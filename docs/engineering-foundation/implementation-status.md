@@ -1,5 +1,8 @@
 # Implementation Status
 
+Latest branch evidence: [TASK-046 body limit](#task-046-body-limit-verification--2026-11-12).
+Historical snapshots below retain their original source and test scope.
+
 **Implemented** means source/config added; **verified** requires a command actually run; **scaffolded** means a boundary exists without a real provider/flow; **blocked** means a decision/external dependency is missing; **not started** means absent.
 
 | Area | State | Evidence / remaining |
@@ -54,3 +57,24 @@ denied requests, concurrency, spoofed headers, Retry-After and probes. See
 TASK-046 remains in_progress: the SDK GHSA-r937 finding, account/device/distributed
 edge quotas, request-body limits and supply-chain coverage remain open. The packaged JAR smoke passed health200, protected-without-issuer503
 and OpenAPI200 after the final CORS fix; hosted checks are recorded in the PR.
+
+## TASK-046 body limit verification — 2026-11-12
+
+Branch increment based on merged main 5e8c182. Cloud Java 21/PostgreSQL16.15
+`mvn --batch-mode --no-transfer-progress clean verify` passed **57 tests**, zero
+failures/errors/skips, and produced the executable JAR. Ten new tests cover bounded
+byte reads, known/absent/understated length, UTF-8, stream/reader semantics, invalid
+configuration, actual fixed-length/chunked HTTP, encoded paths, CORS and real JSON
+conversion. The initial HTTP regression on main accepted excess with 200; the
+implemented guard rejects it with 413 before parsing or controller effects.
+
+`scripts/ci/smoke_backend.py` passed against the actual JAR and synthetic database:
+health 200, protected-without-issuer 503, OpenAPI 200, exact body boundary 200, known
+excess 413, chunked/encoded-prefix excess 413. It explicitly sets a 64-byte fixture
+budget to verify environment configuration. The application default is 65536 bytes;
+neither value is an approved production workload policy. OpenAPI response references
+and smoke Python syntax parse. Hosted current-head evidence belongs in the PR.
+
+TASK-046 remains in_progress: account/device/edge controls, read-timeout/concurrency
+budgets, SDK GHSA-r937 and supply-chain coverage remain open. No provider, native
+Consumer E2E or production-readiness claim is made. See [TASK-046](../security/TASK-046.md).
