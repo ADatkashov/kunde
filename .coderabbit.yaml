@@ -1,0 +1,31 @@
+# CodeRabbit reviews complement CI; they never replace required tests or security scans.
+# No automatic fixes, generated commits, or merges are enabled here.
+language: "ru-RU"
+reviews:
+  auto_review:
+    enabled: true
+    drafts: false
+    auto_incremental_review: true
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+    simplify:
+      enabled: false
+  path_filters:
+    - "!**/build/**"
+    - "!**/.dart_tool/**"
+    - "!**/target/**"
+  path_instructions:
+    - path: "backend/**"
+      instructions: "Review Spring Boot 4 / Java 21 changes for authorization, IDOR, fail-closed OIDC, Flyway migration safety, transactional correctness and tests. Do not suggest bypassing security gates."
+    - path: "mobile/**"
+      instructions: "Review Flutter changes for secure session handling, token leakage, navigation, lifecycle, localization, accessibility and tests. Preserve existing identity flows."
+    - path: ".github/workflows/**"
+      instructions: "Review GitHub Actions for permissions, pinned actions, supply-chain safety, reproducibility and required checks. Never recommend suppressing security failures."
+  tools:
+    github-checks:
+      enabled: false
+    ruff:
+      enabled: false
