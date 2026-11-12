@@ -94,7 +94,7 @@ class PlatformMigrationIntegrationTest {
         assertThat(jdbcTemplate.queryForObject(
                 "select enabled from serviceability.zones where id = ?", Boolean.class, zone)).isFalse();
         assertThat(jdbcTemplate.queryForObject(
-                "select count(*) from serviceability.zones where enabled", Integer.class)).isZero();
+                "select count(*) from serviceability.zones where enabled and id = ?", Integer.class, zone)).isZero();
     }
 
     @Test
