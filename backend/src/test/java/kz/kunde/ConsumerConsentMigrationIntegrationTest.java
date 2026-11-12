@@ -29,9 +29,10 @@ class ConsumerConsentMigrationIntegrationTest {
                 insert into profile.consent_policies (purpose, policy_version, document_sha256, locale)
                 values ('synthetic_test', ?, ?, 'ru') returning id
                 """, UUID.class, user.toString(), "a".repeat(64));
-        assertThat(db.queryForObject(
+        Object approvedAt = db.queryForObject(
                 "select approved_at from profile.consent_policies where id = ?",
-                (rs, row) -> rs.getObject(1), policy)).isNull();
+                (rs, row) -> rs.getObject(1), policy);
+        assertThat(approvedAt).isNull();
         assertThat(db.queryForObject(
                 "select count(*) from profile.consent_events where user_id = ?",
                 Integer.class, user)).isZero();
