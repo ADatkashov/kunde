@@ -30,5 +30,7 @@ jobs:
           for p in pathlib.Path('scripts/ci').glob('*.py'):
               ast.parse(p.read_text())
           PY
+      - name: CI gate regression tests
+        run: python3 -m unittest discover -s scripts/ci -p 'test_*.py' -v
       - name: Secret markers in repository tree
         run: python3 scripts/ci/check_secrets.py

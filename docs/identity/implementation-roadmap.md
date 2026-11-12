@@ -1,5 +1,14 @@
 # Identity implementation roadmap after design acceptance
 
+Current reconciliation (2026-11-11, main 4595309): ADR-015 is ACCEPTED for
+synthetic implementation, with Keycloak primary and ZITADEL fallback. Historical
+G0/G1 proposal wording below does not reverse that recorded owner approval.
+PR #5 implements Consumer identity/profile and Flutter authentication UI; hosted
+main Backend/Flutter/APK checks pass. G3/G5 remain partial (consent, session
+administration and native Consumer device acceptance are incomplete). Production
+G4/G7 approvals and operational evidence remain open. Manual Android E2E must
+fail, with NOT_EXECUTED evidence, when scenario prerequisites are absent.
+
 Sequence is gated and evidence-driven; estimates intentionally omitted until owners and provider are known.
 
 | Gate | Work | Dependency / exit evidence |
