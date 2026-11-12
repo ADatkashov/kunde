@@ -34,7 +34,7 @@ gradle.projectsEvaluated {
             if (modules.isEmpty()) throw new GradleException('Empty SDK graph')
             def output = new File(System.getenv('KUNDE_SDK_GRAPH'))
             output.parentFile.mkdirs()
-            output.text = JsonOutput.prettyPrint(JsonOutput.toJson([groupId:'private.kunde',artifactId:'unmodified-flutter-sdk',version:'3.47.0',
+            output.text = JsonOutput.prettyPrint(JsonOutput.toJson([groupId:'private.kunde',artifactId:'unmodified-flutter-sdk',version:'3.47.9',
                 children:modules.sort().values().toList(),contexts:paths,pathPolicy:'one shortest path per configuration']))+'\n'
             println('FLUTTER_SDK_GRAPH modules='+modules.size()+' kotlin='+modules.values().findAll { it.artifactId=='kotlin-gradle-plugin' })
         }
