@@ -166,7 +166,7 @@ class SessionFailurePathTests(unittest.TestCase):
             scenario.refresh_replay(self.saved)
         self.assertEqual(order[:5], ["snapshot", "launch", "rotate", ("restore", b"opaque"), "launch"])
         self.assertEqual(order[5], "Your session expired. Sign in again.")
-        self.assertEqual(len(scenario.completed), 1)
+        self.assertEqual(len(scenario.completed), 2)
 
     def test_replay_fails_if_relogin_changes_account(self):
         scenario = Scenario({})

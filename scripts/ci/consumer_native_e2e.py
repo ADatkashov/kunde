@@ -253,16 +253,25 @@ class Scenario:
 
     def sign_in_again(self):
         """Sign in after a cleared session; an alive provider SSO session may return straight to the app."""
-        self.tap_label("Sign in", package=PACKAGE)
         adb("forward", "tcp:19222", "localabstract:chrome_devtools_remote")
-        deadline = time.monotonic() + 90
+        deadline = time.monotonic() + 120
+        next_tap = 0
         while time.monotonic() < deadline:
             try:
-                if find_label(hierarchy(), ["Profile"], PACKAGE):
+                tree = hierarchy()
+                packages = {n.get("package") for n in tree.iter("node") if n.get("package")}
+                if find_label(tree, ["Profile"], PACKAGE):
                     return
-                if native_browser.form_present():
-                    self.login()
-                    return
+                if "com.android.chrome" in packages:
+                    if native_browser.form_present():
+                        self.login()
+                        return
+                elif time.monotonic() >= next_tap:
+                    # The Custom Tab may not have started yet (or the tap was swallowed); tap again.
+                    button = find_label(tree, ["Sign in"], PACKAGE)
+                    if button is not None:
+                        self.tap(button)
+                    next_tap = time.monotonic() + 20
             except Exception:
                 pass
             time.sleep(1)
@@ -296,13 +305,14 @@ class Scenario:
         self.stage = "refresh_replay_present_old_token"
         self.launch()
         self.app_label("Your session expired. Sign in again.")
+        self.completed.append("replayed rotated refresh token rejected natively and session cleared")
         self.stage = "refresh_replay_relogin"
         self.sign_in_again()
         self.profile()
         self.app_label("NativeValidated")
         if self.db_profile() != saved or self.binding_count() != 1:
             raise AssertionError("Replay recovery changed canonical account")
-        self.completed.append("replayed rotated refresh token rejected natively, session cleared, same-account relogin")
+        self.completed.append("same-canonical-account relogin after rejected refresh-token replay")
 
     def set_clock(self, epoch):
         adb("shell", "settings", "put", "global", "auto_time", "0")
