@@ -982,8 +982,8 @@
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-0",
     "user_story_id": "US-023",
-    "implementation_status": "implemented_unverified",
-    "implementation_note": "Correlation IDs, structured logs and Actuator health added; backend build pending."
+    "implementation_status": "partially_verified",
+    "implementation_note": "Correlation IDs, structured JSON logs and Actuator health/probes are implemented and, as of 2026-11-12, verified by TelemetryBoundaryIntegrationTest and RequestCorrelationFilterTest (local PostgreSQL 16 mvn clean verify: 88 tests, 0 failures; mutation-checked). Open, not Done: named alert owners/on-call (blocked on TASK-001), approved SLOs (D-12), metrics/OTel exporter, dashboards and runbooks (TASK-048), alert delivery, audit-event store, mobile crash reporting. Superseded note: 'backend build pending'."
   },
   {
     "id": "TASK-048",
