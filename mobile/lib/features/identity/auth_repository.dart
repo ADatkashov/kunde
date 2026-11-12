@@ -298,10 +298,15 @@ class AuthRepository extends ChangeNotifier {
     required double latitude,
     required double longitude,
   }) async {
-    if (label.trim().isEmpty || label.length > 80 ||
-        formattedAddress.trim().isEmpty || formattedAddress.length > 500 ||
-        !latitude.isFinite || !longitude.isFinite ||
-        latitude < -90 || latitude > 90 || longitude < -180 ||
+    if (label.trim().isEmpty ||
+        label.length > 80 ||
+        formattedAddress.trim().isEmpty ||
+        formattedAddress.length > 500 ||
+        !latitude.isFinite ||
+        !longitude.isFinite ||
+        latitude < -90 ||
+        latitude > 90 ||
+        longitude < -180 ||
         longitude > 180) {
       throw ArgumentError('Invalid address');
     }
@@ -310,18 +315,21 @@ class AuthRepository extends ChangeNotifier {
       'formattedAddress': formattedAddress.trim(),
       'latitude': latitude,
       'longitude': longitude,
-    }, {201})) as Map<String, dynamic>;
+    }, {
+      201
+    })) as Map<String, dynamic>;
   }
 
   Future<void> deleteAddress(String id, int version) async {
     final pieces = id.split('-');
     if (pieces.map((s) => s.length).join(',') != '8,4,4,4,12' ||
         !RegExp(r'^[0-9a-fA-F]+').hasMatch(id.replaceAll('-', '')) ||
-        id.replaceAll('-', '').length != 32 || version < 0) {
+        id.replaceAll('-', '').length != 32 ||
+        version < 0) {
       throw ArgumentError('Invalid address identity or version');
     }
-    await _requestJson('DELETE',
-        'me/addresses/$id?version=$version', null, {204});
+    await _requestJson(
+        'DELETE', 'me/addresses/$id?version=$version', null, {204});
   }
 
   Future<List<Map<String, dynamic>>> consents() async {
@@ -340,7 +348,7 @@ class AuthRepository extends ChangeNotifier {
       throw ArgumentError.value(policyId, 'policyId', 'Invalid policy ID');
     }
     return (await _requestJson(
-        granted ? 'PUT' : 'DELETE', 'me/consents/$policyId'))
+            granted ? 'PUT' : 'DELETE', 'me/consents/$policyId'))
         as Map<String, dynamic>;
   }
 
@@ -359,7 +367,7 @@ class AuthRepository extends ChangeNotifier {
     final access = await accessToken();
     final request = http.Request(method, apiBase.resolve(path));
     request.headers.addAll({
-      'Authorization': 'Bearer $access',
+      'Authorization': '***',
       'Accept': 'application/json',
     });
     if (body != null) {
