@@ -139,6 +139,7 @@ class Scenario:
         self.environment = {}
         self.not_executed = []
         self.vault_paths = []
+        self.trace = []
 
     def wait(self, predicate, seconds=60):
         end = time.monotonic() + seconds
@@ -254,12 +255,20 @@ class Scenario:
     def sign_in_again(self):
         """Sign in after a cleared session; an alive provider SSO session may return straight to the app."""
         adb("forward", "tcp:19222", "localabstract:chrome_devtools_remote")
-        deadline = time.monotonic() + 120
+        started = time.monotonic()
+        deadline = started + 120
         next_tap = 0
+        taps = 0
+        seen = None
         while time.monotonic() < deadline:
             try:
                 tree = hierarchy()
+                self.last_tree = tree
                 packages = {n.get("package") for n in tree.iter("node") if n.get("package")}
+                if packages != seen and len(self.trace) < 40:
+                    seen = packages
+                    self.trace.append({"t": int(time.monotonic() - started), "taps": taps,
+                                       "packages": sorted(packages)})
                 if find_label(tree, ["Profile"], PACKAGE):
                     return
                 if "com.android.chrome" in packages:
@@ -271,6 +280,7 @@ class Scenario:
                     button = find_label(tree, ["Sign in"], PACKAGE)
                     if button is not None:
                         self.tap(button)
+                        taps += 1
                     next_tap = time.monotonic() + 20
             except Exception:
                 pass
@@ -575,6 +585,8 @@ def main():
             result["diagnostics"] = safe_diagnostics(scenario.last_tree)
     if scenario.vault_paths and result["status"] != "PASSED_EXECUTED_SCENARIOS":
         result["appFiles"] = scenario.vault_paths[:40]  # file names only, never contents
+    if scenario.trace and result["status"] != "PASSED_EXECUTED_SCENARIOS":
+        result["reloginTrace"] = scenario.trace  # package names and counters only
     result["environment"] = scenario.environment
     if scenario.completed:
         result["nativeE2E"] = "EXECUTED_PARTIAL"
