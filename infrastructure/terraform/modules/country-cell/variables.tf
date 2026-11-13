@@ -24,7 +24,7 @@ variable "provider_id" {
   default     = "unselected"
 
   validation {
-    condition     = contains(["unselected", "local-compose"], var.provider_id)
+    condition     = contains(["unselected", "local-compose", "render-neon"], var.provider_id)
     error_message = "Only providers with a verified adapter may be named; add the adapter and update this list in the same reviewed change."
   }
 }
@@ -38,6 +38,17 @@ variable "region" {
 variable "data_region_country" {
   description = "Country in which the primary database, backups and telemetry are stored. Must equal var.country for personal data (ADR-012)."
   type        = string
+}
+
+variable "data_classification" {
+  description = "'personal' (real user data: residency enforced) or 'synthetic' (fake data only; allowed outside prod)."
+  type        = string
+  default     = "personal"
+
+  validation {
+    condition     = contains(["personal", "synthetic"], var.data_classification)
+    error_message = "data_classification must be personal or synthetic."
+  }
 }
 
 variable "cross_border_replication" {

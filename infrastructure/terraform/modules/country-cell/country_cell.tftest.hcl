@@ -58,3 +58,47 @@ run "rejects_prod_on_local_runtime" {
   }
   expect_failures = [terraform_data.contract]
 }
+
+run "allows_synthetic_dev_on_render_neon_outside_country" {
+  command = apply
+  variables {
+    provider_id         = "render-neon"
+    region              = "frankfurt/aws-eu-central-1"
+    data_region_country = "de"
+    data_classification = "synthetic"
+  }
+  assert {
+    condition     = output.cell.data_classification == "synthetic" && output.cell.data_region == "de"
+    error_message = "synthetic dev cell must be accepted"
+  }
+}
+
+run "rejects_personal_data_outside_country" {
+  command = plan
+  variables {
+    provider_id         = "render-neon"
+    region              = "frankfurt/aws-eu-central-1"
+    data_region_country = "de"
+  }
+  expect_failures = [terraform_data.contract]
+}
+
+run "rejects_synthetic_prod" {
+  command = plan
+  variables {
+    environment         = "prod"
+    data_classification = "synthetic"
+  }
+  expect_failures = [terraform_data.contract]
+}
+
+run "rejects_render_neon_in_prod" {
+  command = plan
+  variables {
+    environment         = "prod"
+    provider_id         = "render-neon"
+    region              = "frankfurt/aws-eu-central-1"
+    data_region_country = "kz"
+  }
+  expect_failures = [terraform_data.contract]
+}

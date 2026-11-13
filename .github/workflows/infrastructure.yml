@@ -1,4 +1,4 @@
-name: Infrastructure CI
+name: Infrastructure CI (Helm)
 on:
   push:
     branches: [main]
@@ -11,8 +11,8 @@ permissions:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-# Validation only. There is deliberately NO plan/apply/deploy job: no provider,
-# remote state or cloud credentials exist (ADR-011 is Proposed, TASK-051 blocked).
+# Helm chart validation only (Kubernetes is optional, not used by DEV). Terraform
+# runs in terraform-dev.yml.
 jobs:
   validate:
     runs-on: ubuntu-24.04
@@ -21,25 +21,13 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
-      - name: Install pinned Terraform and Helm (checksum verified)
+      - name: Install pinned Helm (checksum verified)
         run: |
-          curl -fsSL -o tf.zip https://releases.hashicorp.com/terraform/1.12.2/terraform_1.12.2_linux_amd64.zip
-          echo "1eaed12ca41fcfe094da3d76a7e9aa0639ad3409c43be0103ee9f5a1ff4b7437  tf.zip" | sha256sum -c -
           curl -fsSL -o helm.tgz https://get.helm.sh/helm-v3.17.0-linux-amd64.tar.gz
           echo "fb5d12662fde6eeff36ac4ccacbf3abed96b0ee2de07afdde4edb14e613aee24  helm.tgz" | sha256sum -c -
           mkdir -p "$RUNNER_TEMP/bin"
-          unzip -q tf.zip terraform -d "$RUNNER_TEMP/bin"
           tar xzf helm.tgz --strip-components=1 -C "$RUNNER_TEMP/bin" linux-amd64/helm
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
-      - name: terraform fmt
-        run: terraform fmt -check -recursive infrastructure
-      - name: terraform validate and tests (module and every environment root)
-        run: |
-          set -e
-          (cd infrastructure/modules/country-cell && terraform init -backend=false -input=false && terraform validate && terraform test)
-          for d in infrastructure/environments/*/*/; do
-            (cd "$d" && terraform init -backend=false -input=false && terraform validate)
-          done
       - name: Helm lint and render (positive and fail-closed negative)
         run: |
           set -e
