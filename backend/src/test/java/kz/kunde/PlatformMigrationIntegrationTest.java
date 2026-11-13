@@ -119,6 +119,20 @@ class PlatformMigrationIntegrationTest {
     }
 
     @Test
+    void offeringSearchIsPublicEmptyByDefaultAndValidatesParameters() throws Exception {
+        mockMvc.perform(get("/api/v1/search/offerings").param("q", "уборка"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+        mockMvc.perform(get("/api/v1/search/offerings").param("q", "x".repeat(201)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+        mockMvc.perform(get("/api/v1/search/offerings").param("q", "x").param("limit", "101"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/v1/search/offerings").param("q", "x").param("offset", "-1"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void exposesHealthReadinessCorrelationAndOpenApi() throws Exception {
         mockMvc.perform(get("/api/v1/health").header("X-Correlation-ID", "ep001-health"))
                 .andExpect(status().isOk())

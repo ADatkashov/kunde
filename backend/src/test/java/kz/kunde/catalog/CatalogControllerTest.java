@@ -20,6 +20,7 @@ class CatalogControllerTest {
         assertThat(controller.categories()).isEmpty();
         assertThat(controller.search("food")).isEmpty();
         assertThat(controller.search("")).isEmpty();
+        assertThat(controller.searchOfferings("food", 50, 0)).isEmpty();
     }
 
     @Test
@@ -84,6 +85,40 @@ class CatalogControllerTest {
                         .hasFieldOrPropertyWithValue("code", "OFFERING_NOT_FOUND");
             }
             assertThat(controller.offerings(java.util.UUID.randomUUID(), 50, 0)).isEmpty();
+        });
+    }
+
+    @Test
+    void offeringSearchIsPublishedOnlyRankedPaginatedAndWildcardSafe() {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            status.setRollbackOnly();
+            var pub = jdbc.queryForObject("""
+                    insert into marketplace.categories (code, name_ru, name_kk, status, published_at)
+                    values ('os-pub', 'К', 'К', 'PUBLISHED', now()) returning id""", java.util.UUID.class);
+            var draft = jdbc.queryForObject("""
+                    insert into marketplace.categories (code, name_ru, name_kk) values ('os-draft', 'Ч', 'Ч') returning id""",
+                    java.util.UUID.class);
+            jdbc.update("""
+                    insert into marketplace.offerings (category_id, kind, name_ru, name_kk, name_en, status, published_at) values
+                    (?, 'SERVICE', 'Генеральная уборка', 'Бас тазалау', null, 'PUBLISHED', now() - interval '3 minute'),
+                    (?, 'SERVICE', 'Уборка квартиры', 'Пәтер', null, 'PUBLISHED', now() - interval '2 minute'),
+                    (?, 'SERVICE', 'Уборка', 'Тазалау', 'Cleaning', 'PUBLISHED', now() - interval '1 minute'),
+                    (?, 'SERVICE', 'Уборка черновик', 'Қара', null, 'DRAFT', null),
+                    (?, 'PRODUCT', 'Уборка приостановлена', 'Тоқтатылды', null, 'SUSPENDED', null),
+                    (?, 'SERVICE', 'Уборка в черновой категории', 'Қара санат', null, 'PUBLISHED', now()),
+                    (?, 'PRODUCT', '100% чистота', 'Тазалық', null, 'PUBLISHED', now())""",
+                    pub, pub, pub, pub, pub, draft, pub);
+            assertThat(controller.searchOfferings("уборка", 50, 0)).extracting(Offering::nameRu)
+                    .containsExactly("Уборка", "Уборка квартиры", "Генеральная уборка");
+            assertThat(controller.searchOfferings(" CLEANING ", 50, 0)).extracting(Offering::nameRu)
+                    .containsExactly("Уборка");
+            assertThat(controller.searchOfferings("уборка", 1, 1)).extracting(Offering::nameRu)
+                    .containsExactly("Уборка квартиры");
+            assertThat(controller.searchOfferings("%", 50, 0)).extracting(Offering::nameRu)
+                    .containsExactly("100% чистота");
+            assertThat(controller.searchOfferings("_", 50, 0)).isEmpty();
+            assertThat(controller.searchOfferings("   ", 50, 0)).isEmpty();
+            assertThat(controller.searchOfferings("черновик", 50, 0)).isEmpty();
         });
     }
 }
