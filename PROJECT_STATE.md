@@ -2,7 +2,7 @@
 
 ## Current verified main snapshot — 2026-11-13
 
-- Latest verified merge: `f335a6277b7ee64ca0c75bd64f179d5431b490c7` (PR #37).
+- Latest verified merge: `ab001ac18ec7dd98986aa77d67fb36f3970ed693` (PR #41).
 - PRs #29–#37 (merged after #28), all with required CI green:
   #29 state/backlog sync; #30 TASK-055 domain schema ownership tests; #31 TASK-047
   correlation/log/Actuator tests; #32 TASK-053 secret-marker gate tests; #33 TASK-013
@@ -10,9 +10,17 @@
   (see AGENTS.md); #35 TASK-011 published-category search; #36 TASK-012 Flutter
   category search panel; #37 TASK-014 `GET /categories/{id}/offerings` (PUBLISHED
   only; no price, partner or availability).
-- Catalog tasks TASK-011/012/013/014 remain **in_progress**: no seed data, offering
-  detail/search, pagination, serviceability or availability rules; ADR-014 (no default
-  orderable catalog, `marketplaceEnabled=false`) still applies.
+- PRs #38–#41, all with required CI green: #38 state sync; #39 TASK-014 `GET /offerings/{id}`
+  (404 `OFFERING_NOT_FOUND` unless PUBLISHED in a PUBLISHED category) and paginated offerings
+  list (`limit`<=100, `offset`); #40 TASK-041 closed 27-event catalog and data-minimization
+  validator (`EventCatalog`, contract only, nothing emitted or stored; see
+  docs/engineering-foundation/event-taxonomy.md); #41 TASK-050 `KundeFormats.money`
+  (integer minor units + ISO code, ru/kk/en; Flutter CI ran its tests, not a device).
+- Catalog tasks TASK-011/012/013/014 remain **in_progress**: no seed data, offering search,
+  price, partner link, serviceability or availability rules; ADR-014 (no default orderable
+  catalog, `marketplaceEnabled=false`) still applies. TASK-041 and TASK-050 are also
+  **in_progress**, not Done: analytics has no consent/residency/outbox/KPI approval and
+  localization lacks date/time, plurals, address/phone formats and approved critical copy (TASK-049).
 - Earlier snapshot, retained as history: PR #25 (`af61a2e`).
 - PR #23 / ADA-73: protected Consumer consent API, Flyway V4 ledger,
   approval-only policies, owner-scoped immutable grant/withdrawal history,
