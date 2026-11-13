@@ -1,0 +1,6 @@
+apiVersion: v2
+name: kunde-backend
+description: KUNDE Spring Boot API for one country cell (Kubernetes runtime only; not required for managed container services).
+type: application
+version: 0.1.0
+appVersion: "0.1.0-SNAPSHOT"

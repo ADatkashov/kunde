@@ -1,0 +1,41 @@
+name: Infrastructure CI (Helm)
+on:
+  push:
+    branches: [main]
+    paths: ['infrastructure/**', '.github/workflows/infrastructure.yml']
+  pull_request:
+    paths: ['infrastructure/**', '.github/workflows/infrastructure.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+# Helm chart validation only (Kubernetes is optional, not used by DEV). Terraform
+# runs in terraform-dev.yml.
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Install pinned Helm (checksum verified)
+        run: |
+          curl -fsSL -o helm.tgz https://get.helm.sh/helm-v3.17.0-linux-amd64.tar.gz
+          echo "fb5d12662fde6eeff36ac4ccacbf3abed96b0ee2de07afdde4edb14e613aee24  helm.tgz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/bin"
+          tar xzf helm.tgz --strip-components=1 -C "$RUNNER_TEMP/bin" linux-amd64/helm
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - name: Helm lint and render (positive and fail-closed negative)
+        run: |
+          set -e
+          c=infrastructure/helm/kunde-backend
+          args="--set cell.id=kz-dev --set cell.country=kz --set image.repository=registry.invalid/kunde --set existingSecret=kunde-kz-dev"
+          helm lint $c $args --set image.tag=ci
+          helm template $c $args --set image.digest=sha256:0000000000000000000000000000000000000000000000000000000000000000 > rendered.yaml
+          grep -q '/actuator/health/readiness' rendered.yaml
+          grep -q 'readOnlyRootFilesystem: true' rendered.yaml
+          if grep -Eiq 'password: |kind: Secret' rendered.yaml; then echo "chart must not embed secrets"; exit 1; fi
+          if helm template $c --set cell.id=kz-dev >/dev/null 2>&1; then echo "chart must fail without required values"; exit 1; fi

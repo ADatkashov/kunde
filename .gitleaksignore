@@ -1,0 +1,4 @@
+# Single historical false positive: a literal mock value ("mock-password") in a Terraform
+# mock_provider test default, committed in 4de3f3d and removed in the next commit. History
+# cannot be rewritten (AGENTS.md). Not a credential; no other finding is suppressed.
+4de3f3d6e8865c157be8569cf92f1aa8cb8a3866:infrastructure/terraform/modules/neon/neon.tftest.hcl:hashicorp-tf-password:7

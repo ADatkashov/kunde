@@ -1,0 +1,31 @@
+# One image, many cells. Per-cell overrides live in infrastructure/environments/<country>/<env>.
+cell:
+  id: ""            # e.g. kz-prod; required, set by the environment values
+  country: ""       # lowercase ISO 3166-1 alpha-2; required
+
+image:
+  repository: ""    # required; pin by digest in production
+  digest: ""        # sha256:...; preferred over tag
+  tag: ""
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+port: 8080
+
+# Names of an EXISTING Kubernetes Secret created outside Git (cloud secret manager sync).
+# The chart never creates secrets and never accepts secret values.
+existingSecret: ""
+secretKeys: [DB_URL, DB_USERNAME, DB_PASSWORD, OIDC_ISSUER_URI, OIDC_AUDIENCE]
+
+env:                         # non-secret settings the backend already reads
+  CONSUMER_IDENTITY_ENABLED: "false"
+  CORS_ALLOWED_ORIGINS: ""
+
+resources:
+  requests: {cpu: 250m, memory: 512Mi}
+  limits: {memory: 768Mi}    # JVM uses MaxRAMPercentage=75
+
+terminationGracePeriodSeconds: 45   # > spring.lifecycle.timeout-per-shutdown-phase (20s)
+
+podDisruptionBudget:
+  minAvailable: 1

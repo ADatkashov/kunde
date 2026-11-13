@@ -19,3 +19,13 @@ docs/identity/poc/**/.env
 docs/identity/poc/**/.local/
 docs/identity/poc/**/test-output/
 __pycache__/
+
+# Terraform local state/cache (never commit)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+crash.log
+
+backend.hcl
+*.tfplan

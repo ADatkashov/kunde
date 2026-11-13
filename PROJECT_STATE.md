@@ -2,6 +2,8 @@
 
 ## Current verified main snapshot — 2026-11-13
 
+- **Infrastructure foundation (PR #71, TASK-052 stays not_started):** [docs/infrastructure](docs/infrastructure/README.md), `infrastructure/terraform` (country-cell contract; `neon` + `render` modules; `environments/dev` for Render Free + Neon Free, synthetic data only; prod provider unselected), Helm chart, `terraform-dev.yml` (validate/plan/approval-gated apply) and `infrastructure.yml`; ADR-017 Proposed. Offline tests and a dummy-credential plan ran; **nothing applied, no API called, remote state/GitHub Environments not configured**; production hosting still blocked (TASK-051/D-08).
+
 - TASK-015 **in_progress**: partner persistence (Flyway V8 `marketplace.partners/partner_staff/*_events`, `PartnerService`): D-07 roles, partner isolation, revocation,
   append-only audit, verification gate (`mayProcessOrders` needs active staff + APPROVED). No HTTP API, documents/KYC or catalog link. Backend 164 tests pass locally against
   PostgreSQL 16 (155 existing + 9 new; temporary local cluster with synthetic credentials).
