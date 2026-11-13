@@ -1130,8 +1130,8 @@
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
     "user_story_id": "US-026",
-    "implementation_status": "not_started",
-    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
+    "implementation_status": "in_progress",
+    "implementation_note": "Partial, backend only: ConsumerRecoveryConcurrencyIntegrationTest runs concurrent calls against real PostgreSQL for the implemented journey (identity provisioning, support cases): one Idempotency-Key under 12 parallel retries creates one case, parallel different keys cannot exceed the cap (found and fixed a race: 13 cases created), parallel escalations record one event, parallel first sign-in creates one account. This is NOT the pilot E2E suite: no search/order/payment journey exists (ADR-014), no outage/restore injection, no mobile or device recovery, not wired as a separate CI gate (runs inside the backend job)."
   },
   {
     "id": "TASK-055",
