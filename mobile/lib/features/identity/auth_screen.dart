@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../home/data/kunde_api.dart';
 import '../home/presentation/home_screen.dart';
+import '../shell/tabs.dart';
 import 'auth_repository.dart';
 import 'auth_strings.dart';
 import 'consent_panel.dart';
@@ -24,7 +25,7 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
   bool _busy = true;
   bool _restorePending = true;
-  bool _profileTab = false;
+  KundeTab _tab = KundeTab.home;
   bool _editing = false;
   bool _conflict = false;
   Map<String, dynamic>? _profile;
@@ -68,7 +69,7 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
       setState(() {
         _profile = null;
         _editing = false;
-        _profileTab = false;
+        _tab = KundeTab.home;
         _name.clear();
       });
     }
@@ -227,30 +228,32 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                               child: FilledButton(
                                   onPressed: _busy ? null : () => _run(_load),
                                   child: Text(s.retry)))
-                          : _profileTab
-                              ? _profileView(s)
-                              : HomeScreen(api: widget.api)),
+                          : switch (_tab) {
+                              KundeTab.profile => _profileView(s),
+                              KundeTab.search => SearchTab(api: widget.api),
+                              KundeTab.orders => const OrdersTab(),
+                              KundeTab.home => HomeScreen(
+                                  api: widget.api,
+                                  onOpenSearch: () =>
+                                      setState(() => _tab = KundeTab.search),
+                                  onOpenOrders: () =>
+                                      setState(() => _tab = KundeTab.orders)),
+                            }),
         ]),
         bottomNavigationBar: signedIn && _profile != null
-            ? NavigationBar(
-                selectedIndex: _profileTab ? 1 : 0,
-                onDestinationSelected: _busy
+            ? KundeNavigationBar(
+                selected: _tab,
+                onSelected: _busy
                     ? null
-                    : (index) async {
+                    : (tab) async {
                         if (!await _mayLeave() || !mounted) return;
                         setState(() {
-                          _profileTab = index == 1;
+                          _tab = tab;
                           _editing = false;
                           _error = null;
                           _notice = null;
                         });
                       },
-                destinations: [
-                  NavigationDestination(
-                      icon: const Icon(Icons.home_outlined), label: s.home),
-                  NavigationDestination(
-                      icon: const Icon(Icons.person_outline), label: s.profile)
-                ],
               )
             : null,
       ),

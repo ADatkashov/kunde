@@ -18,9 +18,10 @@
 - **Home screen redesign (owner-approved visual reference, 2026-11-13):** Flutter `HomeScreen` is now the Super App home (header with Almaty chip, search,
   KUNDE AI card, 10-tile category grid, Food banner, quick actions, "Рядом с вами" empty state). Only Food is a first category and is active
   only when `marketplaceEnabled`; all other categories, AI, quick actions are explicit "Скоро"/disabled (no orders, no demo restaurants/ratings/times,
-  no payments/delivery). Not done: reference's 5-tab bottom nav (Главная/Поиск/Заказы/Избранное/Сервисы) conflicts with
-  [docs/design/07](docs/design/07-consumer-app.md) (Home/Explore/AI/Activity/Profile) — existing Home/Profile bar kept pending owner decision; no bell/profile
-  icons (no backend); no photo assets (Material icons). `flutter analyze` clean, 93 `flutter test` pass locally; no device/TalkBack check.
+  no payments/delivery). Reference's 5-tab bottom bar (Главная/Поиск/Заказы/Избранное/Сервисы) differs from
+  [docs/design/07](docs/design/07-consumer-app.md) — resolved by owner decision 2026-11-13: four tabs Главная/Поиск/Заказы/Профиль (DS-04), AI stays a Home block;
+  Search/Orders/Profile show honest empty states without their capability; PRD-1.0 §navigation still says five (owner to update); no bell/profile
+  icons (no backend); no photo assets (Material icons). Category grid is 5 columns from 360 px with muted "Скоро" tiles. `flutter analyze` clean, 113 `flutter test` pass locally; no device/TalkBack check.
 
 - Latest verified merge: `ab001ac18ec7dd98986aa77d67fb36f3970ed693` (PR #41).
 - PRs #29–#37 (merged after #28), all with required CI green:

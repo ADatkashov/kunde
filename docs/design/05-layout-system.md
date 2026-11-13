@@ -17,7 +17,7 @@ Use 4 px base spacing. Default content vertical gap 16/24; cards padding 16 mobi
 ## Safe areas and navigation
 
 - Mobile viewport respects status, camera cutout, home-indicator and keyboard insets. Edge-to-edge backgrounds may extend behind system bars; controls never do.
-- Consumer’s five destinations follow PRD: Home, Explore, AI, Activity, Profile. Bottom navigation height includes safe area; labels remain visible. Do not add a sixth primary destination without product review.
+- Consumer’s four destinations follow DS-04 (owner decision 2026-11-13): Home, Search, Orders, Profile; AI is a Home block. Bottom navigation height includes safe area; labels remain visible. Do not add a fifth primary destination without product review.
 - Partner/provider mobile navigation prioritizes queue/task and availability; web Partner uses top bar + collapsible side navigation. Admin uses fixed side navigation with breadcrumbs and page title.
 - Search is a first-class entry from Home/Explore; global search retains selected location and category scope.
 - Tabs switch within a section and do not replace primary navigation. Back behavior is consistent with platform/system navigation.
