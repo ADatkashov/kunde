@@ -101,7 +101,8 @@ void main() {
     await _show(tester, auth, 'kk');
     expect(find.byType(SwitchListTile), findsOneWidget);
     expect(find.textContaining('Құжат тілі: Русский'), findsOneWidget);
-    expect(find.textContaining('мәтіні әзірге қолжетімсіз'), findsOneWidget);
+    expect(
+        find.textContaining('әзірге қолданбада қолжетімсіз'), findsOneWidget);
   });
 
   testWidgets('a grant recorded in another language stays visible',
