@@ -46,8 +46,13 @@ Future<AuthRepository> _signedIn(List<Map<String, dynamic>> items) async {
     gateway: _Gateway(),
     vault: _Vault(),
     apiBase: Uri.parse('https://api.example.test/api/v1/'),
-    client:
-        MockClient((request) async => http.Response(jsonEncode(items), 200)),
+    client: MockClient(
+      (request) async => http.Response(
+        jsonEncode(items),
+        200,
+        headers: {'content-type': 'application/json; charset=utf-8'},
+      ),
+    ),
   );
   await auth.login();
   return auth;
