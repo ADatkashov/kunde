@@ -4,7 +4,12 @@ import '../../../core/localization/kunde_localizations.dart';
 import '../data/kunde_api.dart';
 import '../data/platform_snapshot.dart';
 import 'catalog_search_panel.dart';
+import 'home_strings.dart';
+import 'super_app_widgets.dart';
 
+/// KUNDE Super App home. Only Food Ordering (Almaty) is an approved first
+/// category; every other category is shown as "soon" and cannot start an
+/// order. Live data comes only from the API; no demo restaurants or prices.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({required this.api, super.key});
 
@@ -27,60 +32,231 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _snapshot = widget.api.loadPlatformSnapshot());
   }
 
+  void _showInfo(String title, String body) {
+    final s = KundeLocalizations.of(context);
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 8),
+              Text(body),
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text(s.close)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openSearch() {
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => Scaffold(
+        appBar: AppBar(title: Text(KundeLocalizations.of(context).searchLabel)),
+        body: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [CatalogSearchPanel(api: widget.api)],
+          ),
+        ),
+      ),
+    ));
+  }
+
+  List<ServiceCategory> _categories(KundeLocalizations s, bool foodEnabled) => [
+        ServiceCategory(
+            icon: Icons.ramen_dining_rounded,
+            label: s.catFood,
+            color: const Color(0xFFC66A22),
+            enabled: foodEnabled),
+        ServiceCategory(
+            icon: Icons.shopping_basket_rounded,
+            label: s.catGroceries,
+            color: const Color(0xFF2E8174)),
+        ServiceCategory(
+            icon: Icons.local_taxi_rounded,
+            label: s.catRides,
+            color: const Color(0xFFB7791F)),
+        ServiceCategory(
+            icon: Icons.inventory_2_rounded,
+            label: s.catDelivery,
+            color: const Color(0xFFA0522D)),
+        ServiceCategory(
+            icon: Icons.home_rounded,
+            label: s.catHome,
+            color: const Color(0xFF176B52)),
+        ServiceCategory(
+            icon: Icons.spa_rounded,
+            label: s.catBeauty,
+            color: const Color(0xFFB83280)),
+        ServiceCategory(
+            icon: Icons.favorite_rounded,
+            label: s.catHealth,
+            color: const Color(0xFFB9382D)),
+        ServiceCategory(
+            icon: Icons.directions_car_rounded,
+            label: s.catAuto,
+            color: const Color(0xFF1769AA)),
+        ServiceCategory(
+            icon: Icons.confirmation_number_rounded,
+            label: s.catLeisure,
+            color: const Color(0xFF8A5700)),
+        ServiceCategory(
+            icon: Icons.apps_rounded,
+            label: s.catAll,
+            color: const Color(0xFF0B6B5E),
+            isAll: true),
+      ];
+
+  void _onCategory(
+      ServiceCategory c, List<ServiceCategory> all, bool foodEnabled) {
+    final s = KundeLocalizations.of(context);
+    if (c.isAll) {
+      _showAll(all);
+    } else if (c.label == s.catFood) {
+      foodEnabled ? _openSearch() : _showInfo(s.catFood, s.foodPreparingBody);
+    } else {
+      _showInfo(s.comingSoonTitle, s.comingSoonBody);
+    }
+  }
+
+  void _showAll(List<ServiceCategory> all) {
+    final s = KundeLocalizations.of(context);
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+          children: [
+            Text(s.allServicesTitle,
+                style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 8),
+            for (final c in all.where((c) => !c.isAll))
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(c.icon, color: c.color),
+                title: Text(c.label),
+                trailing:
+                    c.enabled ? Text(s.categoryAvailable) : const SoonBadge(),
+              ),
+            const SizedBox(height: 8),
+            Text(s.comingSoonBody),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final strings = KundeLocalizations.of(context);
+    final s = KundeLocalizations.of(context);
     final theme = Theme.of(context);
     return Scaffold(
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
-              children: [
-                _BrandHeader(tagline: strings.tagline),
-                const SizedBox(height: 40),
-                Text(strings.foundationTitle,
-                    style: theme.textTheme.headlineLarge),
-                const SizedBox(height: 12),
-                Text(strings.connectionLabel,
-                    style: theme.textTheme.titleLarge),
-                const SizedBox(height: 12),
-                FutureBuilder<PlatformSnapshot>(
-                  future: _snapshot,
-                  builder: (context, state) {
-                    if (state.connectionState != ConnectionState.done) {
-                      return const _StatusCard(
-                        icon: Icons.sync_rounded,
-                        message: ' ',
-                        busy: true,
-                      );
-                    }
-                    if (state.hasError || !state.hasData) {
-                      return _OfflineCard(
-                        title: strings.offline,
-                        hint: strings.retryHint,
-                        retryLabel: strings.retry,
+            child: FutureBuilder<PlatformSnapshot>(
+              future: _snapshot,
+              builder: (context, state) {
+                final loading = state.connectionState != ConnectionState.done;
+                final failed = !loading && (state.hasError || !state.hasData);
+                final snapshot = state.data;
+                final marketplace = snapshot?.marketplaceEnabled ?? false;
+                final categories = _categories(s, marketplace);
+                void openSoon(String title, [String? body]) =>
+                    _showInfo(title, body ?? s.comingSoonBody);
+                return ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                  children: [
+                    const HomeHeader(),
+                    const SizedBox(height: 16),
+                    HomeSearchField(
+                        onTap: marketplace
+                            ? _openSearch
+                            : () => openSoon(
+                                s.homeSearchHint, s.searchUnavailable)),
+                    const SizedBox(height: 16),
+                    FadeIn(child: const AiEntryCard()),
+                    const SizedBox(height: 16),
+                    if (failed) ...[
+                      _OfflineCard(
+                        title: s.offline,
+                        hint: s.retryHint,
+                        retryLabel: s.retry,
                         onRetry: _retry,
-                      );
-                    }
-                    return _ReadyState(
-                        snapshot: state.data!,
-                        strings: strings,
-                        api: widget.api);
-                  },
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'KUNDE',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    letterSpacing: 2,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    FadeIn(
+                      delay: 60,
+                      child: CategoryGrid(
+                        categories: categories,
+                        onTap: (c) => _onCategory(c, categories, marketplace),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    FadeIn(
+                      delay: 120,
+                      child:
+                          FoodBanner(onOrder: marketplace ? _openSearch : null),
+                    ),
+                    const SizedBox(height: 16),
+                    LayoutBuilder(builder: (context, box) {
+                      final actions = [
+                        (Icons.inventory_2_outlined, s.quickOrders),
+                        (Icons.favorite_border_rounded, s.quickFavorites),
+                        (Icons.percent_rounded, s.quickPromo),
+                        (Icons.account_balance_wallet_outlined, s.quickPay),
+                      ];
+                      final columns = box.maxWidth >= 560 ? 4 : 2;
+                      final width =
+                          (box.maxWidth - 8 * (columns - 1)) / columns;
+                      return Wrap(spacing: 8, runSpacing: 8, children: [
+                        for (final a in actions)
+                          SizedBox(
+                              width: width,
+                              child: QuickAction(
+                                  icon: a.$1,
+                                  label: a.$2,
+                                  onTap: () => openSoon(
+                                      s.comingSoonTitle, s.comingSoonBody))),
+                      ]);
+                    }),
+                    const SizedBox(height: 24),
+                    SectionTitle(title: s.nearbyTitle, trailing: s.homeCity),
+                    const SizedBox(height: 12),
+                    EmptyStateCard(
+                        icon: Icons.storefront_outlined,
+                        title: s.nearbyEmptyTitle,
+                        body: s.nearbyEmptyBody),
+                    const SizedBox(height: 24),
+                    _PlatformStatus(
+                        loading: loading, snapshot: snapshot, strings: s),
+                    const SizedBox(height: 16),
+                    Text('KUNDE',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                            letterSpacing: 2,
+                            color: theme.colorScheme.onSurfaceVariant)),
+                  ],
+                );
+              },
             ),
           ),
         ),
@@ -89,139 +265,57 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _BrandHeader extends StatelessWidget {
-  const _BrandHeader({required this.tagline});
+class _PlatformStatus extends StatelessWidget {
+  const _PlatformStatus(
+      {required this.loading, required this.snapshot, required this.strings});
 
-  final String tagline;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Row(
-      children: [
-        Container(
-          width: 52,
-          height: 52,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: colors.primary,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Text('K',
-              style: TextStyle(
-                  color: colors.onPrimary,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700)),
-        ),
-        const SizedBox(width: 14),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('KUNDE',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge
-                    ?.copyWith(letterSpacing: 1.2)),
-            Text(tagline, style: Theme.of(context).textTheme.bodyMedium),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _ReadyState extends StatelessWidget {
-  const _ReadyState(
-      {required this.snapshot, required this.strings, required this.api});
-
-  final KundeApi api;
-  final PlatformSnapshot snapshot;
+  final bool loading;
+  final PlatformSnapshot? snapshot;
   final KundeLocalizations strings;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _StatusCard(
-            icon: Icons.check_circle_outline, message: strings.connected),
-        const SizedBox(height: 16),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  snapshot.marketplaceEnabled
-                      ? strings.marketplaceReadyTitle
-                      : strings.servicesUnavailableTitle,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 8),
-                Text(snapshot.marketplaceEnabled
-                    ? strings.marketplaceReadyBody
-                    : strings.servicesUnavailableBody),
-                const SizedBox(height: 16),
-                _CapabilityLine(
-                  icon: Icons.storefront_outlined,
-                  label: strings.marketplaceLabel,
-                  enabled: snapshot.marketplaceEnabled,
-                ),
-                _CapabilityLine(
-                  icon: Icons.lock_outline,
-                  label: snapshot.oidcIssuerConfigured
-                      ? strings.signInEnabled
-                      : strings.oidcIssuerLabel,
-                  enabled: snapshot.oidcIssuerConfigured,
-                ),
-                _CapabilityLine(
-                  icon: Icons.auto_awesome_outlined,
-                  label: snapshot.aiEnabled
-                      ? strings.aiEnabled
-                      : strings.aiUnavailable,
-                  enabled: snapshot.aiEnabled,
-                ),
-              ],
-            ),
-          ),
+    final theme = Theme.of(context);
+    final snap = snapshot;
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(strings.connectionLabel, style: theme.textTheme.titleMedium),
+            const SizedBox(height: 8),
+            if (loading)
+              const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2))
+            else if (snap == null)
+              Text(strings.offline)
+            else ...[
+              Text(snap.marketplaceEnabled
+                  ? strings.marketplaceReadyTitle
+                  : strings.servicesUnavailableTitle),
+              Text(strings.connected),
+              const SizedBox(height: 4),
+              _CapabilityLine(
+                icon: Icons.storefront_outlined,
+                label: strings.marketplaceLabel,
+                enabled: snap.marketplaceEnabled,
+              ),
+              _CapabilityLine(
+                icon: Icons.auto_awesome_outlined,
+                label:
+                    snap.aiEnabled ? strings.aiEnabled : strings.aiUnavailable,
+                enabled: snap.aiEnabled,
+              ),
+            ],
+          ],
         ),
-        if (snapshot.marketplaceEnabled) ...[
-          const SizedBox(height: 16),
-          CatalogSearchPanel(api: api),
-        ],
-      ],
+      ),
     );
   }
-}
-
-class _StatusCard extends StatelessWidget {
-  const _StatusCard(
-      {required this.icon, required this.message, this.busy = false});
-
-  final IconData icon;
-  final String message;
-  final bool busy;
-
-  @override
-  Widget build(BuildContext context) => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Row(
-            children: [
-              if (busy)
-                const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2))
-              else
-                Icon(icon, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 12),
-              Text(message, style: Theme.of(context).textTheme.bodyLarge),
-            ],
-          ),
-        ),
-      );
 }
 
 class _OfflineCard extends StatelessWidget {
@@ -238,6 +332,7 @@ class _OfflineCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
+        margin: EdgeInsets.zero,
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -267,27 +362,27 @@ class _CapabilityLine extends StatelessWidget {
   final bool enabled;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: 12),
-        child: Semantics(
-          label:
-              '$label: ${enabled ? KundeLocalizations.of(context).available : KundeLocalizations.of(context).notAvailable}',
-          child: ExcludeSemantics(
-            child: Row(
-              children: [
-                Icon(enabled ? Icons.check_circle : icon,
-                    size: 20,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant),
-                const SizedBox(width: 10),
-                Expanded(
-                    child: Text(label,
-                        style: Theme.of(context).textTheme.bodyMedium)),
-                Text(enabled
-                    ? KundeLocalizations.of(context).available
-                    : KundeLocalizations.of(context).notAvailable),
-              ],
-            ),
+  Widget build(BuildContext context) {
+    final s = KundeLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Semantics(
+        label: '$label: ${enabled ? s.available : s.notAvailable}',
+        child: ExcludeSemantics(
+          child: Row(
+            children: [
+              Icon(enabled ? Icons.check_circle : icon,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+              const SizedBox(width: 10),
+              Expanded(
+                  child: Text(label,
+                      style: Theme.of(context).textTheme.bodyMedium)),
+              Text(enabled ? s.available : s.notAvailable),
+            ],
           ),
         ),
-      );
+      ),
+    );
+  }
 }
