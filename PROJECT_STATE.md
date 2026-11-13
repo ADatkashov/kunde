@@ -6,6 +6,13 @@
   50–100 users are proposals only; D-02–D-15 unchanged. Record: [PRD 1.1 §23](docs/product/PRD-1.1/23-assumptions-and-open-decisions.md). ADR-014 unchanged
   (catalog stays empty/non-orderable). Docs only; no task status changed. PR #61 (TASK-012) is merged with required CI green.
 
+- **Home screen redesign (owner-approved visual reference, 2026-11-13):** Flutter `HomeScreen` is now the Super App home (header with Almaty chip, search,
+  KUNDE AI card, 10-tile category grid, Food banner, quick actions, "Рядом с вами" empty state). Only Food is a first category and is active
+  only when `marketplaceEnabled`; all other categories, AI, quick actions are explicit "Скоро"/disabled (no orders, no demo restaurants/ratings/times,
+  no payments/delivery). Not done: reference's 5-tab bottom nav (Главная/Поиск/Заказы/Избранное/Сервисы) conflicts with
+  [docs/design/07](docs/design/07-consumer-app.md) (Home/Explore/AI/Activity/Profile) — existing Home/Profile bar kept pending owner decision; no bell/profile
+  icons (no backend); no photo assets (Material icons). `flutter analyze` clean, 93 `flutter test` pass locally; no device/TalkBack check.
+
 - Latest verified merge: `ab001ac18ec7dd98986aa77d67fb36f3970ed693` (PR #41).
 - PRs #29–#37 (merged after #28), all with required CI green:
   #29 state/backlog sync; #30 TASK-055 domain schema ownership tests; #31 TASK-047
