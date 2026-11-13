@@ -1,6 +1,6 @@
 # Next task — TASK-006 / ADA-72 remaining device/accessibility/session-admin verification
 
-Last main merge: `5de31848538267105e23edddc17303dc75140887` (PR #28, 2026-11-12).
+Last main merge: `f335a6277b7ee64ca0c75bd64f179d5431b490c7` (PR #37, 2026-11-13).
 Consent API (PR #23), Flutter consent UI (PR #24), and Flutter saved addresses
 (PR #25) are already merged. Do **not** rebuild them or close their canonical
 tasks without remaining product/privacy/UX acceptance evidence.
@@ -10,6 +10,12 @@ tasks without remaining product/privacy/UX acceptance evidence.
 - PR #28 (merged `5de3184`) added native refresh-outage, replay, access-expiry and
   token-secrecy checks to the existing harness; hosted run 43270980722 passed
   (17 checks, sanitized artifact). CodeRabbit did not review; merge was owner-approved.
+
+## Catalog track (TASK-011..014, in_progress)
+
+Merged: category search (#35/#36), schema V5 (#33), published offerings list (#37).
+Open: offering detail, offering search, pagination, serviceability/availability rules
+(need approved contracts; ADR-014 keeps the catalog empty and non-orderable).
 
 ## Next controlled implementation
 
