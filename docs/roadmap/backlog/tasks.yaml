@@ -1047,7 +1047,7 @@
     "release": "REL-1",
     "user_story_id": "US-024",
     "implementation_status": "in_progress",
-    "implementation_note": "RU/KK/EN framework and identity copy exist; full formats and critical-copy approval remain open."
+    "implementation_note": "RU/KK/EN framework and identity copy exist; KundeFormats.money formats integer minor units + ISO code per locale (unit-tested in CI, not on a device). Date/time in service zone, numbers/plurals, address/phone formats and critical-copy approval (TASK-049) remain open."
   },
   {
     "id": "TASK-051",
