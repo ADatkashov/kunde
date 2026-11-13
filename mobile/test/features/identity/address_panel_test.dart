@@ -66,9 +66,6 @@ Future<void> _pumpUntilLoaded(WidgetTester tester, Widget app) async {
   for (var i = 0; i < 40 && find.byType(ListTile).evaluate().isEmpty; i++) {
     await tester.pump(const Duration(milliseconds: 50));
   }
-  printOnFailure(
-    'visible texts: ${find.byType(Text).evaluate().map((e) => (e.widget as Text).data).toList()}',
-  );
 }
 
 void main() {
