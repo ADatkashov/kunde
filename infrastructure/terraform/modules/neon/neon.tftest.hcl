@@ -1,9 +1,9 @@
 mock_provider "neon" {
   mock_resource "neon_project" {
     defaults = {
-      database_host     = "ep-test.eu-central-1.aws.neon.tech"
-      database_name     = "kunde"
-      database_user     = "kunde_owner"
+      database_host = "ep-test.eu-central-1.aws.neon.tech"
+      database_name = "kunde"
+      database_user = "kunde_owner"
     }
   }
 }
