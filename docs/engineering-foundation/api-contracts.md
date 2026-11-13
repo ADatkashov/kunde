@@ -6,7 +6,7 @@ Current OpenAPI 3.1 contract: `backend/src/main/resources/openapi/kunde-api-v1.y
 |---|---|---|
 | `GET /api/v1/health` | Public | Process health; not dependency readiness |
 | `GET /api/v1/capabilities` | Public | Release stage and capability booleans; no provider IDs or secrets |
-| `GET /api/v1/categories` | Public | Empty until approved persistent catalog exists |
+| `GET /api/v1/categories` | Public | Published categories only (DRAFT/RETIRED hidden); empty until a catalog is published |
 | `GET /api/v1/search?q=` | Public | Empty until approved catalog/search exists |
 | `GET /actuator/health/readiness` | Public | Dependency readiness; details hidden |
 

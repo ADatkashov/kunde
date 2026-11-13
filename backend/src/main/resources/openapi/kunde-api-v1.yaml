@@ -51,7 +51,7 @@ paths:
         '429':
           $ref: '#/components/responses/RateLimited'
         '200':
-          description: Available categories. Empty until an approved catalog is implemented and configured.
+          description: Available categories. Published categories only; empty until a catalog is approved and published.
           content:
             application/json:
               schema:
