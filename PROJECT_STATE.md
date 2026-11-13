@@ -29,7 +29,7 @@
   price, partner link, serviceability or availability rules; ADR-014 (no default orderable
   catalog, `marketplaceEnabled=false`) still applies. TASK-041 and TASK-050 are also
   **in_progress**, not Done: analytics has no consent/residency/outbox/KPI approval and
-  localization lacks date/time, plurals, address/phone formats and approved critical copy (TASK-049).
+  localization has pure plural/date/time helpers (unapproved layout) but lacks time-zone conversion, address/phone formats and approved critical copy (TASK-049).
 - Earlier snapshot, retained as history: PR #25 (`af61a2e`).
 - PR #23 / ADA-73: protected Consumer consent API, Flyway V4 ledger,
   approval-only policies, owner-scoped immutable grant/withdrawal history,

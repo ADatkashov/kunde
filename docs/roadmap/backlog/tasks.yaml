@@ -1047,7 +1047,7 @@
     "release": "REL-1",
     "user_story_id": "US-024",
     "implementation_status": "in_progress",
-    "implementation_note": "RU/KK/EN framework and identity copy exist; KundeFormats.money formats integer minor units + ISO code per locale (unit-tested in CI, not on a device). Date/time in service zone, numbers/plurals, address/phone formats and critical-copy approval (TASK-049) remain open."
+    "implementation_note": "RU/KK/EN framework and identity copy exist; KundeFormats.money formats integer minor units + ISO code per locale (unit-tested in CI, not on a device). 2026-11-13: KundeFormats.plural (CLDR ru one/few/many, kk/en one/other), date (dd.MM.yyyy ru/kk, dd/MM/yyyy en) and 24-hour time added as pure functions with no clock or time-zone conversion; unit tests pass locally (8 in the file) and run in Flutter CI. Date/time layout is an unapproved assumption. Still open: conversion to the service time zone, address/phone formats, wording per plural category and critical-copy approval (TASK-049); not verified on a device."
   },
   {
     "id": "TASK-051",
