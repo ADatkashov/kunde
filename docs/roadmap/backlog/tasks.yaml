@@ -772,8 +772,8 @@
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
     "user_story_id": "US-018",
-    "implementation_status": "not_started",
-    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
+    "implementation_status": "in_progress",
+    "implementation_note": "Consumer-owned support cases (SUP-001), backend only: Flyway V6 support.cases/case_events; POST/GET /api/v1/me/support/cases with required Idempotency-Key (replay 200, changed payload 409), owner-scoped reads (other users get 404), idempotent consumer escalation request, technical cap of 10 cases per user; SupportCaseHttpIntegrationTest and schema constraint tests. Not linked to orders/bookings/payments (disabled, ADR-014), no staff queue, assignment, SLA, evidence attachments, notifications or resolution workflow (D-12/D-14/D-11 open). Mobile entry points are TASK-038."
   },
   {
     "id": "TASK-038",

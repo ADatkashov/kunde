@@ -34,6 +34,7 @@ class DomainSchemaOwnershipIntegrationTest {
             "profile.consumer_profiles -> identity.users",
             "profile.consumer_addresses -> identity.users",
             "profile.consent_events -> identity.users",
+            "support.cases -> identity.users",
             "serviceability.zone_addresses -> profile.consumer_addresses");
 
     @Autowired JdbcTemplate jdbc;
@@ -148,6 +149,27 @@ class DomainSchemaOwnershipIntegrationTest {
         assertRejected(owner -> jdbc.update(
                 "insert into profile.consent_events (user_id, policy_id, action) values (?, ?, 'DELETED')",
                 owner, insertPolicy("c".repeat(64))));
+    }
+
+    @Test
+    void supportCaseConstraintsRejectInvalidRowsAndDuplicateKeys() {
+        assertAccepted(owner -> insertCase(owner, "GENERAL", "Synthetic", "k".repeat(16)));
+        assertRejected(owner -> insertCase(owner, "ORDER", "Synthetic", "k".repeat(16)));
+        assertRejected(owner -> insertCase(owner, "GENERAL", "   ", "k".repeat(16)));
+        assertRejected(owner -> insertCase(owner, "GENERAL", "x".repeat(2001), "k".repeat(16)));
+        assertRejected(owner -> insertCase(owner, "GENERAL", "Synthetic", "short"));
+        assertRejected(owner -> {
+            insertCase(owner, "GENERAL", "Synthetic", "d".repeat(16));
+            insertCase(owner, "GENERAL", "Synthetic", "d".repeat(16));
+        });
+        assertRejected(owner -> jdbc.update(
+                "insert into support.case_events (case_id, event_type) values (?, 'CREATED')", UUID.randomUUID()));
+    }
+
+    private void insertCase(UUID owner, String category, String message, String key) {
+        jdbc.update("""
+                insert into support.cases (owner_user_id, category, message, idempotency_key, request_sha256)
+                values (?, ?, ?, ?, ?)""", owner, category, message, key, "a".repeat(64));
     }
 
     @Test
