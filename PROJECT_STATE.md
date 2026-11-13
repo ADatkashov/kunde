@@ -21,6 +21,10 @@
   consent panel shows one row per policy in the reader's language (fallback ru → kk → en is an
   unapproved assumption) and states that policy text is not in the app yet. TASK-008 stays
   **in_progress** (needs approved policy text/link, TASK-007 legal wording, TalkBack/device checks).
+- PRs #47–#49, required CI green: #47 state sync and Russian-language rule in AGENTS.md; #48 TASK-056
+  local synthetic restore drill (`scripts/ci/restore_drill.sh`, not in CI, not production backup evidence);
+  #49 TASK-048 draft incident runbook for existing signals (unapproved, no owners/SLOs). TASK-056 and
+  TASK-048 are **in_progress**, not Done.
 - Catalog tasks TASK-011/012/013/014 remain **in_progress**: no seed data, offering search,
   price, partner link, serviceability or availability rules; ADR-014 (no default orderable
   catalog, `marketplaceEnabled=false`) still applies. TASK-041 and TASK-050 are also

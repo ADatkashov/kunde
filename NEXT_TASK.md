@@ -16,6 +16,15 @@ tasks without remaining product/privacy/UX acceptance evidence.
 #43 (TASK-010 default-deny serviceability UI), #45 (backlog CI validation), #46 (TASK-008 consent
 presentation per reader language; fallback order ru → kk → en still needs owner confirmation).
 
+## Owner decisions needed (blocking further roadmap work)
+
+- Consent language fallback ru → kk → en (TASK-008): confirm or give the approved order.
+- TASK-001 / D-12: name alert owners/on-call and approve SLOs (unblocks TASK-047/048 beyond the draft).
+- TASK-007: approved legal policy text or link for consents.
+- TASK-051 / D-08: hosting and Kazakhstan region choice (needed for real backup/restore, TASK-052/056).
+- TASK-006: physical devices, iOS and TalkBack runs; session-administration contract.
+- Catalog (TASK-011..014): approved contracts for price, partner link, availability (ADR-014 stays).
+
 ## Catalog track (TASK-011..014, in_progress)
 
 Merged: category search (#35/#36), schema V5 (#33), published offerings list and detail with
