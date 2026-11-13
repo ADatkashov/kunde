@@ -646,8 +646,8 @@
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
     "user_story_id": "US-017",
-    "implementation_status": "not_started",
-    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
+    "implementation_status": "in_progress",
+    "implementation_note": "Contract-only NotificationPolicy and Delivery (PRD 1.1 section 14): notification kinds, channel eligibility by consent/mandatory rules with IN_APP always present, dedup key, lock-screen text guard, distinct queued/sent/delivered/failed/dead-letter statuses with capped exponential backoff; NotificationPolicyTest. No provider (D-11), outbox, persistence, push tokens or sending; OTP, marketing and payment notifications stay disabled."
   },
   {
     "id": "TASK-032",
