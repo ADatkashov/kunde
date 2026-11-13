@@ -3,7 +3,9 @@ package kz.kunde.catalog;
 import java.util.List;
 import jakarta.validation.constraints.Size;
 import org.springframework.jdbc.core.JdbcTemplate;
+import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -50,5 +52,23 @@ public class CatalogController {
                 """, (rs, row) -> new Category(rs.getString("id"), rs.getString("name_ru"),
                         rs.getString("name_kk"), null, null),
                 contains, contains, contains, term, prefix, prefix, prefix);
+    }
+
+    /**
+     * Published offerings of a published category only. No price, stock, partner or availability is
+     * exposed or implied: those need approved contracts (TASK-014/015). Unknown, DRAFT or RETIRED
+     * categories yield an empty list so existence of unpublished catalog data is not disclosed.
+     */
+    @GetMapping("/categories/{categoryId}/offerings")
+    public List<Offering> offerings(@PathVariable UUID categoryId) {
+        return jdbc.query("""
+                select o.id, o.category_id, o.kind, o.name_ru, o.name_kk, o.name_en
+                from marketplace.offerings o
+                join marketplace.categories c on c.id = o.category_id
+                where o.category_id = ? and o.status = 'PUBLISHED' and c.status = 'PUBLISHED'
+                order by o.published_at, o.id
+                """, (rs, row) -> new Offering(rs.getString("id"), rs.getString("category_id"),
+                        rs.getString("kind"), rs.getString("name_ru"), rs.getString("name_kk"),
+                        rs.getString("name_en")), categoryId);
     }
 }

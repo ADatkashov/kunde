@@ -53,4 +53,27 @@ class CatalogControllerTest {
             assertThat(controller.search("   ")).isEmpty();
         });
     }
+
+    @Test
+    void offeringsAreVisibleOnlyWhenOfferingAndCategoryArePublished() {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            status.setRollbackOnly();
+            var pub = jdbc.queryForObject("""
+                    insert into marketplace.categories (code, name_ru, name_kk, status, published_at)
+                    values ('o-pub', 'К', 'К', 'PUBLISHED', now()) returning id""", java.util.UUID.class);
+            var draft = jdbc.queryForObject("""
+                    insert into marketplace.categories (code, name_ru, name_kk) values ('o-draft', 'Ч', 'Ч') returning id""",
+                    java.util.UUID.class);
+            jdbc.update("""
+                    insert into marketplace.offerings (category_id, kind, name_ru, name_kk, status, published_at) values
+                    (?, 'SERVICE', 'Опубликовано', 'Жарияланды', 'PUBLISHED', now()),
+                    (?, 'SERVICE', 'Черновик', 'Қара', 'DRAFT', null),
+                    (?, 'PRODUCT', 'Приостановлено', 'Тоқтатылды', 'SUSPENDED', null),
+                    (?, 'SERVICE', 'В черновой категории', 'Қара санат', 'PUBLISHED', now())""",
+                    pub, pub, pub, draft);
+            assertThat(controller.offerings(pub)).extracting(Offering::nameRu).containsExactly("Опубликовано");
+            assertThat(controller.offerings(draft)).isEmpty();
+            assertThat(controller.offerings(java.util.UUID.randomUUID())).isEmpty();
+        });
+    }
 }
