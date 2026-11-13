@@ -61,13 +61,22 @@ Widget _app(AuthRepository auth, String language) => MaterialApp(
           body: SingleChildScrollView(child: AddressPanel(auth: auth))),
     );
 
+Future<void> _pumpUntilLoaded(WidgetTester tester, Widget app) async {
+  await tester.pumpWidget(app);
+  for (var i = 0; i < 40 && find.byType(ListTile).evaluate().isEmpty; i++) {
+    await tester.pump(const Duration(milliseconds: 50));
+  }
+  printOnFailure(
+    'visible texts: ${find.byType(Text).evaluate().map((e) => (e.widget as Text).data).toList()}',
+  );
+}
+
 void main() {
   testWidgets('unconfirmed zone is shown as unavailable, never as confirmed',
       (tester) async {
     final auth = await _signedIn([_address('Home', serviceable: false)]);
     addTearDown(auth.dispose);
-    await tester.pumpWidget(_app(auth, 'en'));
-    await tester.pumpAndSettle();
+    await _pumpUntilLoaded(tester, _app(auth, 'en'));
     expect(find.textContaining('Serviceability not confirmed'), findsOneWidget);
     expect(find.textContaining('not available yet'), findsOneWidget);
     expect(find.text('Serviceable zone confirmed'), findsNothing);
@@ -78,8 +87,7 @@ void main() {
       (tester) async {
     final auth = await _signedIn([_address('Дом', serviceable: true)]);
     addTearDown(auth.dispose);
-    await tester.pumpWidget(_app(auth, 'ru'));
-    await tester.pumpAndSettle();
+    await _pumpUntilLoaded(tester, _app(auth, 'ru'));
     expect(find.text('Зона обслуживания подтверждена'), findsOneWidget);
     expect(find.textContaining('недоступны'), findsNothing);
     expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
@@ -90,8 +98,7 @@ void main() {
     final auth = await _signedIn([_address('Үй', serviceable: false)]);
     addTearDown(auth.dispose);
     final handle = tester.ensureSemantics();
-    await tester.pumpWidget(_app(auth, 'kk'));
-    await tester.pumpAndSettle();
+    await _pumpUntilLoaded(tester, _app(auth, 'kk'));
     expect(
       find.bySemanticsLabel(RegExp('Қызмет көрсету аймағы расталмаған')),
       findsOneWidget,
