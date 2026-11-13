@@ -24,6 +24,11 @@ presentation per reader language; fallback order is kk → ru → en by owner de
 - TASK-006: physical devices, iOS and TalkBack runs; session-administration contract.
 - Catalog (TASK-011..014): approved contracts for price, partner link, availability (ADR-014 stays).
 
+## Support track (TASK-037 in_progress)
+
+Backend support-case API merged-pending in the TASK-037 PR. Next independent step: TASK-038 Flutter support entry point (list/open/escalate over
+`/api/v1/me/support/cases`, RU/KK/EN, honest empty/error states, no promised response time). Staff-side handling stays blocked on D-12/D-14.
+
 ## Catalog track (TASK-011..014, in_progress)
 
 Merged: category search (#35/#36), schema V5 (#33), published offerings list and detail with
