@@ -1,8 +1,19 @@
 # KUNDE project state
 
-## Current verified main snapshot — 2026-11-12
+## Current verified main snapshot — 2026-11-13
 
-- Latest verified merge: `af61a2e586db2bed382677fad4aa5be869a5d99a` (PR #25).
+- Latest verified merge: `f335a6277b7ee64ca0c75bd64f179d5431b490c7` (PR #37).
+- PRs #29–#37 (merged after #28), all with required CI green:
+  #29 state/backlog sync; #30 TASK-055 domain schema ownership tests; #31 TASK-047
+  correlation/log/Actuator tests; #32 TASK-053 secret-marker gate tests; #33 TASK-013
+  Flyway V5 `marketplace.categories/offerings`; #34 owner standing merge permission
+  (see AGENTS.md); #35 TASK-011 published-category search; #36 TASK-012 Flutter
+  category search panel; #37 TASK-014 `GET /categories/{id}/offerings` (PUBLISHED
+  only; no price, partner or availability).
+- Catalog tasks TASK-011/012/013/014 remain **in_progress**: no seed data, offering
+  detail/search, pagination, serviceability or availability rules; ADR-014 (no default
+  orderable catalog, `marketplaceEnabled=false`) still applies.
+- Earlier snapshot, retained as history: PR #25 (`af61a2e`).
 - PR #23 / ADA-73: protected Consumer consent API, Flyway V4 ledger,
   approval-only policies, owner-scoped immutable grant/withdrawal history,
   active-user row lock; merged as `6d098c5`. Backend/Security/config CI green.
