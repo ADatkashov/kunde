@@ -32,5 +32,7 @@ jobs:
           PY
       - name: CI gate regression tests
         run: python3 -m unittest discover -s scripts/ci -p 'test_*.py' -v
+      - name: Backlog files parse and canonical tasks are consistent
+        run: python3 scripts/ci/check_backlog.py
       - name: Secret markers in repository tree
         run: python3 scripts/ci/check_secrets.py
