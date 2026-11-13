@@ -1089,7 +1089,7 @@
     "release": "REL-1",
     "user_story_id": "US-025",
     "implementation_status": "not_started",
-    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation. 2026-11-13: provider-neutral IaC foundation added (infrastructure/, docs/infrastructure/, ADR-017 Proposed): country-cell Terraform contract with 7 terraform tests, Helm chart, validation-only CI. No provider, state, deploy, approval-gated apply or rollback exercise exists; blocked on TASK-051."
   },
   {
     "id": "TASK-053",

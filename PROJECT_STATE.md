@@ -2,6 +2,8 @@
 
 ## Current verified main snapshot — 2026-11-13
 
+- **Infrastructure foundation (PR, TASK-052 stays not_started):** [docs/infrastructure](docs/infrastructure/README.md), `infrastructure/` (provider-neutral `country-cell` Terraform contract, `kz/dev|prod` roots with provider `unselected`, Helm chart) and validation-only `infrastructure.yml`; ADR-017 Proposed. Terraform fmt/validate/7 tests and helm lint/template ran locally; nothing provisioned or deployed, no provider/region/state chosen (TASK-051/D-08 blocked).
+
 - TASK-015 **in_progress**: partner persistence (Flyway V8 `marketplace.partners/partner_staff/*_events`, `PartnerService`): D-07 roles, partner isolation, revocation,
   append-only audit, verification gate (`mayProcessOrders` needs active staff + APPROVED). No HTTP API, documents/KYC or catalog link. Backend 164 tests pass locally against
   PostgreSQL 16 (155 existing + 9 new; temporary local cluster with synthetic credentials).
