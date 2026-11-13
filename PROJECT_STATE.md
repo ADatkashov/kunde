@@ -30,7 +30,7 @@
 - TASK-037 **in_progress**: backend consumer support cases (Flyway V6, `/api/v1/me/support/cases`, idempotent create, owner-scoped reads,
   escalation request; see docs/engineering-foundation/api-contracts.md). No transaction link, staff side, SLA or notifications (D-11/D-12/D-14
   open); backend merged as PR #57 (`c70d783`).
-- TASK-011/014 **in_progress**: `GET /api/v1/search/offerings` (published-only, ranked, paginated; public path added to security config; Backend 121 tests pass locally). Flutter does not use it yet.
+- TASK-011/014 **in_progress**: `GET /api/v1/search/offerings` (published-only, ranked, paginated; public path added to security config; Backend 121 tests pass locally). Flutter search panel now shows published offerings too (77 `flutter test` pass locally; no device check).
 - TASK-054 **in_progress**: backend concurrency/recovery tests for provisioning and support cases (found and fixed a support-case cap race);
   not the pilot E2E suite. Backend 119 tests pass locally (POC JWT test needs its own DB, not run).
 - TASK-038 **in_progress**: Flutter `SupportPanel` on the profile screen (list/open/escalate, RU/KK/EN); `flutter analyze` and 73 `flutter test` pass locally; no device/TalkBack run. Backend 115 tests pass locally against PostgreSQL 16 (POC JWT test needs its own DB, not run).

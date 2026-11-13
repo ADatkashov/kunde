@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/localization/kunde_localizations.dart';
 import '../data/catalog_category.dart';
+import '../data/catalog_offering.dart';
 import '../data/kunde_api.dart';
 
 /// Search over published categories. Shown only when the server reports the
@@ -20,7 +21,8 @@ enum _SearchState { idle, loading, results, empty, failed }
 class _CatalogSearchPanelState extends State<CatalogSearchPanel> {
   final _controller = TextEditingController();
   _SearchState _state = _SearchState.idle;
-  List<CatalogCategory> _results = const [];
+  List<CatalogCategory> _categories = const [];
+  List<CatalogOffering> _offerings = const [];
   int _generation = 0;
 
   @override
@@ -35,18 +37,29 @@ class _CatalogSearchPanelState extends State<CatalogSearchPanel> {
     if (query.isEmpty) {
       setState(() {
         _state = _SearchState.idle;
-        _results = const [];
+        _categories = const [];
+        _offerings = const [];
       });
       return;
     }
     setState(() => _state = _SearchState.loading);
     try {
-      final results = await widget.api.searchCategories(query);
+      // Both lookups must succeed: a partial answer would look like "nothing else exists".
+      final (categories, offerings) = await (
+        widget.api.searchCategories(query),
+        widget.api.searchOfferings(query),
+      ).wait;
       if (!mounted || generation != _generation) return;
       setState(() {
-        _results = results;
-        _state = results.isEmpty ? _SearchState.empty : _SearchState.results;
+        _categories = categories;
+        _offerings = offerings;
+        _state = categories.isEmpty && offerings.isEmpty
+            ? _SearchState.empty
+            : _SearchState.results;
       });
+    } on ParallelWaitError catch (_) {
+      if (!mounted || generation != _generation) return;
+      setState(() => _state = _SearchState.failed);
     } on KundeApiException {
       if (!mounted || generation != _generation) return;
       setState(() => _state = _SearchState.failed);
@@ -87,8 +100,16 @@ class _CatalogSearchPanelState extends State<CatalogSearchPanel> {
             ]),
           _SearchState.results => Column(
               children: [
-                for (final category in _results)
-                  ListTile(title: Text(category.localizedName(language))),
+                for (final category in _categories)
+                  ListTile(
+                    leading: const Icon(Icons.category_outlined),
+                    title: Text(category.localizedName(language)),
+                  ),
+                for (final offering in _offerings)
+                  ListTile(
+                    leading: const Icon(Icons.sell_outlined),
+                    title: Text(offering.localizedName(language)),
+                  ),
               ],
             ),
         },
