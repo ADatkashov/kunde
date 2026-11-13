@@ -70,7 +70,7 @@ paths:
         '429':
           $ref: '#/components/responses/RateLimited'
         '200':
-          description: Search results; empty until an approved catalog is implemented.
+          description: Published categories matching q (RU/KK/EN names, case-insensitive; exact, prefix, then substring ranking). Empty for blank q or until a catalog is published.
           content:
             application/json:
               schema:

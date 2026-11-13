@@ -7,7 +7,7 @@ Current OpenAPI 3.1 contract: `backend/src/main/resources/openapi/kunde-api-v1.y
 | `GET /api/v1/health` | Public | Process health; not dependency readiness |
 | `GET /api/v1/capabilities` | Public | Release stage and capability booleans; no provider IDs or secrets |
 | `GET /api/v1/categories` | Public | Published categories only (DRAFT/RETIRED hidden); empty until a catalog is published |
-| `GET /api/v1/search?q=` | Public | Empty until approved catalog/search exists |
+| `GET /api/v1/search?q=` | Public | Baseline name match over published categories (ranked exact/prefix/substring); blank `q` or no published catalog returns empty |
 | `GET /actuator/health/readiness` | Public | Dependency readiness; details hidden |
 
 Errors have `timestamp`, numeric `status`, stable `code`, safe `message`, request `path` and `correlationId`. Responses include `X-Correlation-ID`; unsafe inbound values are replaced. With OIDC configured protected routes require a valid JWT; without an issuer they are denied. Client mutation models and auth endpoints are intentionally absent.

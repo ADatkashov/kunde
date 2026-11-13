@@ -33,4 +33,24 @@ class CatalogControllerTest {
             assertThat(controller.categories()).extracting(Category::nameRu).containsExactly("А", "Б");
         });
     }
+
+    @Test
+    void searchMatchesPublishedOnlyRanksAndTreatsWildcardsLiterally() {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            status.setRollbackOnly();
+            jdbc.update("""
+                    insert into marketplace.categories (code, name_ru, name_kk, name_en, status, sort_order, published_at) values
+                    ('s-sub', 'Большая уборка', 'Үлкен тазалау', null, 'PUBLISHED', 0, now()),
+                    ('s-pre', 'Уборка квартир', 'Пәтер', null, 'PUBLISHED', 5, now()),
+                    ('s-exact', 'Уборка', 'Тазалау', 'Cleaning', 'PUBLISHED', 9, now()),
+                    ('s-draft', 'Уборка черновик', 'Қара', null, 'DRAFT', 0, null),
+                    ('s-pct', '100% скидка', 'Жеңілдік', null, 'PUBLISHED', 0, now())""");
+            assertThat(controller.search("уборка")).extracting(Category::nameRu)
+                    .containsExactly("Уборка", "Уборка квартир", "Большая уборка");
+            assertThat(controller.search("  CLEANING ")).extracting(Category::nameRu).containsExactly("Уборка");
+            assertThat(controller.search("%")).extracting(Category::nameRu).containsExactly("100% скидка");
+            assertThat(controller.search("_")).isEmpty();
+            assertThat(controller.search("   ")).isEmpty();
+        });
+    }
 }
