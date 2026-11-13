@@ -21,7 +21,7 @@
   no payments/delivery). Reference's 5-tab bottom bar (Главная/Поиск/Заказы/Избранное/Сервисы) differs from
   [docs/design/07](docs/design/07-consumer-app.md) — resolved by owner decision 2026-11-13: four tabs Главная/Поиск/Заказы/Профиль (DS-04), AI stays a Home block;
   Search/Orders/Profile show honest empty states without their capability; PRD-1.0 §navigation still says five (owner to update); no bell/profile
-  icons (no backend); no photo assets (Material icons). Category grid is 5 columns from 360 px with muted "Скоро" tiles. `flutter analyze` clean, 93 `flutter test` pass locally; no device/TalkBack check.
+  icons (no backend); no photo assets (Material icons). Category grid is 5 columns from 360 px with muted "Скоро" tiles. `flutter analyze` clean, 113 `flutter test` pass locally; no device/TalkBack check.
 
 - Latest verified merge: `ab001ac18ec7dd98986aa77d67fb36f3970ed693` (PR #41).
 - PRs #29–#37 (merged after #28), all with required CI green:
