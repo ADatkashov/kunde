@@ -41,6 +41,18 @@ void main() {
       expect(onlyEnglish.single.languageFallback, isTrue);
     });
 
+    test('fallback order is kk, then ru, then en', () {
+      final all = [
+        _policy('marketing', '1', 'en'),
+        _policy('marketing', '1', 'ru'),
+        _policy('marketing', '1', 'kk'),
+      ];
+      // Reader language missing from the set: Kazakh wins over Russian.
+      expect(presentConsents(all, 'de').single.policy['locale'], 'kk');
+      final noKazakh = all.where((p) => p['locale'] != 'kk').toList();
+      expect(presentConsents(noKazakh, 'de').single.policy['locale'], 'ru');
+    });
+
     test('never hides a recorded grant in another language', () {
       final entries = presentConsents([
         _policy('marketing', '1', 'ru', granted: true),

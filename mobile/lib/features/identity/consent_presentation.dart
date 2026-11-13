@@ -12,7 +12,7 @@ class ConsentEntry {
 ///
 /// A recorded grant is never hidden, so it can always be withdrawn: if any
 /// language version of the policy is granted, those rows are shown. Otherwise
-/// the version in [language] is shown, falling back to ru, kk, en and flagging
+/// the version in [language] is shown, falling back to kk, ru, en (Kazakhstan market order, owner decision) and flagging
 /// the fallback so the UI can say which language the document is in.
 List<ConsentEntry> presentConsents(
   List<Map<String, dynamic>> policies,
@@ -34,7 +34,7 @@ List<ConsentEntry> presentConsents(
       continue;
     }
     var chosen = group.first;
-    for (final locale in [language, 'ru', 'kk', 'en']) {
+    for (final locale in [language, 'kk', 'ru', 'en']) {
       final match = group.where((p) => p['locale'] == locale);
       if (match.isNotEmpty) {
         chosen = match.first;

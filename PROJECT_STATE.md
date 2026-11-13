@@ -18,8 +18,8 @@
   (integer minor units + ISO code, ru/kk/en; Flutter CI ran its tests, not a device).
 - PRs #43–#46, all with required CI green: #43 TASK-010 explicit default-deny serviceability
   status in the address panel; #44/#45 backlog JSON fix and CI backlog validation; #46 TASK-008
-  consent panel shows one row per policy in the reader's language (fallback ru → kk → en is an
-  unapproved assumption) and states that policy text is not in the app yet. TASK-008 stays
+  consent panel shows one row per policy in the reader's language (fallback order kk → ru → en,
+  owner decision 2026-11-13) and states that policy text is not in the app yet. TASK-008 stays
   **in_progress** (needs approved policy text/link, TASK-007 legal wording, TalkBack/device checks).
 - PRs #47–#49, required CI green: #47 state sync and Russian-language rule in AGENTS.md; #48 TASK-056
   local synthetic restore drill (`scripts/ci/restore_drill.sh`, not in CI, not production backup evidence);
