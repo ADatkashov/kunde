@@ -9,6 +9,29 @@ class AddressPanel extends StatefulWidget {
   State<AddressPanel> createState() => _AddressPanelState();
 }
 
+class _ServiceabilityStatus extends StatelessWidget {
+  const _ServiceabilityStatus({required this.serviceable, required this.text});
+  final bool serviceable;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        label: text,
+        excludeSemantics: true,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              serviceable ? Icons.check_circle_outline : Icons.info_outline,
+              size: 18,
+            ),
+            const SizedBox(width: 6),
+            Expanded(child: Text(text)),
+          ],
+        ),
+      );
+}
+
 class _AddressPanelState extends State<AddressPanel> {
   late Future<List<Map<String, dynamic>>> _addresses;
   bool _busy = false;
@@ -34,6 +57,15 @@ class _AddressPanelState extends State<AddressPanel> {
             ? en
             : ru;
   }
+
+  /// Default-deny: only an explicit server confirmation is shown as serviceable.
+  String _serviceabilityText(bool serviceable) => serviceable
+      ? _t('Зона обслуживания подтверждена', 'Қызмет көрсету аймағы расталған',
+          'Serviceable zone confirmed')
+      : _t(
+          'Зона обслуживания не подтверждена. Заказы на этот адрес пока недоступны.',
+          'Қызмет көрсету аймағы расталмаған. Бұл мекенжайға тапсырыс беру әзірге қолжетімсіз.',
+          'Serviceability not confirmed. Orders to this address are not available yet.');
 
   void _error() {
     if (!mounted) return;
@@ -129,8 +161,17 @@ class _AddressPanelState extends State<AddressPanel> {
                 for (final item in items)
                   ListTile(
                     title: Text(item['label'] as String),
-                    subtitle: Text(
-                        '${item['formattedAddress']} · ${item['serviceable'] == true ? _t('Зона обслуживания подтверждена', 'Қызмет көрсету аймағы расталған', 'Serviceable zone confirmed') : _t('Зона обслуживания не подтверждена', 'Қызмет көрсету аймағы расталмаған', 'Serviceability not confirmed')}'),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(item['formattedAddress'] as String),
+                        _ServiceabilityStatus(
+                          serviceable: item['serviceable'] == true,
+                          text:
+                              _serviceabilityText(item['serviceable'] == true),
+                        ),
+                      ],
+                    ),
                     trailing: IconButton(
                       tooltip: _t('Удалить', 'Жою', 'Delete'),
                       onPressed: _busy ? null : () => _delete(item),
