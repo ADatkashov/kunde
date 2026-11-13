@@ -394,8 +394,8 @@
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-0",
     "user_story_id": "US-013",
-    "implementation_status": "blocked",
-    "implementation_note": "D-02 provider operating model requires owner decision."
+    "implementation_status": "in_progress",
+    "implementation_note": "D-02 approved 2026-11-13: phased hybrid (pickup, merchant delivery, third-party logistics), no KUNDE courier fleet at start, so no provider platform is needed for phase A. Operating-model gate is recorded in PRD 1.1 §23; remaining: partner contracts/terms for phases B/C. Not Done."
   },
   {
     "id": "TASK-020",
@@ -417,7 +417,7 @@
     "release": "REL-2",
     "user_story_id": "US-013",
     "implementation_status": "not_started",
-    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation. D-02 (2026-11-13): conditional on a provider pool; phase A pickup needs no provider workflow. Stays not_started."
   },
   {
     "id": "TASK-021",
@@ -604,8 +604,8 @@
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-0",
     "user_story_id": "US-016",
-    "implementation_status": "blocked",
-    "implementation_note": "D-02 fulfillment responsibility requires owner decision."
+    "implementation_status": "in_progress",
+    "implementation_note": "D-02 approved 2026-11-13 (PRD 1.1 §23). No fulfillment code yet: pickup contract is the next PR. Merchant delivery and third-party delivery stay disabled; order lifecycle (TASK-021) still needs D-05/D-06. Not Done."
   },
   {
     "id": "TASK-030",
@@ -627,7 +627,7 @@
     "release": "REL-1",
     "user_story_id": "US-016",
     "implementation_status": "not_started",
-    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation. D-02 approved (2026-11-13); pickup status contract exists only as contract; integration needs the order lifecycle (TASK-021) and verified partner data."
   },
   {
     "id": "TASK-031",

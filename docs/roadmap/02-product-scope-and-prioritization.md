@@ -24,7 +24,7 @@ Let a customer in a serviceable Almaty zone find an available offering from a ve
 | Partner verification/profile/catalog/availability/order response | P1 | MVP, cohort only |
 | Payment adapter, verified state transitions, reconciliation/refund controls | P0/P1 | MVP only after D-03/D-04/D-06 approval |
 | Support/admin queue, scoped RBAC, order/payment lookup, audit | P0/P1 | MVP operational minimum |
-| Dispatch/provider app | Conditional P1 | Only if D-02 selects a provider-operated flow |
+| Dispatch/provider app | Conditional P1 | D-02 (2026-11-13) selects no provider-operated flow for phase A (pickup); revisit only for phases B/C |
 | Reviews, promotions, loyalty, advanced analytics, richer partner/provider tooling | P2 | Marketplace/everyday expansion |
 | Booking categories, family/child, health, events, AI task execution, new cities/countries | P2/P3 | Dedicated later gates |
 
