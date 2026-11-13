@@ -291,7 +291,7 @@
     "release": "REL-1",
     "user_story_id": "US-006",
     "implementation_status": "in_progress",
-    "implementation_note": "GET /categories now returns PUBLISHED categories from marketplace.categories (tested); offerings API, serviceability/availability rules and search remain absent."
+    "implementation_note": "GET /categories returns PUBLISHED categories; GET /categories/{id}/offerings returns PUBLISHED offerings of a PUBLISHED category only (tested on PostgreSQL 16; no price, partner or availability exposed). Offering detail, serviceability/availability rules and pagination remain open."
   },
   {
     "id": "TASK-015",

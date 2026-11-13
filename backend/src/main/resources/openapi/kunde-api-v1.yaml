@@ -57,6 +57,26 @@ paths:
               schema:
                 type: array
                 items: { type: object }
+  /categories/{categoryId}/offerings:
+    get:
+      operationId: listCategoryOfferings
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '413':
+          $ref: '#/components/responses/RequestBodyTooLarge'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '200':
+          description: PUBLISHED offerings of a PUBLISHED category (id, categoryId, kind, RU/KK/EN names). Empty for unknown, unpublished or retired categories. No price, partner or availability is exposed.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: object }
   /search:
     get:
       operationId: searchCatalog

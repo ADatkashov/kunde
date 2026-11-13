@@ -133,7 +133,7 @@ public class SecurityConfiguration {
                 .addFilterAfter(authenticated, BearerTokenAuthenticationFilter.class)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/v1/health", "/api/v1/capabilities", "/api/v1/categories", "/api/v1/search", "/api/v1/openapi.yaml",
+                        .requestMatchers("/api/v1/health", "/api/v1/capabilities", "/api/v1/categories", "/api/v1/categories/*/offerings", "/api/v1/search", "/api/v1/openapi.yaml",
                                 "/actuator/health", "/actuator/health/**")
                         .permitAll()
                         .anyRequest().authenticated())
@@ -163,7 +163,7 @@ public class SecurityConfiguration {
                 .addFilterAfter(authenticated, BearerTokenAuthenticationFilter.class)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/v1/health", "/api/v1/capabilities", "/api/v1/categories", "/api/v1/search", "/api/v1/openapi.yaml",
+                        .requestMatchers("/api/v1/health", "/api/v1/capabilities", "/api/v1/categories", "/api/v1/categories/*/offerings", "/api/v1/search", "/api/v1/openapi.yaml",
                                 "/actuator/health", "/actuator/health/**")
                         .permitAll()
                         .anyRequest().denyAll())
