@@ -794,8 +794,8 @@
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
     "user_story_id": "US-018",
-    "implementation_status": "not_started",
-    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
+    "implementation_status": "in_progress",
+    "implementation_note": "Flutter SupportPanel on the signed-in profile screen over /api/v1/me/support/cases (TASK-037): list, honest empty/error/retry states, new request (topic + message, one Idempotency-Key per submission), confirmed escalation request with no response-time promise; RU/KK/EN; support_panel_test and repository tests (flutter analyze and flutter test run locally, not a device or TalkBack check). Not linked to orders, no staff replies, no notifications, no attachments; accessibility/device acceptance missing."
   },
   {
     "id": "TASK-039",
