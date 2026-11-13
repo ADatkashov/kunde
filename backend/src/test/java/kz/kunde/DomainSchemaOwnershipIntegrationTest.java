@@ -151,6 +151,57 @@ class DomainSchemaOwnershipIntegrationTest {
     }
 
     @Test
+    void catalogSchemaIsUnpublishedByDefaultAndRejectsInvalidRows() {
+        assertThat(jdbc.queryForObject("select count(*) from marketplace.categories", Integer.class)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from marketplace.offerings", Integer.class)).isZero();
+
+        assertAccepted(owner -> insertCategory("home"));
+        assertThat(jdbc.queryForObject("""
+                select column_default from information_schema.columns
+                where table_schema = 'marketplace' and table_name = 'categories' and column_name = 'status'
+                """, String.class)).contains("DRAFT");
+        assertRejected(owner -> insertCategory("Bad Code"));
+        assertRejected(owner -> jdbc.update(
+                "insert into marketplace.categories (code, name_ru, name_kk, status) values ('x', 'р', 'қ', 'LIVE')"));
+        assertRejected(owner -> jdbc.update(
+                "insert into marketplace.categories (code, name_ru, name_kk, status) values ('x', 'р', 'қ', 'PUBLISHED')"));
+        assertAccepted(owner -> jdbc.update("""
+                insert into marketplace.categories (code, name_ru, name_kk, status, published_at)
+                values ('x', 'р', 'қ', 'PUBLISHED', now())"""));
+        assertRejected(owner -> jdbc.update("""
+                insert into marketplace.categories (code, name_ru, name_kk) values ('x', '  ', 'қ')"""));
+        assertRejected(owner -> {
+            insertCategory("dup");
+            insertCategory("dup");
+        });
+        assertRejected(owner -> {
+            UUID id = insertCategory("self");
+            jdbc.update("update marketplace.categories set parent_id = id where id = ?", id);
+        });
+
+        assertAccepted(owner -> insertOffering(insertCategory("c1"), "SERVICE"));
+        assertRejected(owner -> insertOffering(insertCategory("c2"), "VOUCHER"));
+        assertRejected(owner -> insertOffering(UUID.randomUUID(), "SERVICE"));
+        assertRejected(owner -> {
+            UUID category = insertCategory("c3");
+            insertOffering(category, "PRODUCT");
+            jdbc.update("delete from marketplace.categories where id = ?", category);
+        });
+    }
+
+    private UUID insertCategory(String code) {
+        return jdbc.queryForObject("""
+                insert into marketplace.categories (code, name_ru, name_kk) values (?, 'Синтетика', 'Синтетика')
+                returning id""", UUID.class, code);
+    }
+
+    private void insertOffering(UUID category, String kind) {
+        jdbc.update("""
+                insert into marketplace.offerings (category_id, kind, name_ru, name_kk)
+                values (?, ?, 'Синтетика', 'Синтетика')""", category, kind);
+    }
+
+    @Test
     void referencesRejectOrphansAndDeletingAReferencedUser() {
         assertRejected(owner -> jdbc.update(
                 "insert into profile.consumer_profiles (user_id) values (?)", UUID.randomUUID()));

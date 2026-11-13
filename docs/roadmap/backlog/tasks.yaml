@@ -269,7 +269,7 @@
     "release": "REL-1",
     "user_story_id": "US-006",
     "implementation_status": "in_progress",
-    "implementation_note": "V1 creates catalog schema only; category/offering constraints and model remain absent."
+    "implementation_note": "V5 adds marketplace.categories/offerings (RU/KK required, DRAFT default, publish timestamp, no cascade) verified on PostgreSQL 16; no seed data, partner link, price model or availability. Status stays in_progress pending reviewed domain model."
   },
   {
     "id": "TASK-014",
