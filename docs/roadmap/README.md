@@ -17,7 +17,7 @@ Read in order: [01 strategy](01-delivery-strategy.md), [02 scope](02-product-sco
 
 ## Baseline recommendation
 
-Use a controlled Almaty pilot for one operationally proven category. Food is the current candidate, not an approved launch commitment. Prefer merchant pickup or contractually defined partner fulfillment; no KUNDE-owned fleet is assumed. A real transactional MVP requires a selected category/cohort, approved payment and funds flow, lawful terms/privacy, staffed support, partner readiness, and a tested cancellation/refund/reconciliation path.
+Use a controlled Almaty pilot for one operationally proven category. Food ordering in Almaty is the approved first category and market (D-01 partially approved 2026-11-13); the cohort, zone and launch gates remain open. Prefer merchant pickup or contractually defined partner fulfillment; no KUNDE-owned fleet is assumed. A real transactional MVP requires a selected category/cohort, approved payment and funds flow, lawful terms/privacy, staffed support, partner readiness, and a tested cancellation/refund/reconciliation path.
 
 The implementation stack follows the architecture recommendation: Flutter consumer client; Java/Spring Boot modular backend; PostgreSQL/PostGIS; versioned REST/OpenAPI; provider adapters. Vendor and hosting selection remain subject to availability, cost, security and residency review.
 

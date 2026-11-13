@@ -4,7 +4,7 @@ The structured risk register and owners/mitigations are in [`backlog/risks.yaml`
 
 | Risk / blocker | Severity | Resolution evidence |
 |---|---|---|
-| D-01 category/cohort/zone undecided | Critical; blocks MVP scope | Signed category and operational proof checklist |
+| D-01 category/market approved 2026-11-13; cohort/zone/operational proof undecided | Critical; blocks MVP scope | Signed category and operational proof checklist |
 | D-02 fulfillment responsibility undecided | Critical; blocks partner/provider design | Contracted model, status ownership, exception and liability flow |
 | D-03/D-04 payment, funds flow, fees/tax/settlement undecided | Critical; blocks real transaction | Provider capability, legal-approved funds flow, signed terms, reconciliation plan |
 | D-06 cancellation/refund rules undecided | Critical; blocks customer commitment | Published category policy and exercised refund/dispute procedure |

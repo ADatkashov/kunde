@@ -353,7 +353,7 @@
     "release": "REL-1",
     "user_story_id": "US-011",
     "implementation_status": "not_started",
-    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation. D-01 category/market approved 2026-11-13 (cohort/zone open); synthetic-data work may proceed, TASK-017 needs a web stack and partner identity contract (D-07, TASK-015), TASK-018 needs the order lifecycle (D-05/D-06); status unchanged."
   },
   {
     "id": "TASK-018",
@@ -375,7 +375,7 @@
     "release": "REL-1",
     "user_story_id": "US-012",
     "implementation_status": "not_started",
-    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation. D-01 category/market approved 2026-11-13 (cohort/zone open); synthetic-data work may proceed, TASK-017 needs a web stack and partner identity contract (D-07, TASK-015), TASK-018 needs the order lifecycle (D-05/D-06); status unchanged."
   },
   {
     "id": "TASK-019",

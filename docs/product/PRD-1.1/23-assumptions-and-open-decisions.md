@@ -7,7 +7,7 @@ Assumptions are recommendations to unblock specification, not approved facts. As
 | ID | Assumption/recommendation | Validate with | Blocks |
 |---|---|---|---|
 | A-01 | Almaty is initial market; KZT is expected display/settlement currency. | Product, finance, legal | Checkout/payment launch |
-| A-02 | Food ordering is the candidate first category, with grocery and mobility conditional. | Product/operations/partners | MVP category selection |
+| A-02 | Food ordering is the first category (approved in D-01, 2026-11-13); grocery and mobility stay conditional and disabled for real transactions. | Product/operations/partners | Exact partner cohort |
 | A-03 | Merchant response deadlines, payment capture timing and cancellation fees are configurable per contract/category, not globally fixed. | Operations, finance, legal | Order/refund policy |
 | A-04 | One cart is one merchant and one fulfillment context. | Product | Checkout scope |
 | A-05 | Phone OTP is desired authentication but provider and fallback are unselected. | Security, product, vendor | Registration launch |
@@ -21,7 +21,7 @@ Assumptions are recommendations to unblock specification, not approved facts. As
 
 | ID | Decision | Owner(s) | Needed by |
 |---|---|---|---|
-| D-01 | Which category and exact merchant/provider cohort launches first? What operational proof is mandatory? | Product + Operations | MVP scope lock |
+| D-01 | **PARTIALLY APPROVED 2026-11-13** — category (Food Ordering) and market (Almaty) approved; exact merchant cohort, pilot zone and mandatory operational proof remain open. See [D-01 record](#d-01--initial-category-and-pilot-market). | Product + Operations | MVP scope lock |
 | D-02 | Who provides delivery/dispatch: merchant, third party, KUNDE courier, or hybrid? | Operations + Partnerships | Fulfillment design |
 | D-03 | Payment provider, supported methods, authorization/capture/refund semantics, settlement and reconciliation cadence? | Finance + Engineering + Legal | Transaction pilot |
 | D-04 | Currency, taxes, fee display, commission, partner settlement terms and dispute allocation? | Finance + Legal | Partner contracts |
@@ -36,6 +36,59 @@ Assumptions are recommendations to unblock specification, not approved facts. As
 | D-13 | Rating eligibility/moderation, promotion funding and eligibility policies? | Product + Trust + Finance | Growth rollout |
 | D-14 | Admin separation of duties and refund approval thresholds/dual control? | Finance + Security | Admin pilot |
 | D-15 | Public language set, translation owner and legal approval workflow? | Product + Localization + Legal | Almaty launch |
+
+## D-01 — Initial Category and Pilot Market
+
+**Status:** PARTIALLY APPROVED — category and market approved by Product Owner, 2026-11-13.
+
+**Decision owner:** Product Owner.
+
+### Approved decision
+
+KUNDE will launch its first consumer service category as **Food Ordering**, with **Almaty, Kazakhstan** as the initial geographic market.
+
+KUNDE remains a universal everyday-life Super App. Food Ordering is the first implementation and market-validation category, not a restriction on the long-term product vision.
+
+The architecture must preserve the ability to introduce additional service categories through existing platform contracts and approved roadmap phases.
+
+### Pilot approach
+
+The initial rollout follows a controlled, phased approach:
+
+1. Internal technical validation using synthetic data and transactions.
+2. Limited operational pilot with verified restaurant partners and invited users, subject to launch gates.
+3. Geographic and partner expansion after operational acceptance.
+
+### Proposed pilot cohort — not yet approved
+
+- Target: 8–12 restaurant partners.
+- One compact geographic pilot zone within Almaty.
+- Initial invited test cohort: 50–100 users.
+- Mix of everyday lunch, fast-casual, local cuisine, cafés and bakeries.
+
+Exact restaurant identities, pilot zone, user cohort size and operational commitments remain subject to separate confirmation.
+
+### Mandatory constraints
+
+- No production orderability before required partner verification and operational readiness.
+- No assumption that KUNDE operates its own courier network.
+- No real payment collection without approved financial and payment-provider decisions.
+- No invented cancellation fees, commissions, settlement terms or refund rules.
+- No use of real personal data without applicable privacy and security approvals.
+- Non-launch categories remain disabled for real transactions until their own gates are satisfied.
+- Synthetic development and testing may continue independently of production approvals.
+
+### Dependencies and remaining decisions
+
+D-02 through D-15 remain unchanged and are not implicitly approved by this decision.
+
+D-01 is approved for category and market selection. Exact partner cohort and operational proof remain open until verified.
+
+### Implementation impact
+
+Engineering may proceed with Food Ordering category-specific development and tests consistent with accepted architecture and existing task dependencies.
+
+TASK-017 and related catalogue/partner tasks may be reassessed for technical readiness. No task should be marked fully completed without its acceptance evidence.
 
 ## Contradictions resolved by recommendation
 
