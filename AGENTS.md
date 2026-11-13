@@ -34,7 +34,7 @@ Read the module README and relevant `docs/` contract before editing. Keep domain
 
 - At task start, check `git status --short --branch` and inspect recent history/diff when Git metadata exists. Preserve user changes; do not reset, clean, overwrite or stage unrelated work.
 - This repository is initialized on `main` and tracks the public `origin` repository. Never initialize or replace its Git history. If Git metadata or the remote is unavailable in a future workspace, report that limitation and preserve the supplied files.
-- Use the existing branch/workflow. Do not commit, push, rewrite history, or change branches unless explicitly requested.
+- Use the existing branch/workflow. Do not rewrite history. Owner standing permission (2026-11-13): the agent may commit, push a working branch, open a PR and merge it into `main` without asking, only when required CI is green, there are no conflicts, and the change stays within the current roadmap task. This does not cover force-push, history rewrites, bypassing CI, or approving blocked/gated decisions.
 - Keep diffs minimal and review the final diff/status before reporting. If Git remains unavailable, state that verification limitation.
 
 ## Documentation and handoff
