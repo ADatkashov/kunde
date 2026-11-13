@@ -291,7 +291,7 @@
     "release": "REL-1",
     "user_story_id": "US-006",
     "implementation_status": "in_progress",
-    "implementation_note": "GET /categories returns PUBLISHED categories; GET /categories/{id}/offerings returns PUBLISHED offerings of a PUBLISHED category only (tested on PostgreSQL 16; no price, partner or availability exposed). Offering detail, serviceability/availability rules and pagination remain open."
+    "implementation_note": "GET /categories returns PUBLISHED categories; GET /categories/{id}/offerings returns PUBLISHED offerings of a PUBLISHED category only (tested on PostgreSQL 16; no price, partner or availability exposed). GET /offerings/{id} returns one PUBLISHED offering (404 OFFERING_NOT_FOUND otherwise) and the list is paginated (limit<=100, offset). Offering search, serviceability/availability rules, price and partner link remain open."
   },
   {
     "id": "TASK-015",

@@ -1,8 +1,13 @@
 package kz.kunde.catalog;
 
 import java.util.List;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
+import kz.kunde.platform.ApiException;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -60,15 +65,32 @@ public class CatalogController {
      * categories yield an empty list so existence of unpublished catalog data is not disclosed.
      */
     @GetMapping("/categories/{categoryId}/offerings")
-    public List<Offering> offerings(@PathVariable UUID categoryId) {
-        return jdbc.query("""
-                select o.id, o.category_id, o.kind, o.name_ru, o.name_kk, o.name_en
-                from marketplace.offerings o
-                join marketplace.categories c on c.id = o.category_id
+    public List<Offering> offerings(@PathVariable UUID categoryId,
+            @RequestParam(defaultValue = "50") @Min(1) @Max(100) int limit,
+            @RequestParam(defaultValue = "0") @Min(0) @Max(100000) int offset) {
+        return jdbc.query(OFFERING_SELECT + """
                 where o.category_id = ? and o.status = 'PUBLISHED' and c.status = 'PUBLISHED'
                 order by o.published_at, o.id
-                """, (rs, row) -> new Offering(rs.getString("id"), rs.getString("category_id"),
-                        rs.getString("kind"), rs.getString("name_ru"), rs.getString("name_kk"),
-                        rs.getString("name_en")), categoryId);
+                limit ? offset ?
+                """, OFFERING_MAPPER, categoryId, limit, offset);
     }
+
+    /** Detail of one PUBLISHED offering in a PUBLISHED category; anything else is indistinguishable 404. */
+    @GetMapping("/offerings/{offeringId}")
+    public Offering offering(@PathVariable UUID offeringId) {
+        return jdbc.query(OFFERING_SELECT + """
+                where o.id = ? and o.status = 'PUBLISHED' and c.status = 'PUBLISHED'
+                """, OFFERING_MAPPER, offeringId).stream().findFirst()
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "OFFERING_NOT_FOUND",
+                        "Offering is not available"));
+    }
+
+    private static final String OFFERING_SELECT = """
+            select o.id, o.category_id, o.kind, o.name_ru, o.name_kk, o.name_en
+            from marketplace.offerings o
+            join marketplace.categories c on c.id = o.category_id
+            """;
+    private static final RowMapper<Offering> OFFERING_MAPPER = (rs, row) -> new Offering(
+            rs.getString("id"), rs.getString("category_id"), rs.getString("kind"),
+            rs.getString("name_ru"), rs.getString("name_kk"), rs.getString("name_en"));
 }
