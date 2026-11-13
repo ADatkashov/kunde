@@ -2,6 +2,11 @@
 
 ## Current verified main snapshot — 2026-11-13
 
+- **D-05/D-06/D-07 APPROVED (2026-11-13, Product Owner):** restaurant response 5 min / reminder 2 min / auto-timeout; free cancel before acceptance, no
+  invented penalties or refunds; partner roles Owner/Manager/Operator + KUNDE Administrator with manual verification. Record: [PRD 1.1 §23](docs/product/PRD-1.1/23-assumptions-and-open-decisions.md).
+  TASK-021 blocked → in_progress (contract-only `OrderLifecycle`, 16 unit tests; no persistence/API/scheduler/payment link). TASK-027/028 stay blocked (D-03/D-04, D-14);
+  D-03, D-04, D-08–D-15 unchanged. Backend: 88 non-DB tests pass locally; the 67 Spring/PostgreSQL tests were not run here (no DB credentials) and rely on CI.
+
 - **D-02 APPROVED (2026-11-13, Product Owner):** phased hybrid fulfillment for Food Ordering (A pickup, B merchant delivery, C third-party logistics; no KUNDE courier
   fleet at start). Record: [PRD 1.1 §23](docs/product/PRD-1.1/23-assumptions-and-open-decisions.md). TASK-019/029 moved blocked → in_progress (not Done); TASK-020/030 unchanged;
   D-03–D-15 unchanged. PR #63 (V7) added only the unpublished DRAFT `food-ordering` category.

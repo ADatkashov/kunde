@@ -25,9 +25,9 @@ Assumptions are recommendations to unblock specification, not approved facts. As
 | D-02 | **APPROVED 2026-11-13** — phased hybrid fulfillment for Food Ordering: A pickup, B merchant-managed delivery, C third-party logistics; no KUNDE courier fleet at start. See [D-02 record](#d-02--food-ordering-fulfillment-and-delivery-model). | Operations + Partnerships | Fulfillment design |
 | D-03 | Payment provider, supported methods, authorization/capture/refund semantics, settlement and reconciliation cadence? | Finance + Engineering + Legal | Transaction pilot |
 | D-04 | Currency, taxes, fee display, commission, partner settlement terms and dispute allocation? | Finance + Legal | Partner contracts |
-| D-05 | Consumer/partner/provider response SLAs and auto-timeout behavior? | Operations + Partners | Order/booking policies |
-| D-06 | Category-specific cancellation windows, no-show treatment, refunds and partial fulfillment rules? | Product + Legal + Finance | Public terms |
-| D-07 | Identity assurance and verification by user/partner/provider role? | Trust + Legal + Security | Account and partner launch |
+| D-05 | **APPROVED 2026-11-13** — Food Ordering restaurant response: 5 min deadline, 2 min reminder, auto-timeout; other SLAs per D-12. See [D-05 record](#d-05--restaurant-response-sla-and-order-timeout). Original question: consumer/partner/provider response SLAs and auto-timeout behavior? | Operations + Partners | Order/booking policies |
+| D-06 | **APPROVED FOR PRODUCT RULES 2026-11-13** — free cancel before acceptance, no invented penalties, explicit consent for substitutions; refunds/penalties stay gated by D-03/D-04/legal. See [D-06 record](#d-06--cancellation-refund-and-partial-fulfillment-policy). Original question: category-specific cancellation windows, no-show treatment, refunds and partial fulfillment rules? | Product + Legal + Finance | Public terms |
+| D-07 | **APPROVED FOR INITIAL ROLE MODEL 2026-11-13** — partner roles Owner/Manager/Operator + KUNDE Administrator, manual verification; proofing method, documents and KYC provider remain open. See [D-07 record](#d-07--partner-identity-and-verification). Original question: identity assurance and verification by user/partner/provider role? | Trust + Legal + Security | Account and partner launch |
 | D-08 | Data residency, retention schedule, deletion exceptions, consent language and AI processor rules? | Legal + Privacy + Security | Production data |
 | D-09 | Family guardian verification and child-data controls? | Legal + Product | Phase 3 |
 | D-10 | Regulated health/pharmacy boundaries and review requirements? | Legal + Clinical/compliance owner | Phase 3 |
@@ -182,6 +182,99 @@ Reassess TASK-019, TASK-020, TASK-029 and TASK-030 against their full acceptance
 Only work directly authorized by this decision may be unblocked. Tasks requiring other decisions remain blocked or partially in progress, as appropriate.
 
 D-02 is approved for the fulfillment model. Actual production operation remains subject to separate readiness evidence.
+
+## D-05 — Restaurant Response SLA and Order Timeout
+
+**Status:** APPROVED — Product Owner, 2026-11-13. **Scope:** Food Ordering pilot, Almaty (not automatically grocery, mobility, bookings or other categories).
+
+### Restaurant confirmation
+
+1. A restaurant has **5 minutes** to accept or reject a submitted order.
+2. A reminder is generated **2 minutes** after submission if the order remains unanswered.
+3. With no valid restaurant response within 5 minutes the order automatically transitions to a terminal timeout/rejection outcome.
+4. A late restaurant acceptance cannot reactivate a timed-out order.
+5. The customer receives an accurate order status and appropriate notification.
+6. Duplicate submissions, callbacks and retries must not create duplicate orders or duplicate financial operations.
+7. A restaurant marked unavailable must not accept new orders.
+8. The restaurant supplies the preparation-time estimate; KUNDE must not present an unverified estimate as confirmed.
+
+### Technical requirements
+
+- 5 minutes / 2 minutes are the initial Food Ordering defaults; values must be configurable and versioned for future partner/category policies.
+- The server is authoritative for deadlines and state transitions; timeouts and acceptance are concurrency-safe and idempotent; all state changes are auditable.
+- Delayed workers and unavailable notification providers must not invalidate the authoritative deadline.
+
+### Remaining gates
+
+Production monitoring, escalation ownership and broader operational SLOs remain subject to D-12 and operational readiness.
+
+## D-06 — Cancellation, Refund and Partial Fulfillment Policy
+
+**Status:** APPROVED FOR PRODUCT RULES — Product Owner, 2026-11-13.
+
+### Before restaurant acceptance
+
+1. The customer may cancel before restaurant acceptance without a cancellation penalty.
+2. An order that expires without restaurant confirmation is automatically rejected or cancelled and must not be fulfilled as if accepted.
+3. Payment authorization, capture or refund consequences follow separately approved payment-provider and finance contracts.
+
+### After restaurant acceptance
+
+1. Cancellation is evaluated against the disclosed, versioned category/merchant policy and the verified preparation state.
+2. No automatic cancellation penalty is permitted without approved legal terms and a valid applicable policy; where policy or legal approval is absent the system must not invent or collect a fee.
+3. Disputed or exceptional cases are routed to an authorized support process.
+
+### Partial fulfillment and substitutions
+
+1. Restaurants must not silently substitute unavailable items.
+2. Any change in items, quantities or total price requires explicit customer approval before commitment; the customer may reject it.
+3. If fulfillment becomes impossible the order enters a defined failure, cancellation or support resolution path.
+4. Partial refunds and financial adjustments require verified provider capabilities and approved accounting rules.
+
+### Technical requirements
+
+- Order and payment lifecycles remain separate; transitions are versioned, authorized, auditable and idempotent.
+- Customer approval is recorded with the applicable order/quote version.
+- Concurrency and retry handling prevent duplicate cancellations or financial actions; unsupported refund and penalty operations remain disabled.
+
+### Remaining gates
+
+D-03/D-04, legal review of consumer-facing terms, settlement and refund processing are not approved by D-06.
+
+## D-07 — Partner Identity and Verification
+
+**Status:** APPROVED FOR INITIAL ROLE MODEL AND VERIFICATION APPROACH — Product Owner, 2026-11-13.
+
+### Initial roles
+
+- **Restaurant Owner:** manages the restaurant within authorized scope, permitted staff access and business settings (subject to verification and audit controls).
+- **Restaurant Manager:** manages menu, availability and order processing within assigned permissions; no automatic access to financial administration or platform-wide controls.
+- **Restaurant Operator:** views and processes assigned restaurant orders; cannot manage ownership, staff privileges or platform policies.
+- **KUNDE Administrator:** reviews partner verification and operational status within assigned platform permissions; no unrestricted access to financial operations, sensitive information or other administrative functions.
+
+### Verification
+
+1. Every restaurant passes verification before being enabled for real orders; initial verification may be manual by authorized KUNDE personnel.
+2. Verification status and supporting evidence are auditable.
+3. Unverified, suspended or rejected partners are not publicly orderable.
+4. Each staff member has an individually attributable identity; permissions are scoped to the authorized restaurant and role; access is revocable.
+5. Privileged actions require appropriate authorization and audit records.
+
+### Technical requirements
+
+- Use existing KUNDE identity and authorization boundaries; no second identity architecture without an approved ADR.
+- Enforce role and tenant/partner isolation on the backend (never UI-only); reject unauthorized or cross-partner access.
+- Keep identity, verification status and business permissions separate; use explicit state transitions for verification and suspension.
+
+### Remaining gates
+
+Exact identity-proofing method, legally required verification documents, sensitive-document retention and production identity-provider readiness need Trust, Legal, Privacy and Security review. No KYC provider or external verification service is approved.
+
+## D-05/D-06/D-07 — Decision boundaries and roadmap impact
+
+D-01, D-02, D-05, D-06 and D-07 are approved within their recorded scopes; D-03, D-04, D-08–D-15 are unchanged. These decisions do not authorize: real payment collection; production refunds or settlement; cancellation penalties; unapproved identity or OTP providers; processing real sensitive verification documents without privacy controls; public production launch; bypassing security, CI or operational gates.
+
+Reassess TASK-015/016/017 (partner), TASK-021/022 (order lifecycle) and TASK-027/028 (cancellation/refund, still limited by payment and legal gates). Implementation may proceed on approved product logic and independently testable components; production enablement requires separate readiness evidence.
 
 ## Contradictions resolved by recommendation
 

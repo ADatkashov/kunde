@@ -311,7 +311,7 @@
     "release": "REL-1",
     "user_story_id": "US-006",
     "implementation_status": "in_progress",
-    "implementation_note": "Contract-only PartnerVerification state machine (PB-01/PB-02 draft playbooks: pending, info requested, approved, limited, suspended, rejected; reasons required, no self-review, immutable audit history) with PartnerVerificationTest. No persistence, API, partner roles, documents or catalog activation; ADR-014 gates, partner identity and approved verification contract remain open."
+    "implementation_note": "Contract-only PartnerVerification state machine (PB-01/PB-02 draft playbooks: pending, info requested, approved, limited, suspended, rejected; reasons required, no self-review, immutable audit history) with PartnerVerificationTest. No persistence, API, partner roles, documents or catalog activation; ADR-014 gates, partner identity and approved verification contract remain open. D-07 approved 2026-11-13 (roles Owner/Manager/Operator + KUNDE Administrator, manual verification); persistence/API/roles still not implemented; proofing method, documents and KYC provider remain open."
   },
   {
     "id": "TASK-016",
@@ -333,7 +333,7 @@
     "release": "REL-1",
     "user_story_id": "US-008",
     "implementation_status": "not_started",
-    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation. D-07 approved 2026-11-13; still depends on TASK-015 persistence and partner-scoped authorization."
   },
   {
     "id": "TASK-017",
@@ -353,7 +353,7 @@
     "release": "REL-1",
     "user_story_id": "US-011",
     "implementation_status": "not_started",
-    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation. D-01 category/market approved 2026-11-13 (cohort/zone open); synthetic-data work may proceed, TASK-017 needs a web stack and partner identity contract (D-07, TASK-015), TASK-018 needs the order lifecycle (D-05/D-06); status unchanged."
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation. D-01 category/market approved 2026-11-13 (cohort/zone open); synthetic-data work may proceed, TASK-017 needs a web stack and partner identity contract (D-07, TASK-015), TASK-018 needs the order lifecycle (D-05/D-06); status unchanged. D-07 approved 2026-11-13 (partner roles); still needs a web stack and partner identity contract."
   },
   {
     "id": "TASK-018",
@@ -436,8 +436,8 @@
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
     "user_story_id": "US-010",
-    "implementation_status": "blocked",
-    "implementation_note": "Order lifecycle/category and cancellation policy approvals remain open."
+    "implementation_status": "in_progress",
+    "implementation_note": "D-05/D-06 approved 2026-11-13 (PRD 1.1 §23). Contract-only OrderLifecycle (SUBMITTED, CHANGE_PROPOSED, ACCEPTED, SUPPORT_REVIEW, REJECTED, EXPIRED, CANCELLED) with ResponsePolicy 5 min deadline/2 min reminder (versioned config), server-clock timeout, late acceptance rejected, free cancel before acceptance, substitution only with customer approval of the exact quote version, idempotent commandId, version conflict, audit; 16 unit tests. No persistence, API, scheduler, notifications, payment link or partner role enforcement. Not Done."
   },
   {
     "id": "TASK-022",
@@ -459,7 +459,7 @@
     "release": "REL-1",
     "user_story_id": "US-009",
     "implementation_status": "not_started",
-    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
+    "implementation_note": "No implementation matching the complete task acceptance was found; planning documents alone are not implementation. D-05/D-06 approved (2026-11-13) but quote/checkout also needs verified partner data (TASK-015/016), persisted order (TASK-021) and payment decisions D-03/D-04 for any charge; status unchanged."
   },
   {
     "id": "TASK-023",
@@ -563,7 +563,7 @@
     "release": "REL-0",
     "user_story_id": "US-015",
     "implementation_status": "blocked",
-    "implementation_note": "Refund policy and finance approval controls require owner decision."
+    "implementation_note": "D-06 approved for product rules (2026-11-13): free cancel before acceptance, no invented penalties. Refund policy and finance approval controls still need D-03/D-04, D-14 and legal terms; unsupported refund/penalty operations stay disabled."
   },
   {
     "id": "TASK-028",
@@ -585,7 +585,7 @@
     "release": "REL-1",
     "user_story_id": "US-015",
     "implementation_status": "blocked",
-    "implementation_note": "TASK-027 approval controls and payment/funds-flow decision remain open."
+    "implementation_note": "TASK-027 approval controls and payment/funds-flow decision (D-03/D-04) remain open; D-06 does not approve refunds or settlement."
   },
   {
     "id": "TASK-029",
