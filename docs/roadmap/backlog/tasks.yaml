@@ -1172,7 +1172,7 @@
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
     "user_story_id": "US-027",
-    "implementation_status": "not_started",
-    "implementation_note": "Backup/restore needs a selected environment and operations owner."
+    "implementation_status": "in_progress",
+    "implementation_note": "2026-11-13: scripts/ci/restore_drill.sh (local, synthetic data, throwaway PostgreSQL 16.15 cluster) applies Flyway V1-V5 SQL, pg_dump -Fc, pg_restore into a fresh database and compares catalog structure plus per-table row fingerprints; a tamper check proves detection. Ran once locally: PASS. Not production evidence: no managed PITR, KMS, region/residency, retention, RTO/RPO or operations owner (D-08/D-12, TASK-051). Still needs a selected environment and operations owner; see docs/engineering-foundation/restore-drill.md."
   }
 ]
