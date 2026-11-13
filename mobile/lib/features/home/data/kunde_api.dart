@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import 'catalog_category.dart';
 import 'platform_snapshot.dart';
 
 class KundeApiException implements Exception {
@@ -39,6 +40,35 @@ class KundeApi {
         throw const KundeApiException(KundeApiFailure.unexpectedResponse);
       }
       return PlatformSnapshot.fromJson(decoded);
+    } on TimeoutException {
+      throw const KundeApiException(KundeApiFailure.unavailable);
+    } on FormatException {
+      throw const KundeApiException(KundeApiFailure.unexpectedResponse);
+    } on KundeApiException {
+      rethrow;
+    } catch (_) {
+      throw const KundeApiException(KundeApiFailure.unavailable);
+    }
+  }
+
+  Future<List<CatalogCategory>> searchCategories(String query) async {
+    try {
+      final uri =
+          _baseUri.resolve('search').replace(queryParameters: {'q': query});
+      final response = await _client.get(uri).timeout(timeout);
+      if (response.statusCode != 200) {
+        throw const KundeApiException(KundeApiFailure.unavailable);
+      }
+      final decoded = jsonDecode(response.body);
+      if (decoded is! List) {
+        throw const KundeApiException(KundeApiFailure.unexpectedResponse);
+      }
+      return decoded.map((item) {
+        if (item is! Map<String, dynamic>) {
+          throw const FormatException('Invalid catalog category response');
+        }
+        return CatalogCategory.fromJson(item);
+      }).toList(growable: false);
     } on TimeoutException {
       throw const KundeApiException(KundeApiFailure.unavailable);
     } on FormatException {

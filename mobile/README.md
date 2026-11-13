@@ -1,6 +1,6 @@
 # KUNDE Consumer App
 
-Flutter/Dart foundation shell. It reads `/api/v1/capabilities`, shows connection state, and does not advertise categories, sign-in or AI while those capabilities are unavailable.
+Flutter/Dart foundation shell. It reads `/api/v1/capabilities`, shows connection state, and does not advertise categories, sign-in or AI while those capabilities are unavailable. A category search field appears only when the server reports the marketplace enabled; results come only from `GET /api/v1/search`.
 
 ## Run
 
