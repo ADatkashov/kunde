@@ -17,3 +17,5 @@ or component detail. Checked by mutation (health detail enabled, exception messa
 Still open and **not** implemented or verified: named alert owners and on-call (blocked on TASK-001
 owner assignment), approved SLOs (D-12), metrics/OpenTelemetry exporter, dashboards and incident
 runbooks (TASK-048), alert delivery, audit-event store and mobile crash reporting.
+
+Draft playbooks for the existing signals: [incident runbook baseline](incident-runbook-baseline.md) (TASK-048, unapproved, no owners).
