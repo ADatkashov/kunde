@@ -4,13 +4,23 @@ variable "repo_url" {
   default     = "https://github.com/ADatkashov/kunde"
 }
 
+variable "neon_project_name" {
+  type    = string
+  default = "kunde-dev"
+}
+
+variable "render_service_name" {
+  type    = string
+  default = "kunde-backend"
+}
+
 variable "branch" {
   type    = string
   default = "main"
 }
 
 variable "neon_org_id" {
-  description = "Neon organization id (null for a personal account)."
+  description = "Neon organization id (org-...); required for organization-owned accounts. Set via TF_VAR_neon_org_id (GitHub variable), not committed."
   type        = string
   default     = null
 }

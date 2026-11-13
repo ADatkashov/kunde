@@ -16,7 +16,9 @@ resource "render_web_service" "this" {
   plan   = var.plan
   region = var.region
 
-  health_check_path          = "/actuator/health/readiness"
+  # Liveness, not readiness: readiness queries the DB every few seconds and would keep Neon awake
+  # (free plan: 100 CU-hours/month). Flyway failure still aborts startup, so a live app has migrated.
+  health_check_path          = "/actuator/health/liveness"
   max_shutdown_delay_seconds = 30
 
   runtime_source = {
@@ -36,6 +38,10 @@ resource "render_web_service" "this" {
     DB_PASSWORD = { value = var.db_password }
     # Neon free has a small connection budget; keep the pool small.
     DB_POOL_SIZE = { value = "5" }
+    # Close idle connections so the Neon compute can autosuspend; tolerate a cold-start resume.
+    SPRING_DATASOURCE_HIKARI_MINIMUMIDLE       = { value = "0" }
+    SPRING_DATASOURCE_HIKARI_IDLETIMEOUT       = { value = "30000" }
+    SPRING_DATASOURCE_HIKARI_CONNECTIONTIMEOUT = { value = "10000" }
     # Keep the JVM inside 512 MB: explicit -Xmx wins over the image's
     # MaxRAMPercentage=75, so backend/Dockerfile stays unchanged.
     JAVA_TOOL_OPTIONS         = { value = var.java_tool_options }

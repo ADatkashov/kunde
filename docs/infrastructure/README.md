@@ -32,7 +32,7 @@ Separation: **country** (cell identity, residency), **environment**, **provider/
 2. Procure a provider with in-country region; fill the compatibility matrix below with evidence.
 3. Add `modules/<provider>` adapter with real, verified resources, and add the id to the allow-list in `country-cell/variables.tf` in the same reviewed PR.
 4. Add `environments/<country>-<env>` (copy `dev`), `data_region_country = country`. Separate database and secrets per country; no replication of personal data between countries.
-5. Configure remote state with locking and short-lived (OIDC) credentials, then add plan → approval → apply workflow. Not implemented yet.
+5. Use remote state with locking (DEV: HCP Terraform) and the plan → approval → apply workflow; production credentials should be short-lived (OIDC) where the provider supports it.
 
 ## Provider compatibility matrix
 

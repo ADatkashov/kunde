@@ -16,6 +16,10 @@ tasks without remaining product/privacy/UX acceptance evidence.
 #43 (TASK-010 default-deny serviceability UI), #45 (backlog CI validation), #46 (TASK-008 consent
 presentation per reader language; fallback order is kk → ru → en by owner decision 2026-11-13).
 
+## Infrastructure DEV bootstrap (owner action, then explicit apply permission)
+
+Follow [docs/infrastructure/terraform-dev-render-neon.md](docs/infrastructure/terraform-dev-render-neon.md): HCP workspace (Local execution), API keys as GitHub **environment** secrets, `dev-plan`/`dev` Environments, then run the plan. Apply only on the owner's separate explicit permission.
+
 ## Owner decisions needed (blocking further roadmap work)
 
 - D-02, D-05, D-06, D-07 are approved. **Next most important: D-03/D-04** (payments, commission, settlement); they gate TASK-025/026/027/028 and any charge or refund.

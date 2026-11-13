@@ -1,10 +1,10 @@
 name: Terraform DEV (Render + Neon)
 on:
   pull_request:
-    paths: ['infrastructure/terraform/**', 'scripts/ci/check_terraform_policy.py', '.github/workflows/terraform-dev.yml']
+    paths: ['infrastructure/terraform/**', 'scripts/ci/check_terraform_policy.py', 'scripts/ci/check_terraform_plan.py', '.github/workflows/terraform-dev.yml']
   push:
     branches: [main]
-    paths: ['infrastructure/terraform/**', 'scripts/ci/check_terraform_policy.py', '.github/workflows/terraform-dev.yml']
+    paths: ['infrastructure/terraform/**', 'scripts/ci/check_terraform_policy.py', 'scripts/ci/check_terraform_plan.py', '.github/workflows/terraform-dev.yml']
   workflow_dispatch:
     inputs:
       apply:
@@ -55,12 +55,14 @@ jobs:
           python3 -m unittest discover -s scripts/ci -p 'test_check_terraform_policy.py'
           python3 scripts/ci/check_terraform_policy.py
           python3 scripts/ci/check_secrets.py
+          python3 -m unittest discover -s scripts/ci -p 'test_check_terraform_plan.py'
 
   plan:
     needs: validate
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    # Plan-only environment: the workflow has no apply step in this job.
     environment: dev-plan
     outputs:
       plan_sha: ${{ steps.plan.outputs.plan_sha }}
@@ -68,8 +70,10 @@ jobs:
       RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
       RENDER_OWNER_ID: ${{ vars.RENDER_OWNER_ID }}
       NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.TF_STATE_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.TF_STATE_SECRET_ACCESS_KEY }}
+      TF_VAR_neon_org_id: ${{ vars.NEON_ORG_ID }}
+      TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
+      TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORGANIZATION }}
+      TF_WORKSPACE: ${{ vars.TF_WORKSPACE }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -81,56 +85,47 @@ jobs:
           mkdir -p "$RUNNER_TEMP/bin"
           unzip -q tf.zip terraform -d "$RUNNER_TEMP/bin"
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
-      - name: Require configuration
+      - name: Require configuration (values are never printed)
         run: |
-          for v in RENDER_API_KEY RENDER_OWNER_ID NEON_API_KEY AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; do
-            [ -n "${!v}" ] || { echo "::error::$v is not configured in the dev-plan environment"; exit 1; }
+          missing=0
+          for v in RENDER_API_KEY RENDER_OWNER_ID NEON_API_KEY TF_VAR_neon_org_id TF_TOKEN_app_terraform_io TF_CLOUD_ORGANIZATION TF_WORKSPACE; do
+            if [ -z "${!v}" ]; then echo "::error::$v is not configured in this GitHub Environment"; missing=1; fi
           done
-          for v in TF_STATE_BUCKET TF_STATE_ENDPOINT; do
-            [ -n "${!v}" ] || { echo "::error::$v variable is not configured"; exit 1; }
-          done
-        env:
-          TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
-          TF_STATE_ENDPOINT: ${{ vars.TF_STATE_ENDPOINT }}
-      - name: Init with protected remote state (native locking)
+          exit $missing
+      - name: Init (HCP Terraform state, locked during runs)
         working-directory: infrastructure/terraform/environments/dev
-        run: |
-          cat > "$RUNNER_TEMP/backend.hcl" <<HCL
-          bucket       = "${{ vars.TF_STATE_BUCKET }}"
-          key          = "dev/terraform.tfstate"
-          region       = "${{ vars.TF_STATE_REGION || 'auto' }}"
-          use_lockfile = true
-          encrypt      = true
-          endpoints    = { s3 = "${{ vars.TF_STATE_ENDPOINT }}" }
-          use_path_style              = true
-          skip_credentials_validation = true
-          skip_requesting_account_id  = true
-          skip_metadata_api_check     = true
-          skip_region_validation      = true
-          skip_s3_checksum            = true
-          HCL
-          terraform init -backend-config="$RUNNER_TEMP/backend.hcl"
+        run: terraform init
       - name: Plan
         id: plan
         working-directory: infrastructure/terraform/environments/dev
         run: |
           terraform plan -lock-timeout=120s -out="$RUNNER_TEMP/tfplan"
+          terraform show -no-color "$RUNNER_TEMP/tfplan"
+          terraform show -json "$RUNNER_TEMP/tfplan" > "$RUNNER_TEMP/plan.json"
           echo "plan_sha=$(terraform show -no-color "$RUNNER_TEMP/tfplan" | sha256sum | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+      - name: Cost and safety gate (free tier only, no deletes)
+        run: python3 scripts/ci/check_terraform_plan.py "$RUNNER_TEMP/plan.json"
 
   apply:
     needs: plan
     if: github.event_name == 'workflow_dispatch' && inputs.apply && inputs.confirm == 'apply-dev'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    # Configure required reviewers on this Environment: that is the manual approval gate.
+    # Add required reviewers to this Environment: that is the manual approval gate.
     environment: dev
     env:
       RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
       RENDER_OWNER_ID: ${{ vars.RENDER_OWNER_ID }}
       NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.TF_STATE_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.TF_STATE_SECRET_ACCESS_KEY }}
+      TF_VAR_neon_org_id: ${{ vars.NEON_ORG_ID }}
+      TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
+      TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORGANIZATION }}
+      TF_WORKSPACE: ${{ vars.TF_WORKSPACE }}
+      TF_APPLY_ENABLED: ${{ vars.TF_APPLY_ENABLED }}
     steps:
+      - name: Explicit apply switch (compensating control if reviewers are not configured)
+        run: |
+          [ "$TF_APPLY_ENABLED" = "true" ] || { echo "::error::Set variable TF_APPLY_ENABLED=true in the dev Environment to allow apply"; exit 1; }
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
@@ -141,28 +136,22 @@ jobs:
           mkdir -p "$RUNNER_TEMP/bin"
           unzip -q tf.zip terraform -d "$RUNNER_TEMP/bin"
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
-      - name: Init with protected remote state (native locking)
-        working-directory: infrastructure/terraform/environments/dev
+      - name: Require configuration (values are never printed)
         run: |
-          cat > "$RUNNER_TEMP/backend.hcl" <<HCL
-          bucket       = "${{ vars.TF_STATE_BUCKET }}"
-          key          = "dev/terraform.tfstate"
-          region       = "${{ vars.TF_STATE_REGION || 'auto' }}"
-          use_lockfile = true
-          encrypt      = true
-          endpoints    = { s3 = "${{ vars.TF_STATE_ENDPOINT }}" }
-          use_path_style              = true
-          skip_credentials_validation = true
-          skip_requesting_account_id  = true
-          skip_metadata_api_check     = true
-          skip_region_validation      = true
-          skip_s3_checksum            = true
-          HCL
-          terraform init -backend-config="$RUNNER_TEMP/backend.hcl"
+          missing=0
+          for v in RENDER_API_KEY RENDER_OWNER_ID NEON_API_KEY TF_VAR_neon_org_id TF_TOKEN_app_terraform_io TF_CLOUD_ORGANIZATION TF_WORKSPACE; do
+            if [ -z "${!v}" ]; then echo "::error::$v is not configured in this GitHub Environment"; missing=1; fi
+          done
+          exit $missing
+      - name: Init
+        working-directory: infrastructure/terraform/environments/dev
+        run: terraform init
       - name: Re-plan and require the reviewed plan
         working-directory: infrastructure/terraform/environments/dev
         run: |
           terraform plan -lock-timeout=120s -out="$RUNNER_TEMP/tfplan"
+          terraform show -json "$RUNNER_TEMP/tfplan" > "$RUNNER_TEMP/plan.json"
+          python3 "$GITHUB_WORKSPACE/scripts/ci/check_terraform_plan.py" "$RUNNER_TEMP/plan.json"
           sha="$(terraform show -no-color "$RUNNER_TEMP/tfplan" | sha256sum | cut -d' ' -f1)"
           if [ "$sha" != "${{ needs.plan.outputs.plan_sha }}" ]; then
             echo "::error::Plan changed since it was reviewed; run the workflow again."
