@@ -605,7 +605,7 @@
     "release": "REL-0",
     "user_story_id": "US-016",
     "implementation_status": "in_progress",
-    "implementation_note": "D-02 approved 2026-11-13 (PRD 1.1 §23). No fulfillment code yet: pickup contract is the next PR. Merchant delivery and third-party delivery stay disabled; order lifecycle (TASK-021) still needs D-05/D-06. Not Done."
+    "implementation_note": "D-02 approved 2026-11-13 (PRD 1.1 §23). Contract-only phase A: FulfillmentMethod/FulfillmentPolicy (only PICKUP supportable, default all disabled) and PickupFulfillment lifecycle separate from the order (merchant-only commands, idempotent commandId, version conflict, audit); 9 unit tests. No persistence, API, order link or partner data. Merchant delivery and third-party delivery stay disabled; order lifecycle (TASK-021) still needs D-05/D-06. Not Done."
   },
   {
     "id": "TASK-030",
