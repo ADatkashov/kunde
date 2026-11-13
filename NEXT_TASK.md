@@ -11,6 +11,11 @@ tasks without remaining product/privacy/UX acceptance evidence.
   token-secrecy checks to the existing harness; hosted run 43270980722 passed
   (17 checks, sanitized artifact). CodeRabbit did not review; merge was owner-approved.
 
+## Also merged since #41
+
+#43 (TASK-010 default-deny serviceability UI), #45 (backlog CI validation), #46 (TASK-008 consent
+presentation per reader language; fallback order ru → kk → en still needs owner confirmation).
+
 ## Catalog track (TASK-011..014, in_progress)
 
 Merged: category search (#35/#36), schema V5 (#33), published offerings list and detail with

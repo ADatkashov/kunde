@@ -16,6 +16,11 @@
   validator (`EventCatalog`, contract only, nothing emitted or stored; see
   docs/engineering-foundation/event-taxonomy.md); #41 TASK-050 `KundeFormats.money`
   (integer minor units + ISO code, ru/kk/en; Flutter CI ran its tests, not a device).
+- PRs #43–#46, all with required CI green: #43 TASK-010 explicit default-deny serviceability
+  status in the address panel; #44/#45 backlog JSON fix and CI backlog validation; #46 TASK-008
+  consent panel shows one row per policy in the reader's language (fallback ru → kk → en is an
+  unapproved assumption) and states that policy text is not in the app yet. TASK-008 stays
+  **in_progress** (needs approved policy text/link, TASK-007 legal wording, TalkBack/device checks).
 - Catalog tasks TASK-011/012/013/014 remain **in_progress**: no seed data, offering search,
   price, partner link, serviceability or availability rules; ADR-014 (no default orderable
   catalog, `marketplaceEnabled=false`) still applies. TASK-041 and TASK-050 are also
