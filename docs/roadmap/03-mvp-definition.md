@@ -2,7 +2,7 @@
 
 ## Product decision
 
-Recommended pilot: one operationally proven, high-frequency category in a limited, measured service zone. Food ordering is the leading candidate from the business strategy, **not an approved decision**. MVP category/cohort, hours and zone remain blocked by D-01. Grocery, mobility and all other categories stay disabled until separately approved and proven.
+Recommended pilot: one operationally proven, high-frequency category in a limited, measured service zone. Food ordering in Almaty is the approved first category and market (D-01, partially approved 2026-11-13; see [PRD 1.1 §23](../product/PRD-1.1/23-assumptions-and-open-decisions.md)). The exact merchant cohort, pilot zone, hours and operational proof remain open under D-01. Grocery, mobility and all other categories stay disabled until separately approved and proven.
 
 ## Customer journey
 

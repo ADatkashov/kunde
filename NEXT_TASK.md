@@ -18,6 +18,8 @@ presentation per reader language; fallback order is kk → ru → en by owner de
 
 ## Owner decisions needed (blocking further roadmap work)
 
+- D-01 is partially approved (Food Ordering, Almaty). Still open: exact restaurants, pilot zone, operational proof. **Next most important: D-02** (who delivers); it gates TASK-019/029 and order logistics.
+
 - TASK-001 / D-12: name alert owners/on-call and approve SLOs (unblocks TASK-047/048 beyond the draft).
 - TASK-007: approved legal policy text or link for consents.
 - TASK-051 / D-08: hosting and Kazakhstan region choice (needed for real backup/restore, TASK-052/056).

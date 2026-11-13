@@ -2,6 +2,10 @@
 
 ## Current verified main snapshot — 2026-11-13
 
+- **D-01 PARTIALLY APPROVED (2026-11-13, Product Owner):** first category Food Ordering, first market Almaty. Cohort (8–12 restaurants), pilot zone and
+  50–100 users are proposals only; D-02–D-15 unchanged. Record: [PRD 1.1 §23](docs/product/PRD-1.1/23-assumptions-and-open-decisions.md). ADR-014 unchanged
+  (catalog stays empty/non-orderable). Docs only; no task status changed. PR #61 (TASK-012) is merged with required CI green.
+
 - Latest verified merge: `ab001ac18ec7dd98986aa77d67fb36f3970ed693` (PR #41).
 - PRs #29–#37 (merged after #28), all with required CI green:
   #29 state/backlog sync; #30 TASK-055 domain schema ownership tests; #31 TASK-047
