@@ -4,6 +4,10 @@
 
 Before every new or resumed task, read [`PROJECT_STATE.md`](PROJECT_STATE.md) and [`NEXT_TASK.md`](NEXT_TASK.md), then check the relevant source docs and ADRs they link to. Treat them as a compact index, not authority over current code.
 
+## Язык общения
+
+- Общайся с владельцем репозитория на русском языке: ответы, отчёты, вопросы и описания PR. Код, идентификаторы, имена коммитов и технические термины остаются как принято в репозитории.
+
 ## Stack and layout
 
 - `backend/`: Java 21, Spring Boot 4.0.9, Maven, modular-monolith API, PostgreSQL/Flyway.
