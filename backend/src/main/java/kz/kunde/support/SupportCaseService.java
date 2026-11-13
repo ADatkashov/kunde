@@ -61,8 +61,10 @@ public class SupportCaseService {
                     "Message must be 1-2000 characters");
         }
         UUID owner = identity.get(principal).id();
+        // One lock per owner (not per key): both the idempotency lookup and the case cap must be
+        // evaluated serially, otherwise concurrent requests with different keys exceed the cap.
         db.query("SELECT pg_advisory_xact_lock(hashtext(?), hashtext(?))", (RowCallbackHandler) rs -> {},
-                owner.toString(), idempotencyKey);
+                "support.cases.open", owner.toString());
         String hash = sha256(category.name() + "\n" + text);
         List<Object[]> existing = db.query("""
                 SELECT id, request_sha256 FROM support.cases
