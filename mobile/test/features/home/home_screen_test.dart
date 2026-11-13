@@ -7,6 +7,7 @@ import 'package:http/testing.dart';
 import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
 import 'package:kunde_mobile/features/home/data/kunde_api.dart';
 import 'package:kunde_mobile/features/home/presentation/home_screen.dart';
+import 'package:kunde_mobile/features/home/presentation/super_app_widgets.dart';
 import 'package:kunde_mobile/shared/theme/kunde_theme.dart';
 
 KundeApi _api({bool marketplace = false, bool fail = false}) => KundeApi(
@@ -111,6 +112,51 @@ void main() {
       }
     }
   }
+
+  Future<int> firstRowTiles(WidgetTester tester) async {
+    final tiles = tester.widgetList(find.byType(CategoryTile)).length;
+    expect(tiles, 10);
+    final tops = [
+      for (var i = 0; i < tiles; i++)
+        tester.getTopLeft(find.byType(CategoryTile).at(i)).dy
+    ];
+    return tops.where((y) => y == tops.first).length;
+  }
+
+  for (final locale in ['ru', 'kk', 'en']) {
+    testWidgets('category grid has 5 columns from 360 px ($locale)',
+        (tester) async {
+      await _pump(tester, _api(), locale: locale, size: const Size(360, 800));
+      expect(await firstRowTiles(tester), 5);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('category grid adapts below 360 px and with large text',
+      (tester) async {
+    await _pump(tester, _api(), size: const Size(359, 800));
+    expect(await firstRowTiles(tester), 4);
+    await _pump(tester, _api(), size: const Size(320, 3000), textScale: 2);
+    expect(await firstRowTiles(tester), 3);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('only Food is active; inactive tiles are muted with Soon label',
+      (tester) async {
+    await _pump(tester, _api(marketplace: true),
+        locale: 'kk', size: const Size(360, 800));
+    // 8 inactive categories carry the localized "Жақында" badge.
+    expect(
+        find.descendant(
+            of: find.byType(CategoryGrid), matching: find.text('Жақында')),
+        findsNWidgets(8));
+    final foodTile = find.ancestor(
+        of: find.text('Тамақ'), matching: find.byType(CategoryTile));
+    expect(tester.getSemantics(foodTile).label, contains('Қолжетімді'));
+    final cars = find.ancestor(
+        of: find.text('Авто'), matching: find.byType(CategoryTile));
+    expect(tester.getSemantics(cars).label, contains('Жақында'));
+  });
 
   testWidgets('renders in dark theme and tablet width without overflow',
       (tester) async {

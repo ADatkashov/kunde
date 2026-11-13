@@ -268,12 +268,14 @@ class CategoryGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final scale = MediaQuery.textScalerOf(context).scale(1);
     return LayoutBuilder(builder: (context, box) {
-      final columns = scale > 1.3 || box.maxWidth < 300
+      // 5 columns from a 360 px screen (328 px content); fewer when the
+      // content is narrower or the user enlarges text, so labels never clip.
+      final columns = scale > 1.5 || box.maxWidth < 250
           ? 3
-          : box.maxWidth < 420
+          : scale > 1.15 || box.maxWidth < 328
               ? 4
               : 5;
-      const gap = 8.0;
+      const gap = 4.0;
       final width = (box.maxWidth - gap * (columns - 1)) / columns;
       return Wrap(
         spacing: gap,
@@ -300,6 +302,7 @@ class CategoryTile extends StatelessWidget {
     final s = KundeLocalizations.of(context);
     final theme = Theme.of(context);
     final highlighted = category.enabled && !category.isAll;
+    final muted = !category.enabled && !category.isAll;
     final status = category.isAll
         ? ''
         : ', ${category.enabled ? s.categoryAvailable : s.homeSoon}';
@@ -312,12 +315,16 @@ class CategoryTile extends StatelessWidget {
           decoration: BoxDecoration(
             color: highlighted
                 ? theme.colorScheme.primaryContainer
-                : theme.colorScheme.surface,
+                : category.enabled || category.isAll
+                    ? theme.colorScheme.surface
+                    : theme.colorScheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
                 color: highlighted
                     ? theme.colorScheme.primary
-                    : theme.colorScheme.outlineVariant,
+                    : category.enabled || category.isAll
+                        ? theme.colorScheme.outlineVariant
+                        : Colors.transparent,
                 width: highlighted ? 2 : 1),
           ),
           child: InkWell(
@@ -327,29 +334,40 @@ class CategoryTile extends StatelessWidget {
               constraints: const BoxConstraints(minHeight: 92),
               child: Padding(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+                    const EdgeInsets.symmetric(horizontal: 1, vertical: 10),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      width: 44,
-                      height: 44,
+                      width: 40,
+                      height: 40,
                       decoration: BoxDecoration(
-                        color: category.color.withValues(alpha: 0.16),
+                        color: muted
+                            ? theme.colorScheme.surfaceContainerHighest
+                            : category.color.withValues(alpha: 0.16),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(category.icon, color: category.color),
+                      child: Icon(category.icon,
+                          size: 22,
+                          color: muted
+                              ? theme.colorScheme.onSurfaceVariant
+                              : category.color),
                     ),
                     const SizedBox(height: 6),
                     Text(category.label,
                         textAlign: TextAlign.center,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.labelMedium
-                            ?.copyWith(fontWeight: FontWeight.w600)),
-                    if (!category.enabled && !category.isAll) ...[
+                        style: theme.textTheme.labelMedium?.copyWith(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                            color: muted
+                                ? theme.colorScheme.onSurfaceVariant
+                                : null)),
+                    if (muted) ...[
                       const SizedBox(height: 4),
-                      const SoonBadge(),
+                      const FittedBox(
+                          fit: BoxFit.scaleDown, child: SoonBadge()),
                     ],
                   ],
                 ),
