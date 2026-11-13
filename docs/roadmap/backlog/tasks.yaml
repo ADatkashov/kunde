@@ -227,7 +227,7 @@
     "release": "REL-1",
     "user_story_id": "US-007",
     "implementation_status": "in_progress",
-    "implementation_note": "Empty read-only search scaffold exists; query/relevance behavior not implemented."
+    "implementation_note": "GET /search matches published categories by RU/KK/EN name with exact>prefix>substring ranking (tested on PostgreSQL 16). Offering search, full-text/trigram, filters, serviceability and pagination remain open."
   },
   {
     "id": "TASK-012",
