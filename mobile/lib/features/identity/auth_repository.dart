@@ -352,6 +352,52 @@ class AuthRepository extends ChangeNotifier {
         as Map<String, dynamic>;
   }
 
+  static const supportCategories = {
+    'GENERAL',
+    'ACCOUNT',
+    'PRIVACY',
+    'APP_PROBLEM',
+  };
+
+  Future<List<Map<String, dynamic>>> supportCases() async {
+    final result = await _requestJson('GET', 'me/support/cases');
+    return (result as List<dynamic>)
+        .map((entry) => entry as Map<String, dynamic>)
+        .toList(growable: false);
+  }
+
+  /// [idempotencyKey] must be reused when retrying the same submission so a
+  /// timeout never creates a duplicate case.
+  Future<Map<String, dynamic>> openSupportCase({
+    required String category,
+    required String message,
+    required String idempotencyKey,
+  }) async {
+    final text = message.trim();
+    if (!supportCategories.contains(category) ||
+        text.isEmpty ||
+        text.length > 2000 ||
+        !RegExp(r'^[A-Za-z0-9_-]{16,64}$').hasMatch(idempotencyKey)) {
+      throw ArgumentError('Invalid support case');
+    }
+    return (await _requestJson(
+        'POST',
+        'me/support/cases',
+        {'category': category, 'message': text},
+        {200, 201},
+        {'Idempotency-Key': idempotencyKey})) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> requestSupportEscalation(String caseId) async {
+    if (!RegExp(
+            r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
+        .hasMatch(caseId)) {
+      throw ArgumentError.value(caseId, 'caseId', 'Invalid case ID');
+    }
+    return (await _requestJson('POST', 'me/support/cases/$caseId/escalation'))
+        as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> _request(
     String method, [
     Map<String, dynamic>? body,
@@ -363,6 +409,7 @@ class AuthRepository extends ChangeNotifier {
     String path, [
     Map<String, dynamic>? body,
     Set<int> expected = const {200},
+    Map<String, String>? extraHeaders,
   ]) async {
     final access = await accessToken();
     final request = http.Request(method, apiBase.resolve(path));
@@ -370,6 +417,7 @@ class AuthRepository extends ChangeNotifier {
       'Authorization': 'Bearer $access',
       'Accept': 'application/json',
     });
+    if (extraHeaders != null) request.headers.addAll(extraHeaders);
     if (body != null) {
       request.headers['Content-Type'] = 'application/json';
       request.body = jsonEncode(body);
