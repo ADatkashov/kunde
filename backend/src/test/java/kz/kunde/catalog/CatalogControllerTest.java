@@ -71,9 +71,19 @@ class CatalogControllerTest {
                     (?, 'PRODUCT', 'Приостановлено', 'Тоқтатылды', 'SUSPENDED', null),
                     (?, 'SERVICE', 'В черновой категории', 'Қара санат', 'PUBLISHED', now())""",
                     pub, pub, pub, draft);
-            assertThat(controller.offerings(pub)).extracting(Offering::nameRu).containsExactly("Опубликовано");
-            assertThat(controller.offerings(draft)).isEmpty();
-            assertThat(controller.offerings(java.util.UUID.randomUUID())).isEmpty();
+            assertThat(controller.offerings(pub, 50, 0)).extracting(Offering::nameRu).containsExactly("Опубликовано");
+            assertThat(controller.offerings(draft, 50, 0)).isEmpty();
+            var shown = controller.offerings(pub, 50, 0).get(0);
+            assertThat(controller.offering(java.util.UUID.fromString(shown.id())).nameRu()).isEqualTo("Опубликовано");
+            assertThat(controller.offerings(pub, 1, 1)).isEmpty();
+            var hidden = jdbc.queryForObject("select id from marketplace.offerings where name_ru = 'Черновик'", java.util.UUID.class);
+            var inDraftCategory = jdbc.queryForObject("select id from marketplace.offerings where name_ru = 'В черновой категории'", java.util.UUID.class);
+            for (var id : java.util.List.of(hidden, inDraftCategory, java.util.UUID.randomUUID())) {
+                org.assertj.core.api.Assertions.assertThatThrownBy(() -> controller.offering(id))
+                        .isInstanceOf(kz.kunde.platform.ApiException.class)
+                        .hasFieldOrPropertyWithValue("code", "OFFERING_NOT_FOUND");
+            }
+            assertThat(controller.offerings(java.util.UUID.randomUUID(), 50, 0)).isEmpty();
         });
     }
 }
