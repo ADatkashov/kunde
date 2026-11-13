@@ -174,7 +174,10 @@ class DomainSchemaOwnershipIntegrationTest {
 
     @Test
     void catalogSchemaIsUnpublishedByDefaultAndRejectsInvalidRows() {
-        assertThat(jdbc.queryForObject("select count(*) from marketplace.categories", Integer.class)).isZero();
+        // Only the D-01 Food Ordering category exists, and only as an unpublished DRAFT (V7).
+        assertThat(jdbc.queryForList("select code from marketplace.categories", String.class)).containsExactly("food-ordering");
+        assertThat(jdbc.queryForObject(
+                "select count(*) from marketplace.categories where status <> 'DRAFT' or published_at is not null", Integer.class)).isZero();
         assertThat(jdbc.queryForObject("select count(*) from marketplace.offerings", Integer.class)).isZero();
 
         assertAccepted(owner -> insertCategory("home"));
