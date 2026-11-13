@@ -60,6 +60,32 @@ public class CatalogController {
     }
 
     /**
+     * Name search over PUBLISHED offerings in PUBLISHED categories (SEARCH-001 baseline), same ranking
+     * as category search: exact, prefix, substring. Separate path so the /search contract is unchanged.
+     * No price, partner, stock or availability is exposed; unpublished rows are never disclosed.
+     */
+    @GetMapping("/search/offerings")
+    public List<Offering> searchOfferings(@RequestParam(defaultValue = "") @Size(max = 200) String q,
+            @RequestParam(defaultValue = "50") @Min(1) @Max(100) int limit,
+            @RequestParam(defaultValue = "0") @Min(0) @Max(100000) int offset) {
+        String term = q.strip();
+        if (term.isEmpty()) { return List.of(); }
+        String escaped = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+        String contains = "%" + escaped + "%";
+        String prefix = escaped + "%";
+        return jdbc.query(OFFERING_SELECT + """
+                where o.status = 'PUBLISHED' and c.status = 'PUBLISHED'
+                  and (o.name_ru ilike ? or o.name_kk ilike ? or coalesce(o.name_en, '') ilike ?)
+                order by case
+                           when lower(?) in (lower(o.name_ru), lower(o.name_kk), lower(coalesce(o.name_en, ''))) then 0
+                           when o.name_ru ilike ? or o.name_kk ilike ? or coalesce(o.name_en, '') ilike ? then 1
+                           else 2 end,
+                         o.published_at, o.id
+                limit ? offset ?
+                """, OFFERING_MAPPER, contains, contains, contains, term, prefix, prefix, prefix, limit, offset);
+    }
+
+    /**
      * Published offerings of a published category only. No price, stock, partner or availability is
      * exposed or implied: those need approved contracts (TASK-014/015). Unknown, DRAFT or RETIRED
      * categories yield an empty list so existence of unpublished catalog data is not disclosed.
