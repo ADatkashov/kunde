@@ -35,6 +35,10 @@ class DomainSchemaOwnershipIntegrationTest {
             "profile.consumer_addresses -> identity.users",
             "profile.consent_events -> identity.users",
             "support.cases -> identity.users",
+            "marketplace.partners -> identity.users",
+            "marketplace.partner_staff -> identity.users",
+            "marketplace.partner_staff_events -> identity.users",
+            "marketplace.partner_verification_events -> identity.users",
             "serviceability.zone_addresses -> profile.consumer_addresses");
 
     @Autowired JdbcTemplate jdbc;

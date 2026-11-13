@@ -2,6 +2,10 @@
 
 ## Current verified main snapshot — 2026-11-13
 
+- TASK-015 **in_progress**: partner persistence (Flyway V8 `marketplace.partners/partner_staff/*_events`, `PartnerService`): D-07 roles, partner isolation, revocation,
+  append-only audit, verification gate (`mayProcessOrders` needs active staff + APPROVED). No HTTP API, documents/KYC or catalog link. Backend 164 tests pass locally against
+  PostgreSQL 16 (155 existing + 9 new; temporary local cluster with synthetic credentials).
+
 - **D-05/D-06/D-07 APPROVED (2026-11-13, Product Owner):** restaurant response 5 min / reminder 2 min / auto-timeout; free cancel before acceptance, no
   invented penalties or refunds; partner roles Owner/Manager/Operator + KUNDE Administrator with manual verification. Record: [PRD 1.1 §23](docs/product/PRD-1.1/23-assumptions-and-open-decisions.md).
   TASK-021 blocked → in_progress (contract-only `OrderLifecycle`, 16 unit tests; no persistence/API/scheduler/payment link). TASK-027/028 stay blocked (D-03/D-04, D-14);
