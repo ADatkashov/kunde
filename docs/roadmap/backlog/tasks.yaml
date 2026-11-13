@@ -291,7 +291,7 @@
     "release": "REL-1",
     "user_story_id": "US-006",
     "implementation_status": "in_progress",
-    "implementation_note": "Empty read-only catalog endpoint exists; real availability rules remain absent."
+    "implementation_note": "GET /categories now returns PUBLISHED categories from marketplace.categories (tested); offerings API, serviceability/availability rules and search remain absent."
   },
   {
     "id": "TASK-015",
