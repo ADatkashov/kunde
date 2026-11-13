@@ -17,6 +17,9 @@ resource "neon_project" "this" {
   pg_version = var.pg_version
   org_id     = var.org_id
 
+  # Free plan caps point-in-time history at 6 h (21600 s); the provider default (1 day) is a paid feature.
+  history_retention_seconds = 21600
+
   branch {
     name          = "main"
     database_name = var.database_name

@@ -11,8 +11,8 @@ variables {
 run "free_plan_and_probe" {
   command = plan
   assert {
-    condition     = render_web_service.this.plan == "free" && render_web_service.this.health_check_path == "/actuator/health/readiness"
-    error_message = "free plan and readiness probe required"
+    condition     = render_web_service.this.plan == "free" && render_web_service.this.health_check_path == "/actuator/health/liveness"
+    error_message = "free plan and liveness probe required"
   }
   assert {
     condition     = render_web_service.this.runtime_source.docker.dockerfile_path == "./backend/Dockerfile"

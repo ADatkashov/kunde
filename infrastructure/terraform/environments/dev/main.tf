@@ -15,7 +15,7 @@ module "cell" {
 module "database" {
   source = "../../modules/neon"
 
-  name      = "kunde-${module.cell.cell.id}"
+  name      = var.neon_project_name
   region_id = "aws-eu-central-1"
   org_id    = var.neon_org_id
 }
@@ -23,7 +23,7 @@ module "database" {
 module "backend" {
   source = "../../modules/render"
 
-  name     = "kunde-api-${module.cell.cell.id}"
+  name     = var.render_service_name
   region   = "frankfurt"
   repo_url = var.repo_url
   branch   = var.branch
