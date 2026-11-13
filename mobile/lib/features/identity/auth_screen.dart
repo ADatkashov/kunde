@@ -4,6 +4,7 @@ import '../home/presentation/home_screen.dart';
 import 'auth_repository.dart';
 import 'auth_strings.dart';
 import 'consent_panel.dart';
+import 'support_panel.dart';
 import 'address_panel.dart';
 
 /// Owns the authentication route boundary. Protected content is discarded on expiry.
@@ -347,6 +348,8 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                 AddressPanel(auth: widget.auth),
                 const SizedBox(height: 24),
                 ConsentPanel(auth: widget.auth),
+                const SizedBox(height: 24),
+                SupportPanel(auth: widget.auth),
               ] else
                 Form(
                     key: _form,

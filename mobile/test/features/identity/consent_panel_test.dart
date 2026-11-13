@@ -114,4 +114,33 @@ void main() {
     expect(tile.value, isTrue);
     expect(find.textContaining('The document is in: Русский'), findsOneWidget);
   });
+
+  testWidgets('retry after a failed load reloads without throwing',
+      (tester) async {
+    var fail = true;
+    final auth = AuthRepository(
+      gateway: _Gateway(),
+      vault: _Vault(),
+      apiBase: Uri.parse('https://api.example.test/api/v1/'),
+      client: MockClient((request) async => fail
+          ? http.Response('', 503)
+          : http.Response(jsonEncode([_policy('en')]), 200,
+              headers: {'content-type': 'application/json; charset=utf-8'})),
+    );
+    addTearDown(auth.dispose);
+    await auth.login();
+    await tester.pumpWidget(MaterialApp(
+      locale: const Locale('en'),
+      supportedLocales: KundeLocalizations.supportedLocales,
+      localizationsDelegates: KundeLocalizations.localizationsDelegates,
+      home: Scaffold(
+          body: SingleChildScrollView(child: ConsentPanel(auth: auth))),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Loading failed'), findsOneWidget);
+    fail = false;
+    await tester.tap(find.textContaining('Loading failed'));
+    await tester.pumpAndSettle();
+    expect(find.byType(SwitchListTile), findsOneWidget);
+  });
 }

@@ -21,7 +21,10 @@ class _ConsentPanelState extends State<ConsentPanel> {
     _reload();
   }
 
-  void _reload() => _policies = widget.auth.consents();
+  // Block body: an arrow would return the Future and make setState(_reload) throw.
+  void _reload() {
+    _policies = widget.auth.consents();
+  }
 
   String _translate(String ru, String kk, String en) {
     final locale = Localizations.localeOf(context).languageCode;

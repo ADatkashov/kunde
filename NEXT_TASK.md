@@ -24,10 +24,10 @@ presentation per reader language; fallback order is kk → ru → en by owner de
 - TASK-006: physical devices, iOS and TalkBack runs; session-administration contract.
 - Catalog (TASK-011..014): approved contracts for price, partner link, availability (ADR-014 stays).
 
-## Support track (TASK-037 in_progress)
+## Support track (TASK-037 backend merged in #57, TASK-038 Flutter entry point in PR; both in_progress)
 
-Backend support-case API merged-pending in the TASK-037 PR. Next independent step: TASK-038 Flutter support entry point (list/open/escalate over
-`/api/v1/me/support/cases`, RU/KK/EN, honest empty/error states, no promised response time). Staff-side handling stays blocked on D-12/D-14.
+Open: device/TalkBack acceptance, order link once transactions are enabled, staff handling (blocked on D-12/D-14), notifications (D-11).
+Fixed along the way: `setState(_reload)` retry bug in ConsentPanel/SupportPanel.
 
 ## Catalog track (TASK-011..014, in_progress)
 
