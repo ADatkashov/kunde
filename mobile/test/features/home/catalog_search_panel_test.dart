@@ -22,18 +22,37 @@ KundeApi _api(MockClientHandler handler) => KundeApi(
     baseUri: Uri.parse('https://api.example.test/api/v1/'),
     client: MockClient(handler));
 
+const _json = {'content-type': 'application/json; charset=utf-8'};
+
+/// Routes by path: categories on /search, offerings on /search/offerings.
+MockClientHandler _catalog(
+        {List<Map<String, dynamic>> categories = const [],
+        List<Map<String, dynamic>> offerings = const []}) =>
+    (request) async => http.Response(
+        jsonEncode(request.url.path.endsWith('/search/offerings')
+            ? offerings
+            : categories),
+        200,
+        headers: _json);
+
+Map<String, dynamic> _offering(String name, {String? en}) => {
+      'id': 'o-$name',
+      'categoryId': 'c',
+      'kind': 'SERVICE',
+      'nameRu': name,
+      'nameKk': '$name-kk',
+      if (en != null) 'nameEn': en,
+    };
+
 void main() {
   testWidgets('shows server results in the active language', (tester) async {
     String? requestedQuery;
+    final inner = _catalog(categories: [
+      {'id': 'a', 'nameRu': 'Уборка', 'nameKk': 'Тазалау'}
+    ]);
     final api = _api((request) async {
-      expect(request.url.path, '/api/v1/search');
       requestedQuery = request.url.queryParameters['q'];
-      return http.Response(
-          jsonEncode([
-            {'id': 'a', 'nameRu': 'Уборка', 'nameKk': 'Тазалау'}
-          ]),
-          200,
-          headers: {'content-type': 'application/json; charset=utf-8'});
+      return inner(request);
     });
     await tester.pumpWidget(_app(CatalogSearchPanel(api: api), locale: 'kk'));
 
@@ -49,7 +68,7 @@ void main() {
 
   testWidgets('shows an honest empty state and never demo categories',
       (tester) async {
-    final api = _api((_) async => http.Response('[]', 200));
+    final api = _api(_catalog());
     await tester.pumpWidget(_app(CatalogSearchPanel(api: api)));
 
     await tester.enterText(find.byType(TextField), 'еда');
@@ -81,14 +100,11 @@ void main() {
   testWidgets('failure shows a safe message and retry recovers',
       (tester) async {
     var fail = true;
-    final api = _api((_) async => fail
-        ? http.Response('internal db host', 500)
-        : http.Response(
-            jsonEncode([
-              {'id': 'a', 'nameRu': 'Уборка', 'nameKk': 'Тазалау'}
-            ]),
-            200,
-            headers: {'content-type': 'application/json; charset=utf-8'}));
+    final ok = _catalog(categories: [
+      {'id': 'a', 'nameRu': 'Уборка', 'nameKk': 'Тазалау'}
+    ]);
+    final api = _api((request) async =>
+        fail ? http.Response('internal db host', 500) : ok(request));
     await tester.pumpWidget(_app(CatalogSearchPanel(api: api), locale: 'en'));
 
     await tester.enterText(find.byType(TextField), 'clean');
@@ -114,6 +130,71 @@ void main() {
 
     expect(find.text('Не удалось выполнить поиск. Попробуйте ещё раз.'),
         findsOneWidget);
+    api.close();
+  });
+
+  testWidgets('shows published offerings with language fallback',
+      (tester) async {
+    final api = _api(_catalog(offerings: [
+      _offering('Генеральная уборка', en: 'Deep cleaning'),
+      _offering('Мытьё окон'),
+    ]));
+    await tester.pumpWidget(_app(CatalogSearchPanel(api: api), locale: 'en'));
+
+    await tester.enterText(find.byType(TextField), 'clean');
+    await tester.tap(find.byIcon(Icons.search));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Deep cleaning'), findsOneWidget);
+    expect(find.text('Мытьё окон'), findsOneWidget);
+    expect(find.text('Search failed. Please try again.'), findsNothing);
+    api.close();
+  });
+
+  testWidgets('offerings use the Kazakh name in Kazakh', (tester) async {
+    final api = _api(_catalog(offerings: [_offering('Уборка')]));
+    await tester.pumpWidget(_app(CatalogSearchPanel(api: api), locale: 'kk'));
+
+    await tester.enterText(find.byType(TextField), 'уб');
+    await tester.tap(find.byIcon(Icons.search));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Уборка-kk'), findsOneWidget);
+    api.close();
+  });
+
+  testWidgets('a failed offerings lookup is a failure, not a partial answer',
+      (tester) async {
+    final api = _api((request) async => request.url.path.endsWith('/offerings')
+        ? http.Response('boom', 503)
+        : http.Response(
+            jsonEncode([
+              {'id': 'a', 'nameRu': 'Уборка', 'nameKk': 'Тазалау'}
+            ]),
+            200,
+            headers: _json));
+    await tester.pumpWidget(_app(CatalogSearchPanel(api: api), locale: 'en'));
+
+    await tester.enterText(find.byType(TextField), 'clean');
+    await tester.tap(find.byIcon(Icons.search));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Search failed. Please try again.'), findsOneWidget);
+    expect(find.text('Уборка'), findsNothing);
+    api.close();
+  });
+
+  testWidgets('malformed offering is treated as failure', (tester) async {
+    final api = _api(_catalog(offerings: [
+      {'id': 'x'}
+    ]));
+    await tester.pumpWidget(_app(CatalogSearchPanel(api: api), locale: 'en'));
+
+    await tester.enterText(find.byType(TextField), 'x');
+    await tester.tap(find.byIcon(Icons.search));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Search failed. Please try again.'), findsOneWidget);
     api.close();
   });
 

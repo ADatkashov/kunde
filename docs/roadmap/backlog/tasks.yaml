@@ -249,7 +249,7 @@
     "release": "REL-1",
     "user_story_id": "US-007",
     "implementation_status": "in_progress",
-    "implementation_note": "Flutter category search panel (idle/loading/results/empty/failed, RU/KK/EN, retry) is shown only when the server reports marketplaceEnabled; widget/API tests pass. Serviceability/out-of-zone UX, offerings, device/accessibility checks remain open."
+    "implementation_note": "Flutter search panel (published categories and, via GET /search/offerings, published offerings; both lookups must succeed, no partial results) (idle/loading/results/empty/failed, RU/KK/EN, retry) is shown only when the server reports marketplaceEnabled; widget/API tests pass. Serviceability/out-of-zone UX, offerings, device/accessibility checks remain open."
   },
   {
     "id": "TASK-013",
