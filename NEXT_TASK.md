@@ -1,6 +1,6 @@
 # Next task — TASK-006 / ADA-72 remaining device/accessibility/session-admin verification
 
-Last main merge: `f335a6277b7ee64ca0c75bd64f179d5431b490c7` (PR #37, 2026-11-13).
+Last main merge: `ab001ac18ec7dd98986aa77d67fb36f3970ed693` (PR #41, 2026-11-13).
 Consent API (PR #23), Flutter consent UI (PR #24), and Flutter saved addresses
 (PR #25) are already merged. Do **not** rebuild them or close their canonical
 tasks without remaining product/privacy/UX acceptance evidence.
@@ -13,9 +13,10 @@ tasks without remaining product/privacy/UX acceptance evidence.
 
 ## Catalog track (TASK-011..014, in_progress)
 
-Merged: category search (#35/#36), schema V5 (#33), published offerings list (#37).
-Open: offering detail, offering search, pagination, serviceability/availability rules
-(need approved contracts; ADR-014 keeps the catalog empty and non-orderable).
+Merged: category search (#35/#36), schema V5 (#33), published offerings list and detail with
+pagination (#37/#39). Open: offering search, price, partner link, serviceability/availability
+rules (need approved contracts; ADR-014 keeps the catalog empty and non-orderable).
+Also merged, still in_progress: TASK-041 event catalog (#40), TASK-050 money formatting (#41).
 
 ## Next controlled implementation
 
