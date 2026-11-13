@@ -16,11 +16,15 @@ def check(files):
     """files: iterable of (path, text). Returns list of violations."""
     problems = []
     for path, text in files:
+        if path.endswith(".tf") or path.endswith(".hcl"):
+            text = "\n".join(l for l in text.splitlines() if not l.lstrip().startswith("#"))
         if FORBIDDEN_TRACKED.search(path):
             problems.append(f"{path}: state/plan/var/backend file must not be tracked")
             continue
         for pattern, message in RULES:
             if pattern.search(text):
+                if message.startswith("database TLS") and path.endswith(".tftest.hcl"):
+                    continue  # negative test cases must name the weak value
                 if message.startswith("auto-approve") and path in ALLOW_AUTO_APPROVE:
                     continue
                 if message.startswith("destroy") and path.startswith("scripts/ci/"):

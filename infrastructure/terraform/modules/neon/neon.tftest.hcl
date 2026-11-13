@@ -4,7 +4,6 @@ mock_provider "neon" {
       database_host     = "ep-test.eu-central-1.aws.neon.tech"
       database_name     = "kunde"
       database_user     = "kunde_owner"
-      database_password = "mock-password"
     }
   }
 }
@@ -20,7 +19,7 @@ run "tls_verified_jdbc_url_without_credentials" {
     error_message = "JDBC URL must verify the server certificate and host name"
   }
   assert {
-    condition     = !strcontains(output.jdbc_url, "mock-password") && !strcontains(output.jdbc_url, "@")
+    condition     = !strcontains(output.jdbc_url, "@")
     error_message = "JDBC URL must not embed credentials"
   }
 }

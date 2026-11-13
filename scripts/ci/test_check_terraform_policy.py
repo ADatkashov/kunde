@@ -23,6 +23,11 @@ class TerraformPolicy(unittest.TestCase):
         self.assertTrue(check([("infrastructure/terraform/a.sh", "terraform apply -auto-approve")]))
         self.assertEqual(check([(".github/workflows/terraform-dev.yml", "terraform apply -auto-approve tfplan")]), [])
 
+    def test_comments_ignored_and_tftest_may_name_weak_tls(self):
+        self.assertEqual(check([("infrastructure/terraform/a.tf", "# never sslmode=disable")]), [])
+        self.assertEqual(check([("infrastructure/terraform/a.tftest.hcl", 'db_url = "x?sslmode=disable"')]), [])
+        self.assertTrue(check([("infrastructure/terraform/a.tf", 'u = "x?sslmode=disable"')]))
+
     def test_destroy_rejected_in_workflows(self):
         self.assertTrue(check([(".github/workflows/terraform-dev.yml", "terraform destroy")]))
 
