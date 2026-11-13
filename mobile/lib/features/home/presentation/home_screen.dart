@@ -11,9 +11,17 @@ import 'super_app_widgets.dart';
 /// category; every other category is shown as "soon" and cannot start an
 /// order. Live data comes only from the API; no demo restaurants or prices.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({required this.api, super.key});
+  const HomeScreen(
+      {required this.api, this.onOpenSearch, this.onOpenOrders, super.key});
 
   final KundeApi api;
+
+  /// When the host has a Search tab it switches to it; otherwise search opens
+  /// as a pushed page.
+  final VoidCallback? onOpenSearch;
+
+  /// Opens the Orders tab when the host has one.
+  final VoidCallback? onOpenOrders;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -62,6 +70,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openSearch() {
+    if (widget.onOpenSearch != null) {
+      widget.onOpenSearch!();
+      return;
+    }
     Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (_) => Scaffold(
         appBar: AppBar(title: Text(KundeLocalizations.of(context).searchLabel)),
@@ -219,10 +231,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 16),
                     LayoutBuilder(builder: (context, box) {
                       final actions = [
-                        (Icons.inventory_2_outlined, s.quickOrders),
-                        (Icons.favorite_border_rounded, s.quickFavorites),
-                        (Icons.percent_rounded, s.quickPromo),
-                        (Icons.account_balance_wallet_outlined, s.quickPay),
+                        (
+                          Icons.inventory_2_outlined,
+                          s.quickOrders,
+                          widget.onOpenOrders
+                        ),
+                        (Icons.favorite_border_rounded, s.quickFavorites, null),
+                        (Icons.percent_rounded, s.quickPromo, null),
+                        (
+                          Icons.account_balance_wallet_outlined,
+                          s.quickPay,
+                          null
+                        ),
                       ];
                       final columns = box.maxWidth >= 560 ? 4 : 2;
                       final width =
@@ -234,8 +254,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: QuickAction(
                                   icon: a.$1,
                                   label: a.$2,
-                                  onTap: () => openSoon(
-                                      s.comingSoonTitle, s.comingSoonBody))),
+                                  onTap: a.$3 ??
+                                      () => openSoon(s.comingSoonTitle,
+                                          s.comingSoonBody))),
                       ]);
                     }),
                     const SizedBox(height: 24),

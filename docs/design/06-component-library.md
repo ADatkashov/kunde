@@ -6,7 +6,7 @@ Components use semantic tokens in 04 and accessible names/states in 16. Sizes be
 
 | Component | Purpose / structure | Variants, size and states | Behavior / accessibility |
 |---|---|---|---|
-| Bottom navigation | Five consumer destinations: icon + label | 56 px bar + safe area; default/selected/disabled | Selected destination announced; never icon-only on supported width; state also conveyed by label/shape |
+| Bottom navigation | Four consumer destinations (Home, Search, Orders, Profile; DS-04): icon + label | 56 px bar + safe area; default/selected/disabled | Selected destination announced; never icon-only on supported width; state also conveyed by label/shape |
 | Top app bar | Back/title/actions | 56 px mobile, 64 web; standard, search, detail | One H1; actions named; back label context-aware |
 | Search bar | Query field + search icon + optional clear/filter | 48–56 px; idle/focused/filled/loading/disabled | Label “Search”; clear button separate; submit via keyboard |
 | Tabs | Related local sections | 48 px; selected/unselected/scrollable | Arrow/keyboard navigation web; selected state semantic; avoid tabs as main navigation |

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'core/localization/kunde_localizations.dart';
 import 'features/home/data/kunde_api.dart';
-import 'features/home/presentation/home_screen.dart';
+import 'features/shell/kunde_shell.dart';
 import 'features/identity_poc/identity_poc_screen.dart';
 import 'features/identity/auth_repository.dart';
 import 'features/identity/auth_screen.dart';
@@ -65,6 +65,6 @@ class _KundeAppState extends State<KundeApp> {
                 onLocale: (locale) => setState(() => _locale = locale))
             : widget.identityPocEnabled
                 ? const IdentityPocScreen()
-                : HomeScreen(api: widget.api),
+                : KundeShell(api: widget.api),
       );
 }

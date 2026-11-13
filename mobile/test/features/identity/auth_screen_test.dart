@@ -143,6 +143,23 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets('signed-in shell has four tabs and keeps Profile working',
+      (tester) async {
+    await login(tester);
+    final bar = find.byType(NavigationBar);
+    expect(tester.widget<NavigationBar>(bar).destinations.length, 4);
+    for (final label in ['Home', 'Search', 'Orders', 'Profile']) {
+      expect(
+          find.descendant(of: bar, matching: find.text(label)), findsOneWidget);
+    }
+    await tester.tap(find.descendant(of: bar, matching: find.text('Orders')));
+    await tester.pumpAndSettle();
+    expect(find.text('No orders yet'), findsOneWidget);
+    await tester.tap(find.descendant(of: bar, matching: find.text('Profile')));
+    await tester.pumpAndSettle();
+    expect(find.text('Edit profile'), findsOneWidget);
+  });
+
   testWidgets('splash restores stored session and loads profile before home',
       (tester) async {
     configure();

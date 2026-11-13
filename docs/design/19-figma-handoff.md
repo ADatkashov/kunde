@@ -10,7 +10,7 @@ This document prepares the design handoff; **do not create or edit a Figma file 
 4. `03 Typography` — font/glyph review, scale, localized specimens.
 5. `04 Design Tokens` — space, radius, elevation, breakpoints, motion, z-index.
 6. `05 Components` — grouped foundations/navigation/actions/inputs/content/feedback.
-7. `06 Consumer App` — Home, Explore, AI, Activity, Profile, category prototypes.
+7. `06 Consumer App` — Home, Search, Orders, Profile (AI as Home block), category prototypes.
 8. `07 Partner App` — onboarding, queue, catalog, calendar, finance.
 9. `08 Provider App` — availability, offer, active task, incident.
 10. `09 Admin Portal` — queues, detail, finance, moderation, roles/audit.

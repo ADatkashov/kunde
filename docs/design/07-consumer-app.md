@@ -2,7 +2,7 @@
 
 ## Navigation and shared shell
 
-Five bottom destinations: **Home, Explore, AI, Activity, Profile**. Keep labels visible and stable across app releases. Search and city/address selector persist across Home/Explore. Orders/Bookings are never combined into one ambiguous status. Unsupported categories are hidden or explicitly marked unavailable; no dead-end “coming soon” cards in launch primary surface. Core actions respect the server as source of truth and reflect pending states.
+Four bottom destinations: **Главная (Home), Поиск (Search), Заказы (Orders), Профиль (Profile)** — owner decision 2026-11-13, replacing the earlier five-destination proposal (Home, Explore, AI, Activity, Profile). Keep labels visible and stable across app releases. **KUNDE AI is not a tab**: it is a separate block on Home until an AI capability is approved and available. Search tab = former Explore; Orders tab = former Activity. Search and city/address selector remain reachable from Home and Search. Tabs whose capability does not exist yet show an honest empty state (Search without marketplace, Orders without transactions, Profile without configured sign-in); they never imitate working features. Orders/Bookings are never combined into one ambiguous status. Unsupported categories are hidden or explicitly marked unavailable; no dead-end “coming soon” cards in launch primary surface. Core actions respect the server as source of truth and reflect pending states.
 
 ## Home
 
@@ -19,19 +19,19 @@ Five bottom destinations: **Home, Explore, AI, Activity, Profile**. Keep labels 
 
 Home can be location-specific and personalized, but user must see/change location. Loading uses content skeleton; first-use empty state explains no live services and links to choose another area; error offers retry; offline cached modules are marked stale and cannot be ordered until refreshed. Pull-to-refresh is optional and does not repeat mutations.
 
-## Explore
+## Search (Explore)
 
 Top app bar contains back/menu as appropriate, location chip and search. Category landing shows subcategories, filters, result count, sort and optional map/list toggle when map data is available. List is default for accessibility and comparison; map is an alternate view with synchronized selected result. Filters open full-height sheet on mobile and side panel on larger screens; selected filters are removable chips. Business/service/product detail shows identity, location/service area, price model, availability freshness, policies, reviews and support.
 
 Search results are grouped by category/type when query is global. Cards expose compare-relevant information without implying categories are directly comparable. A no-result state preserves query and offers category/area/filter alternatives. Empty catalog says service not currently available, not “search failed”.
 
-## AI
+## AI (Home block; not a tab)
 
 Conversation screen: named assistant, privacy/context controls, prompt input, optional voice affordance only when speech service and permission are supported, suggestion chips, conversation history, and message provenance/actions. Responses distinguish **information**, **recommendation**, **prepared draft**, **confirmed action**. Comparison results use aligned rows for price basis, availability, ratings count and source freshness. Any paid/consequential proposal opens a review surface containing exact items/provider/beneficiary/location/time/total/cancellation terms and expiry; independent confirmation required per action. Task progress lists steps and individual state. Failed steps show retry/cancel/support; partial work remains explicit. No secret/confidential information in notification preview.
 
 Suggested prompts are illustrative: “Find cafés nearby”, “Compare cleaning services”, “Explain my order status”. Voice is hidden when unavailable or not consented. AI task history is separate from transaction history and can be cleared under data-retention rules.
 
-## Activity
+## Orders (Activity)
 
 Segmented filters: Active, Upcoming, Past. Transaction rows include type label, merchant/provider, date, amount if applicable, distinct status and next action. Order detail shows item/fulfillment timeline, address minimized, payment/refund separately, receipt, cancellation eligibility and support. Booking detail shows date/time zone, provider, beneficiary, slot, policy, reschedule/cancel. Delivery tracking uses map only if verified location updates exist; timeline remains available. Payment history links to orders/bookings and shows pending/failed/refund states; no standalone payment action that duplicates transaction.
 
@@ -71,4 +71,4 @@ Sections: personal details; address book; payment method references managed thro
 
 ## Responsive and accessibility behavior
 
-Mobile uses single-column cards and five-item bottom navigation. Tablet can use split list/detail; desktop web consumer (if introduced) uses a top/side nav after separate research. Buttons remain reachable above keyboard; maps have textual alternatives; ratings/price/status are spoken as text; voice input never replaces text input.
+Mobile uses single-column cards and four-item bottom navigation. Tablet can use split list/detail; desktop web consumer (if introduced) uses a top/side nav after separate research. Buttons remain reachable above keyboard; maps have textual alternatives; ratings/price/status are spoken as text; voice input never replaces text input.
