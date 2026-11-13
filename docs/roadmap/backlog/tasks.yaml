@@ -207,7 +207,7 @@
     "release": "REL-1",
     "user_story_id": "US-005",
     "implementation_status": "in_progress",
-    "implementation_note": "PR #25 merged to main as af61a2e (2026-11-12). Flutter address list/create/delete with manual WGS84 coordinates, optimistic version, serviceability disclaimer and tests; Flutter/Security/config CI green. Follow-up: serviceability is now a separate status row (icon + RU/KK/EN text + single semantic label) with explicit default-deny wording ("orders to this address are not available yet") and widget tests for the address panel (en/ru/kk, run in Flutter CI only). Map-based selection (no approved maps provider, ADR-005 is a recommendation), real zone data/out-of-zone product behavior and device/TalkBack acceptance remain open; not Done. Historical: No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
+    "implementation_note": "PR #25 merged to main as af61a2e (2026-11-12). Flutter address list/create/delete with manual WGS84 coordinates, optimistic version, serviceability disclaimer and tests; Flutter/Security/config CI green. Follow-up: serviceability is now a separate status row (icon + RU/KK/EN text + single semantic label) with explicit default-deny wording (orders to this address are not available yet) and widget tests for the address panel (en/ru/kk, run in Flutter CI only). Map-based selection (no approved maps provider, ADR-005 is a recommendation), real zone data/out-of-zone product behavior and device/TalkBack acceptance remain open; not Done. Historical: No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
   },
   {
     "id": "TASK-011",
