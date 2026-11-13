@@ -51,6 +51,26 @@ class KundeLocalizations {
       : _isEnglish
           ? 'Could not reach the server'
           : 'Не удалось связаться с сервером';
+  String get searchLabel => _isKazakh
+      ? 'Санаттарды іздеу'
+      : _isEnglish
+          ? 'Search categories'
+          : 'Поиск по категориям';
+  String get searchAction => _isKazakh
+      ? 'Іздеу'
+      : _isEnglish
+          ? 'Search'
+          : 'Найти';
+  String get searchEmpty => _isKazakh
+      ? 'Ештеңе табылмады. Басқа сұранысты байқап көріңіз.'
+      : _isEnglish
+          ? 'Nothing found. Try a different query.'
+          : 'Ничего не найдено. Попробуйте другой запрос.';
+  String get searchFailed => _isKazakh
+      ? 'Іздеу орындалмады. Қайталап көріңіз.'
+      : _isEnglish
+          ? 'Search failed. Please try again.'
+          : 'Не удалось выполнить поиск. Попробуйте ещё раз.';
   String get retry => _isKazakh
       ? 'Қайталау'
       : _isEnglish

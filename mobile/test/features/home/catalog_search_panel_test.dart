@@ -1,0 +1,141 @@
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
+import 'package:kunde_mobile/features/home/data/kunde_api.dart';
+import 'package:kunde_mobile/features/home/presentation/catalog_search_panel.dart';
+import 'package:kunde_mobile/features/home/presentation/home_screen.dart';
+import 'package:kunde_mobile/shared/theme/kunde_theme.dart';
+
+Widget _app(Widget home, {String locale = 'ru'}) => MaterialApp(
+      theme: KundeTheme.light,
+      localizationsDelegates: KundeLocalizations.localizationsDelegates,
+      supportedLocales: KundeLocalizations.supportedLocales,
+      locale: Locale(locale),
+      home: Scaffold(body: home),
+    );
+
+KundeApi _api(MockClientHandler handler) => KundeApi(
+    baseUri: Uri.parse('https://api.example.test/api/v1/'),
+    client: MockClient(handler));
+
+void main() {
+  testWidgets('shows server results in the active language', (tester) async {
+    String? requestedQuery;
+    final api = _api((request) async {
+      expect(request.url.path, '/api/v1/search');
+      requestedQuery = request.url.queryParameters['q'];
+      return http.Response(
+          jsonEncode([
+            {'id': 'a', 'nameRu': 'Уборка', 'nameKk': 'Тазалау'}
+          ]),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'});
+    });
+    await tester.pumpWidget(_app(CatalogSearchPanel(api: api), locale: 'kk'));
+
+    await tester.enterText(find.byType(TextField), '  таз ');
+    await tester.tap(find.byIcon(Icons.search));
+    await tester.pumpAndSettle();
+
+    expect(requestedQuery, 'таз');
+    expect(find.text('Тазалау'), findsOneWidget);
+    expect(find.text('Уборка'), findsNothing);
+    api.close();
+  });
+
+  testWidgets('shows an honest empty state and never demo categories',
+      (tester) async {
+    final api = _api((_) async => http.Response('[]', 200));
+    await tester.pumpWidget(_app(CatalogSearchPanel(api: api)));
+
+    await tester.enterText(find.byType(TextField), 'еда');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ничего не найдено. Попробуйте другой запрос.'),
+        findsOneWidget);
+    expect(find.byType(ListTile), findsNothing);
+    api.close();
+  });
+
+  testWidgets('blank query sends no request', (tester) async {
+    var calls = 0;
+    final api = _api((_) async {
+      calls++;
+      return http.Response('[]', 200);
+    });
+    await tester.pumpWidget(_app(CatalogSearchPanel(api: api)));
+
+    await tester.enterText(find.byType(TextField), '   ');
+    await tester.tap(find.byIcon(Icons.search));
+    await tester.pumpAndSettle();
+
+    expect(calls, 0);
+    api.close();
+  });
+
+  testWidgets('failure shows a safe message and retry recovers',
+      (tester) async {
+    var fail = true;
+    final api = _api((_) async => fail
+        ? http.Response('internal db host', 500)
+        : http.Response(
+            jsonEncode([
+              {'id': 'a', 'nameRu': 'Уборка', 'nameKk': 'Тазалау'}
+            ]),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'}));
+    await tester.pumpWidget(_app(CatalogSearchPanel(api: api), locale: 'en'));
+
+    await tester.enterText(find.byType(TextField), 'clean');
+    await tester.tap(find.byIcon(Icons.search));
+    await tester.pumpAndSettle();
+    expect(find.text('Search failed. Please try again.'), findsOneWidget);
+    expect(find.textContaining('internal'), findsNothing);
+
+    fail = false;
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+    expect(find.text('Уборка'), findsOneWidget);
+    api.close();
+  });
+
+  testWidgets('malformed response is treated as failure', (tester) async {
+    final api = _api((_) async => http.Response('{"x":1}', 200));
+    await tester.pumpWidget(_app(CatalogSearchPanel(api: api)));
+
+    await tester.enterText(find.byType(TextField), 'еда');
+    await tester.tap(find.byIcon(Icons.search));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Не удалось выполнить поиск. Попробуйте ещё раз.'),
+        findsOneWidget);
+    api.close();
+  });
+
+  testWidgets('home shows search only when the marketplace is enabled',
+      (tester) async {
+    Future<void> pumpHome(bool enabled) async {
+      final api = _api((_) async => http.Response(
+          jsonEncode({
+            'releaseStage': 'FOUNDATION',
+            'marketplaceEnabled': enabled,
+            'oidcIssuerConfigured': false,
+            'aiEnabled': false,
+          }),
+          200));
+      await tester
+          .pumpWidget(_app(HomeScreen(key: ValueKey(enabled), api: api)));
+      await tester.pumpAndSettle();
+    }
+
+    await pumpHome(false);
+    expect(find.byType(CatalogSearchPanel), findsNothing);
+    await pumpHome(true);
+    expect(find.byType(CatalogSearchPanel), findsOneWidget);
+  });
+}

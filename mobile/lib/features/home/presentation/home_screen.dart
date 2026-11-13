@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/localization/kunde_localizations.dart';
 import '../data/kunde_api.dart';
 import '../data/platform_snapshot.dart';
+import 'catalog_search_panel.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({required this.api, super.key});
@@ -64,7 +65,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         onRetry: _retry,
                       );
                     }
-                    return _ReadyState(snapshot: state.data!, strings: strings);
+                    return _ReadyState(
+                        snapshot: state.data!,
+                        strings: strings,
+                        api: widget.api);
                   },
                 ),
                 const SizedBox(height: 24),
@@ -127,8 +131,10 @@ class _BrandHeader extends StatelessWidget {
 }
 
 class _ReadyState extends StatelessWidget {
-  const _ReadyState({required this.snapshot, required this.strings});
+  const _ReadyState(
+      {required this.snapshot, required this.strings, required this.api});
 
+  final KundeApi api;
   final PlatformSnapshot snapshot;
   final KundeLocalizations strings;
 
@@ -180,6 +186,10 @@ class _ReadyState extends StatelessWidget {
             ),
           ),
         ),
+        if (snapshot.marketplaceEnabled) ...[
+          const SizedBox(height: 16),
+          CatalogSearchPanel(api: api),
+        ],
       ],
     );
   }
