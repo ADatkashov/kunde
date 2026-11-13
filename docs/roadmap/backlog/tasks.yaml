@@ -310,8 +310,8 @@
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
     "user_story_id": "US-006",
-    "implementation_status": "not_started",
-    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
+    "implementation_status": "in_progress",
+    "implementation_note": "Contract-only PartnerVerification state machine (PB-01/PB-02 draft playbooks: pending, info requested, approved, limited, suspended, rejected; reasons required, no self-review, immutable audit history) with PartnerVerificationTest. No persistence, API, partner roles, documents or catalog activation; ADR-014 gates, partner identity and approved verification contract remain open."
   },
   {
     "id": "TASK-016",

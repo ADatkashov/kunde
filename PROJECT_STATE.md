@@ -25,6 +25,8 @@
   local synthetic restore drill (`scripts/ci/restore_drill.sh`, not in CI, not production backup evidence);
   #49 TASK-048 draft incident runbook for existing signals (unapproved, no owners/SLOs). TASK-056 and
   TASK-048 are **in_progress**, not Done.
+- TASK-015 **in_progress**: contract-only `PartnerVerification` state machine (draft PB-01/PB-02; no persistence, API,
+  partner roles or catalog activation; ADR-014 unchanged). Backend unit tests only.
 - Catalog tasks TASK-011/012/013/014 remain **in_progress**: no seed data, offering search,
   price, partner link, serviceability or availability rules; ADR-014 (no default orderable
   catalog, `marketplaceEnabled=false`) still applies. TASK-041 and TASK-050 are also
