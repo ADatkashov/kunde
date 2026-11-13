@@ -1,8 +1,9 @@
 import 'dart:ui' show Locale;
 
 /// Locale-aware formatting for values the PRD (§18) requires to be stored as
-/// integers plus an ISO code. Pure Dart: no clock, no device locale lookup and
-/// no currency inferred from language.
+/// integers plus an ISO code, plus CLDR plural categories and numeric
+/// date/time. Pure Dart: no clock, no device locale lookup, no time-zone
+/// conversion and no currency inferred from language.
 class KundeFormats {
   const KundeFormats._();
 
@@ -44,6 +45,52 @@ class KundeFormats {
     return english ? '$sign$symbol$number' : '$sign$number $symbol';
   }
 
+  /// CLDR cardinal plural category for a whole [count] (absolute value used).
+  /// ru: one/few/many; kk and en: one/other. Other languages are rejected so a
+  /// wrong form is never shown. Approved wording per category is TASK-049.
+  static PluralCategory plural(int count, Locale locale) {
+    final n = count < 0 ? -count : count;
+    switch (locale.languageCode) {
+      case 'ru':
+        final mod10 = n % 10;
+        final mod100 = n % 100;
+        if (mod10 == 1 && mod100 != 11) return PluralCategory.one;
+        if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+          return PluralCategory.few;
+        }
+        return PluralCategory.many;
+      case 'kk':
+      case 'en':
+        return n == 1 ? PluralCategory.one : PluralCategory.other;
+      default:
+        throw ArgumentError.value(locale, 'locale', 'unsupported locale');
+    }
+  }
+
+  /// Numeric date, already in the caller's intended time zone (no conversion
+  /// here). ru/kk: `13.11.2026`. en: `13/11/2026` (day first, as in the
+  /// Kazakhstan market; unapproved assumption, see TASK-049).
+  static String date(DateTime value, Locale locale) {
+    final day = value.day.toString().padLeft(2, '0');
+    final month = value.month.toString().padLeft(2, '0');
+    final year = value.year.toString().padLeft(4, '0');
+    return switch (locale.languageCode) {
+      'ru' || 'kk' => '$day.$month.$year',
+      'en' => '$day/$month/$year',
+      _ => throw ArgumentError.value(locale, 'locale', 'unsupported locale'),
+    };
+  }
+
+  /// 24-hour time `14:05` for all supported languages (assumption).
+  static String time(DateTime value, Locale locale) {
+    if (!const {'ru', 'kk', 'en'}.contains(locale.languageCode)) {
+      throw ArgumentError.value(locale, 'locale', 'unsupported locale');
+    }
+    final hour = value.hour.toString().padLeft(2, '0');
+    final minute = value.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
   static int _pow10(int exponent) {
     var result = 1;
     for (var i = 0; i < exponent; i++) {
@@ -63,3 +110,6 @@ class KundeFormats {
     return buffer.toString();
   }
 }
+
+/// CLDR cardinal plural categories used by supported languages.
+enum PluralCategory { one, few, many, other }
