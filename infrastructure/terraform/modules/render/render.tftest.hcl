@@ -37,3 +37,11 @@ run "rejects_unknown_region" {
   variables { region = "kazakhstan" }
   expect_failures = [var.region]
 }
+
+run "omits_empty_optional_env_vars" {
+  command = plan
+  assert {
+    condition     = !contains(keys(render_web_service.this.env_vars), "OIDC_ISSUER_URI") && !contains(keys(render_web_service.this.env_vars), "CORS_ALLOWED_ORIGINS") && !contains(keys(render_web_service.this.env_vars), "OIDC_AUDIENCE")
+    error_message = "empty optional env vars must not be sent"
+  }
+}
