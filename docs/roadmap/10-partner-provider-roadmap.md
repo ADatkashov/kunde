@@ -6,7 +6,7 @@ Minimum pilot sequence: invite/application â†’ identity/business verification â†
 
 ## Provider (conditional)
 
-D-02 decides whether a separate provider platform exists. If merchant pickup/merchant delivery is sufficient, do not build provider app. If a separately contracted provider pool is required, establish role verification/documents, availability, request acceptance, task state, location/navigation permissions, earnings/payout visibility and support before dispatch. Location access is purpose-limited and disclosed; no provider payout claim until finance flow is approved.
+D-02 (approved 2026-11-13) selects phased fulfillment: pickup first, then merchant-managed delivery, then third-party logistics; no provider app and no KUNDE fleet at start. This section applies only if a later decision adds a separately contracted provider pool. If merchant pickup/merchant delivery is sufficient, do not build provider app. If a separately contracted provider pool is required, establish role verification/documents, availability, request acceptance, task state, location/navigation permissions, earnings/payout visibility and support before dispatch. Location access is purpose-limited and disclosed; no provider payout claim until finance flow is approved.
 
 ## Shared and distinct capabilities
 

@@ -2,6 +2,10 @@
 
 ## Current verified main snapshot — 2026-11-13
 
+- **D-02 APPROVED (2026-11-13, Product Owner):** phased hybrid fulfillment for Food Ordering (A pickup, B merchant delivery, C third-party logistics; no KUNDE courier
+  fleet at start). Record: [PRD 1.1 §23](docs/product/PRD-1.1/23-assumptions-and-open-decisions.md). TASK-019/029 moved blocked → in_progress (not Done); TASK-020/030 unchanged;
+  D-03–D-15 unchanged. PR #63 (V7) added only the unpublished DRAFT `food-ordering` category.
+
 - **D-01 PARTIALLY APPROVED (2026-11-13, Product Owner):** first category Food Ordering, first market Almaty. Cohort (8–12 restaurants), pilot zone and
   50–100 users are proposals only; D-02–D-15 unchanged. Record: [PRD 1.1 §23](docs/product/PRD-1.1/23-assumptions-and-open-decisions.md). ADR-014 unchanged
   (catalog stays empty/non-orderable). Docs only; no task status changed. PR #61 (TASK-012) is merged with required CI green.
