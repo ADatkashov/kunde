@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
 import 'package:kunde_mobile/features/identity/address_panel.dart';
 import 'package:kunde_mobile/features/identity/auth_repository.dart';
 
@@ -54,6 +55,8 @@ Future<AuthRepository> _signedIn(List<Map<String, dynamic>> items) async {
 
 Widget _app(AuthRepository auth, String language) => MaterialApp(
       locale: Locale(language),
+      supportedLocales: KundeLocalizations.supportedLocales,
+      localizationsDelegates: KundeLocalizations.localizationsDelegates,
       home: Scaffold(
           body: SingleChildScrollView(child: AddressPanel(auth: auth))),
     );
