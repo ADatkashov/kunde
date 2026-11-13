@@ -19,8 +19,8 @@ presentation per reader language; fallback order is kk → ru → en by owner de
 ## Owner decisions needed (blocking further roadmap work)
 
 - D-02, D-05, D-06, D-07 are approved. **Next most important: D-03/D-04** (payments, commission, settlement); they gate TASK-025/026/027/028 and any charge or refund.
-- Next implementable work without new decisions: **TASK-015 partner persistence first** (Flyway: partner, staff membership with D-07 roles linked to `identity.users`, verification state + audit; backend-enforced partner isolation, negative tests; reuse the existing OIDC/identity boundary, no second identity stack).
-  Only then persist `OrderLifecycle` (TASK-021): `docs/architecture/12-data-model.md` needs a partner reference plus item/quote snapshots, and neither partners, prices nor quotes (TASK-022) exist in the database yet, so an orders table now would be guessed and later broken (migrations are forward-only).
+- Partner persistence (TASK-015, V8) is in. Still missing before orders can be persisted: a partner reference on offerings (TASK-016), prices and quotes (TASK-022); `docs/architecture/12-data-model.md` requires partner reference plus item/quote snapshots, so persist `OrderLifecycle` (TASK-021) only after those exist.
+- Next implementable work without new decisions: TASK-016 (offering ↔ partner link; offerings visible only when the partner is APPROVED and the category PUBLISHED). Partner/admin HTTP APIs stay blocked on a partner-app client/audience decision and a KUNDE Administrator identity (D-14).
 - D-01 is partially approved (Food Ordering, Almaty). Still open: exact restaurants, pilot zone, operational proof. **Next most important: D-02** (who delivers); it gates TASK-019/029 and order logistics.
 
 - TASK-001 / D-12: name alert owners/on-call and approve SLOs (unblocks TASK-047/048 beyond the draft).

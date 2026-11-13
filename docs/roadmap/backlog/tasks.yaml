@@ -311,7 +311,7 @@
     "release": "REL-1",
     "user_story_id": "US-006",
     "implementation_status": "in_progress",
-    "implementation_note": "Contract-only PartnerVerification state machine (PB-01/PB-02 draft playbooks: pending, info requested, approved, limited, suspended, rejected; reasons required, no self-review, immutable audit history) with PartnerVerificationTest. No persistence, API, partner roles, documents or catalog activation; ADR-014 gates, partner identity and approved verification contract remain open. D-07 approved 2026-11-13 (roles Owner/Manager/Operator + KUNDE Administrator, manual verification); persistence/API/roles still not implemented; proofing method, documents and KYC provider remain open."
+    "implementation_note": "D-07 approved 2026-11-13. Contract-only PartnerVerification state machine (PB-01/PB-02 draft playbooks) plus persistence (Flyway V8): marketplace.partners, partner_staff (Owner/Manager/Operator, individual users, revocable), append-only staff and verification audit (DB triggers). PartnerService enforces roles and partner isolation in the backend (strangers/revoked get 404, wrong role 403, last-owner rule, version conflict, applicant-only resubmit, reviewers cannot be partner staff); 9 integration tests against PostgreSQL. No HTTP API: there is no partner-app client/audience or KUNDE Administrator identity (D-14 open), so reviewVerification trusts its caller. No documents/KYC (proofing method, documents, retention and provider unapproved), no catalog activation (ADR-014 gates unchanged), no abuse caps. Not Done."
   },
   {
     "id": "TASK-016",
