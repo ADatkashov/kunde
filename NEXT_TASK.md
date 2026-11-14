@@ -16,9 +16,9 @@ tasks without remaining product/privacy/UX acceptance evidence.
 #43 (TASK-010 default-deny serviceability UI), #45 (backlog CI validation), #46 (TASK-008 consent
 presentation per reader language; fallback order is kk → ru → en by owner decision 2026-11-13).
 
-## Infrastructure DEV bootstrap (owner action, then explicit apply permission)
+## Infrastructure DEV follow-ups (DEV is live; owner actions)
 
-Follow [docs/infrastructure/terraform-dev-render-neon.md](docs/infrastructure/terraform-dev-render-neon.md): HCP workspace (Local execution), API keys as GitHub **environment** secrets, `dev-plan`/`dev` Environments, then run the plan. Apply only on the owner's separate explicit permission.
+DEV Render + Neon is deployed and verified (see [PROJECT_STATE.md](PROJECT_STATE.md), [docs/infrastructure/terraform-dev-render-neon.md](docs/infrastructure/terraform-dev-render-neon.md)). Open: (1) add **Required reviewers** to the GitHub Environment `dev`; (2) watch Render free hours (shared with other services) and Neon CU-hours; (3) any change to the Render service needs the workflow with `replace_render=true` and a separate explicit apply permission; (4) production hosting/residency remains TASK-051 / D-08 — DEV must not hold real personal data.
 
 ## Owner decisions needed (blocking further roadmap work)
 
