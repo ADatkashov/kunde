@@ -104,7 +104,7 @@ run "rejects_render_neon_in_prod" {
 }
 
 run "consumer_identity_flag_is_passed_through" {
-  command = plan
+  command = apply
   variables {
     feature_flags = { consumer_identity = true }
   }
