@@ -14,8 +14,16 @@ void main() {
     'API_BASE_URL',
     defaultValue: 'http://localhost:8080/api/v1/',
   );
+  // Render Free sleeps when idle; a cold start takes about a minute.
+  const apiTimeoutSeconds = int.fromEnvironment(
+    'API_TIMEOUT_SECONDS',
+    defaultValue: 4,
+  );
   runApp(KundeApp(
-    api: KundeApi(baseUri: Uri.parse(apiBaseUrl)),
+    api: KundeApi(
+      baseUri: Uri.parse(apiBaseUrl),
+      timeout: const Duration(seconds: apiTimeoutSeconds),
+    ),
     auth: const bool.fromEnvironment('CONSUMER_IDENTITY_ENABLED')
         ? AuthRepository(
             gateway: AppAuthGateway(

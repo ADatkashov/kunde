@@ -1,0 +1,89 @@
+name: Android Release APK (DEV)
+on:
+  workflow_dispatch:
+    inputs:
+      api-base-url:
+        description: 'API base URL baked into the APK'
+        default: 'https://kunde-backend-5wwg.onrender.com/api/v1/'
+permissions:
+  contents: read
+jobs:
+  release-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      API_BASE_URL: ${{ inputs.api-base-url || 'https://kunde-backend-5wwg.onrender.com/api/v1/' }}
+      KUNDE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      KUNDE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      KUNDE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Require signing secrets and HTTPS API URL
+        run: |
+          miss=0
+          for v in KEYSTORE_B64 KUNDE_KEYSTORE_PASSWORD KUNDE_KEY_ALIAS KUNDE_KEY_PASSWORD; do
+            [ -n "${!v}" ] || { echo "::error::missing secret for $v (see docs/infrastructure/android-release-apk.md)"; miss=1; }
+          done
+          [ "$miss" = 0 ] || exit 1
+          case "$API_BASE_URL" in https://*) ;; *) echo "::error::API URL must be https"; exit 1;; esac
+          case "$API_BASE_URL" in *localhost*|*10.0.2.2*|*127.0.0.1*) echo "::error::local API URL"; exit 1;; esac
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: '3.47.9'
+          channel: stable
+          cache: false
+      - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d
+        with:
+          gradle-version: '9.3.1'
+          cache-disabled: true
+      - name: Analyze and test
+        working-directory: mobile
+        run: |
+          flutter pub get --enforce-lockfile
+          flutter analyze
+          flutter test
+      - name: Build signed release APK (arm64)
+        working-directory: mobile
+        run: |
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          export KUNDE_KEYSTORE_PATH="$RUNNER_TEMP/release.jks"
+          flutter build apk --release --target-platform android-arm64 \
+            --dart-define=API_BASE_URL="$API_BASE_URL" \
+            --dart-define=API_TIMEOUT_SECONDS=90
+          mkdir -p ../dist
+          cp build/app/outputs/flutter-apk/app-release.apk ../dist/KUNDE-dev-release.apk
+          rm -f "$RUNNER_TEMP/release.jks"
+      - name: Verify APK
+        run: |
+          apk=dist/KUNDE-dev-release.apk
+          bt="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          test -s "$apk"
+          "$bt/apksigner" verify --verbose --print-certs "$apk" | tee dist/signing.txt
+          grep -q "Verified using v2 scheme.*true\|Verified using v3 scheme.*true" dist/signing.txt
+          if grep -qi "Android Debug" dist/signing.txt; then echo "::error::debug certificate"; exit 1; fi
+          "$bt/aapt" dump badging "$apk" > dist/badging.txt
+          grep -q "package: name='com.example.kunde_mobile'" dist/badging.txt
+          grep -q "uses-permission: name='android.permission.INTERNET'" dist/badging.txt
+          if grep -q "application-debuggable" dist/badging.txt; then echo "::error::debuggable"; exit 1; fi
+          unzip -l "$apk" | grep -q "lib/arm64-v8a/libapp.so"
+          mkdir x && unzip -q "$apk" -d x
+          strings -a x/lib/arm64-v8a/libapp.so | grep -q "kunde-backend-5wwg.onrender.com" || { echo "::error::API URL not in APK"; exit 1; }
+          if grep -rqaE "localhost:8080|10\.0\.2\.2" x/lib x/assets 2>/dev/null; then echo "::error::local URL in APK"; exit 1; fi
+          if grep -rqaE "BEGIN (RSA |EC )?PRIVATE KEY|client_secret" x/lib x/assets 2>/dev/null; then echo "::error::secret marker in APK"; exit 1; fi
+          (cd dist && sha256sum KUNDE-dev-release.apk | tee KUNDE-dev-release.apk.sha256)
+          ls -l "$apk"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: KUNDE-dev-release
+          path: |
+            dist/KUNDE-dev-release.apk
+            dist/KUNDE-dev-release.apk.sha256
+            dist/signing.txt
+          retention-days: 14
