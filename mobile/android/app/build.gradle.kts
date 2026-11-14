@@ -31,10 +31,32 @@ android {
         versionName = flutter.versionName
     }
 
+    // Release signing comes only from the environment (CI secrets or a local shell);
+    // nothing is committed and debug signing is never used for release.
+    val releaseKeystore = System.getenv("KUNDE_KEYSTORE_PATH")
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = file(releaseKeystore)
+                storePassword = System.getenv("KUNDE_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KUNDE_KEY_ALIAS")
+                keyPassword = System.getenv("KUNDE_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // Production signing is intentionally unset until release credentials are configured.
+            if (releaseKeystore != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
+    }
+}
+
+gradle.taskGraph.whenReady {
+    if (hasTask(":app:assembleRelease") && System.getenv("KUNDE_KEYSTORE_PATH") == null) {
+        throw GradleException("Release build requires KUNDE_KEYSTORE_PATH/KUNDE_KEYSTORE_PASSWORD/KUNDE_KEY_ALIAS/KUNDE_KEY_PASSWORD; debug signing is not allowed.")
     }
 }
 
