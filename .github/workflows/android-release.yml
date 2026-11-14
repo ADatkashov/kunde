@@ -81,7 +81,8 @@ jobs:
           if grep -q "application-debuggable" dist/badging.txt; then echo "::error::debuggable"; exit 1; fi
           unzip -l "$apk" | grep -q "lib/arm64-v8a/libapp.so"
           mkdir x && unzip -q "$apk" -d x
-          strings -a x/lib/arm64-v8a/libapp.so | grep -q "kunde-backend-5wwg.onrender.com" || { echo "::error::API URL not in APK"; exit 1; }
+          api_host="$(printf '%s' "$API_BASE_URL" | sed -E 's#^https://([^/:]+).*#\1#')"
+          strings -a x/lib/arm64-v8a/libapp.so | grep -qF "$api_host" || { echo "::error::API URL not in APK"; exit 1; }
           strings -a x/lib/arm64-v8a/libapp.so | grep -q "auth/otp/verify" || { echo "::error::phone authentication is not compiled in"; exit 1; }
           if grep -rqaE "localhost:8080|10\.0\.2\.2" x/lib x/assets 2>/dev/null; then echo "::error::local URL in APK"; exit 1; fi
           if grep -rqaE "BEGIN (RSA |EC )?PRIVATE KEY|client_secret" x/lib x/assets 2>/dev/null; then echo "::error::secret marker in APK"; exit 1; fi
