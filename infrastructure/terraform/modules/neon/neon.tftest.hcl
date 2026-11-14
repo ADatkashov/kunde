@@ -15,8 +15,8 @@ variables {
 run "tls_verified_jdbc_url_without_credentials" {
   command = apply
   assert {
-    condition     = output.jdbc_url == "jdbc:postgresql://ep-test.eu-central-1.aws.neon.tech/kunde?sslmode=verify-full"
-    error_message = "JDBC URL must verify the server certificate and host name"
+    condition     = output.jdbc_url == "jdbc:postgresql://ep-test.eu-central-1.aws.neon.tech/kunde?sslmode=verify-full&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory"
+    error_message = "JDBC URL must verify the certificate chain (JVM trust store) and host name"
   }
   assert {
     condition     = !strcontains(output.jdbc_url, "@")
