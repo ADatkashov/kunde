@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.mock.env.MockEnvironment;
 
 class PhoneAuthGuardTest {
-    private static final String SECRET = "synthetic-test-secret-0123456789abcdef";
+    private static final String SECRET = "synthetic-test-secret-synthetic-test-secret";
 
     private static PhoneAuthProperties props(boolean enabled, String secret, boolean dev, List<String> phones) {
         return new PhoneAuthProperties(enabled, secret, "kunde-phone-auth", "kunde-api", "kunde-consumer", 900, 30, 90,

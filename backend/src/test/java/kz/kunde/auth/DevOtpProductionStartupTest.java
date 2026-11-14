@@ -20,7 +20,7 @@ class DevOtpProductionStartupTest {
         assertThatThrownBy(() -> new SpringApplicationBuilder(KundeApplication.class)
                 .web(WebApplicationType.SERVLET)
                 .run("--server.port=0", "--app.environment=production", "--app.auth.phone.enabled=true",
-                        "--app.auth.phone.secret=synthetic-test-secret-0123456789abcdef",
+                        "--app.auth.phone.secret=synthetic-test-secret-synthetic-test-secret",
                         "--app.auth.phone.dev-otp.enabled=true",
                         "--app.auth.phone.dev-otp.allowed-phones=+77000000001"))
                 .satisfies(failure -> assertThat(root(failure)).isInstanceOf(IllegalStateException.class)

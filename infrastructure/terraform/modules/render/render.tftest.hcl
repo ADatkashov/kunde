@@ -58,7 +58,7 @@ run "rejects_dev_otp_outside_dev" {
   command = plan
   variables {
     auth_phone_enabled   = true
-    auth_phone_secret    = "synthetic-test-secret-0123456789abcdef"
+    auth_phone_secret    = "synthetic-test-secret-synthetic-test-secret"
     auth_dev_otp_enabled = true
   }
   expect_failures = [var.auth_dev_otp_enabled]
@@ -75,7 +75,7 @@ run "dev_otp_allowed_in_dev" {
   variables {
     environment_name            = "dev"
     auth_phone_enabled          = true
-    auth_phone_secret           = "synthetic-test-secret-0123456789abcdef"
+    auth_phone_secret           = "synthetic-test-secret-synthetic-test-secret"
     auth_dev_otp_enabled        = true
     auth_dev_otp_allowed_phones = "+77000000001"
   }

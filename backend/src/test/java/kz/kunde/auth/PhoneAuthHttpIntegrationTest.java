@@ -33,7 +33,7 @@ import org.springframework.test.web.servlet.ResultActions;
         "app.environment=test",
         "app.identity.consumer-enabled=true",
         "app.auth.phone.enabled=true",
-        "app.auth.phone.secret=synthetic-test-secret-0123456789abcdef",
+        "app.auth.phone.secret=synthetic-test-secret-synthetic-test-secret",
         "app.auth.phone.dev-otp.enabled=true",
         "app.auth.phone.dev-otp.allowed-phones=+77000000101,+77000000102,+77000000103,+77000000104,+77000000105,"
                 + "+77000000106,+77000000107,+77000000108,+77000000109,+77000000110,+77000000111",
