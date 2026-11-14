@@ -35,13 +35,14 @@ MockClientHandler _catalog(
         200,
         headers: _json);
 
-Map<String, dynamic> _offering(String name, {String? en}) => {
+Map<String, dynamic> _offering(String name, {String? en, String? partner}) => {
       'id': 'o-$name',
       'categoryId': 'c',
       'kind': 'SERVICE',
       'nameRu': name,
       'nameKk': '$name-kk',
       if (en != null) 'nameEn': en,
+      if (partner != null) 'partnerName': partner,
     };
 
 void main() {
@@ -63,6 +64,24 @@ void main() {
     expect(requestedQuery, 'таз');
     expect(find.text('Тазалау'), findsOneWidget);
     expect(find.text('Уборка'), findsNothing);
+    api.close();
+  });
+
+  testWidgets('shows the approved partner name under an offering',
+      (tester) async {
+    final api = _api(_catalog(offerings: [
+      _offering('Чистка', partner: 'Синтетический партнёр'),
+      _offering('Без партнёра'),
+    ]));
+    await tester.pumpWidget(_app(CatalogSearchPanel(api: api)));
+
+    await tester.enterText(find.byType(TextField), 'чист');
+    await tester.tap(find.byIcon(Icons.search));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Чистка'), findsOneWidget);
+    expect(find.text('Синтетический партнёр'), findsOneWidget);
+    expect(find.text('Без партнёра'), findsOneWidget);
     api.close();
   });
 
