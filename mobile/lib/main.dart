@@ -32,8 +32,8 @@ void main() {
                   defaultValue: 'kunde-consumer'),
               provider: const String.fromEnvironment('OIDC_PROVIDER',
                   defaultValue: 'keycloak'),
-              scopes:
-                  AppAuthGateway.parseScopes(const String.fromEnvironment('OIDC_SCOPES')),
+              scopes: AppAuthGateway.parseScopes(
+                  const String.fromEnvironment('OIDC_SCOPES')),
             ),
             vault: SecureTokenVault(),
             apiBase: Uri.parse(apiBaseUrl),

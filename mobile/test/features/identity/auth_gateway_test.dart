@@ -133,7 +133,9 @@ void main() {
   test('unknown provider is rejected and empty scopes keep the default',
       () async {
     await expectLater(
-        AppAuthGateway(issuer: 'https://identity.example.test', clientId: 'c',
+        AppAuthGateway(
+                issuer: 'https://identity.example.test',
+                clientId: 'c',
                 provider: 'other')
             .login(),
         throwsA(isA<IdentityUnavailable>()));
