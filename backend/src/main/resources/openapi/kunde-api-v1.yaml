@@ -99,7 +99,27 @@ paths:
         '404':
           description: Offering is unknown, not PUBLISHED, or its category is not PUBLISHED (not distinguishable).
         '200':
-          description: One PUBLISHED offering (id, categoryId, kind, RU/KK/EN names). No price, partner or availability.
+          description: One PUBLISHED offering (id, categoryId, kind, RU/KK/EN names, partnerId, partnerName of its APPROVED partner). No price or availability.
+          content:
+            application/json:
+              schema: { type: object }
+  /partners/{partnerId}:
+    get:
+      operationId: getPartner
+      parameters:
+        - name: partnerId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '413':
+          $ref: '#/components/responses/RequestBodyTooLarge'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '404':
+          description: Partner is unknown or not APPROVED (not distinguishable).
+        '200':
+          description: Public view of an APPROVED partner (id, displayName). No staff, status history, contacts or documents.
           content:
             application/json:
               schema: { type: object }
