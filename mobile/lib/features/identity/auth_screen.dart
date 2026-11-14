@@ -5,6 +5,8 @@ import '../shell/tabs.dart';
 import 'auth_repository.dart';
 import 'auth_strings.dart';
 import 'consent_panel.dart';
+import 'phone_auth_gateway.dart';
+import 'phone_login_flow.dart';
 import 'support_panel.dart';
 import 'address_panel.dart';
 
@@ -14,10 +16,12 @@ class AuthScreen extends StatefulWidget {
       {required this.auth,
       required this.api,
       required this.onLocale,
+      this.devOtpHint = false,
       super.key});
   final AuthRepository auth;
   final KundeApi api;
   final ValueChanged<Locale> onLocale;
+  final bool devOtpHint;
   @override
   State<AuthScreen> createState() => _AuthScreenState();
 }
@@ -187,7 +191,9 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                         if (!await _mayLeave() || !mounted) return;
                         await _run(() async {
                           if (!await widget.auth.logout()) {
-                            _notice = 'logoutPartial';
+                            _notice = widget.auth.usesPhoneOtp
+                                ? 'logoutPartialPhone'
+                                : 'logoutPartial';
                           }
                         });
                       },
@@ -207,7 +213,9 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                         ? s.saved
                         : _notice == 'logoutPartial'
                             ? s.logoutPartial
-                            : _message(s)),
+                            : _notice == 'logoutPartialPhone'
+                                ? s.logoutPartialPhone
+                                : _message(s)),
                   )),
             ),
           if (_busy) LinearProgressIndicator(semanticsLabel: s.loading),
@@ -260,7 +268,29 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
     );
   }
 
-  Widget _welcome(AuthStrings s) => Center(
+  Widget _welcome(AuthStrings s) {
+    final gateway = widget.auth.gateway;
+    if (gateway is PhoneAuthGateway) {
+      return PhoneLoginFlow(
+          gateway: gateway,
+          devOtpHint: widget.devOtpHint,
+          onSignedIn: (tokens) async {
+            await widget.auth.signIn(tokens);
+            _error = null;
+            if (mounted) setState(() => _busy = true);
+            try {
+              await _load();
+            } catch (error) {
+              if (mounted) _error = error;
+            } finally {
+              if (mounted) setState(() => _busy = false);
+            }
+          });
+    }
+    return _oidcWelcome(s);
+  }
+
+  Widget _oidcWelcome(AuthStrings s) => Center(
       child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
           child: ListView(

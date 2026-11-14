@@ -75,6 +75,9 @@ jobs:
       RENDER_OWNER_ID: ${{ vars.RENDER_OWNER_ID }}
       NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
       TF_VAR_neon_org_id: ${{ vars.NEON_ORG_ID }}
+      TF_VAR_auth_phone_enabled: ${{ vars.AUTH_PHONE_ENABLED || 'false' }}
+      TF_VAR_auth_dev_otp_enabled: ${{ vars.AUTH_DEV_OTP_ENABLED || 'false' }}
+      TF_VAR_auth_phone_secret: ${{ secrets.AUTH_PHONE_SECRET }}
       TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
       TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORGANIZATION }}
       TF_WORKSPACE: ${{ vars.TF_WORKSPACE }}
@@ -127,6 +130,9 @@ jobs:
       RENDER_OWNER_ID: ${{ vars.RENDER_OWNER_ID }}
       NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
       TF_VAR_neon_org_id: ${{ vars.NEON_ORG_ID }}
+      TF_VAR_auth_phone_enabled: ${{ vars.AUTH_PHONE_ENABLED || 'false' }}
+      TF_VAR_auth_dev_otp_enabled: ${{ vars.AUTH_DEV_OTP_ENABLED || 'false' }}
+      TF_VAR_auth_phone_secret: ${{ secrets.AUTH_PHONE_SECRET }}
       TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
       TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORGANIZATION }}
       TF_WORKSPACE: ${{ vars.TF_WORKSPACE }}

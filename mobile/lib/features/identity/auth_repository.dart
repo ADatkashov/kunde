@@ -38,6 +38,11 @@ class SecureTokenVault implements TokenVault {
   Future<void> clear() => _storage.delete(key: _key);
 }
 
+/// Gateways that end the server-side session with the refresh token (phone OTP).
+abstract interface class SessionRevoker {
+  Future<void> revoke(String refreshToken);
+}
+
 abstract interface class OAuthGateway {
   Future<AuthTokens> login({bool register = false});
   Future<AuthTokens> refresh(String refreshToken);
@@ -191,6 +196,7 @@ class AuthRepository extends ChangeNotifier {
   AuthTokens? _tokens;
   bool expired = false;
   bool get authenticated => _tokens != null;
+  bool get usesPhoneOtp => gateway is SessionRevoker;
   String get _context => gateway is AppAuthGateway
       ? '${(gateway as AppAuthGateway).issuer}|${(gateway as AppAuthGateway).clientId}|$apiBase'
       : apiBase.toString();
@@ -251,6 +257,9 @@ class AuthRepository extends ChangeNotifier {
           rethrow;
         }
       });
+
+  /// Stores tokens obtained by an interactive gateway step (phone OTP verification).
+  Future<void> signIn(AuthTokens tokens) => _exclusive(() => _replace(tokens));
 
   Future<String> accessToken() => _exclusive(() async {
         final current = _tokens;
@@ -447,12 +456,18 @@ class AuthRepository extends ChangeNotifier {
 
   Future<bool> logout() => _exclusive(() async {
         final id = _tokens?.id;
+        final refresh = _tokens?.refresh;
         _tokens = null;
         expired = false;
         notifyListeners();
         await vault.clear();
         try {
-          await gateway.logout(id);
+          if (usesPhoneOtp) {
+            if (refresh == null) return true;
+            await (gateway as SessionRevoker).revoke(refresh);
+          } else {
+            await gateway.logout(id);
+          }
           return true;
         } catch (_) {
           return false;

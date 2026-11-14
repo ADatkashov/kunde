@@ -16,9 +16,9 @@ tasks without remaining product/privacy/UX acceptance evidence.
 #43 (TASK-010 default-deny serviceability UI), #45 (backlog CI validation), #46 (TASK-008 consent
 presentation per reader language; fallback order is kk → ru → en by owner decision 2026-11-13).
 
-## DEV Android APK follow-ups (owner)
+## DEV phone sign-in follow-ups (owner)
 
-Signed DEV APK exists (PR #77, [docs/infrastructure/android-release-apk.md](docs/infrastructure/android-release-apk.md)); rebuild via Actions → *Android Release APK (DEV)*. Open: (1) report phone check results (public catalog/search, cold-start wait ≈1 min) for fixes; (2) **keep the keystore backup**; (3) login/profile/addresses need a DEV identity provider (ADR-013/015 gates) and `CONSUMER_IDENTITY_ENABLED` + `OIDC_ISSUER_URI` build defines; (4) decide the final applicationId before any store release (changing it affects `scripts/ci/consumer_native_e2e.py`).
+Phone-OTP authentication is implemented (see [phone-otp-auth](docs/identity/phone-otp-auth.md#dev-setup)); it is **not live** until the owner (1) adds GitHub secret `AUTH_PHONE_SECRET` (32+ random chars) and variables `AUTH_PHONE_ENABLED=true`, `AUTH_DEV_OTP_ENABLED=true`, (2) reviews the Terraform DEV plan and explicitly approves an apply with `replace_render=true`, (3) re-runs *Android Release APK (DEV)* and installs it; sign in with `+7 700 000 00 01` / `123456`. Then report phone-check results. Also: keep the keystore backup; decide the final applicationId before any store release (affects `scripts/ci/consumer_native_e2e.py`). Production gates for own auth are listed in the doc (independent security review, OTP vendor D-11, privacy/residency, key management, distributed rate limits).
 
 ## Infrastructure DEV follow-ups (DEV is live; owner actions)
 

@@ -16,6 +16,6 @@ The detailed records are under `adr/`. All choices below are **recommendations f
 | 010 | Payment adapter, verified webhooks/status checks, immutable journal | Direct vendor coupling or wallet-first | Contract/provider semantics verified |
 | 011 | Vendor-neutral containers/IaC; managed services in verified Kazakhstan region | Self-managed Kubernetes on day one | Availability, operational team or scale needs |
 | 012 | Single home region/country partition initially; no global active-active writes | Global active-active database | Legal approvals and measured regional demand |
-| 015 | Proposed portable KUNDE identity boundary: stable internal user ID + OIDC provider + replaceable OTP transport; provider not selected | Bespoke token issuer or identity keyed by phone/provider subject | After Kazakhstan privacy/legal review, comparable quotes, operations ownership and finalist POC; see [ADR-015](adr/ADR-015-proposed-identity-provider.md) |
+| 015 | Portable KUNDE identity boundary: stable internal user ID; amended 2026-11-14 (owner): own phone-OTP authentication on Spring Boot with replaceable OTP delivery, no external IdP; production gated | External OIDC IdP (Keycloak/ZITADEL, previously approved for DEV) or identity keyed by phone/provider subject | After Kazakhstan privacy/legal review, comparable quotes, operations ownership and finalist POC; see [ADR-015](adr/ADR-015-proposed-identity-provider.md) |
 
 Decisions D-01 through D-15 in PRD 1.1 remain product/operations/legal decisions; architecture must not silently resolve them.

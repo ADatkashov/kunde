@@ -1,7 +1,7 @@
-# ADR-015: Portable KUNDE identity with OIDC IdP boundary
+# ADR-015: Portable KUNDE identity (amended 2026-11-14: own phone-OTP authentication)
 
-- **Status:** ACCEPTED for implementation. Production readiness remains gated.
-- **Date:** 2026-11-10
+- **Status:** ACCEPTED for synthetic DEV implementation. Production readiness remains gated.
+- **Date:** 2026-11-10; **amended 2026-11-14** (owner decision, see [Amendment](#amendment-2026-11-14-own-phone-otp-authentication-supersedes-the-oidc-provider)). Sections below the amendment are retained as history.
 - **Related:** ADR-009 (provider TBD), ADR-013 (fail-closed security boundary), EP-002, PRD AUTH-001/AUTH-002.
 
 ## Context
@@ -71,3 +71,29 @@ Use OIDC Authorization Code + PKCE through the system browser. Persist an immuta
 The development token policy is 300-second access tokens, refresh rotation with Max Reuse 0, 1800-second session idle and 43200-second maximum session. Verify actual runtime configuration and behavior before recording a pass. The earlier readiness drill measured approximately 60 seconds of JWT expiration tolerance. Implementation must document its configured tolerance and resulting acceptance window.
 
 Technical evidence is preserved in the final provider evaluation and Keycloak readiness package. Earlier results establish POC feasibility and are historical evidence only. Keycloak operations require patching, backups and restore rehearsal, signing-key rotation, availability planning, monitoring and named operations ownership. Privacy/legal, data location, OTP, recovery, abuse controls and production security gates remain open. Architecture approval authorizes development with synthetic users. Production rollout requires separate evidence and approval.
+
+## Amendment 2026-11-14: own phone-OTP authentication supersedes the OIDC provider
+
+**Decision (Product Owner, 2026-11-14).** KUNDE does not adopt Keycloak, ZITADEL or any external OIDC provider. Authentication is implemented in the Spring Boot monolith: phone number + one-time code, short-lived access JWT, rotating refresh token, PostgreSQL storage. This supersedes decision points 2, 4 and 5 and the owner approval of 2026-11-11 (Keycloak primary / ZITADEL fallback). The "Bespoke Spring authentication" alternative, rejected above, is now the chosen option; its original rejection condition ("a formally staffed identity platform team and independent security review") is **not** met and becomes a production gate (below).
+
+**Why.**
+- DEV needs a working login on a phone now. No IdP is deployed, and the free Render/Neon footprint cannot host Keycloak (memory, cold start, a second database) without paid services.
+- The product is phone-first and the OTP channel (SMS/WhatsApp, D-11) is not selected. A custom flow lets DEV use a clearly fenced test code and lets production plug a real channel in behind one interface.
+- The system-browser/AppAuth hop and IdP theming added UX and operational surface that the first user cohort does not need.
+
+**What stays.** Point 1 (permanent opaque KUNDE UUID; `identity.users`, `identity.external_bindings(issuer, subject)`; never phone/email as business key), point 3 (domain owns business authorization), the fail-closed OIDC resource-server boundary of ADR-013 (the API still validates signature, exact issuer, audience, time claims and the existing `ConsumerAccessPolicy`), and the production gates (privacy/residency, OTP vendor, operations, recovery). The `(issuer, subject)` binding is kept so a future IdP can be reintroduced without changing business data: the own issuer is `kunde-phone-auth` and the subject is the KUNDE user UUID.
+
+**What changes.**
+- `POST /api/v1/auth/otp/request`, `/auth/otp/verify`, `/auth/token/refresh`, `/auth/logout` (feature flag `AUTH_PHONE_ENABLED`, off by default; mutually exclusive with `OIDC_ISSUER_URI`).
+- Delivery sits behind `OtpDeliveryProvider`; `DevOtpProvider` is the only implementation wired. `SmsOtpProvider` and `WhatsAppOtpProvider` are unusable placeholders until D-11.
+- DEV OTP (`123456`) works only with `AUTH_DEV_OTP_ENABLED=true`, `KUNDE_ENVIRONMENT` in dev/local/test, no `prod`/`production` profile and an allowlist of synthetic `+7700000XXXX` numbers. Any other combination aborts startup (`PhoneAuthGuard`).
+- Flutter uses a phone/OTP screen instead of AppAuth when built with `PHONE_AUTH_ENABLED=true`. The AppAuth/OIDC code remains in the tree, unused by DEV builds, until the owner decides to delete it.
+
+**Consequences.**
+- KUNDE now owns OTP abuse protection, token lifetime/rotation/revocation, key management and account recovery. Details and controls: [phone-otp-auth.md](../../identity/phone-otp-auth.md).
+- Access tokens are HS256 with a single shared secret (`AUTH_PHONE_SECRET`); there is no JWKS, key rotation is a manual secret change that invalidates all sessions. Acceptable for DEV; production needs a key-management decision.
+- A server-side session check on every authenticated request makes logout/replay revocation immediate, at the cost of one indexed lookup.
+- Per-IP limiting behind Render's proxy is coarse (`forward-headers-strategy: none`); the per-phone limits are the effective control.
+- SIM-swap/recycled-number risk, account recovery, support-assisted changes, and phone data (stored as E.164) are unresolved for real users.
+
+**Production gates added by this amendment (all open).** Independent security review of the auth implementation; approved SMS/WhatsApp channel and cost (D-11); Kazakhstan privacy/residency approval for stored phone numbers and OTP processors (TASK-007/D-08); asymmetric signing or managed key rotation; shared (distributed) rate limiting and edge abuse protection; account recovery and number-change policy; DEV OTP verified absent from production configuration by a deployment check. ADR-015 status for production stays gated; no vendor is approved by this amendment.

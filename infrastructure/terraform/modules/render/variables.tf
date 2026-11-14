@@ -85,3 +85,44 @@ variable "consumer_identity_enabled" {
   type    = bool
   default = false
 }
+
+variable "environment_name" {
+  description = "Value of KUNDE_ENVIRONMENT. Anything other than dev/local/test makes the backend refuse DEV OTP at startup."
+  type        = string
+  default     = "production"
+}
+
+variable "auth_phone_enabled" {
+  description = "Own phone-OTP authentication (ADR-015, amended 2026-11-14)."
+  type        = bool
+  default     = false
+}
+
+variable "auth_phone_secret" {
+  description = "Root secret for JWT/OTP/refresh hashing, at least 32 characters. Supplied via TF_VAR_auth_phone_secret from a GitHub secret; never committed."
+  type        = string
+  default     = ""
+  sensitive   = true
+
+  validation {
+    condition     = var.auth_phone_secret == "" || length(var.auth_phone_secret) >= 32
+    error_message = "auth_phone_secret must be empty (feature off) or at least 32 characters."
+  }
+}
+
+variable "auth_dev_otp_enabled" {
+  description = "Fixed test OTP 123456 for allowlisted synthetic numbers. Only valid when environment_name is dev."
+  type        = bool
+  default     = false
+
+  validation {
+    condition     = !var.auth_dev_otp_enabled || var.environment_name == "dev"
+    error_message = "DEV OTP may only be enabled when environment_name is dev."
+  }
+}
+
+variable "auth_dev_otp_allowed_phones" {
+  description = "Comma-separated synthetic numbers (+7700000XXXX) allowed to use the DEV OTP."
+  type        = string
+  default     = ""
+}

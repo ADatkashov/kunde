@@ -47,6 +47,15 @@ management:
     readinessstate:
       enabled: true
 app:
+  # Safe default: anything but an explicit dev/local/test value forbids DEV OTP (see PhoneAuthGuard).
+  environment: ${KUNDE_ENVIRONMENT:production}
+  auth:
+    phone:
+      enabled: ${AUTH_PHONE_ENABLED:false}
+      secret: ${AUTH_PHONE_SECRET:}
+      dev-otp:
+        enabled: ${AUTH_DEV_OTP_ENABLED:false}
+        allowed-phones: ${AUTH_DEV_OTP_ALLOWED_PHONES:}
   identity:
     consumer-enabled: ${CONSUMER_IDENTITY_ENABLED:false}
   security:

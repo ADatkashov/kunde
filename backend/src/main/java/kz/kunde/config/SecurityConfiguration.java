@@ -152,7 +152,7 @@ public class SecurityConfiguration {
 
     @Bean
     @Order(2)
-    @ConditionalOnExpression("'${app.security.oidc.issuer-uri:}' == ''")
+    @ConditionalOnExpression("'${app.security.oidc.issuer-uri:}' == '' && '${app.auth.phone.enabled:false}' != 'true'")
     SecurityFilterChain foundationOnlyApi(HttpSecurity http, ApiSecurityErrorWriter errors,
             ApiRateLimitFilter limiter, ApiBodyLimitFilter bodies, AuthenticatedRateLimitFilter authenticated) throws Exception {
         return http

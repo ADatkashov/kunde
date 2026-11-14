@@ -65,6 +65,10 @@ class AuthStrings {
       'Вы вышли из приложения. Сессия в браузере могла сохраниться.',
       'Қолданбадан шықтыңыз. Браузердегі сессия сақталуы мүмкін.',
       'Signed out of the app. Your browser session may still be active.');
+  String get logoutPartialPhone => pick(
+      'Вы вышли из приложения. Завершить сессию на сервере не удалось — она истечёт сама.',
+      'Қолданбадан шықтыңыз. Серверде сессияны аяқтау мүмкін болмады — ол өзі аяқталады.',
+      'Signed out of the app. The server session could not be ended and will expire on its own.');
   String get discard => pick('Отменить изменения?',
       'Өзгерістерден бас тарту керек пе?', 'Discard changes?');
   String get discardBody => pick('Несохранённые изменения будут потеряны.',
