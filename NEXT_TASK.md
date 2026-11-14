@@ -16,6 +16,10 @@ tasks without remaining product/privacy/UX acceptance evidence.
 #43 (TASK-010 default-deny serviceability UI), #45 (backlog CI validation), #46 (TASK-008 consent
 presentation per reader language; fallback order is kk → ru → en by owner decision 2026-11-13).
 
+## DEV Android APK follow-ups (owner)
+
+Signed DEV APK exists (PR #77, [docs/infrastructure/android-release-apk.md](docs/infrastructure/android-release-apk.md)); rebuild via Actions → *Android Release APK (DEV)*. Open: (1) report phone check results (public catalog/search, cold-start wait ≈1 min) for fixes; (2) **keep the keystore backup**; (3) login/profile/addresses need a DEV identity provider (ADR-013/015 gates) and `CONSUMER_IDENTITY_ENABLED` + `OIDC_ISSUER_URI` build defines; (4) decide the final applicationId before any store release (changing it affects `scripts/ci/consumer_native_e2e.py`).
+
 ## Infrastructure DEV follow-ups (DEV is live; owner actions)
 
 DEV Render + Neon is deployed and verified (see [PROJECT_STATE.md](PROJECT_STATE.md), [docs/infrastructure/terraform-dev-render-neon.md](docs/infrastructure/terraform-dev-render-neon.md)). Open: (1) add **Required reviewers** to the GitHub Environment `dev`; (2) watch Render free hours (shared with other services) and Neon CU-hours; (3) any change to the Render service needs the workflow with `replace_render=true` and a separate explicit apply permission; (4) production hosting/residency remains TASK-051 / D-08 — DEV must not hold real personal data.
