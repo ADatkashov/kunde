@@ -35,8 +35,21 @@ Phones are normalized to E.164 (`+7 700…`, `8 700…`, `7 700…`, `00…` acc
 ## DEV setup
 
 Owner actions (nothing here has been applied by the agent; no `terraform apply` was run):
-1. **Create the secret locally** and keep it out of chat/logs: `openssl rand -base64 48` (64 chars). Paste it into GitHub → Settings → Secrets and variables → Actions → **Secrets** → `AUTH_PHONE_SECRET` (or pipe it: `openssl rand -base64 48 | gh secret set AUTH_PHONE_SECRET`). Do not commit it or put it in a variable. It ends up (a) in the HCP Terraform state (encrypted) and (b) as a Render environment variable — treat DEV as the only place it is valid; rotating it logs everyone out. Never reuse it for production.
-2. Add GitHub **variables** `AUTH_PHONE_ENABLED=true` and `AUTH_DEV_OTP_ENABLED=true` (allowlist default `+77000000001,+77000000002,+77000000003`; override with `TF_VAR_auth_dev_otp_allowed_phones`).
+1. **Where the values live.** Terraform runs only in GitHub Actions, and this repository keeps its settings in the two GitHub **Environments** `dev-plan` (plan job) and `dev` (apply job), see [terraform-dev-render-neon.md](../infrastructure/terraform-dev-render-neon.md). Create in **both** Environments:
+   - environment **secret** `AUTH_PHONE_SECRET` — the same value in both;
+   - environment **variables** `AUTH_PHONE_ENABLED=true` and `AUTH_DEV_OTP_ENABLED=true` (not secret; allowlist default `+77000000001,+77000000002,+77000000003`, override with `TF_VAR_auth_dev_otp_allowed_phones`).
+   The workflow maps them to `TF_VAR_auth_phone_secret`, `TF_VAR_auth_phone_enabled`, `TF_VAR_auth_dev_otp_enabled`; Terraform passes them to the Render service as `AUTH_PHONE_SECRET`, `AUTH_PHONE_ENABLED`, `AUTH_DEV_OTP_ENABLED` (+ `AUTH_DEV_OTP_ALLOWED_PHONES`, `KUNDE_ENVIRONMENT=dev`, `CONSUMER_IDENTITY_ENABLED=true`). The secret therefore also exists in the HCP Terraform state (encrypted) and in the Render service environment — DEV only; rotating it logs everyone out; never reuse it for production. The workflow fails early (without printing values) if the flag is true and the secret is missing or shorter than 32 characters.
+2. **Create the secret on your machine, once, without showing it** (needs `gh` logged in with admin rights):
+   ```
+   S="$(openssl rand -base64 48)"
+   for e in dev-plan dev; do
+     printf '%s' "$S" | gh secret set AUTH_PHONE_SECRET --env "$e" --repo ADatkashov/kunde
+     gh variable set AUTH_PHONE_ENABLED --env "$e" --body true --repo ADatkashov/kunde
+     gh variable set AUTH_DEV_OTP_ENABLED --env "$e" --body true --repo ADatkashov/kunde
+   done
+   unset S
+   ```
+   (Or the web UI: Settings → Environments → each environment → add the secret and variables.) Apply additionally needs `TF_APPLY_ENABLED=true` in `dev` and, if configured, a required-reviewer approval.
 3. Run *Terraform DEV* (plan only) and review it. Expected: Render service `kunde-backend` **replaced** (1 destroy + 1 create; Neon and the contract are untouched) because provider 1.9.1 cannot update free services in place (issue #80). `KUNDE_ENVIRONMENT=dev`, `AUTH_PHONE_ENABLED`, `AUTH_PHONE_SECRET`, `AUTH_DEV_OTP_*`, `CONSUMER_IDENTITY_ENABLED=true` are set. **The replacement gets a new slug and URL** (`backend_url` output); the old `kunde-backend-5wwg` URL stops working.
 4. Apply with `replace_render=true`, `apply=true`, `confirm=apply-dev` only after you approve the plan. Wait for the cold start (~1 min); Flyway applies V9.
 5. Run *Android Release APK (DEV)* with `api-base-url` = the **new** URL + `/api/v1/` and install; sign in with `+7 700 000 00 01` and code `123456`.

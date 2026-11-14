@@ -99,6 +99,13 @@ jobs:
           for v in RENDER_API_KEY RENDER_OWNER_ID NEON_API_KEY TF_VAR_neon_org_id TF_TOKEN_app_terraform_io TF_CLOUD_ORGANIZATION TF_WORKSPACE; do
             if [ -z "${!v}" ]; then echo "::error::$v is not configured in this GitHub Environment"; missing=1; fi
           done
+          # Phone sign-in settings: only lengths/flags are checked, the secret is never printed.
+          if [ "$TF_VAR_auth_phone_enabled" = "true" ] && [ "${#TF_VAR_auth_phone_secret}" -lt 32 ]; then
+            echo "::error::AUTH_PHONE_ENABLED=true needs environment secret AUTH_PHONE_SECRET (32+ characters) in this Environment"; missing=1
+          fi
+          if [ "$TF_VAR_auth_dev_otp_enabled" = "true" ] && [ "$TF_VAR_auth_phone_enabled" != "true" ]; then
+            echo "::error::AUTH_DEV_OTP_ENABLED=true requires AUTH_PHONE_ENABLED=true"; missing=1
+          fi
           exit $missing
       - name: Init (HCP Terraform state, locked during runs)
         working-directory: infrastructure/terraform/environments/dev
@@ -158,6 +165,13 @@ jobs:
           for v in RENDER_API_KEY RENDER_OWNER_ID NEON_API_KEY TF_VAR_neon_org_id TF_TOKEN_app_terraform_io TF_CLOUD_ORGANIZATION TF_WORKSPACE; do
             if [ -z "${!v}" ]; then echo "::error::$v is not configured in this GitHub Environment"; missing=1; fi
           done
+          # Phone sign-in settings: only lengths/flags are checked, the secret is never printed.
+          if [ "$TF_VAR_auth_phone_enabled" = "true" ] && [ "${#TF_VAR_auth_phone_secret}" -lt 32 ]; then
+            echo "::error::AUTH_PHONE_ENABLED=true needs environment secret AUTH_PHONE_SECRET (32+ characters) in this Environment"; missing=1
+          fi
+          if [ "$TF_VAR_auth_dev_otp_enabled" = "true" ] && [ "$TF_VAR_auth_phone_enabled" != "true" ]; then
+            echo "::error::AUTH_DEV_OTP_ENABLED=true requires AUTH_PHONE_ENABLED=true"; missing=1
+          fi
           exit $missing
       - name: Init
         working-directory: infrastructure/terraform/environments/dev
