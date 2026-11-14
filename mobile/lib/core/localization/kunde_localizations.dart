@@ -71,6 +71,11 @@ class KundeLocalizations {
       : _isEnglish
           ? 'Search failed. Please try again.'
           : 'Не удалось выполнить поиск. Попробуйте ещё раз.';
+  String get offeringUnavailable => _isKazakh
+      ? 'Қазір қолжетімсіз'
+      : _isEnglish
+          ? 'Currently unavailable'
+          : 'Сейчас недоступно';
   String get retry => _isKazakh
       ? 'Қайталау'
       : _isEnglish

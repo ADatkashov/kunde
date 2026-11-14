@@ -23,8 +23,8 @@ Assumptions are recommendations to unblock specification, not approved facts. As
 |---|---|---|---|
 | D-01 | **PARTIALLY APPROVED 2026-11-13** — category (Food Ordering) and market (Almaty) approved; exact merchant cohort, pilot zone and mandatory operational proof remain open. See [D-01 record](#d-01--initial-category-and-pilot-market). | Product + Operations | MVP scope lock |
 | D-02 | **APPROVED 2026-11-13** — phased hybrid fulfillment for Food Ordering: A pickup, B merchant-managed delivery, C third-party logistics; no KUNDE courier fleet at start. See [D-02 record](#d-02--food-ordering-fulfillment-and-delivery-model). | Operations + Partnerships | Fulfillment design |
-| D-03 | Payment provider, supported methods, authorization/capture/refund semantics, settlement and reconciliation cadence? | Finance + Engineering + Legal | Transaction pilot |
-| D-04 | Currency, taxes, fee display, commission, partner settlement terms and dispute allocation? | Finance + Legal | Partner contracts |
+| D-03 | **APPROVED FOR LIMITED DEV PILOT 2026-11-14** — pay on receipt, no online payment, no provider, KUNDE does not accept customer money (temporary, not production). See [D-03/D-04 record](#d-03--d-04--dev-pilot-payments-and-pricing-temporary). Original question: payment provider, supported methods, authorization/capture/refund semantics, settlement and reconciliation cadence? | Finance + Engineering + Legal | Transaction pilot |
+| D-04 | **APPROVED FOR LIMITED DEV PILOT 2026-11-14** — KZT, one final price, 0% commission, no service fee, no promo codes, no tax calculation (temporary, not production). See [D-03/D-04 record](#d-03--d-04--dev-pilot-payments-and-pricing-temporary). Original question: currency, taxes, fee display, commission, partner settlement terms and dispute allocation? | Finance + Legal | Partner contracts |
 | D-05 | **APPROVED 2026-11-13** — Food Ordering restaurant response: 5 min deadline, 2 min reminder, auto-timeout; other SLAs per D-12. See [D-05 record](#d-05--restaurant-response-sla-and-order-timeout). Original question: consumer/partner/provider response SLAs and auto-timeout behavior? | Operations + Partners | Order/booking policies |
 | D-06 | **APPROVED FOR PRODUCT RULES 2026-11-13** — free cancel before acceptance, no invented penalties, explicit consent for substitutions; refunds/penalties stay gated by D-03/D-04/legal. See [D-06 record](#d-06--cancellation-refund-and-partial-fulfillment-policy). Original question: category-specific cancellation windows, no-show treatment, refunds and partial fulfillment rules? | Product + Legal + Finance | Public terms |
 | D-07 | **APPROVED FOR INITIAL ROLE MODEL 2026-11-13** — partner roles Owner/Manager/Operator + KUNDE Administrator, manual verification; proofing method, documents and KYC provider remain open. See [D-07 record](#d-07--partner-identity-and-verification). Original question: identity assurance and verification by user/partner/provider role? | Trust + Legal + Security | Account and partner launch |
@@ -269,6 +269,23 @@ D-03/D-04, legal review of consumer-facing terms, settlement and refund processi
 ### Remaining gates
 
 Exact identity-proofing method, legally required verification documents, sensitive-document retention and production identity-provider readiness need Trust, Legal, Privacy and Security review. No KYC provider or external verification service is approved.
+
+## D-03 / D-04 — DEV pilot payments and pricing (temporary)
+
+**Status:** APPROVED FOR A LIMITED DEV PILOT WITH SYNTHETIC DATA — Product Owner, 2026-11-14. Temporary; **not** the production money model. Options that were considered stay in [the draft](../decision-drafts/P1-decisions-D-03-D-04-payments-commission.md) and are not approved.
+
+### D-03 (payments)
+- No online payment. The customer pays for the service on receipt, outside the app.
+- No payment provider is connected; KUNDE does not accept, hold or move customer money.
+
+### D-04 (pricing)
+- Currency KZT. The user sees one final price per offering (stored as integer tiyn, `offerings.price_minor`, V11).
+- KUNDE commission is 0% while testing; service fee is 0; promo codes are disabled.
+- No tax calculation until legal approval.
+
+### Consequences and remaining gates
+- Unblocks price/availability on offerings (TASK-016) and a pay-on-receipt order model (TASK-022). Does **not** unblock TASK-025/026 (provider, callbacks), TASK-028 (reconciliation, refunds) or any commission/tax logic; those need a new decision for production.
+- Production pricing, taxes, commission, settlement, refunds and legal terms stay open (D-03/D-04 production scope, D-08).
 
 ## D-05/D-06/D-07 — Decision boundaries and roadmap impact
 

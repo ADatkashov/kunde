@@ -62,7 +62,7 @@ public class CatalogController {
     /**
      * Name search over PUBLISHED offerings in PUBLISHED categories (SEARCH-001 baseline), same ranking
      * as category search: exact, prefix, substring. Separate path so the /search contract is unchanged.
-     * Only the approved partner's id and name are exposed; no price, stock or availability; unpublished rows are never disclosed.
+     * Only the approved partner's id and name, the KZT price and the availability flag are exposed; unpublished rows are never disclosed.
      */
     @GetMapping("/search/offerings")
     public List<Offering> searchOfferings(@RequestParam(defaultValue = "") @Size(max = 200) String q,
@@ -86,8 +86,8 @@ public class CatalogController {
     }
 
     /**
-     * Published offerings of a published category only. Offerings of partners that are not APPROVED are hidden; no price, stock or availability is
-     * exposed or implied: those need approved contracts (TASK-014/015). Unknown, DRAFT or RETIRED
+     * Published offerings of a published category only. Offerings of partners that are not APPROVED are hidden; the response carries the single KZT price
+     * (D-04 DEV pilot) and the availability flag, no stock. Unknown, DRAFT or RETIRED
      * categories yield an empty list so existence of unpublished catalog data is not disclosed.
      */
     @GetMapping("/categories/{categoryId}/offerings")
@@ -125,7 +125,7 @@ public class CatalogController {
 
     private static final String OFFERING_SELECT = """
             select o.id, o.category_id, o.kind, o.name_ru, o.name_kk, o.name_en,
-                   o.partner_id, p.display_name as partner_name
+                   o.partner_id, p.display_name as partner_name, o.price_minor, o.currency, o.availability
             from marketplace.offerings o
             join marketplace.categories c on c.id = o.category_id
             join marketplace.partners p on p.id = o.partner_id and p.verification_status = 'APPROVED'
@@ -133,5 +133,6 @@ public class CatalogController {
     private static final RowMapper<Offering> OFFERING_MAPPER = (rs, row) -> new Offering(
             rs.getString("id"), rs.getString("category_id"), rs.getString("kind"),
             rs.getString("name_ru"), rs.getString("name_kk"), rs.getString("name_en"),
-            rs.getString("partner_id"), rs.getString("partner_name"));
+            rs.getString("partner_id"), rs.getString("partner_name"),
+            rs.getLong("price_minor"), rs.getString("currency"), "AVAILABLE".equals(rs.getString("availability")));
 }
