@@ -111,6 +111,18 @@ public class CatalogController {
                         "Offering is not available"));
     }
 
+    /** Public view of an APPROVED partner only; unknown and non-approved partners are indistinguishable 404. */
+    @GetMapping("/partners/{partnerId}")
+    public PartnerSummary partner(@PathVariable UUID partnerId) {
+        return jdbc.query("""
+                select id, display_name from marketplace.partners
+                where id = ? and verification_status = 'APPROVED'
+                """, (rs, row) -> new PartnerSummary(rs.getString("id"), rs.getString("display_name")),
+                partnerId).stream().findFirst()
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PARTNER_NOT_FOUND",
+                        "Partner is not available"));
+    }
+
     private static final String OFFERING_SELECT = """
             select o.id, o.category_id, o.kind, o.name_ru, o.name_kk, o.name_en,
                    o.partner_id, p.display_name as partner_name

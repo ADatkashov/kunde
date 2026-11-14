@@ -173,4 +173,20 @@ class CatalogControllerTest {
                     .hasMessageContaining("offerings_published_has_partner");
         });
     }
+
+    @Test
+    void partnerDetailIsPublicOnlyForApprovedPartners() {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            status.setRollbackOnly();
+            var approved = partner("APPROVED");
+            assertThat(controller.partner(approved)).isEqualTo(
+                    new PartnerSummary(approved.toString(), "Synthetic Partner"));
+            for (var id : java.util.List.of(partner("PENDING_REVIEW"), partner("LIMITED"), partner("SUSPENDED"),
+                    partner("REJECTED"), java.util.UUID.randomUUID())) {
+                org.assertj.core.api.Assertions.assertThatThrownBy(() -> controller.partner(id))
+                        .isInstanceOf(kz.kunde.platform.ApiException.class)
+                        .hasFieldOrPropertyWithValue("code", "PARTNER_NOT_FOUND");
+            }
+        });
+    }
 }
