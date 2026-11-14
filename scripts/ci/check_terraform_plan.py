@@ -5,7 +5,12 @@ ALLOWED_TYPES = {"terraform_data", "neon_project", "render_web_service"}
 NEON_PITR_FREE_MAX = 21600
 
 
-def check(plan):
+RENDER_SERVICE = "render_web_service"
+
+
+def check(plan, allow_render_replace=False):
+    """allow_render_replace: permit exactly one delete+create of the Render service (provider
+    1.9.1 cannot update free-plan services in place, issue #80). Nothing else may be deleted."""
     problems = []
     for rc in plan.get("resource_changes", []):
         addr, rtype = rc["address"], rc["type"]
@@ -14,7 +19,9 @@ def check(plan):
             problems.append(f"{addr}: resource type {rtype} is not allowed in DEV")
             continue
         if "delete" in actions:
-            problems.append(f"{addr}: plan deletes or replaces a resource ({'+'.join(actions)})")
+            is_render_replace = rtype == RENDER_SERVICE and actions == ["delete", "create"]
+            if not (allow_render_replace and is_render_replace):
+                problems.append(f"{addr}: plan deletes or replaces a resource ({'+'.join(actions)})")
         after = rc["change"].get("after") or {}
         if rtype == "render_web_service":
             if after.get("plan") != "free":
@@ -37,7 +44,8 @@ def check(plan):
 
 
 if __name__ == "__main__":
-    found = check(json.load(open(sys.argv[1])))
+    import os
+    found = check(json.load(open(sys.argv[1])), os.environ.get("ALLOW_RENDER_REPLACE") == "true")
     for line in found:
         print(line)
     summary = json.load(open(sys.argv[1]))

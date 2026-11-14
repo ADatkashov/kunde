@@ -15,6 +15,10 @@ on:
         description: 'Type apply-dev to allow an apply'
         type: string
         default: ''
+      replace_render:
+        description: 'Replace (delete + create) the Render service. Needed because provider 1.9.1 cannot update free-plan services in place.'
+        type: boolean
+        default: false
 permissions:
   contents: read
 # One run at a time: serialises plan/apply per workflow in addition to state locking.
@@ -74,6 +78,7 @@ jobs:
       TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
       TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORGANIZATION }}
       TF_WORKSPACE: ${{ vars.TF_WORKSPACE }}
+      REPLACE_RENDER: ${{ inputs.replace_render && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -99,12 +104,16 @@ jobs:
         id: plan
         working-directory: infrastructure/terraform/environments/dev
         run: |
-          terraform plan -lock-timeout=120s -out="$RUNNER_TEMP/tfplan"
+          args=""
+          if [ "$REPLACE_RENDER" = "true" ]; then args="-replace=module.backend.render_web_service.this"; fi
+          terraform plan -lock-timeout=120s $args -out="$RUNNER_TEMP/tfplan"
           terraform show -no-color "$RUNNER_TEMP/tfplan"
           terraform show -json "$RUNNER_TEMP/tfplan" > "$RUNNER_TEMP/plan.json"
           echo "plan_sha=$(terraform show -no-color "$RUNNER_TEMP/tfplan" | sha256sum | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
       - name: Cost and safety gate (free tier only, no deletes)
         run: python3 scripts/ci/check_terraform_plan.py "$RUNNER_TEMP/plan.json"
+        env:
+          ALLOW_RENDER_REPLACE: ${{ inputs.replace_render && 'true' || 'false' }}
 
   apply:
     needs: plan
@@ -121,6 +130,7 @@ jobs:
       TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
       TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORGANIZATION }}
       TF_WORKSPACE: ${{ vars.TF_WORKSPACE }}
+      REPLACE_RENDER: ${{ inputs.replace_render && 'true' || 'false' }}
       TF_APPLY_ENABLED: ${{ vars.TF_APPLY_ENABLED }}
     steps:
       - name: Explicit apply switch (compensating control if reviewers are not configured)
@@ -149,9 +159,11 @@ jobs:
       - name: Re-plan and require the reviewed plan
         working-directory: infrastructure/terraform/environments/dev
         run: |
-          terraform plan -lock-timeout=120s -out="$RUNNER_TEMP/tfplan"
+          args=""
+          if [ "$REPLACE_RENDER" = "true" ]; then args="-replace=module.backend.render_web_service.this"; fi
+          terraform plan -lock-timeout=120s $args -out="$RUNNER_TEMP/tfplan"
           terraform show -json "$RUNNER_TEMP/tfplan" > "$RUNNER_TEMP/plan.json"
-          python3 "$GITHUB_WORKSPACE/scripts/ci/check_terraform_plan.py" "$RUNNER_TEMP/plan.json"
+          ALLOW_RENDER_REPLACE="$REPLACE_RENDER" python3 "$GITHUB_WORKSPACE/scripts/ci/check_terraform_plan.py" "$RUNNER_TEMP/plan.json"
           sha="$(terraform show -no-color "$RUNNER_TEMP/tfplan" | sha256sum | cut -d' ' -f1)"
           if [ "$sha" != "${{ needs.plan.outputs.plan_sha }}" ]; then
             echo "::error::Plan changed since it was reviewed; run the workflow again."
