@@ -16,8 +16,11 @@ output "password" {
   sensitive = true
 }
 
-# TLS is mandatory and the server certificate AND host name are verified
-# (pgjdbc verify-full uses the JVM default trust store). Never sslmode=disable.
+# TLS is mandatory and both the server certificate chain and the host name are verified.
+# pgjdbc's verify-full reads ~/.postgresql/root.crt by default (the first Render deploy
+# failed on exactly that); DefaultJavaSSLFactory makes it use the JVM trust store instead.
+# Verified locally: trusted cert + matching host starts, untrusted cert and host-name
+# mismatch are both rejected. Never sslmode=disable/require.
 output "jdbc_url" {
-  value = "jdbc:postgresql://${neon_project.this.database_host}/${neon_project.this.database_name}?sslmode=verify-full"
+  value = "jdbc:postgresql://${neon_project.this.database_host}/${neon_project.this.database_name}?sslmode=verify-full&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory"
 }

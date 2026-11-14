@@ -6,7 +6,7 @@
 
 `infrastructure/terraform/environments/dev` → modules `country-cell` (cell contract), `neon` (`neon_project`, provider `kislerdm/neon` 0.18.0, community), `render` (`render_web_service`, provider `render-oss/render` 1.9.1, official partner). Resources: 1 Neon project (default branch/role/database, PostgreSQL 16, `aws-eu-central-1`) and 1 Render Docker web service (free plan, Frankfurt) built from `backend/Dockerfile`, unchanged. Flyway runs at application start (V1–V8, verified locally).
 
-Resources are named `kunde-dev` (Neon) and `kunde-backend` (Render). Rules enforced in code: only `plan = "free"`; DB URL must contain `sslmode`; JDBC URL uses `verify-full` (certificate and host name checked with the JVM trust store); no secret value in Git; Render env values are sensitive; `scripts/ci/check_terraform_policy.py` rejects tracked state/tfvars/plans, weakened TLS, embedded credentials, `-auto-approve` outside the apply workflow and destroy in automation.
+Resources are named `kunde-dev` (Neon) and `kunde-backend` (Render). Rules enforced in code: only `plan = "free"`; DB URL must contain `sslmode`; JDBC URL uses `verify-full` with `sslfactory=DefaultJavaSSLFactory` (certificate chain checked against the JVM trust store, host name verified; plain `verify-full` made pgjdbc look for `~/.postgresql/root.crt` and the first deploy failed on it; verified locally: trusted cert starts, untrusted cert and host mismatch are rejected); no secret value in Git; Render env values are sensitive; `scripts/ci/check_terraform_policy.py` rejects tracked state/tfvars/plans, weakened TLS, embedded credentials, `-auto-approve` outside the apply workflow and destroy in automation.
 
 ## Free-tier facts and limits (sources checked 2026-11-13)
 
