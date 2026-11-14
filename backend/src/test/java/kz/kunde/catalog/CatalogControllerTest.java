@@ -15,6 +15,14 @@ class CatalogControllerTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired PlatformTransactionManager transactionManager;
 
+    /** Synthetic APPROVED partner; call inside the rolled-back transaction. */
+    private java.util.UUID partner(String status) {
+        var user = jdbc.queryForObject("insert into identity.users default values returning id", java.util.UUID.class);
+        return jdbc.queryForObject("""
+                insert into marketplace.partners (display_name, verification_status, created_by_user_id)
+                values ('Synthetic Partner', ?, ?) returning id""", java.util.UUID.class, status, user);
+    }
+
     @Test
     void doesNotAdvertiseUnapprovedOrDemoCategories() {
         assertThat(controller.categories()).isEmpty();
@@ -59,6 +67,7 @@ class CatalogControllerTest {
     void offeringsAreVisibleOnlyWhenOfferingAndCategoryArePublished() {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             status.setRollbackOnly();
+            partner("APPROVED");
             var pub = jdbc.queryForObject("""
                     insert into marketplace.categories (code, name_ru, name_kk, status, published_at)
                     values ('o-pub', 'К', 'К', 'PUBLISHED', now()) returning id""", java.util.UUID.class);
@@ -66,11 +75,11 @@ class CatalogControllerTest {
                     insert into marketplace.categories (code, name_ru, name_kk) values ('o-draft', 'Ч', 'Ч') returning id""",
                     java.util.UUID.class);
             jdbc.update("""
-                    insert into marketplace.offerings (category_id, kind, name_ru, name_kk, status, published_at) values
-                    (?, 'SERVICE', 'Опубликовано', 'Жарияланды', 'PUBLISHED', now()),
-                    (?, 'SERVICE', 'Черновик', 'Қара', 'DRAFT', null),
-                    (?, 'PRODUCT', 'Приостановлено', 'Тоқтатылды', 'SUSPENDED', null),
-                    (?, 'SERVICE', 'В черновой категории', 'Қара санат', 'PUBLISHED', now())""",
+                    insert into marketplace.offerings (category_id, kind, name_ru, name_kk, status, published_at, partner_id) values
+                    (?, 'SERVICE', 'Опубликовано', 'Жарияланды', 'PUBLISHED', now(), (select id from marketplace.partners)),
+                    (?, 'SERVICE', 'Черновик', 'Қара', 'DRAFT', null, (select id from marketplace.partners)),
+                    (?, 'PRODUCT', 'Приостановлено', 'Тоқтатылды', 'SUSPENDED', null, (select id from marketplace.partners)),
+                    (?, 'SERVICE', 'В черновой категории', 'Қара санат', 'PUBLISHED', now(), (select id from marketplace.partners))""",
                     pub, pub, pub, draft);
             assertThat(controller.offerings(pub, 50, 0)).extracting(Offering::nameRu).containsExactly("Опубликовано");
             assertThat(controller.offerings(draft, 50, 0)).isEmpty();
@@ -92,6 +101,7 @@ class CatalogControllerTest {
     void offeringSearchIsPublishedOnlyRankedPaginatedAndWildcardSafe() {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             status.setRollbackOnly();
+            partner("APPROVED");
             var pub = jdbc.queryForObject("""
                     insert into marketplace.categories (code, name_ru, name_kk, status, published_at)
                     values ('os-pub', 'К', 'К', 'PUBLISHED', now()) returning id""", java.util.UUID.class);
@@ -99,14 +109,14 @@ class CatalogControllerTest {
                     insert into marketplace.categories (code, name_ru, name_kk) values ('os-draft', 'Ч', 'Ч') returning id""",
                     java.util.UUID.class);
             jdbc.update("""
-                    insert into marketplace.offerings (category_id, kind, name_ru, name_kk, name_en, status, published_at) values
-                    (?, 'SERVICE', 'Генеральная уборка', 'Бас тазалау', null, 'PUBLISHED', now() - interval '3 minute'),
-                    (?, 'SERVICE', 'Уборка квартиры', 'Пәтер', null, 'PUBLISHED', now() - interval '2 minute'),
-                    (?, 'SERVICE', 'Уборка', 'Тазалау', 'Cleaning', 'PUBLISHED', now() - interval '1 minute'),
-                    (?, 'SERVICE', 'Уборка черновик', 'Қара', null, 'DRAFT', null),
-                    (?, 'PRODUCT', 'Уборка приостановлена', 'Тоқтатылды', null, 'SUSPENDED', null),
-                    (?, 'SERVICE', 'Уборка в черновой категории', 'Қара санат', null, 'PUBLISHED', now()),
-                    (?, 'PRODUCT', '100% чистота', 'Тазалық', null, 'PUBLISHED', now())""",
+                    insert into marketplace.offerings (category_id, kind, name_ru, name_kk, name_en, status, published_at, partner_id) values
+                    (?, 'SERVICE', 'Генеральная уборка', 'Бас тазалау', null, 'PUBLISHED', now() - interval '3 minute', (select id from marketplace.partners)),
+                    (?, 'SERVICE', 'Уборка квартиры', 'Пәтер', null, 'PUBLISHED', now() - interval '2 minute', (select id from marketplace.partners)),
+                    (?, 'SERVICE', 'Уборка', 'Тазалау', 'Cleaning', 'PUBLISHED', now() - interval '1 minute', (select id from marketplace.partners)),
+                    (?, 'SERVICE', 'Уборка черновик', 'Қара', null, 'DRAFT', null, (select id from marketplace.partners)),
+                    (?, 'PRODUCT', 'Уборка приостановлена', 'Тоқтатылды', null, 'SUSPENDED', null, (select id from marketplace.partners)),
+                    (?, 'SERVICE', 'Уборка в черновой категории', 'Қара санат', null, 'PUBLISHED', now(), (select id from marketplace.partners)),
+                    (?, 'PRODUCT', '100% чистота', 'Тазалық', null, 'PUBLISHED', now(), (select id from marketplace.partners))""",
                     pub, pub, pub, pub, pub, draft, pub);
             assertThat(controller.searchOfferings("уборка", 50, 0)).extracting(Offering::nameRu)
                     .containsExactly("Уборка", "Уборка квартиры", "Генеральная уборка");
@@ -119,6 +129,48 @@ class CatalogControllerTest {
             assertThat(controller.searchOfferings("_", 50, 0)).isEmpty();
             assertThat(controller.searchOfferings("   ", 50, 0)).isEmpty();
             assertThat(controller.searchOfferings("черновик", 50, 0)).isEmpty();
+        });
+    }
+
+    @Test
+    void offeringsRequireAnApprovedPartnerAndExposeItsIdentity() {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            status.setRollbackOnly();
+            var cat = jdbc.queryForObject("""
+                    insert into marketplace.categories (code, name_ru, name_kk, status, published_at)
+                    values ('p-pub', 'К', 'К', 'PUBLISHED', now()) returning id""", java.util.UUID.class);
+            var approved = partner("APPROVED");
+            var pending = partner("PENDING_REVIEW");
+            var suspended = partner("SUSPENDED");
+            for (var row : java.util.List.of(new Object[] {"Одобренный", approved}, new Object[] {"Ожидает", pending},
+                    new Object[] {"Приостановленный", suspended})) {
+                jdbc.update("""
+                        insert into marketplace.offerings (category_id, kind, name_ru, name_kk, status, published_at, partner_id)
+                        values (?, 'SERVICE', ?, 'Қ', 'PUBLISHED', now(), ?)""", cat, row[0], row[1]);
+            }
+            var shown = controller.offerings(cat, 50, 0);
+            assertThat(shown).extracting(Offering::nameRu).containsExactly("Одобренный");
+            assertThat(shown.get(0).partnerId()).isEqualTo(approved.toString());
+            assertThat(shown.get(0).partnerName()).isEqualTo("Synthetic Partner");
+            assertThat(controller.searchOfferings("Ожидает", 50, 0)).isEmpty();
+            assertThat(controller.searchOfferings("Одобренный", 50, 0)).hasSize(1);
+            // Losing approval hides the offering again without touching its own status.
+            jdbc.update("update marketplace.partners set verification_status = 'SUSPENDED' where id = ?", approved);
+            assertThat(controller.offerings(cat, 50, 0)).isEmpty();
+        });
+    }
+
+    @Test
+    void databaseRejectsPublishedOfferingWithoutPartner() {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            status.setRollbackOnly();
+            var cat = jdbc.queryForObject("""
+                    insert into marketplace.categories (code, name_ru, name_kk) values ('np-cat', 'К', 'К') returning id""",
+                    java.util.UUID.class);
+            org.assertj.core.api.Assertions.assertThatThrownBy(() -> jdbc.update("""
+                    insert into marketplace.offerings (category_id, kind, name_ru, name_kk, status, published_at)
+                    values (?, 'SERVICE', 'Без партнёра', 'Қ', 'PUBLISHED', now())""", cat))
+                    .hasMessageContaining("offerings_published_has_partner");
         });
     }
 }

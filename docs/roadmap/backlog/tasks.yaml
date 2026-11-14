@@ -332,8 +332,8 @@
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
     "user_story_id": "US-008",
-    "implementation_status": "not_started",
-    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation. D-07 approved 2026-11-13; still depends on TASK-015 persistence and partner-scoped authorization."
+    "implementation_status": "in_progress",
+    "implementation_note": "Flyway V10 links offerings to partners (PUBLISHED requires partner_id); consumer offering list/detail/search show only offerings of APPROVED partners and expose partner id and display name. Still missing: partner-scoped write/authorization API, price/availability (TASK-022/014), device checks; ADR-014 gates unchanged."
   },
   {
     "id": "TASK-017",
