@@ -28,7 +28,7 @@ DEV Render + Neon is deployed and verified (see [PROJECT_STATE.md](PROJECT_STATE
 
 - D-02, D-05, D-06, D-07 are approved. **Next most important: D-03/D-04** (payments, commission, settlement); they gate TASK-025/026/027/028 and any charge or refund.
 - Partner persistence (TASK-015, V8) is in. Still missing before orders can be persisted: a partner reference on offerings (TASK-016), prices and quotes (TASK-022); `docs/architecture/12-data-model.md` requires partner reference plus item/quote snapshots, so persist `OrderLifecycle` (TASK-021) only after those exist.
-- TASK-016 link (V10) is in review. Next without new decisions: TASK-022 prerequisites are blocked by D-03/D-04; otherwise continue TASK-016 (partner detail read model) or TASK-006 device gaps. Partner/admin HTTP APIs stay blocked on a partner-app client/audience decision and a KUNDE Administrator identity (D-14).
+- TASK-016 link (V10) and public partner detail are merged (#81, #82). Remaining without new decisions: none that adds value — partner write APIs need D-14 (partner-app audience, admin identity); price/availability need D-03/D-04. **Owner action:** review [D-03/D-04 options](docs/product/decision-drafts/P1-decisions-D-03-D-04-payments-commission.md) (recommended: split-payment via provider or direct-to-partner, pilot without online payment, KZT, percentage commission set by the owner, no promos). Meanwhile continue TASK-006 device gaps only with real devices.
 - D-01 is partially approved (Food Ordering, Almaty). Still open: exact restaurants, pilot zone, operational proof. **Next most important: D-02** (who delivers); it gates TASK-019/029 and order logistics.
 
 - TASK-001 / D-12: name alert owners/on-call and approve SLOs (unblocks TASK-047/048 beyond the draft).
