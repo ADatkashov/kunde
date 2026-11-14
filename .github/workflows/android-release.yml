@@ -1,5 +1,8 @@
 name: Android Release APK (DEV)
 on:
+  push:  # TEMPORARY: remove before merge (dispatch needs the file on main)
+    branches: [ccr-1cb05111-rokfmn]
+    paths: ['.github/workflows/android-release.yml']
   workflow_dispatch:
     inputs:
       api-base-url:
@@ -12,7 +15,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
-      API_BASE_URL: ${{ inputs.api-base-url }}
+      API_BASE_URL: ${{ inputs.api-base-url || 'https://kunde-backend-5wwg.onrender.com/api/v1/' }}
       KUNDE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       KUNDE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       KUNDE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
@@ -23,9 +26,11 @@ jobs:
           persist-credentials: false
       - name: Require signing secrets and HTTPS API URL
         run: |
+          miss=0
           for v in KEYSTORE_B64 KUNDE_KEYSTORE_PASSWORD KUNDE_KEY_ALIAS KUNDE_KEY_PASSWORD; do
-            [ -n "${!v}" ] || { echo "::error::missing secret for $v (see docs/infrastructure/android-release-apk.md)"; exit 1; }
+            [ -n "${!v}" ] || { echo "::error::missing secret for $v (see docs/infrastructure/android-release-apk.md)"; miss=1; }
           done
+          [ "$miss" = 0 ] || exit 1
           case "$API_BASE_URL" in https://*) ;; *) echo "::error::API URL must be https"; exit 1;; esac
           case "$API_BASE_URL" in *localhost*|*10.0.2.2*|*127.0.0.1*) echo "::error::local API URL"; exit 1;; esac
       - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
