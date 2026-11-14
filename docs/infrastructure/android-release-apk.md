@@ -10,8 +10,13 @@ Release signing is read only from environment variables; without them the releas
 3. Actions → *Android Release APK (DEV)* → Run workflow; download artifact `KUNDE-dev-release` (kept 14 days) and check `.sha256`.
 4. Install: allow "install unknown apps", open the APK.
 
+## Phone sign-in (ADR-015 amended 2026-11-14)
+The build uses `--dart-define=PHONE_AUTH_ENABLED=true` (own phone-OTP login, no identity provider) and, by default, `DEV_OTP_HINT=true`
+(shows "Test code: 123456" on the code screen; workflow input `dev-otp-hint`). Sign-in only works once the backend has phone auth enabled; see
+[phone-otp-auth.md](../identity/phone-otp-auth.md#dev-setup) (Render env vars via the Terraform workflow, owner-approved apply).
+Use only the synthetic numbers in the allowlist (default `+7 700 000 00 01`..`03`). The workflow verifies the APK contains the auth endpoints.
+
 ## Limits
-- Identity is off in this build (`CONSUMER_IDENTITY_ENABLED` unset): no identity provider is deployed in DEV, so profile/consent/addresses/support
-  (protected endpoints return 503 fail-closed) are not usable; only public catalog screens work. Login needs an approved IdP (ADR-013/015) first.
+- Without the backend variables above, `/auth/*` answers 503 and sign-in fails closed; only public catalog screens work.
 - applicationId stays `com.example.kunde_mobile` (changing it affects the native E2E harness); decide before any store release.
 - Not verified on a physical device.

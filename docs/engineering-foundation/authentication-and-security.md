@@ -1,5 +1,7 @@
 # Authentication & Security
 
+> **2026-11-14:** ADR-015 was amended by owner decision: authentication is the own phone-OTP implementation (`/api/v1/auth/*`), not an external OIDC provider. See [phone-otp-auth.md](../identity/phone-otp-auth.md). The OIDC/Keycloak text below is historical for the POC and the still-present, disabled-by-default OIDC resource-server mode.
+
 Current foundation baseline: main `bb5619b`, including merged PRs #11–#12.
 ADR-013 accepts the reversible fail-closed resource-server boundary; ADR-015 accepts
 Keycloak primary/ZITADEL fallback for synthetic development. Neither approves a

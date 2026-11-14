@@ -32,7 +32,14 @@ module "backend" {
   db_username = module.database.username
   db_password = module.database.password
 
-  oidc_issuer_uri           = var.oidc_issuer_uri
-  oidc_audience             = var.oidc_audience
-  consumer_identity_enabled = tobool(module.cell.cell.app_env.CONSUMER_IDENTITY_ENABLED)
+  oidc_issuer_uri = var.oidc_issuer_uri
+  oidc_audience   = var.oidc_audience
+  # Phone sign-in needs the consumer profile/consent/address API behind it.
+  consumer_identity_enabled = tobool(module.cell.cell.app_env.CONSUMER_IDENTITY_ENABLED) || tobool(var.auth_phone_enabled)
+
+  environment_name            = "dev"
+  auth_phone_enabled          = tobool(var.auth_phone_enabled)
+  auth_phone_secret           = var.auth_phone_secret
+  auth_dev_otp_enabled        = tobool(var.auth_dev_otp_enabled)
+  auth_dev_otp_allowed_phones = var.auth_dev_otp_allowed_phones
 }

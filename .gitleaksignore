@@ -2,3 +2,11 @@
 # mock_provider test default, committed in 4de3f3d and removed in the next commit. History
 # cannot be rewritten (AGENTS.md). Not a credential; no other finding is suppressed.
 4de3f3d6e8865c157be8569cf92f1aa8cb8a3866:infrastructure/terraform/modules/neon/neon.tftest.hcl:hashicorp-tf-password:7
+# PR #80: literal synthetic test secret ("synthetic-test-secret-0123456789abcdef", 5 occurrences in tests and a
+# Terraform mock test) committed in 37d8425; replaced by a low-entropy literal in the next commit. Not a credential.
+# History cannot be rewritten (AGENTS.md).
+37d8425b89c632d848f601a94e592f3d0bf6e923:backend/src/test/java/kz/kunde/auth/DevOtpProductionStartupTest.java:generic-api-key:23
+37d8425b89c632d848f601a94e592f3d0bf6e923:infrastructure/terraform/modules/render/render.tftest.hcl:generic-api-key:61
+37d8425b89c632d848f601a94e592f3d0bf6e923:infrastructure/terraform/modules/render/render.tftest.hcl:generic-api-key:78
+37d8425b89c632d848f601a94e592f3d0bf6e923:backend/src/test/java/kz/kunde/auth/PhoneAuthHttpIntegrationTest.java:generic-api-key:36
+37d8425b89c632d848f601a94e592f3d0bf6e923:backend/src/test/java/kz/kunde/auth/PhoneAuthGuardTest.java:generic-api-key:11

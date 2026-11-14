@@ -5,6 +5,10 @@ on:
       api-base-url:
         description: 'API base URL baked into the APK'
         default: 'https://kunde-backend-5wwg.onrender.com/api/v1/'
+      dev-otp-hint:
+        description: 'Show the DEV test code (123456) hint on the OTP screen. DEV builds only; never for a store release.'
+        type: boolean
+        default: true
 permissions:
   contents: read
 jobs:
@@ -13,6 +17,7 @@ jobs:
     timeout-minutes: 40
     env:
       API_BASE_URL: ${{ inputs.api-base-url || 'https://kunde-backend-5wwg.onrender.com/api/v1/' }}
+      DEV_OTP_HINT: ${{ inputs.dev-otp-hint && 'true' || 'false' }}
       KUNDE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       KUNDE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       KUNDE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
@@ -56,7 +61,9 @@ jobs:
           export KUNDE_KEYSTORE_PATH="$RUNNER_TEMP/release.jks"
           flutter build apk --release --target-platform android-arm64 \
             --dart-define=API_BASE_URL="$API_BASE_URL" \
-            --dart-define=API_TIMEOUT_SECONDS=90
+            --dart-define=API_TIMEOUT_SECONDS=90 \
+            --dart-define=PHONE_AUTH_ENABLED=true \
+            --dart-define=DEV_OTP_HINT="$DEV_OTP_HINT"
           mkdir -p ../dist
           cp build/app/outputs/flutter-apk/app-release.apk ../dist/KUNDE-dev-release.apk
           rm -f "$RUNNER_TEMP/release.jks"
@@ -74,7 +81,9 @@ jobs:
           if grep -q "application-debuggable" dist/badging.txt; then echo "::error::debuggable"; exit 1; fi
           unzip -l "$apk" | grep -q "lib/arm64-v8a/libapp.so"
           mkdir x && unzip -q "$apk" -d x
-          strings -a x/lib/arm64-v8a/libapp.so | grep -q "kunde-backend-5wwg.onrender.com" || { echo "::error::API URL not in APK"; exit 1; }
+          api_host="$(printf '%s' "$API_BASE_URL" | sed -E 's#^https://([^/:]+).*#\1#')"
+          strings -a x/lib/arm64-v8a/libapp.so | grep -qF "$api_host" || { echo "::error::API URL not in APK"; exit 1; }
+          strings -a x/lib/arm64-v8a/libapp.so | grep -q "auth/otp/verify" || { echo "::error::phone authentication is not compiled in"; exit 1; }
           if grep -rqaE "localhost:8080|10\.0\.2\.2" x/lib x/assets 2>/dev/null; then echo "::error::local URL in APK"; exit 1; fi
           if grep -rqaE "BEGIN (RSA |EC )?PRIVATE KEY|client_secret" x/lib x/assets 2>/dev/null; then echo "::error::secret marker in APK"; exit 1; fi
           (cd dist && sha256sum KUNDE-dev-release.apk | tee KUNDE-dev-release.apk.sha256)

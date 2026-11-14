@@ -75,6 +75,9 @@ jobs:
       RENDER_OWNER_ID: ${{ vars.RENDER_OWNER_ID }}
       NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
       TF_VAR_neon_org_id: ${{ vars.NEON_ORG_ID }}
+      TF_VAR_auth_phone_enabled: ${{ vars.AUTH_PHONE_ENABLED || 'false' }}
+      TF_VAR_auth_dev_otp_enabled: ${{ vars.AUTH_DEV_OTP_ENABLED || 'false' }}
+      TF_VAR_auth_phone_secret: ${{ secrets.AUTH_PHONE_SECRET }}
       TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
       TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORGANIZATION }}
       TF_WORKSPACE: ${{ vars.TF_WORKSPACE }}
@@ -96,6 +99,13 @@ jobs:
           for v in RENDER_API_KEY RENDER_OWNER_ID NEON_API_KEY TF_VAR_neon_org_id TF_TOKEN_app_terraform_io TF_CLOUD_ORGANIZATION TF_WORKSPACE; do
             if [ -z "${!v}" ]; then echo "::error::$v is not configured in this GitHub Environment"; missing=1; fi
           done
+          # Phone sign-in settings: only lengths/flags are checked, the secret is never printed.
+          if [ "$TF_VAR_auth_phone_enabled" = "true" ] && [ "${#TF_VAR_auth_phone_secret}" -lt 32 ]; then
+            echo "::error::AUTH_PHONE_ENABLED=true needs environment secret AUTH_PHONE_SECRET (32+ characters) in this Environment"; missing=1
+          fi
+          if [ "$TF_VAR_auth_dev_otp_enabled" = "true" ] && [ "$TF_VAR_auth_phone_enabled" != "true" ]; then
+            echo "::error::AUTH_DEV_OTP_ENABLED=true requires AUTH_PHONE_ENABLED=true"; missing=1
+          fi
           exit $missing
       - name: Init (HCP Terraform state, locked during runs)
         working-directory: infrastructure/terraform/environments/dev
@@ -127,6 +137,9 @@ jobs:
       RENDER_OWNER_ID: ${{ vars.RENDER_OWNER_ID }}
       NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
       TF_VAR_neon_org_id: ${{ vars.NEON_ORG_ID }}
+      TF_VAR_auth_phone_enabled: ${{ vars.AUTH_PHONE_ENABLED || 'false' }}
+      TF_VAR_auth_dev_otp_enabled: ${{ vars.AUTH_DEV_OTP_ENABLED || 'false' }}
+      TF_VAR_auth_phone_secret: ${{ secrets.AUTH_PHONE_SECRET }}
       TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
       TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORGANIZATION }}
       TF_WORKSPACE: ${{ vars.TF_WORKSPACE }}
@@ -152,6 +165,13 @@ jobs:
           for v in RENDER_API_KEY RENDER_OWNER_ID NEON_API_KEY TF_VAR_neon_org_id TF_TOKEN_app_terraform_io TF_CLOUD_ORGANIZATION TF_WORKSPACE; do
             if [ -z "${!v}" ]; then echo "::error::$v is not configured in this GitHub Environment"; missing=1; fi
           done
+          # Phone sign-in settings: only lengths/flags are checked, the secret is never printed.
+          if [ "$TF_VAR_auth_phone_enabled" = "true" ] && [ "${#TF_VAR_auth_phone_secret}" -lt 32 ]; then
+            echo "::error::AUTH_PHONE_ENABLED=true needs environment secret AUTH_PHONE_SECRET (32+ characters) in this Environment"; missing=1
+          fi
+          if [ "$TF_VAR_auth_dev_otp_enabled" = "true" ] && [ "$TF_VAR_auth_phone_enabled" != "true" ]; then
+            echo "::error::AUTH_DEV_OTP_ENABLED=true requires AUTH_PHONE_ENABLED=true"; missing=1
+          fi
           exit $missing
       - name: Init
         working-directory: infrastructure/terraform/environments/dev
@@ -182,5 +202,10 @@ jobs:
             sleep 10
           done
           [ "$code" = "200" ] || { echo "::error::readiness did not reach 200 (last: $code)"; exit 1; }
-          [ "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$url/api/v1/protected-test")" = "503" ]
+          # Protected routes stay closed: 503 while no identity is configured, 401 once phone sign-in is on.
+          expected=503; [ "$TF_VAR_auth_phone_enabled" = "true" ] && expected=401
+          [ "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$url/api/v1/protected-test")" = "$expected" ]
+          if [ "$TF_VAR_auth_phone_enabled" = "true" ]; then
+            [ "$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{"phone":"bad"}' "$url/api/v1/auth/otp/request")" = "400" ]
+          fi
           curl -fsS "$url/api/v1/openapi.yaml" | grep -q 'openapi: 3.1.0'

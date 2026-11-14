@@ -45,3 +45,42 @@ run "omits_empty_optional_env_vars" {
     error_message = "empty optional env vars must not be sent"
   }
 }
+
+run "phone_auth_is_off_by_default" {
+  command = plan
+  assert {
+    condition     = !contains(keys(render_web_service.this.env_vars), "AUTH_PHONE_ENABLED") && !contains(keys(render_web_service.this.env_vars), "AUTH_DEV_OTP_ENABLED") && render_web_service.this.env_vars["KUNDE_ENVIRONMENT"].value == "production"
+    error_message = "phone auth and DEV OTP must be absent by default and the environment must default to production"
+  }
+}
+
+run "rejects_dev_otp_outside_dev" {
+  command = plan
+  variables {
+    auth_phone_enabled   = true
+    auth_phone_secret    = "synthetic-test-secret-synthetic-test-secret"
+    auth_dev_otp_enabled = true
+  }
+  expect_failures = [var.auth_dev_otp_enabled]
+}
+
+run "rejects_short_phone_auth_secret" {
+  command = plan
+  variables { auth_phone_secret = "short" }
+  expect_failures = [var.auth_phone_secret]
+}
+
+run "dev_otp_allowed_in_dev" {
+  command = plan
+  variables {
+    environment_name            = "dev"
+    auth_phone_enabled          = true
+    auth_phone_secret           = "synthetic-test-secret-synthetic-test-secret"
+    auth_dev_otp_enabled        = true
+    auth_dev_otp_allowed_phones = "+77000000001"
+  }
+  assert {
+    condition     = render_web_service.this.env_vars["AUTH_DEV_OTP_ENABLED"].value == "true" && render_web_service.this.env_vars["KUNDE_ENVIRONMENT"].value == "dev"
+    error_message = "DEV OTP env vars expected in dev"
+  }
+}

@@ -6,6 +6,7 @@ import 'features/shell/kunde_shell.dart';
 import 'features/identity_poc/identity_poc_screen.dart';
 import 'features/identity/auth_repository.dart';
 import 'features/identity/auth_screen.dart';
+import 'features/identity/phone_auth_gateway.dart';
 import 'shared/theme/kunde_theme.dart';
 
 void main() {
@@ -24,18 +25,25 @@ void main() {
       baseUri: Uri.parse(apiBaseUrl),
       timeout: const Duration(seconds: apiTimeoutSeconds),
     ),
-    auth: const bool.fromEnvironment('CONSUMER_IDENTITY_ENABLED')
+    auth: const bool.fromEnvironment('PHONE_AUTH_ENABLED')
         ? AuthRepository(
-            gateway: AppAuthGateway(
-              issuer: const String.fromEnvironment('OIDC_ISSUER_URI'),
-              clientId: const String.fromEnvironment('OIDC_CLIENT_ID',
-                  defaultValue: 'kunde-consumer'),
-            ),
+            gateway: PhoneAuthGateway(apiBase: Uri.parse(apiBaseUrl)),
             vault: SecureTokenVault(),
             apiBase: Uri.parse(apiBaseUrl),
           )
-        : null,
+        : const bool.fromEnvironment('CONSUMER_IDENTITY_ENABLED')
+            ? AuthRepository(
+                gateway: AppAuthGateway(
+                  issuer: const String.fromEnvironment('OIDC_ISSUER_URI'),
+                  clientId: const String.fromEnvironment('OIDC_CLIENT_ID',
+                      defaultValue: 'kunde-consumer'),
+                ),
+                vault: SecureTokenVault(),
+                apiBase: Uri.parse(apiBaseUrl),
+              )
+            : null,
     identityPocEnabled: const bool.fromEnvironment('IDENTITY_POC_ENABLED'),
+    devOtpHint: const bool.fromEnvironment('DEV_OTP_HINT'),
   ));
 }
 
@@ -44,11 +52,15 @@ class KundeApp extends StatefulWidget {
       {required this.api,
       this.auth,
       this.identityPocEnabled = false,
+      this.devOtpHint = false,
       super.key});
 
   final KundeApi api;
   final AuthRepository? auth;
   final bool identityPocEnabled;
+
+  /// DEV builds only: show the fixed test code on the OTP screen.
+  final bool devOtpHint;
 
   @override
   State<KundeApp> createState() => _KundeAppState();
@@ -70,6 +82,7 @@ class _KundeAppState extends State<KundeApp> {
             ? AuthScreen(
                 auth: widget.auth!,
                 api: widget.api,
+                devOtpHint: widget.devOtpHint,
                 onLocale: (locale) => setState(() => _locale = locale))
             : widget.identityPocEnabled
                 ? const IdentityPocScreen()
