@@ -71,3 +71,13 @@ Use OIDC Authorization Code + PKCE through the system browser. Persist an immuta
 The development token policy is 300-second access tokens, refresh rotation with Max Reuse 0, 1800-second session idle and 43200-second maximum session. Verify actual runtime configuration and behavior before recording a pass. The earlier readiness drill measured approximately 60 seconds of JWT expiration tolerance. Implementation must document its configured tolerance and resulting acceptance window.
 
 Technical evidence is preserved in the final provider evaluation and Keycloak readiness package. Earlier results establish POC feasibility and are historical evidence only. Keycloak operations require patching, backups and restore rehearsal, signing-key rotation, availability planning, monitoring and named operations ownership. Privacy/legal, data location, OTP, recovery, abuse controls and production security gates remain open. Architecture approval authorizes development with synthetic users. Production rollout requires separate evidence and approval.
+
+## DEV addendum — ZITADEL Cloud Free (2026-11-14, owner choice)
+
+The owner chose **ZITADEL Cloud Free** as the identity provider for the **DEV environment only** (synthetic users, no real personal data), to give the Render DEV backend
+and the Android DEV APK a working OIDC login quickly without hosting Keycloak on 512 MB Render Free. Reasons: no cost and no extra runtime to operate, standard OIDC with
+PKCE, EU data location, same resource-server boundary (exact issuer, audience, signature, time). Free-plan limits (100 DAU, no custom domain, no SLA) are acceptable for DEV only.
+
+This does **not** approve a production provider: the hard gates above (Kazakhstan data location/legal review, comparable price/SLA/export answers, OTP route, ops ownership)
+still apply, and Keycloak remains the evidence-backed self-hosted alternative. Choosing ZITADEL for DEV is reversible: the backend selects the token shape through
+`OIDC_TOKEN_PROFILE` (`keycloak` default, `zitadel`) and the client through `OIDC_PROVIDER`. Runbook: [docs/identity/zitadel-dev.md](../../identity/zitadel-dev.md).

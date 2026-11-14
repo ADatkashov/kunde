@@ -75,6 +75,11 @@ jobs:
       RENDER_OWNER_ID: ${{ vars.RENDER_OWNER_ID }}
       NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
       TF_VAR_neon_org_id: ${{ vars.NEON_ORG_ID }}
+      # Public identifiers only (ZITADEL issuer, project audience, client id); empty keeps identity off.
+      TF_VAR_oidc_issuer_uri: ${{ vars.OIDC_ISSUER_URI }}
+      TF_VAR_oidc_audience: ${{ vars.OIDC_AUDIENCE }}
+      TF_VAR_oidc_client_id: ${{ vars.OIDC_CLIENT_ID }}
+      TF_VAR_consumer_identity_enabled: ${{ vars.CONSUMER_IDENTITY_ENABLED || 'false' }}
       TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
       TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORGANIZATION }}
       TF_WORKSPACE: ${{ vars.TF_WORKSPACE }}
@@ -127,6 +132,11 @@ jobs:
       RENDER_OWNER_ID: ${{ vars.RENDER_OWNER_ID }}
       NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
       TF_VAR_neon_org_id: ${{ vars.NEON_ORG_ID }}
+      # Public identifiers only (ZITADEL issuer, project audience, client id); empty keeps identity off.
+      TF_VAR_oidc_issuer_uri: ${{ vars.OIDC_ISSUER_URI }}
+      TF_VAR_oidc_audience: ${{ vars.OIDC_AUDIENCE }}
+      TF_VAR_oidc_client_id: ${{ vars.OIDC_CLIENT_ID }}
+      TF_VAR_consumer_identity_enabled: ${{ vars.CONSUMER_IDENTITY_ENABLED || 'false' }}
       TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
       TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORGANIZATION }}
       TF_WORKSPACE: ${{ vars.TF_WORKSPACE }}

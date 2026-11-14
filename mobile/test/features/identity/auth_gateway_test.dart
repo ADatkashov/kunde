@@ -104,4 +104,41 @@ void main() {
     expect(config['authorizationEndpoint'],
         'https://identity.example.test/realms/kunde/protocol/openid-connect/registrations');
   });
+  test('ZITADEL profile uses discovery, prompt=create and configured scopes',
+      () async {
+    final zitadel = AppAuthGateway(
+        issuer: 'https://kunde-dev.zitadel.cloud',
+        clientId: '123456789',
+        provider: 'zitadel',
+        scopes: AppAuthGateway.parseScopes(
+            'openid profile offline_access urn:zitadel:iam:org:project:id:42:aud'));
+    await zitadel.login(register: true);
+    final args = calls.single.arguments as Map;
+    expect(args['issuer'], 'https://kunde-dev.zitadel.cloud');
+    expect(args['serviceConfiguration'], isNull);
+    expect(args['additionalParameters'], {'prompt': 'create'});
+    expect(
+        args['scopes'],
+        containsAll([
+          'openid',
+          'offline_access',
+          'urn:zitadel:iam:org:project:id:42:aud'
+        ]));
+    expect(args['scopes'], isNot(contains('kunde.consumer')));
+    await zitadel.login();
+    expect((calls.last.arguments as Map)['additionalParameters'], isNull);
+    await zitadel.refresh('saved');
+    expect((calls.last.arguments as Map)['scopes'], contains('offline_access'));
+  });
+  test('unknown provider is rejected and empty scopes keep the default',
+      () async {
+    await expectLater(
+        AppAuthGateway(issuer: 'https://identity.example.test', clientId: 'c',
+                provider: 'other')
+            .login(),
+        throwsA(isA<IdentityUnavailable>()));
+    expect(calls, isEmpty);
+    expect(AppAuthGateway.parseScopes('  '), isNull);
+    expect(AppAuthGateway.parseScopes('openid,profile'), ['openid', 'profile']);
+  });
 }

@@ -34,3 +34,20 @@ variable "oidc_audience" {
   type    = string
   default = ""
 }
+
+variable "oidc_client_id" {
+  description = "Public client id of the ZITADEL native app (not a secret)."
+  type        = string
+  default     = ""
+}
+
+variable "oidc_token_profile" {
+  type    = string
+  default = "zitadel"
+}
+
+variable "consumer_identity_enabled" {
+  description = "Enable consumer identity endpoints on DEV; needs oidc_issuer_uri and oidc_audience."
+  type        = bool
+  default     = false
+}

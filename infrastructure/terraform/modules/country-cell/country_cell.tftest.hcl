@@ -102,3 +102,14 @@ run "rejects_render_neon_in_prod" {
   }
   expect_failures = [terraform_data.contract]
 }
+
+run "consumer_identity_flag_is_passed_through" {
+  command = plan
+  variables {
+    feature_flags = { consumer_identity = true }
+  }
+  assert {
+    condition     = output.cell.app_env.CONSUMER_IDENTITY_ENABLED == "true"
+    error_message = "enabling the flag must reach the backend env"
+  }
+}

@@ -76,6 +76,23 @@ variable "oidc_audience" {
   default = ""
 }
 
+variable "oidc_client_id" {
+  description = "Public OAuth client id of the consumer app (not a secret). Empty keeps the backend default."
+  type        = string
+  default     = ""
+}
+
+variable "oidc_token_profile" {
+  description = "Access-token shape the consumer policy expects: keycloak (default) or zitadel (DEV, ADR-015)."
+  type        = string
+  default     = "keycloak"
+
+  validation {
+    condition     = contains(["keycloak", "zitadel"], var.oidc_token_profile)
+    error_message = "oidc_token_profile must be keycloak or zitadel."
+  }
+}
+
 variable "cors_allowed_origins" {
   type    = string
   default = ""

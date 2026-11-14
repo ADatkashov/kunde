@@ -49,6 +49,8 @@ management:
 app:
   identity:
     consumer-enabled: ${CONSUMER_IDENTITY_ENABLED:false}
+    consumer-client-id: ${CONSUMER_CLIENT_ID:kunde-consumer}
+    token-profile: ${OIDC_TOKEN_PROFILE:keycloak}
   security:
     authenticated-rate-limit:
       requests: ${API_AUTH_RATE_LIMIT_REQUESTS:60}

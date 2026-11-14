@@ -49,14 +49,27 @@ class AppAuthGateway implements OAuthGateway {
     required String issuer,
     required this.clientId,
     this.redirect = 'com.kunde.mobile:/oauth2redirect',
-  }) : issuer = issuer.endsWith('/')
+    this.provider = 'keycloak',
+    List<String>? scopes,
+  })  : scopes = scopes ?? _defaultScopes,
+        issuer = issuer.endsWith('/')
             ? issuer.substring(0, issuer.length - 1)
             : issuer;
   final String issuer;
   final String clientId;
   final String redirect;
+
+  /// `keycloak` (default) or `zitadel` (DEV, ADR-015): selects the registration flow.
+  final String provider;
+  final List<String> scopes;
   static const _auth = FlutterAppAuth();
-  static const _scopes = ['openid', 'profile', 'kunde.consumer'];
+  static const _defaultScopes = ['openid', 'profile', 'kunde.consumer'];
+
+  /// Splits a space/comma separated `OIDC_SCOPES` build define; empty keeps the default.
+  static List<String>? parseScopes(String raw) {
+    final parts = raw.split(RegExp(r'[\s,]+')).where((s) => s.isNotEmpty);
+    return parts.isEmpty ? null : parts.toList(growable: false);
+  }
 
   bool get _allowHttp {
     final uri = Uri.parse(issuer);
@@ -68,6 +81,7 @@ class AppAuthGateway implements OAuthGateway {
   void _validate() {
     final uri = Uri.parse(issuer);
     if (clientId.isEmpty ||
+        (provider != 'keycloak' && provider != 'zitadel') ||
         uri.host.isEmpty ||
         uri.userInfo.isNotEmpty ||
         uri.hasFragment ||
@@ -100,8 +114,11 @@ class AppAuthGateway implements OAuthGateway {
         AuthorizationTokenRequest(
           clientId,
           redirect,
-          issuer: register ? null : issuer,
-          serviceConfiguration: register
+          issuer: register && provider == 'keycloak' ? null : issuer,
+          // ZITADEL opens its own registration form for prompt=create.
+          additionalParameters:
+              register && provider == 'zitadel' ? {'prompt': 'create'} : null,
+          serviceConfiguration: register && provider == 'keycloak'
               ? AuthorizationServiceConfiguration(
                   authorizationEndpoint:
                       '$issuer/protocol/openid-connect/registrations',
@@ -109,7 +126,7 @@ class AppAuthGateway implements OAuthGateway {
                   endSessionEndpoint: '$issuer/protocol/openid-connect/logout',
                 )
               : null,
-          scopes: _scopes,
+          scopes: scopes,
           allowInsecureConnections: _allowHttp,
         ),
       ),
@@ -127,7 +144,7 @@ class AppAuthGateway implements OAuthGateway {
             redirect,
             issuer: issuer,
             refreshToken: refreshToken,
-            scopes: _scopes,
+            scopes: scopes,
             allowInsecureConnections: _allowHttp,
           ),
         ),

@@ -10,6 +10,9 @@ module "cell" {
   region              = "frankfurt/aws-eu-central-1"
   data_region_country = "de"
   data_classification = "synthetic"
+  feature_flags = {
+    consumer_identity = var.consumer_identity_enabled
+  }
 }
 
 module "database" {
@@ -34,5 +37,7 @@ module "backend" {
 
   oidc_issuer_uri           = var.oidc_issuer_uri
   oidc_audience             = var.oidc_audience
+  oidc_client_id            = var.oidc_client_id
+  oidc_token_profile        = var.oidc_token_profile
   consumer_identity_enabled = tobool(module.cell.cell.app_env.CONSUMER_IDENTITY_ENABLED)
 }

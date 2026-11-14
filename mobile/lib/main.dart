@@ -30,6 +30,10 @@ void main() {
               issuer: const String.fromEnvironment('OIDC_ISSUER_URI'),
               clientId: const String.fromEnvironment('OIDC_CLIENT_ID',
                   defaultValue: 'kunde-consumer'),
+              provider: const String.fromEnvironment('OIDC_PROVIDER',
+                  defaultValue: 'keycloak'),
+              scopes:
+                  AppAuthGateway.parseScopes(const String.fromEnvironment('OIDC_SCOPES')),
             ),
             vault: SecureTokenVault(),
             apiBase: Uri.parse(apiBaseUrl),

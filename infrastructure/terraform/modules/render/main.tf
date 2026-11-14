@@ -53,6 +53,8 @@ resource "render_web_service" "this" {
     },
     var.oidc_issuer_uri == "" ? {} : { OIDC_ISSUER_URI = { value = var.oidc_issuer_uri } },
     var.oidc_audience == "" ? {} : { OIDC_AUDIENCE = { value = var.oidc_audience } },
+    var.oidc_client_id == "" ? {} : { CONSUMER_CLIENT_ID = { value = var.oidc_client_id } },
+    var.oidc_token_profile == "keycloak" ? {} : { OIDC_TOKEN_PROFILE = { value = var.oidc_token_profile } },
     var.cors_allowed_origins == "" ? {} : { CORS_ALLOWED_ORIGINS = { value = var.cors_allowed_origins } },
   )
 }
