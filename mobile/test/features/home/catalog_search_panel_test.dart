@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:kunde_mobile/core/localization/kunde_formats.dart';
 import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
 import 'package:kunde_mobile/features/home/data/kunde_api.dart';
 import 'package:kunde_mobile/features/home/presentation/catalog_search_panel.dart';
@@ -35,7 +36,7 @@ MockClientHandler _catalog(
         200,
         headers: _json);
 
-Map<String, dynamic> _offering(String name, {String? en, String? partner}) => {
+Map<String, dynamic> _offering(String name, {String? en, String? partner, int? price, bool? available}) => {
       'id': 'o-$name',
       'categoryId': 'c',
       'kind': 'SERVICE',
@@ -43,6 +44,9 @@ Map<String, dynamic> _offering(String name, {String? en, String? partner}) => {
       'nameKk': '$name-kk',
       if (en != null) 'nameEn': en,
       if (partner != null) 'partnerName': partner,
+      if (price != null) 'priceMinor': price,
+      if (price != null) 'currency': 'KZT',
+      if (available != null) 'available': available,
     };
 
 void main() {
@@ -82,6 +86,24 @@ void main() {
     expect(find.text('Чистка'), findsOneWidget);
     expect(find.text('Синтетический партнёр'), findsOneWidget);
     expect(find.text('Без партнёра'), findsOneWidget);
+    api.close();
+  });
+
+  testWidgets('shows the KZT price and an explicit unavailable marker',
+      (tester) async {
+    final api = _api(_catalog(offerings: [
+      _offering('Чистка', partner: 'Партнёр', price: 250050, available: true),
+      _offering('Стирка', price: 100000, available: false),
+    ]));
+    await tester.pumpWidget(_app(CatalogSearchPanel(api: api)));
+
+    await tester.enterText(find.byType(TextField), 'чист');
+    await tester.tap(find.byIcon(Icons.search));
+    await tester.pumpAndSettle();
+
+    final price = KundeFormats.money(250050, 'KZT', const Locale('ru'));
+    expect(find.text('Партнёр · $price'), findsOneWidget);
+    expect(find.textContaining('Сейчас недоступно'), findsOneWidget);
     api.close();
   });
 

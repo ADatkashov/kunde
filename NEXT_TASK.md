@@ -24,6 +24,10 @@ Phone-OTP authentication is implemented (see [phone-otp-auth](docs/identity/phon
 
 DEV Render + Neon is deployed and verified (see [PROJECT_STATE.md](PROJECT_STATE.md), [docs/infrastructure/terraform-dev-render-neon.md](docs/infrastructure/terraform-dev-render-neon.md)). Open: (1) add **Required reviewers** to the GitHub Environment `dev`; (2) watch Render free hours (shared with other services) and Neon CU-hours; (3) any change to the Render service needs the workflow with `replace_render=true` and a separate explicit apply permission; (4) production hosting/residency remains TASK-051 / D-08 — DEV must not hold real personal data.
 
+## Owner decision needed first: ADR-018 (D-14)
+
+Approve or amend [ADR-018](docs/architecture/adr/ADR-018-partner-and-admin-identity-roles.md). After approval implement its plan in order: admin grants + scope derivation, partner application/profile, partner offerings (IDOR tests), admin approval, Flutter behind a flag. D-03/D-04 are approved only for the DEV pilot (pay on receipt, KZT, 0% commission).
+
 ## Owner decisions needed (blocking further roadmap work)
 
 - D-02, D-05, D-06, D-07 are approved. **Next most important: D-03/D-04** (payments, commission, settlement); they gate TASK-025/026/027/028 and any charge or refund.
