@@ -1,5 +1,5 @@
-/// A published offering from `GET /search/offerings`. Carries no price, partner
-/// or availability: the server does not expose them yet.
+/// A published offering from `GET /search/offerings`. Carries the approved
+/// partner's display name when the server sends it; no price or availability.
 class CatalogOffering {
   const CatalogOffering({
     required this.id,
@@ -8,6 +8,7 @@ class CatalogOffering {
     required this.nameRu,
     required this.nameKk,
     this.nameEn,
+    this.partnerName,
   });
 
   final String id;
@@ -16,6 +17,7 @@ class CatalogOffering {
   final String nameRu;
   final String nameKk;
   final String? nameEn;
+  final String? partnerName;
 
   factory CatalogOffering.fromJson(Map<String, dynamic> json) {
     final id = json['id'];
@@ -24,12 +26,14 @@ class CatalogOffering {
     final nameRu = json['nameRu'];
     final nameKk = json['nameKk'];
     final nameEn = json['nameEn'];
+    final partnerName = json['partnerName'];
     if (id is! String ||
         categoryId is! String ||
         kind is! String ||
         nameRu is! String ||
         nameKk is! String ||
-        (nameEn != null && nameEn is! String)) {
+        (nameEn != null && nameEn is! String) ||
+        (partnerName != null && partnerName is! String)) {
       throw const FormatException('Invalid catalog offering response');
     }
     return CatalogOffering(
@@ -38,7 +42,8 @@ class CatalogOffering {
         kind: kind,
         nameRu: nameRu,
         nameKk: nameKk,
-        nameEn: nameEn as String?);
+        nameEn: nameEn as String?,
+        partnerName: partnerName as String?);
   }
 
   String localizedName(String languageCode) => switch (languageCode) {

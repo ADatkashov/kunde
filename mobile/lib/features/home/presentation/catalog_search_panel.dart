@@ -109,6 +109,9 @@ class _CatalogSearchPanelState extends State<CatalogSearchPanel> {
                   ListTile(
                     leading: const Icon(Icons.sell_outlined),
                     title: Text(offering.localizedName(language)),
+                    subtitle: offering.partnerName == null
+                        ? null
+                        : Text(offering.partnerName!),
                   ),
               ],
             ),
