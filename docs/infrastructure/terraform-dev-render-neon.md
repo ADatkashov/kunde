@@ -41,6 +41,10 @@ Limitations: a job that references a missing Environment makes GitHub create it 
 
 Local alternative (same code): export the same variables (`TF_TOKEN_app_terraform_io`, `TF_CLOUD_ORGANIZATION`, `TF_WORKSPACE`, provider keys, `TF_VAR_neon_org_id`) and run `terraform init && terraform plan` in `environments/dev`.
 
+## Known limitation: free-plan Render services cannot be updated in place
+
+Provider `render-oss/render` 1.9.1 sends `maintenance_mode` on every service update and the Render API rejects it on the free plan (`maintenance mode can only be configured for non-free tier services`; upstream issue #80). Creation works, in-place updates fail. A change to the service (for example `DB_URL`) therefore needs a **replace**: run the workflow with `replace_render = true` (plus `apply = true`, `confirm = apply-dev` for the apply). It plans `-replace=module.backend.render_web_service.this`, and the cost gate allows exactly one delete+create of that resource and nothing else. The service is stateless, but the Render URL slug changes. Neon is never replaced.
+
 ## Destroy DEV
 
 Never from automation. Locally with the same credentials: `terraform destroy` in `environments/dev`, review the plan, type `yes`. This deletes the Neon project and all its data and the Render service. Run only after confirming the data is synthetic.

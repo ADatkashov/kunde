@@ -20,6 +20,15 @@ class PlanGate(unittest.TestCase):
         self.assertTrue(check({"resource_changes": [rc("neon_project", {}, ("delete",))]}))
         self.assertTrue(check({"resource_changes": [rc("neon_project", {}, ("delete", "create"))]}))
 
+    def test_render_replace_only_when_explicitly_allowed(self):
+        plan = {"resource_changes": [rc("render_web_service", {"plan": "free"}, ("delete", "create"))]}
+        self.assertTrue(check(plan))
+        self.assertEqual(check(plan, allow_render_replace=True), [])
+
+    def test_replace_allowance_never_covers_other_deletes(self):
+        self.assertTrue(check({"resource_changes": [rc("neon_project", {}, ("delete", "create"))]}, allow_render_replace=True))
+        self.assertTrue(check({"resource_changes": [rc("render_web_service", {"plan": "free"}, ("delete",))]}, allow_render_replace=True))
+
     def test_unknown_resource_type_rejected(self):
         self.assertTrue(check({"resource_changes": [rc("render_postgres", {})]}))
 
