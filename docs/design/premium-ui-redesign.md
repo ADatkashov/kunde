@@ -73,3 +73,28 @@ Flutter analyze/widget/golden проверки.
 Сборка: существующий `android-release.yml` после merge при зелёном CI,
 arm64 Release, подпись из GitHub Secrets, проверки подписи/ABI/API URL и
 отсутствия debug-сертификата. Ограничения DEV-платежей и доставки не изменены.
+
+## Подписанный Release APK — проверено
+
+- UI: [PR #98](https://github.com/ADatkashov/kunde/pull/98); упаковка OFL:
+  [PR #99](https://github.com/ADatkashov/kunde/pull/99). Код APK:
+  `59295d0b8e0b39bca5c15b1b3e7e9eac11139695`.
+- [Android Release run 43770508122](https://github.com/ADatkashov/kunde/actions/runs/43770508122)
+  завершён успешно. Analyze/test, подписанная ARM64 сборка и `Verify APK` зелёные.
+  Текущий main Flutter/Security/CI configuration также зелёный.
+- Итоговый Flutter CI: **178 тестов, 178 успешно, 0 пропусков**. Новый тест
+  `mobile/test/shared/asset_licenses_test.dart` проверяет OFL/MIT из asset bundle.
+- [Артефакт KUNDE-dev-release](https://github.com/ADatkashov/kunde/actions/runs/43770508122/artifacts/14184357296),
+  срок хранения до 2026-11-29. APK: **22 325 530 байт**; SHA-256:
+  `8a8c9f1e2051a7579cc6905cfd6f72a2b88238081ab56460f7191bdb5331d682`.
+- Скачанный файл совпал с hash-файлом workflow; внутри APK отдельно проверены
+  `lib/arm64-v8a`, обе лицензии и `kunde-backend-ty81.onrender.com`.
+  Подпись проверена workflow через apksigner (не Android Debug); appId,
+  INTERNET, отсутствие debuggable/local API URL/secret markers проверены там же.
+- Флаги сборки: phone auth, DEV OTP hint и partner features включены, API timeout
+  90 секунд. Backend не менялся. Read-only `/capabilities`: marketplace=true,
+  booking=true, AI=false. Новая установка/сценарии на физическом Samsung и
+  TalkBack остаются ручной проверкой владельца.
+
+Первый Release run `43769666897` отменён после обнаружения необходимости явно
+упаковать OFL-лицензию; его заменяет успешный run выше.
