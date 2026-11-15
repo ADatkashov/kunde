@@ -2,7 +2,7 @@
 
 ## Navigation and shared shell
 
-Four bottom destinations: **Главная (Home), Поиск (Search), Заказы (Orders), Профиль (Profile)** — owner decision 2026-11-13, replacing the earlier five-destination proposal (Home, Explore, AI, Activity, Profile). Keep labels visible and stable across app releases. **KUNDE AI is not a tab**: it is a separate block on Home until an AI capability is approved and available. Search tab = former Explore; Orders tab = former Activity. Search and city/address selector remain reachable from Home and Search. Tabs whose capability does not exist yet show an honest empty state (Search without marketplace, Orders without transactions, Profile without configured sign-in); they never imitate working features. Orders/Bookings are never combined into one ambiguous status. Unsupported categories are hidden or explicitly marked unavailable; no dead-end “coming soon” cards in launch primary surface. Core actions respect the server as source of truth and reflect pending states.
+Five bottom destinations: **Главная (Home), Поиск (Search), Заказы (Orders), Сервисы (Services), Профиль (Profile)** — owner premium redesign request 2026-11-15, superseding the four-tab decision of 2026-11-13. Services reuses the server-gated booking entry; Profile preserves all account functions. Keep labels visible and stable across app releases. **KUNDE AI is not a tab**: it is a separate block on Home until an AI capability is approved and available. Search tab = former Explore; Orders tab = former Activity. Search and city/address selector remain reachable from Home and Search. Tabs whose capability does not exist yet show an honest empty state (Search without marketplace, Orders without transactions, Profile without configured sign-in); they never imitate working features. Orders/Bookings are never combined into one ambiguous status. Unsupported categories are hidden or explicitly marked unavailable; no dead-end “coming soon” cards in launch primary surface. Core actions respect the server as source of truth and reflect pending states.
 
 ## Home
 
@@ -71,4 +71,4 @@ Sections: personal details; address book; payment method references managed thro
 
 ## Responsive and accessibility behavior
 
-Mobile uses single-column cards and four-item bottom navigation. Tablet can use split list/detail; desktop web consumer (if introduced) uses a top/side nav after separate research. Buttons remain reachable above keyboard; maps have textual alternatives; ratings/price/status are spoken as text; voice input never replaces text input.
+Mobile uses single-column cards and five-item bottom navigation. Tablet can use split list/detail; desktop web consumer (if introduced) uses a top/side nav after separate research. Buttons remain reachable above keyboard; maps have textual alternatives; ratings/price/status are spoken as text; voice input never replaces text input.

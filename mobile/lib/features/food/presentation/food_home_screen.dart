@@ -103,6 +103,7 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 640),
             child: Column(children: [
+              FoodCollectionHeader(grocery: _grocery),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                 child: SearchBar(
@@ -205,7 +206,7 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
   Widget _filters(List<Restaurant> all) {
     final cuisines = {for (final r in all) r.cuisine}.toList()..sort();
     return SizedBox(
-      height: 48,
+      height: 24 + MediaQuery.textScalerOf(context).scale(24),
       child: ListView(scrollDirection: Axis.horizontal, children: [
         FilterChip(
           label: const Text('Открыто сейчас'),
@@ -353,14 +354,13 @@ class _FoodNearbySectionState extends State<FoodNearbySection> {
           }
           final list = state.data!.take(6).toList();
           return SizedBox(
-            height: 188,
+            height: 150 + MediaQuery.textScalerOf(context).scale(60),
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: list.length,
               separatorBuilder: (_, __) => const SizedBox(width: 12),
               itemBuilder: (context, i) {
                 final r = list[i];
-                final colors = toneColors(r.tone);
                 return SizedBox(
                   width: 168,
                   child: Card(
@@ -374,14 +374,7 @@ class _FoodNearbySectionState extends State<FoodNearbySection> {
                       child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                                height: 84,
-                                width: double.infinity,
-                                color: colors.background,
-                                alignment: Alignment.center,
-                                child: ExcludeSemantics(
-                                    child: Text(r.emoji,
-                                        style: const TextStyle(fontSize: 42)))),
+                            MerchantArtwork(restaurant: r, height: 100),
                             Padding(
                               padding: const EdgeInsets.all(12),
                               child: Column(
@@ -394,6 +387,7 @@ class _FoodNearbySectionState extends State<FoodNearbySection> {
                                             .textTheme
                                             .titleMedium),
                                     const SizedBox(height: 2),
+                                    if (r.synthetic) const DemoBadge(),
                                     Text(
                                         r.open
                                             ? '${r.cuisine} · ${r.eta}'

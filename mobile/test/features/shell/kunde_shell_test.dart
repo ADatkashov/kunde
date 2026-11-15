@@ -47,21 +47,27 @@ void main() {
   Finder inBar(String label) =>
       find.descendant(of: bar, matching: find.text(label));
 
-  testWidgets('bottom bar has exactly the four approved tabs', (tester) async {
+  testWidgets('bottom bar has exactly the five requested tabs', (tester) async {
     await _pump(tester, _api());
-    expect(tester.widget<NavigationBar>(bar).destinations.length, 4);
-    for (final label in ['Главная', 'Поиск', 'Заказы', 'Профиль']) {
+    expect(tester.widget<NavigationBar>(bar).destinations.length, 5);
+    for (final label in ['Главная', 'Поиск', 'Заказы', 'Сервисы', 'Профиль']) {
       expect(inBar(label), findsOneWidget);
     }
   });
 
   testWidgets('labels are localized in Kazakh and English', (tester) async {
     await _pump(tester, _api(), locale: 'kk');
-    for (final label in ['Басты бет', 'Іздеу', 'Тапсырыстар', 'Профиль']) {
+    for (final label in [
+      'Басты бет',
+      'Іздеу',
+      'Тапсырыстар',
+      'Қызметтер',
+      'Профиль'
+    ]) {
       expect(inBar(label), findsOneWidget);
     }
     await _pump(tester, _api(), locale: 'en');
-    for (final label in ['Home', 'Search', 'Orders', 'Profile']) {
+    for (final label in ['Home', 'Search', 'Orders', 'Services', 'Profile']) {
       expect(inBar(label), findsOneWidget);
     }
   });
@@ -91,6 +97,15 @@ void main() {
     expect(find.textContaining('оформить заказ нельзя'), findsOneWidget);
   });
 
+  testWidgets('services tab respects disabled server capability',
+      (tester) async {
+    await _pump(tester, _api());
+    await tester.tap(inBar('Сервисы'));
+    await tester.pumpAndSettle();
+    expect(find.text('Сервисы пока не запущены'), findsOneWidget);
+    expect(find.text('Барбершопы'), findsNothing);
+  });
+
   testWidgets('profile tab says sign-in is not set up', (tester) async {
     await _pump(tester, _api());
     await tester.tap(inBar('Профиль'));
@@ -113,7 +128,7 @@ void main() {
   testWidgets('destinations keep 48 px touch targets and semantics',
       (tester) async {
     await _pump(tester, _api());
-    for (var i = 0; i < 4; i++) {
+    for (var i = 0; i < 5; i++) {
       final size = tester.getSize(find
           .descendant(of: bar, matching: find.byType(NavigationDestination))
           .at(i));
@@ -128,7 +143,7 @@ void main() {
       testWidgets('no overflow in every tab $locale ${size.width}',
           (tester) async {
         await _pump(tester, _api(), locale: locale, size: size, textScale: 2);
-        for (final i in [0, 1, 2, 3]) {
+        for (final i in [0, 1, 2, 3, 4]) {
           await tester.tap(find.descendant(
               of: bar, matching: find.byType(NavigationDestination).at(i)));
           await tester.pumpAndSettle();

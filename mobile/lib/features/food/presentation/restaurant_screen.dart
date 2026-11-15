@@ -104,9 +104,11 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                         color: toneColors(restaurant.tone).background,
                         alignment: Alignment.center,
                         padding: const EdgeInsets.only(top: 40),
-                        child: ExcludeSemantics(
-                            child: Text(restaurant.emoji,
-                                style: const TextStyle(fontSize: 76))),
+                        child: EmojiTile(
+                            emoji: restaurant.emoji,
+                            tone: restaurant.tone,
+                            size: 112,
+                            radius: 28),
                       ),
                     ),
                   ),

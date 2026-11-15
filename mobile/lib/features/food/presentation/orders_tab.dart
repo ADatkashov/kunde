@@ -6,6 +6,7 @@ import '../food_services.dart';
 import 'food_home_screen.dart';
 import 'food_widgets.dart';
 import 'order_screen.dart';
+import '../../../shared/theme/kunde_art.dart';
 
 /// Orders tab: history of the signed-in customer, restored from the server on every open.
 class FoodOrdersTab extends StatefulWidget {
@@ -121,7 +122,7 @@ class _OrderCard extends StatelessWidget {
         order.items.map((e) => '${e.quantity}× ${e.name}').join(', ');
     return Card(
       margin: EdgeInsets.zero,
-      elevation: 0,
+      elevation: 2,
       color: Colors.white,
       shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
@@ -134,9 +135,12 @@ class _OrderCard extends StatelessWidget {
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
+              KundeIllustration(
+                  order.vertical == 'GROCERY' ? 'grocery' : 'food',
+                  size: 38),
+              const SizedBox(width: 10),
               Expanded(
-                  child: Text(
-                      '${order.vertical == 'GROCERY' ? '🛒' : '🍽️'} ${order.restaurantName}',
+                  child: Text(order.restaurantName,
                       style: theme.textTheme.titleMedium)),
               Container(
                 padding:

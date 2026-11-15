@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../../support/premium_goldens.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -32,6 +33,7 @@ Future<void> _pump(WidgetTester tester, KundeApi api,
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(MaterialApp(
+    debugShowCheckedModeBanner: false,
     theme: theme ?? KundeTheme.light,
     localizationsDelegates: KundeLocalizations.localizationsDelegates,
     supportedLocales: KundeLocalizations.supportedLocales,
@@ -46,6 +48,14 @@ Future<void> _pump(WidgetTester tester, KundeApi api,
 }
 
 void main() {
+  for (final width in [360.0, 390.0, 412.0]) {
+    testWidgets('premium golden home Samsung $width', (tester) async {
+      await tester.runAsync(loadPremiumFonts);
+      await _pump(tester, _api(marketplace: true), size: Size(width, 1200));
+      await premiumGolden(tester, 'premium_home_${width.toInt()}');
+    });
+  }
+
   testWidgets('shows Super App layout with honest unavailable states',
       (tester) async {
     await _pump(tester, _api(), size: const Size(390, 2400));

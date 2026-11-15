@@ -13,3 +13,20 @@
 No billing, deletion, phone verification, legal consent or session administration
 UI is introduced. Production readiness gates in ADR-015 remain separate from
 development authorization. Test doubles exist only under mobile/test.
+
+## Premium mobile surfaces (owner brief 2026-11-15)
+
+| Capability | Canonical owner | Source of truth | Allowed variants | Verification |
+|---|---|---|---|---|
+| Form | Material Form / TextFormField | Existing identity and Food contracts | Profile, checkout | auth_screen_test.dart; food_flow_test.dart |
+| Select/Listbox | Material PopupMenuButton / RadioGroup | Existing server capability and catalog values | Language, city, catalog sorting, checkout | kunde_shell_test.dart; food_flow_test.dart |
+| Scrollbar | Flutter Material ScrollBehavior | DESIGN.md; platform behavior | Natural mobile scroll and safe areas | home_screen_test.dart; kunde_shell_test.dart |
+| Toast | ScaffoldMessenger / semantic inline regions | Existing screen state owners | Error, success, session notice | auth_screen_test.dart; food_flow_test.dart |
+| CRUD | Existing AuthRepository / FoodServices / BookingServices | docs/product/food-mvp.md; docs/product/booking-mvp.md; identity contracts | Existing operations only | food_flow_test.dart; booking_flow_test.dart; auth_screen_test.dart |
+
+Five visible tabs preserve direct access to Profile. City selection currently
+contains Almaty only; no unsupported city can be selected. Services checks
+`bookingEnabled` before mounting the booking catalog, including direct tab
+entry. AI, favorites, promos and Pay retain explanatory unavailable states.
+The theme changes presentation only; order creation, quote, stock, cancellation,
+substitution consent and session transitions retain their existing owners.

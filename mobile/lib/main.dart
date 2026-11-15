@@ -110,6 +110,7 @@ class _KundeAppState extends State<KundeApp> {
         debugShowCheckedModeBanner: false,
         theme: KundeTheme.light,
         darkTheme: KundeTheme.dark,
+        themeMode: ThemeMode.light,
         localizationsDelegates: KundeLocalizations.localizationsDelegates,
         supportedLocales: KundeLocalizations.supportedLocales,
         locale: _locale,

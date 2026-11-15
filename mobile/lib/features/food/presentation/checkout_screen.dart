@@ -4,6 +4,7 @@ import '../data/food_api.dart';
 import '../data/food_models.dart';
 import '../food_services.dart';
 import 'order_screen.dart';
+import 'food_widgets.dart';
 
 class _AddressPreset {
   const _AddressPreset(this.label, this.text, this.lat, this.lon);
@@ -154,6 +155,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
               children: [
+                const OrderProgressHeader(checkout: true),
                 Text('Адрес доставки', style: theme.textTheme.titleLarge),
                 const SizedBox(height: 8),
                 FutureBuilder<List<Map<String, dynamic>>>(

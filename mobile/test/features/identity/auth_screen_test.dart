@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../support/premium_goldens.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/services.dart';
@@ -51,6 +52,7 @@ class BrowserGateway implements OAuthGateway {
 
 void main() {
   setUpAll(() async {
+    await loadPremiumFonts();
     final configFile = File('.dart_tool/package_config.json');
     final config =
         jsonDecode(await configFile.readAsString()) as Map<String, dynamic>;
@@ -144,12 +146,30 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('signed-in shell has four tabs and keeps Profile working',
+  testWidgets('premium golden profile Samsung 390', (tester) async {
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.runAsync(loadPremiumFonts);
+    await login(tester);
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
+    expect(Theme.of(tester.element(find.byType(NavigationBar))).brightness,
+        Brightness.light);
+    await tester.tap(find.byTooltip('App language'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Русский'));
+    await premiumGolden(tester, 'premium_profile_390');
+  });
+
+  testWidgets('signed-in shell has five tabs and keeps Profile working',
       (tester) async {
     await login(tester);
     final bar = find.byType(NavigationBar);
-    expect(tester.widget<NavigationBar>(bar).destinations.length, 4);
-    for (final label in ['Home', 'Search', 'Orders', 'Profile']) {
+    expect(tester.widget<NavigationBar>(bar).destinations.length, 5);
+    for (final label in ['Home', 'Search', 'Orders', 'Services', 'Profile']) {
       expect(
           find.descendant(of: bar, matching: find.text(label)), findsOneWidget);
     }
@@ -215,6 +235,9 @@ void main() {
     expect(find.text('Dana'), findsOneWidget);
     expect(profile['version'], 1);
     await tester.tap(find.text('Home'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sign out'), findsNothing);
+    await tester.tap(find.text('Profile'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Sign out'));
     await tester.pumpAndSettle();

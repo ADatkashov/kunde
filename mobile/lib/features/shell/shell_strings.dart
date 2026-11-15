@@ -12,6 +12,7 @@ extension ShellStrings on KundeLocalizations {
   String get navSearch => _t('Поиск', 'Іздеу', 'Search');
   String get navOrders => _t('Заказы', 'Тапсырыстар', 'Orders');
   String get navProfile => _t('Профиль', 'Профиль', 'Profile');
+  String get navServices => _t('Сервисы', 'Қызметтер', 'Services');
   String get navLabel =>
       _t('Основная навигация', 'Негізгі навигация', 'Main navigation');
   String get searchTabUnavailableTitle => _t('Поиск пока недоступен',
