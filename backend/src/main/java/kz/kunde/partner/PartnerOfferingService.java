@@ -31,6 +31,9 @@ public class PartnerOfferingService {
     public record OfferingInput(UUID categoryId, String kind, String nameRu, String nameKk, String nameEn,
             Long priceMinor, String availability) { }
 
+    /** A category a partner may attach an offering to; DRAFT categories are listed too (offerings stay DRAFT until ADR-014 gates open). */
+    public record CategoryOption(UUID id, String code, String nameRu, String nameKk, String nameEn, String status) { }
+
     private static final RowMapper<OfferingView> VIEW = (rs, i) -> new OfferingView(
             rs.getObject("id", UUID.class), rs.getObject("partner_id", UUID.class), rs.getObject("category_id", UUID.class),
             rs.getString("kind"), rs.getString("name_ru"), rs.getString("name_kk"), rs.getString("name_en"),
@@ -47,6 +50,16 @@ public class PartnerOfferingService {
     public PartnerOfferingService(JdbcTemplate db, PartnerService partners) {
         this.db = db;
         this.partners = partners;
+    }
+
+    /** Non-retired categories for the offering form; reference data, no partner data involved. */
+    @Transactional(readOnly = true)
+    public List<CategoryOption> categories() {
+        return db.query("""
+                SELECT id, code, name_ru, name_kk, name_en, status FROM marketplace.categories
+                WHERE status <> 'RETIRED' ORDER BY sort_order, code""",
+                (rs, i) -> new CategoryOption(rs.getObject("id", UUID.class), rs.getString("code"), rs.getString("name_ru"),
+                        rs.getString("name_kk"), rs.getString("name_en"), rs.getString("status")));
     }
 
     @Transactional

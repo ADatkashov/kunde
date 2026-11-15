@@ -7,6 +7,7 @@ import 'auth_strings.dart';
 import 'consent_panel.dart';
 import 'phone_auth_gateway.dart';
 import 'phone_login_flow.dart';
+import '../partner/partner_panel.dart';
 import 'support_panel.dart';
 import 'address_panel.dart';
 
@@ -17,11 +18,15 @@ class AuthScreen extends StatefulWidget {
       required this.api,
       required this.onLocale,
       this.devOtpHint = false,
+      this.partnerEnabled = false,
       super.key});
   final AuthRepository auth;
   final KundeApi api;
   final ValueChanged<Locale> onLocale;
   final bool devOtpHint;
+
+  /// Partner onboarding and offerings (ADR-018); off unless the build enables it.
+  final bool partnerEnabled;
   @override
   State<AuthScreen> createState() => _AuthScreenState();
 }
@@ -383,6 +388,10 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                 ConsentPanel(auth: widget.auth),
                 const SizedBox(height: 24),
                 SupportPanel(auth: widget.auth),
+                if (widget.partnerEnabled) ...[
+                  const SizedBox(height: 24),
+                  PartnerPanel(auth: widget.auth),
+                ],
               ] else
                 Form(
                     key: _form,

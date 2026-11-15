@@ -44,6 +44,7 @@ void main() {
             : null,
     identityPocEnabled: const bool.fromEnvironment('IDENTITY_POC_ENABLED'),
     devOtpHint: const bool.fromEnvironment('DEV_OTP_HINT'),
+    partnerEnabled: const bool.fromEnvironment('PARTNER_FEATURES_ENABLED'),
   ));
 }
 
@@ -53,6 +54,7 @@ class KundeApp extends StatefulWidget {
       this.auth,
       this.identityPocEnabled = false,
       this.devOtpHint = false,
+      this.partnerEnabled = false,
       super.key});
 
   final KundeApi api;
@@ -61,6 +63,9 @@ class KundeApp extends StatefulWidget {
 
   /// DEV builds only: show the fixed test code on the OTP screen.
   final bool devOtpHint;
+
+  /// Partner screens (ADR-018); off by default and in every consumer build.
+  final bool partnerEnabled;
 
   @override
   State<KundeApp> createState() => _KundeAppState();
@@ -83,6 +88,7 @@ class _KundeAppState extends State<KundeApp> {
                 auth: widget.auth!,
                 api: widget.api,
                 devOtpHint: widget.devOtpHint,
+                partnerEnabled: widget.partnerEnabled,
                 onLocale: (locale) => setState(() => _locale = locale))
             : widget.identityPocEnabled
                 ? const IdentityPocScreen()

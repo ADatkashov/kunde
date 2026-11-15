@@ -9,6 +9,10 @@ on:
         description: 'Show the DEV test code (123456) hint on the OTP screen. DEV builds only; never for a store release.'
         type: boolean
         default: true
+      partner-features:
+        description: 'Include the partner section (apply, offerings) in the Profile tab. DEV pilot builds for partners only; off by default.'
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -18,6 +22,7 @@ jobs:
     env:
       API_BASE_URL: ${{ inputs.api-base-url || 'https://kunde-backend-5wwg.onrender.com/api/v1/' }}
       DEV_OTP_HINT: ${{ inputs.dev-otp-hint && 'true' || 'false' }}
+      PARTNER_FEATURES: ${{ inputs.partner-features && 'true' || 'false' }}
       KUNDE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       KUNDE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       KUNDE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
@@ -63,7 +68,8 @@ jobs:
             --dart-define=API_BASE_URL="$API_BASE_URL" \
             --dart-define=API_TIMEOUT_SECONDS=90 \
             --dart-define=PHONE_AUTH_ENABLED=true \
-            --dart-define=DEV_OTP_HINT="$DEV_OTP_HINT"
+            --dart-define=DEV_OTP_HINT="$DEV_OTP_HINT" \
+            --dart-define=PARTNER_FEATURES_ENABLED="$PARTNER_FEATURES"
           mkdir -p ../dist
           cp build/app/outputs/flutter-apk/app-release.apk ../dist/KUNDE-dev-release.apk
           rm -f "$RUNNER_TEMP/release.jks"
