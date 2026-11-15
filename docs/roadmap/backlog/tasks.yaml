@@ -333,7 +333,7 @@
     "release": "REL-1",
     "user_story_id": "US-008",
     "implementation_status": "in_progress",
-    "implementation_note": "Flyway V10 links offerings to partners (PUBLISHED requires partner_id); consumer offering list/detail/search show only offerings of APPROVED partners and expose partner id and display name. Still missing: partner-scoped write/authorization API, price/availability (TASK-022/014), device checks; ADR-014 gates unchanged."
+    "implementation_note": "Flyway V10 links offerings to partners (PUBLISHED requires partner_id); consumer offering list/detail/search show only offerings of APPROVED partners and expose partner id and display name; public GET /partners/{id} returns an APPROVED partner (id, displayName) or 404 PARTNER_NOT_FOUND; migrations seed no partners (test-guarded). Still missing: partner-scoped write/authorization API, price/availability (TASK-022/014), device checks; ADR-014 gates unchanged."
   },
   {
     "id": "TASK-017",

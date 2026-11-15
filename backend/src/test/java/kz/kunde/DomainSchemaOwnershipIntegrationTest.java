@@ -183,6 +183,8 @@ class DomainSchemaOwnershipIntegrationTest {
         assertThat(jdbc.queryForObject(
                 "select count(*) from marketplace.categories where status <> 'DRAFT' or published_at is not null", Integer.class)).isZero();
         assertThat(jdbc.queryForObject("select count(*) from marketplace.offerings", Integer.class)).isZero();
+        // ADR-014: migrations must never seed partners (no demo restaurants in the public DEV catalog).
+        assertThat(jdbc.queryForObject("select count(*) from marketplace.partners", Integer.class)).isZero();
 
         assertAccepted(owner -> insertCategory("home"));
         assertThat(jdbc.queryForObject("""
