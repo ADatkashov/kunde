@@ -301,7 +301,7 @@ public class PartnerService {
     }
 
     /** Stranger or revoked: 404 (partner existence is not revealed); wrong role: 403. */
-    private void requireRole(UUID partnerId, UUID userId, Role... allowed) {
+    void requireRole(UUID partnerId, UUID userId, Role... allowed) {
         Role role = activeRole(partnerId, userId).orElseThrow(PartnerService::notFound);
         if (!List.of(allowed).contains(role)) {
             throw new ApiException(HttpStatus.FORBIDDEN, "PARTNER_ROLE_FORBIDDEN", "Role is not allowed to do this");
