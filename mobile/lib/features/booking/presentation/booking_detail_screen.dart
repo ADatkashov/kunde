@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'booking_strings.dart';
+
 import '../../food/presentation/food_widgets.dart';
 import '../booking_services.dart';
 import '../data/booking_api.dart';
@@ -45,24 +47,24 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       });
     } on BookingException catch (error) {
       if (!mounted || _booking != null) return;
-      setState(() => _error = error.message);
+      setState(() => _error = bkL10n(context).bkError(error.failure));
     }
   }
 
   Future<void> _cancel() async {
+    final s = bkL10n(context);
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Отменить запись?'),
-        content: const Text(
-            'Отмена бесплатна до начала услуги. Время освободится для других клиентов.'),
+        title: Text(s.bkCancelQuestion),
+        content: Text(s.bkCancelBody),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Нет')),
+              child: Text(s.bkNo)),
           FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Отменить запись')),
+              child: Text(s.bkCancelBooking)),
         ],
       ),
     );
@@ -74,7 +76,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     } on BookingException catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(error.message)));
+          .showSnackBar(SnackBar(content: Text(s.bkError(error.failure))));
       _load();
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -84,14 +86,17 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final s = bkL10n(context);
     final b = _booking;
     return Scaffold(
-      appBar: AppBar(title: const Text('Запись')),
+      appBar: AppBar(
+          title: Text(
+              b?.isCleaning == true ? s.bkCleaningTitle : s.bkBookingTitle)),
       body: b == null
           ? (_error != null
               ? FoodStateMessage(
                   icon: Icons.cloud_off_outlined,
-                  title: 'Не удалось загрузить запись',
+                  title: s.bkDetailLoadError,
                   body: _error,
                   onAction: _load)
               : const Center(child: CircularProgressIndicator()))
@@ -108,11 +113,14 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                         Card(
                           color: theme.colorScheme.primaryContainer,
                           margin: const EdgeInsets.only(bottom: 12),
-                          child: const ListTile(
-                            leading: Icon(Icons.check_circle_rounded),
-                            title: Text('Вы записаны!'),
-                            subtitle: Text(
-                                'Запись сохранена и появится в разделе «Заказы» → «Записи».'),
+                          child: ListTile(
+                            leading: const Icon(Icons.check_circle_rounded),
+                            title: Text(b.isCleaning
+                                ? s.bkRequestPlacedTitle
+                                : s.bkBookedTitle),
+                            subtitle: Text(b.isCleaning
+                                ? s.bkRequestPlacedBody
+                                : s.bkBookedBody),
                           ),
                         ),
                       _StatusBanner(booking: b),
@@ -124,12 +132,23 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                       const Divider(height: 32),
                       _row(Icons.event_rounded,
                           '${formatDay(b.start)}, ${formatClock(b.start)}–${formatClock(b.end)}'),
-                      _row(Icons.content_cut_rounded,
-                          '${b.serviceName} · ${formatDuration(b.durationMinutes)}'),
-                      _row(Icons.person_outline_rounded,
-                          'Мастер: ${b.masterName}'),
+                      _row(
+                          b.isCleaning
+                              ? Icons.cleaning_services_rounded
+                              : Icons.content_cut_rounded,
+                          '${s.bkCatalogName(b.serviceName)} · ${formatDuration(b.durationMinutes)}'),
+                      if (b.isCleaning && b.addressText != null)
+                        _row(Icons.location_on_outlined, b.addressText!),
+                      if (b.areaSqm != null)
+                        _row(Icons.square_foot_outlined,
+                            s.bkAreaLine(b.areaSqm!)),
+                      _row(
+                          Icons.person_outline_rounded,
+                          b.isCleaning
+                              ? '${s.bkCrew}: ${b.masterName}'
+                              : s.bkMasterLine(b.masterName)),
                       _row(Icons.payments_outlined,
-                          '${formatTenge(b.priceMinor)} · оплата на месте'),
+                          s.bkPaidOnSite(formatTenge(b.priceMinor))),
                       if (b.comment != null)
                         _row(Icons.chat_bubble_outline_rounded, b.comment!),
                       const SizedBox(height: 16),
@@ -137,11 +156,12 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                         OutlinedButton.icon(
                           onPressed: _busy ? null : _cancel,
                           icon: const Icon(Icons.close_rounded),
-                          label: const Text('Отменить запись'),
+                          label: Text(b.isCleaning
+                              ? s.bkCancelRequest
+                              : s.bkCancelBooking),
                         ),
                       const SizedBox(height: 12),
-                      Text(
-                          'DEV-режим: запись подтверждена автоматически, заведение и мастер не получают уведомление.',
+                      Text(s.bkDetailDevNote,
                           style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant)),
                     ],
@@ -171,6 +191,7 @@ class _StatusBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final s = bkL10n(context);
     final cancelled = booking.status == 'CANCELLED';
     final done = booking.status == 'COMPLETED';
     return Material(
@@ -186,12 +207,14 @@ class _StatusBanner extends StatelessWidget {
             : done
                 ? Icons.task_alt_rounded
                 : Icons.event_available_rounded),
-        title: Text(bookingStatusLabel(booking.status)),
+        title: Text(s.bkStatus(booking.status)),
         subtitle: Text(cancelled
-            ? 'Время освобождено.'
+            ? s.bkStatusCancelledHint
             : done
-                ? 'Услуга оказана.'
-                : 'Ждём вас в назначенное время.'),
+                ? s.bkStatusCompletedHint
+                : booking.isCleaning
+                    ? s.bkStatusConfirmedHome
+                    : s.bkStatusConfirmedHint),
       ),
     );
   }

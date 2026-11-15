@@ -70,7 +70,8 @@ call("POST", "/api/v1/booking/bookings", dict(req, comment=None), token=token,
      headers={"Idempotency-Key": "smoke-" + uuid.uuid4().hex}, expect=409)  # same time, same master: refused
 
 # Re-open: the app restores its session from the refresh token and still sees the persisted booking.
-token2 = call("POST", "/api/v1/auth/token/refresh", {"refreshToken": session["refreshToken"]})["accessToken"]
+session2 = call("POST", "/api/v1/auth/token/refresh", {"refreshToken": session["refreshToken"]})  # refresh tokens rotate
+token2 = session2["accessToken"]
 history = call("GET", "/api/v1/booking/bookings", token=token2)
 assert any(b["id"] == booking["id"] for b in history), "booking not restored after session refresh"
 
@@ -80,4 +81,31 @@ if "--keep" not in sys.argv:
     call("POST", f"/api/v1/booking/bookings/{booking['id']}/cancel", token=token2, expect=409)
     freed = call("GET", f"/api/v1/booking/slots?venueId={venue['id']}&serviceId={service['id']}&masterId={arman['id']}&date={tomorrow}")
     assert slot["startsAt"] in [s["startsAt"] for s in freed], "cancelled slot must be free again"
+
+# Home services: cleaning reuses the same booking mechanism (category CLEANING, address + area, server-side price).
+cleaning = call("GET", "/api/v1/booking/venues?category=CLEANING")
+if not cleaning:
+    sys.exit("FAIL: no cleaning venue seeded (BOOKING_SEED_DEMO on a build with V19?)")
+assert all(v["category"] == "CLEANING" for v in cleaning) and all(v["slug"] != "barber-alatau" for v in cleaning)
+cdetail = call("GET", "/api/v1/booking/venues/" + cleaning[0]["id"])
+ctype = next(sv for sv in cdetail["services"] if sv["name"] == "Генеральная уборка")
+cslots = call("GET", f"/api/v1/booking/slots?venueId={cleaning[0]['id']}&serviceId={ctype['id']}&date={tomorrow}")
+assert cslots, "no cleaning slots for tomorrow"
+cslot = cslots[len(cslots) // 2]
+creq = {"venueId": cleaning[0]["id"], "serviceId": ctype["id"], "masterId": cslot["masterId"], "startsAt": cslot["startsAt"],
+        "addressText": "Алматы, тестовый адрес 1 (smoke)", "areaSqm": 50}
+call("POST", "/api/v1/booking/bookings", dict(creq, addressText=None), token=token2,
+     headers={"Idempotency-Key": "smoke-" + uuid.uuid4().hex}, expect=400)  # address is required
+call("POST", "/api/v1/booking/bookings", dict(creq, areaSqm=5), token=token2,
+     headers={"Idempotency-Key": "smoke-" + uuid.uuid4().hex}, expect=400)  # area out of range
+ckey = "smoke-" + uuid.uuid4().hex
+cleaned = call("POST", "/api/v1/booking/bookings", creq, token=token2, headers={"Idempotency-Key": ckey}, expect=201)
+assert cleaned["category"] == "CLEANING" and cleaned["areaSqm"] == 50, cleaned
+assert cleaned["priceMinor"] == ctype["priceMinor"] + ctype["pricePerSqmMinor"] * 50, "price must be computed by the server"
+call("POST", "/api/v1/booking/bookings", creq, token=token2, headers={"Idempotency-Key": "smoke-" + uuid.uuid4().hex}, expect=409)
+token3 = call("POST", "/api/v1/auth/token/refresh", {"refreshToken": session2["refreshToken"]})["accessToken"]
+assert any(b["id"] == cleaned["id"] and b["category"] == "CLEANING" for b in call("GET", "/api/v1/booking/bookings", token=token3)), \
+    "cleaning request not restored after session refresh"
+if "--keep" not in sys.argv:
+    assert call("POST", f"/api/v1/booking/bookings/{cleaned['id']}/cancel", token=token3)["status"] == "CANCELLED"
 print("SMOKE OK")

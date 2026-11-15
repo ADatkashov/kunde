@@ -55,10 +55,14 @@ public class BookingDemoSeeder implements ApplicationRunner {
             int serviceOrder = 0;
             for (JsonNode s : v.get("services")) {
                 serviceIds.put(s.get("name").asText(), db.queryForObject("""
-                        insert into marketplace.booking_services (venue_id, name, description, duration_minutes, price_minor, sort_order)
-                        values (?, ?, ?, ?, ?, ?) returning id
+                        insert into marketplace.booking_services (venue_id, name, description, duration_minutes, price_minor, sort_order,
+                            price_per_sqm_minor, min_area_sqm, max_area_sqm)
+                        values (?, ?, ?, ?, ?, ?, ?, ?, ?) returning id
                         """, UUID.class, venueId, s.get("name").asText(), s.get("description").asText(),
-                        s.get("duration").asInt(), s.get("price").asLong(), serviceOrder++));
+                        s.get("duration").asInt(), s.get("price").asLong(), serviceOrder++,
+                        s.has("pricePerSqm") ? s.get("pricePerSqm").asLong() : 0L,
+                        s.has("minArea") ? s.get("minArea").asInt() : null,
+                        s.has("maxArea") ? s.get("maxArea").asInt() : null));
             }
             int masterOrder = 0;
             for (JsonNode m : v.get("masters")) {

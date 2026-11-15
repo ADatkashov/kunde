@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'booking_strings.dart';
+
 import '../../food/presentation/food_widgets.dart';
 import '../booking_services.dart';
 import '../data/booking_api.dart';
@@ -38,62 +40,63 @@ class _BookingsListState extends State<BookingsList> {
   }
 
   @override
-  Widget build(BuildContext context) => FutureBuilder<List<BookingRecord>>(
-        future: _bookings,
-        builder: (context, state) {
-          if (state.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (state.hasError) {
-            final error = state.error;
-            return FoodStateMessage(
-                icon: Icons.cloud_off_outlined,
-                title: 'Не удалось загрузить записи',
-                body: error is BookingException ? error.message : null,
-                onAction: _refresh);
-          }
-          final all = state.data!;
-          if (all.isEmpty) {
-            return FoodStateMessage(
-              icon: Icons.event_busy_outlined,
-              title: 'Записей пока нет',
-              body: 'Запишитесь в барбершоп — запись появится здесь.',
-              actionLabel: 'Выбрать услугу',
-              onAction: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                      builder: (_) =>
-                          ServicesHomeScreen(services: widget.services))),
-            );
-          }
-          final upcoming =
-              all.where((b) => b.cancellable).toList().reversed.toList();
-          final history = all.where((b) => !b.cancellable).toList();
-          return RefreshIndicator(
-            onRefresh: _refresh,
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              children: [
-                if (upcoming.isNotEmpty) ...[
-                  Text('Предстоящие',
-                      style: Theme.of(context).textTheme.titleLarge),
-                  const SizedBox(height: 8),
-                  for (final b in upcoming)
-                    _BookingCard(booking: b, onTap: () => _open(b)),
-                  const SizedBox(height: 16),
-                ],
-                if (history.isNotEmpty) ...[
-                  Text('История',
-                      style: Theme.of(context).textTheme.titleLarge),
-                  const SizedBox(height: 8),
-                  for (final b in history)
-                    _BookingCard(booking: b, onTap: () => _open(b)),
-                ],
-              ],
-            ),
+  Widget build(BuildContext context) {
+    final s = bkL10n(context);
+    return FutureBuilder<List<BookingRecord>>(
+      future: _bookings,
+      builder: (context, state) {
+        if (state.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (state.hasError) {
+          final error = state.error;
+          return FoodStateMessage(
+              icon: Icons.cloud_off_outlined,
+              title: s.bkLoadListError,
+              body: error is BookingException ? s.bkError(error.failure) : null,
+              onAction: _refresh);
+        }
+        final all = state.data!;
+        if (all.isEmpty) {
+          return FoodStateMessage(
+            icon: Icons.event_busy_outlined,
+            title: s.bkEmptyTitle,
+            body: s.bkEmptyBody,
+            actionLabel: s.bkChooseService,
+            onAction: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => ServicesHomeScreen(services: widget.services))),
           );
-        },
-      );
+        }
+        final upcoming =
+            all.where((b) => b.cancellable).toList().reversed.toList();
+        final history = all.where((b) => !b.cancellable).toList();
+        return RefreshIndicator(
+          onRefresh: _refresh,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            children: [
+              if (upcoming.isNotEmpty) ...[
+                Text(s.bkUpcoming,
+                    style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 8),
+                for (final b in upcoming)
+                  _BookingCard(booking: b, onTap: () => _open(b)),
+                const SizedBox(height: 16),
+              ],
+              if (history.isNotEmpty) ...[
+                Text(s.bkHistory,
+                    style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 8),
+                for (final b in history)
+                  _BookingCard(booking: b, onTap: () => _open(b)),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
 
 class _BookingCard extends StatelessWidget {
@@ -105,6 +108,7 @@ class _BookingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final s = bkL10n(context);
     final cancelled = booking.status == 'CANCELLED';
     final chipColor = cancelled
         ? theme.colorScheme.errorContainer
@@ -129,7 +133,8 @@ class _BookingCard extends StatelessWidget {
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 Expanded(
-                    child: Text('💈 ${booking.venueName}',
+                    child: Text(
+                        '${booking.isCleaning ? '🧹' : '💈'} ${booking.venueName}',
                         style: theme.textTheme.titleMedium)),
                 Container(
                   padding:
@@ -137,13 +142,20 @@ class _BookingCard extends StatelessWidget {
                   decoration: BoxDecoration(
                       color: chipColor,
                       borderRadius: BorderRadius.circular(999)),
-                  child: Text(bookingStatusLabel(booking.status),
+                  child: Text(s.bkStatus(booking.status),
                       style: const TextStyle(
                           fontSize: 12, fontWeight: FontWeight.w600)),
                 ),
               ]),
               const SizedBox(height: 6),
-              Text('${booking.serviceName} · ${booking.masterName}'),
+              Text(
+                  '${s.bkCatalogName(booking.serviceName)} · ${booking.masterName}'),
+              if (booking.isCleaning && booking.addressText != null)
+                Text(booking.addressText!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
               const SizedBox(height: 6),
               Row(children: [
                 Expanded(

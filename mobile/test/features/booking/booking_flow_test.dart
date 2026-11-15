@@ -8,8 +8,12 @@ import 'package:kunde_mobile/features/booking/booking_services.dart';
 import 'package:kunde_mobile/features/booking/data/booking_api.dart';
 import 'package:kunde_mobile/features/booking/data/booking_models.dart';
 import 'package:kunde_mobile/features/booking/presentation/bookings_list.dart';
+import 'package:kunde_mobile/features/booking/presentation/category_screens.dart';
 import 'package:kunde_mobile/features/booking/presentation/services_home_screen.dart';
+import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
+import 'package:kunde_mobile/features/home/data/kunde_api.dart';
 import 'package:kunde_mobile/features/home/data/platform_snapshot.dart';
+import 'package:kunde_mobile/features/home/presentation/home_screen.dart';
 import 'package:kunde_mobile/features/identity/auth_repository.dart';
 
 class _Vault implements TokenVault {
@@ -37,6 +41,23 @@ class _Gateway implements OAuthGateway {
 const _venueId = '11111111-1111-1111-1111-111111111111';
 const _serviceId = '22222222-2222-2222-2222-222222222222';
 const _masterId = '33333333-3333-3333-3333-333333333333';
+const _cleanVenueId = '44444444-4444-4444-4444-444444444444';
+const _cleanServiceId = '55555555-5555-5555-5555-555555555555';
+const _cleanCrewId = '66666666-6666-6666-6666-666666666666';
+
+final _cleanVenue = {
+  'id': _cleanVenueId,
+  'slug': 'home-clean-test',
+  'category': 'CLEANING',
+  'name': 'Тест Уборка',
+  'description': 'Вымышленная служба',
+  'addressText': 'Выезд по адресу клиента',
+  'emoji': '🧹',
+  'tone': 'green',
+  'open': true,
+  'synthetic': true,
+  'fromPriceMinor': 800000,
+};
 
 final _venue = {
   'id': _venueId,
@@ -59,6 +80,7 @@ class _FakeBackend {
   bool offline = false;
   bool slotTakenOnBook = false;
   int slotRequests = 0;
+  Map<String, dynamic>? lastCleaningRequest;
 
   http.Response _json(Object body, [int status = 200]) =>
       http.Response(jsonEncode(body), status,
@@ -70,7 +92,39 @@ class _FakeBackend {
     final body = request.body.isEmpty
         ? null
         : jsonDecode(request.body) as Map<String, dynamic>;
-    if (path == 'booking/venues') return _json([_venue]);
+    if (path == 'booking/venues') {
+      return _json(request.url.queryParameters['category'] == 'CLEANING'
+          ? [_cleanVenue]
+          : [_venue]);
+    }
+    if (path == 'booking/venues/$_cleanVenueId') {
+      return _json({
+        'venue': _cleanVenue,
+        'services': [
+          {
+            'id': _cleanServiceId,
+            'name': 'Генеральная уборка',
+            'description': 'Глубокая уборка',
+            'durationMinutes': 180,
+            'priceMinor': 600000,
+            'available': true,
+            'pricePerSqmMinor': 45000,
+            'minAreaSqm': 20,
+            'maxAreaSqm': 150
+          }
+        ],
+        'masters': [
+          {
+            'id': _cleanCrewId,
+            'name': 'Бригада «Север»',
+            'bio': 'Синтетическая',
+            'emoji': '🧽',
+            'tone': 'green',
+            'serviceIds': [_cleanServiceId]
+          }
+        ],
+      });
+    }
     if (path == 'booking/venues/$_venueId') {
       return _json({
         'venue': _venue,
@@ -103,8 +157,14 @@ class _FakeBackend {
         for (final t in ['10:00', '10:15', '11:00'])
           {
             'startsAt': '${date}T$t:00+05:00',
-            'masterId': _masterId,
-            'masterName': 'Арман'
+            'masterId':
+                request.url.queryParameters['serviceId'] == _cleanServiceId
+                    ? _cleanCrewId
+                    : _masterId,
+            'masterName':
+                request.url.queryParameters['serviceId'] == _cleanServiceId
+                    ? 'Бригада «Север»'
+                    : 'Арман'
           }
       ]);
     }
@@ -116,6 +176,34 @@ class _FakeBackend {
       }
       final starts = body!['startsAt'] as String;
       final startTime = starts.substring(11, 16);
+      if (body['venueId'] == _cleanVenueId) {
+        lastCleaningRequest = body;
+        final area = body['areaSqm'] as int;
+        final record = {
+          'id': 'cccccccc-0000-0000-0000-00000000000${bookings.length + 1}',
+          'venueId': _cleanVenueId,
+          'venueName': 'Тест Уборка',
+          'venueAddress': 'Выезд по адресу клиента',
+          'serviceName': 'Генеральная уборка',
+          'durationMinutes': 180,
+          'masterId': _cleanCrewId,
+          'masterName': 'Бригада «Север»',
+          'startsAt': starts,
+          'endsAt': '${starts.substring(0, 11)}13:00:00+05:00',
+          'priceMinor': 600000 + 45000 * area,
+          'currency': 'KZT',
+          'status': 'CONFIRMED',
+          'confirmation': 'DEV_MOCK',
+          'comment': body['comment'],
+          'cancellable': true,
+          'category': 'CLEANING',
+          'addressText': body['addressText'],
+          'areaSqm': area,
+        };
+        bookings.insert(0, record);
+        keys[key] = record['id'] as String;
+        return _json(record, 201);
+      }
       final record = {
         'id': 'bbbbbbbb-0000-0000-0000-00000000000${bookings.length + 1}',
         'venueId': _venueId,
@@ -219,9 +307,10 @@ void main() {
       (tester) async {
     final backend = _FakeBackend();
     final services = await _services(backend);
-    await _show(tester, ServicesHomeScreen(services: services));
-    expect(find.text('Уборка'), findsOneWidget);
-    expect(find.text('Скоро'), findsOneWidget);
+    await _show(tester, BeautyCategoryScreen(services: services));
+    // Cleaning is not shown in «Красота»; barbershops are.
+    expect(find.text('Уборка'), findsNothing);
+    expect(find.text('Барбершопы'), findsOneWidget);
 
     await _openFlow(tester);
     expect(find.text('Запись'), findsWidgets);
@@ -263,7 +352,7 @@ void main() {
       (tester) async {
     final backend = _FakeBackend()..slotTakenOnBook = true;
     final services = await _services(backend);
-    await _show(tester, ServicesHomeScreen(services: services));
+    await _show(tester, BeautyCategoryScreen(services: services));
     await _openFlow(tester);
     final before = backend.slotRequests;
     await tester.tap(find.text('11:00'));
@@ -293,5 +382,114 @@ void main() {
     await tester.tap(find.text('Повторить'));
     await tester.pumpAndSettle();
     expect(find.text('Записей пока нет'), findsOneWidget);
+  });
+
+  testWidgets(
+      'categories keep barbershops and cleaning apart; the catalog lists both',
+      (tester) async {
+    final services = await _services(_FakeBackend());
+    await _show(tester, HomeServicesCategoryScreen(services: services));
+    expect(find.text('Уборка'), findsOneWidget);
+    expect(find.text('Барбершопы'), findsNothing);
+    await _show(tester, ServicesHomeScreen(services: services));
+    expect(find.text('Красота'), findsOneWidget);
+    expect(find.text('Дом и быт'), findsOneWidget);
+    expect(find.text('Барбершопы'), findsOneWidget);
+    expect(find.text('Уборка'), findsOneWidget);
+  });
+
+  testWidgets(
+      'customer orders cleaning: validation, estimate, request, history after restart, cancel',
+      (tester) async {
+    final backend = _FakeBackend();
+    final services = await _services(backend);
+    await _show(tester, HomeServicesCategoryScreen(services: services));
+    await tester.tap(find.text('Уборка'));
+    await tester.pumpAndSettle();
+    expect(find.text('Генеральная уборка'), findsOneWidget);
+    // Estimate needs a valid area; an out-of-range area is refused locally.
+    expect(find.byKey(const ValueKey('cleaning-estimate')), findsOneWidget);
+    final area = find.widgetWithText(TextField, 'Площадь, м²');
+    await tester.enterText(area, '10');
+    await tester.pump();
+    expect(find.text('Укажите площадь от 20 до 150 м²'), findsOneWidget);
+    await tester.enterText(area, '60');
+    await tester.pump();
+    // 6 000 + 450 x 60 m² = 33 000 tenge, computed with the same formula as the server.
+    expect(find.text(formatTenge(3300000)), findsWidgets);
+    await tester.tap(find.text('10:15'));
+    await tester.pump();
+    // A too short address is refused and nothing is sent.
+    await tester.enterText(find.widgetWithText(TextField, 'Адрес'), 'ул');
+    await tester.drag(find.byType(ListView).last, const Offset(0, -900));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Оформить заявку'));
+    await tester.pumpAndSettle();
+    expect(backend.bookings, isEmpty);
+    await tester.enterText(find.widgetWithText(TextField, 'Адрес'),
+        'Алматы, ул. Тестовая 1, кв. 5');
+    await tester.pump();
+    await tester.tap(find.textContaining('Оформить заявку'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Заявка оформлена!'), findsOneWidget);
+    expect(backend.lastCleaningRequest!['areaSqm'], 60);
+    expect(backend.lastCleaningRequest!['addressText'],
+        'Алматы, ул. Тестовая 1, кв. 5');
+    expect(backend.bookings.single['priceMinor'], 3300000);
+    expect(find.text('Алматы, ул. Тестовая 1, кв. 5'), findsOneWidget);
+    expect(find.text('Площадь: 60 м²'), findsOneWidget);
+
+    // "Restart": the history is restored from the server with the cleaning details.
+    final restarted = await _services(backend);
+    await _show(tester, Scaffold(body: BookingsList(services: restarted)));
+    expect(find.textContaining('Тест Уборка'), findsOneWidget);
+    await tester.tap(find.textContaining('Тест Уборка'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Отменить заявку'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Отменить запись'));
+    await tester.pumpAndSettle();
+    expect(backend.bookings.single['status'], 'CANCELLED');
+    expect(find.text('Отменена'), findsWidgets);
+  });
+
+  testWidgets(
+      'home categories: Красота opens barbershops, Дом и быт opens cleaning',
+      (tester) async {
+    final services = await _services(_FakeBackend());
+    final api = KundeApi(
+        baseUri: Uri.parse('https://api.example.test/api/v1/'),
+        client: MockClient((_) async => http.Response(
+            jsonEncode({
+              'releaseStage': 'FOUNDATION',
+              'marketplaceEnabled': true,
+              'oidcIssuerConfigured': false,
+              'aiEnabled': false,
+              'bookingEnabled': true,
+            }),
+            200)));
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.75;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: KundeLocalizations.localizationsDelegates,
+        supportedLocales: KundeLocalizations.supportedLocales,
+        locale: const Locale('ru'),
+        home: HomeScreen(api: api, booking: services)));
+    await tester.pumpAndSettle();
+    expect(find.text('Услуги'), findsNothing);
+
+    await tester.tap(find.text('Красота'));
+    await tester.pumpAndSettle();
+    expect(find.text('Барбершопы'), findsOneWidget);
+    expect(find.text('Уборка'), findsNothing);
+    Navigator.of(tester.element(find.text('Барбершопы'))).pop();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Дом и быт'));
+    await tester.pumpAndSettle();
+    expect(find.text('Уборка'), findsOneWidget);
+    expect(find.text('Барбершопы'), findsNothing);
   });
 }

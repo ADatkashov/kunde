@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'booking_strings.dart';
+
 import '../../food/data/food_models.dart' show toneColors;
 import '../../food/presentation/food_widgets.dart';
 import '../booking_services.dart';
@@ -25,6 +27,7 @@ class _VenueScreenState extends State<VenueScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final venue = widget.venue;
+    final s = bkL10n(context);
     return Scaffold(
       appBar: AppBar(title: Text(venue.name)),
       body: Center(
@@ -40,8 +43,10 @@ class _VenueScreenState extends State<VenueScreen> {
                 final error = state.error;
                 return FoodStateMessage(
                     icon: Icons.cloud_off_outlined,
-                    title: 'Не удалось загрузить заведение',
-                    body: error is BookingException ? error.message : null,
+                    title: s.bkVenueLoadError,
+                    body: error is BookingException
+                        ? s.bkError(error.failure)
+                        : null,
                     onAction: () => setState(() {
                           _detail = widget.services.api.venue(venue.id);
                         }));
@@ -78,7 +83,7 @@ class _VenueScreenState extends State<VenueScreen> {
                         style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant)),
                     const SizedBox(height: 20),
-                    Text('Услуги', style: theme.textTheme.titleLarge),
+                    Text(s.bkServices, style: theme.textTheme.titleLarge),
                     const SizedBox(height: 8),
                     for (final service in detail.services)
                       _ServiceTile(
@@ -94,7 +99,7 @@ class _VenueScreenState extends State<VenueScreen> {
                                     service: service))),
                       ),
                     const SizedBox(height: 20),
-                    Text('Мастера', style: theme.textTheme.titleLarge),
+                    Text(s.bkMasters, style: theme.textTheme.titleLarge),
                     const SizedBox(height: 8),
                     for (final m in detail.masters)
                       ListTile(
@@ -124,13 +129,15 @@ class _ServiceTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final s = bkL10n(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(children: [
         Expanded(
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(service.name, style: theme.textTheme.titleMedium),
+            Text(s.bkCatalogName(service.name),
+                style: theme.textTheme.titleMedium),
             if (service.description.isNotEmpty)
               Text(service.description,
                   style: theme.textTheme.bodySmall
@@ -144,7 +151,7 @@ class _ServiceTile extends StatelessWidget {
         const SizedBox(width: 12),
         FilledButton.tonal(
           onPressed: enabled ? onBook : null,
-          child: Text(enabled ? 'Записаться' : 'Недоступно'),
+          child: Text(enabled ? s.bkBookAction : s.bkUnavailable),
         ),
       ]),
     );

@@ -1,3 +1,9 @@
+# Next task — owner phone check of Beauty/Barbershop and Home/Cleaning APK
+
+After the category-architecture PR is merged and DEV is redeployed (`BOOKING_SEED_DEMO` seeds the cleaning company; V19 applies), run `scripts/dev/booking_smoke.py https://kunde-backend-ty81.onrender.com +77000000001` (must print `SMOKE OK`) and `food_smoke.py`, then install the signed APK from `android-release.yml`. Phone check: Home → Красота → Барбершопы → book → Orders → Записи → cancel; Home → Дом и быт → Уборка → type, address, area, price, time → request → restart → history → cancel; Food and Grocery still work; RU/KK/EN. Record results in PROJECT_STATE; do not start taxi, medicine or payments. Independent follow-ups: translate Food/Grocery/Partner screens to KK/EN, repeat booking, more Beauty/Home services only after owner scope confirmation.
+
+---
+
 # Next task — verify the premium Flutter Release APK on Samsung
 
 Premium UI is implemented on `feature/kunde-premium-ui`; local analyze/format and 177 tests pass. Complete PR CI, merge only when green, then build with the existing `android-release.yml` against `kunde-backend-ty81` (preserve partner features). On the phone check light default even with dark system settings, city/search/category navigation, Food/Grocery → cart → checkout → order → restart/history, Services → booking/cancel, profile/language/logout, 200% text and TalkBack. Evidence and limitations: [premium-ui-redesign](docs/design/premium-ui-redesign.md). Record CI/build/phone results separately in PROJECT_STATE; do not infer device success from widget/golden tests.

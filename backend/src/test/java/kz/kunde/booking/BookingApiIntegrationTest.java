@@ -248,4 +248,77 @@ class BookingApiIntegrationTest {
                 .hasMessageContaining("bookings_master_no_overlap");
         assertThat(other).isNotBlank();
     }
+
+    private String cleaningBook(String service, String master, String startsAt, String extra) {
+        return "{\"venueId\":\"" + venueId("home-clean-demo") + "\",\"serviceId\":\"" + serviceId("home-clean-demo", service)
+                + "\",\"masterId\":\"" + masterId("home-clean-demo", master) + "\",\"startsAt\":\"" + startsAt + "\"" + extra + "}";
+    }
+
+    @Test
+    void cleaningReusesBookingWithAddressAreaServerPriceAndSeparateCategory() throws Exception {
+        // Barbershops stay separate from cleaning in the category listing; both use the same endpoints.
+        String cleaning = body(send("GET", "/api/v1/booking/venues?category=CLEANING", null, null, null).andExpect(status().isOk()));
+        assertThat((List<?>) JsonPath.read(cleaning, "$")).hasSize(1);
+        assertThat((String) JsonPath.read(cleaning, "$[0].category")).isEqualTo("CLEANING");
+        assertThat((List<?>) JsonPath.read(body(send("GET", "/api/v1/booking/venues", null, null, null)), "$")).hasSize(4);
+        String detail = body(send("GET", "/api/v1/booking/venues/" + venueId("home-clean-demo"), null, null, null).andExpect(status().isOk()));
+        assertThat((List<?>) JsonPath.read(detail, "$.services")).hasSize(3);
+        assertThat((Integer) JsonPath.read(detail, "$.services[0].pricePerSqmMinor")).isPositive();
+
+        String token = login("+77000000301");
+        String other = login("+77000000302");
+        String service = "Генеральная уборка";
+        var slot = slots("home-clean-demo", service, null, tomorrow()).get(1);
+        String startsAt = (String) slot.get("startsAt");
+        String crew = (String) slot.get("masterId");
+        String masterName = (String) slot.get("masterName");
+        String body = "{\"venueId\":\"" + venueId("home-clean-demo") + "\",\"serviceId\":\"" + serviceId("home-clean-demo", service)
+                + "\",\"masterId\":\"" + crew + "\",\"startsAt\":\"" + startsAt + "\",\"addressText\":\"Алматы, ул. Тестовая 1, кв. 5\",\"areaSqm\":60}";
+
+        // Incorrect requests: no address, no area, area out of range, area for a barbershop, address for a barbershop.
+        String noAddress = body.replace(",\"addressText\":\"Алматы, ул. Тестовая 1, кв. 5\"", "");
+        send("POST", "/api/v1/booking/bookings", token, noAddress, "clean-key-0000000001").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("ADDRESS_REQUIRED"));
+        send("POST", "/api/v1/booking/bookings", token, body.replace(",\"areaSqm\":60", ""), "clean-key-0000000002")
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("AREA_INVALID"));
+        send("POST", "/api/v1/booking/bookings", token, body.replace("\"areaSqm\":60", "\"areaSqm\":5"), "clean-key-0000000003")
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("AREA_INVALID"));
+        send("POST", "/api/v1/booking/bookings", token, body.replace("\"areaSqm\":60", "\"areaSqm\":900"), "clean-key-0000000004")
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("AREA_INVALID"));
+        var barberSlot = slots("barber-alatau", "Мужская стрижка", "Арман", tomorrow()).get(0);
+        send("POST", "/api/v1/booking/bookings", token, book("barber-alatau", "Мужская стрижка", "Арман",
+                (String) barberSlot.get("startsAt"), null).replace("}", ",\"areaSqm\":40}"), "clean-key-0000000005")
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("DETAILS_NOT_APPLICABLE"));
+        assertThat(db.queryForObject("select count(*) from transactions.bookings", Integer.class)).isZero();
+
+        // Valid request: the server computes the price (600000 + 45000 * 60 area), the booking stores address and area.
+        String created = body(send("POST", "/api/v1/booking/bookings", token, body, "clean-key-0000000006").andExpect(status().isCreated())
+                .andExpect(jsonPath("$.category").value("CLEANING")).andExpect(jsonPath("$.areaSqm").value(60))
+                .andExpect(jsonPath("$.addressText").value("Алматы, ул. Тестовая 1, кв. 5"))
+                .andExpect(jsonPath("$.priceMinor").value(600_000 + 45_000 * 60)).andExpect(jsonPath("$.durationMinutes").value(180))
+                .andExpect(jsonPath("$.status").value("CONFIRMED")));
+        String id = JsonPath.read(created, "$.id");
+        assertThat(db.queryForObject("select area_sqm from transactions.bookings where id = ?::uuid", Integer.class, id)).isEqualTo(60);
+
+        // The crew's time is blocked for everybody; the same customer cannot overlap themselves.
+        send("POST", "/api/v1/booking/bookings", other, body, "clean-key-0000000007").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("SLOT_UNAVAILABLE"));
+        assertThat(slots("home-clean-demo", service, masterName, tomorrow()).stream().map(x -> x.get("startsAt"))).doesNotContain(startsAt);
+        // History keeps the category, shows it for the owner only; free cancellation frees the crew.
+        send("GET", "/api/v1/booking/bookings", token, null, null).andExpect(jsonPath("$[0].category").value("CLEANING"));
+        send("GET", "/api/v1/booking/bookings/" + id, other, null, null).andExpect(status().isNotFound());
+        send("POST", "/api/v1/booking/bookings/" + id + "/cancel", token, null, null).andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
+        assertThat(slots("home-clean-demo", service, masterName, tomorrow()).stream().map(x -> x.get("startsAt"))).contains(startsAt);
+    }
+
+    @Test
+    void existingBarbershopBookingsKeepWorkingWithoutAddressOrArea() throws Exception {
+        String token = login("+77000000301");
+        var slot = slots("barber-alatau", "Мужская стрижка", "Арман", tomorrow()).get(0);
+        send("POST", "/api/v1/booking/bookings", token, book("barber-alatau", "Мужская стрижка", "Арман",
+                (String) slot.get("startsAt"), null), "barber-key-000000001").andExpect(status().isCreated())
+                .andExpect(jsonPath("$.category").value("BARBER")).andExpect(jsonPath("$.addressText").doesNotExist())
+                .andExpect(jsonPath("$.priceMinor").value(650_000));
+    }
 }
