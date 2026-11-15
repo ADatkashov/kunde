@@ -1,3 +1,5 @@
+import '../../food/food_services.dart';
+import '../../food/presentation/food_home_screen.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/localization/kunde_localizations.dart';
@@ -12,13 +14,20 @@ import 'super_app_widgets.dart';
 /// order. Live data comes only from the API; no demo restaurants or prices.
 class HomeScreen extends StatefulWidget {
   const HomeScreen(
-      {required this.api, this.onOpenSearch, this.onOpenOrders, super.key});
+      {required this.api,
+      this.onOpenSearch,
+      this.onOpenOrders,
+      this.food,
+      super.key});
 
   final KundeApi api;
 
   /// When the host has a Search tab it switches to it; otherwise search opens
   /// as a pushed page.
   final VoidCallback? onOpenSearch;
+
+  /// KUNDE Food screens; when set and the server enables the marketplace, Food opens the restaurant catalog.
+  final FoodServices? food;
 
   /// Opens the Orders tab when the host has one.
   final VoidCallback? onOpenOrders;
@@ -69,7 +78,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _openFood() => Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => FoodHomeScreen(services: widget.food!)));
+
   void _openSearch() {
+    if (widget.food != null) {
+      _openFood();
+      return;
+    }
     if (widget.onOpenSearch != null) {
       widget.onOpenSearch!();
       return;
@@ -262,10 +278,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 24),
                     SectionTitle(title: s.nearbyTitle, trailing: s.homeCity),
                     const SizedBox(height: 12),
-                    EmptyStateCard(
-                        icon: Icons.storefront_outlined,
-                        title: s.nearbyEmptyTitle,
-                        body: s.nearbyEmptyBody),
+                    if (marketplace && widget.food != null)
+                      FoodNearbySection(services: widget.food!)
+                    else
+                      EmptyStateCard(
+                          icon: Icons.storefront_outlined,
+                          title: s.nearbyEmptyTitle,
+                          body: s.nearbyEmptyBody),
                     const SizedBox(height: 24),
                     _PlatformStatus(
                         loading: loading, snapshot: snapshot, strings: s),
