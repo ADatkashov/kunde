@@ -1,5 +1,11 @@
 # KUNDE project state
 
+## Product Delivery 2.0 — 2026-11-15
+
+- **Manual confirmation (owner):** the Release APK from run 43734913344 (`58cf20a`, Food + Grocery MVP, DEV `kunde-backend-ty81`) was installed on a real Samsung phone; the owner reported "Установил, проверил, всё работает". Nothing more detailed was reported (no scenario list, TalkBack or other devices).
+- **Grocery completion (V17):** weighed goods (grams, per-kg price), stock reservation/return, customer-consented substitutions with order-change display, photo URLs (no photos bundled), catalog filters, skeleton loading. Verified automatically: backend 237 tests on PostgreSQL 16 (V17 also applied over existing V15/V16 data), local real-HTTP smoke OK, Flutter analyze clean and 158 tests. Details: [docs/product/food-mvp.md](docs/product/food-mvp.md). **Not verified:** DEV deploy of V17, a new APK on a phone.
+- Linear FEAT-009 (cart/checkout, ADA-40), FEAT-010 (order state, ADA-41), FEAT-008 (ADA-39) stay open: acceptance is not complete (real payments, partner order handling, production gates).
+
 ## KUNDE Grocery MVP (DEV pilot) — 2026-11-15
 
 - Reuses the Food stack via `vertical=GROCERY` (Flyway V16, 4 synthetic stores, 45 products): same cart quote, idempotent orders, mock payment, simulated delivery, history; Flutter Home category «Продукты». Details/limits: [docs/product/food-mvp.md](docs/product/food-mvp.md#grocery-mvp-same-dev-pilot-same-gates). Verified locally: backend 233 tests pass on PostgreSQL 16, Flutter analyze clean and 155 tests pass. **Not verified:** DEV deploy of V16/Grocery, device run.

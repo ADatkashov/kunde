@@ -199,24 +199,36 @@ class _LineTile extends StatelessWidget {
                   style: theme.textTheme.bodySmall
                       ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
             const SizedBox(height: 2),
-            Text(formatTenge(line.totalMinor),
+            Text(
+                line.weighed
+                    ? '${formatQuantity(line.unit, line.quantity)} · ${formatTenge(line.totalMinor)}'
+                    : formatTenge(line.totalMinor),
                 style: theme.textTheme.titleSmall),
+            if (line.substitution != 'NONE')
+              Text(
+                  line.substitution == 'ANY_SIMILAR'
+                      ? 'Замена: на похожий'
+                      : 'Замена: на выбранные (${line.substituteDishIds.length})',
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: theme.colorScheme.primary)),
           ]),
         ),
         IconButton(
-          tooltip: line.quantity == 1 ? 'Удалить ${line.name}' : 'Меньше',
-          onPressed: () => cart.setQuantity(line, line.quantity - 1),
-          icon: Icon(line.quantity == 1
+          tooltip:
+              line.quantity <= line.step ? 'Удалить ${line.name}' : 'Меньше',
+          onPressed: () => cart.setQuantity(line, line.quantity - line.step),
+          icon: Icon(line.quantity <= line.step
               ? Icons.delete_outline_rounded
               : Icons.remove_circle_outline_rounded),
         ),
-        SizedBox(
-            width: 24,
-            child: Text('${line.quantity}', textAlign: TextAlign.center)),
+        if (!line.weighed)
+          SizedBox(
+              width: 24,
+              child: Text('${line.quantity}', textAlign: TextAlign.center)),
         IconButton(
           tooltip: 'Больше',
-          onPressed: line.quantity < CartController.maxLineQuantity
-              ? () => cart.setQuantity(line, line.quantity + 1)
+          onPressed: line.quantity + line.step <= line.maxQuantity
+              ? () => cart.setQuantity(line, line.quantity + line.step)
               : null,
           icon: const Icon(Icons.add_circle_outline_rounded),
         ),

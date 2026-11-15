@@ -260,7 +260,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
-                              child: Text('${l.quantity} × ${l.name}'
+                              child: Text(
+                                  '${formatQuantity(l.unit, l.quantity)}${l.unit == 'KG' ? ' ' : ' × '}${l.name}'
                                   '${l.optionsText.isEmpty ? '' : ' (${l.optionsText})'}')),
                           Text(formatTenge(l.lineTotalMinor)),
                         ]),

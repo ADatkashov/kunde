@@ -9,6 +9,7 @@ import 'package:kunde_mobile/features/food/data/food_api.dart';
 import 'package:kunde_mobile/features/food/data/food_models.dart';
 import 'package:kunde_mobile/features/food/food_services.dart';
 import 'package:kunde_mobile/features/food/presentation/food_home_screen.dart';
+import 'package:kunde_mobile/features/food/presentation/order_screen.dart';
 import 'package:kunde_mobile/features/food/presentation/orders_tab.dart';
 import 'package:kunde_mobile/features/identity/auth_repository.dart';
 
@@ -94,6 +95,7 @@ class _FakeBackend {
   final orders = <Map<String, dynamic>>[];
   final keys = <String, String>{};
   bool offline = false;
+  bool withClosedRestaurant = false;
   final requestedVerticals = <String?>[];
   int minOrder = 0;
 
@@ -121,7 +123,16 @@ class _FakeBackend {
           }
         ]);
       }
-      return _json([_restaurant(minOrder: minOrder)]);
+      return _json([
+        _restaurant(minOrder: minOrder),
+        if (withClosedRestaurant)
+          {
+            ..._restaurant(),
+            'id': '66666666-6666-6666-6666-666666666666',
+            'name': 'Закрытая Пиццерия',
+            'open': false,
+          },
+      ]);
     }
     if (path == 'food/restaurants/$_restaurantId') {
       return _json({..._menu, 'restaurant': _restaurant(minOrder: minOrder)});
@@ -387,5 +398,132 @@ void main() {
     expect(
         Restaurant.fromJson({..._restaurant(), 'vertical': 'GROCERY'}).vertical,
         'GROCERY');
+  });
+
+  test('weighed goods use grams, step 100 g and kilogram formatting', () {
+    expect(formatQuantity('KG', 500), '500 г');
+    expect(formatQuantity('KG', 1500), '1,5 кг');
+    expect(formatQuantity('KG', 2000), '2 кг');
+    expect(formatQuantity('PIECE', 3), '3 шт');
+    expect(unitPriceLabel('KG', 599000), '5\u00A0990\u00A0₸ / кг');
+    // 1.5 kg at 5 990 KZT/kg = 8 985 KZT; rounds half up like the server.
+    expect(lineTotalMinor('KG', 599000, 1500), 898500);
+    expect(lineTotalMinor('KG', 33, 100), 3);
+    expect(lineTotalMinor('PIECE', 62000, 8), 496000);
+
+    final cart = CartController();
+    final store =
+        Restaurant.fromJson({..._restaurant(), 'vertical': 'GROCERY'});
+    final line = CartLine(
+        dishId: _dishId,
+        name: 'Говядина',
+        emoji: '🥩',
+        tone: 'red',
+        optionIds: const [],
+        optionsText: '',
+        unitPriceMinor: 599000,
+        quantity: 500,
+        unit: 'KG',
+        maxQuantity: 3000);
+    cart.add(store, line);
+    expect(cart.itemCount, 1);
+    cart.setQuantity(line, line.quantity + line.step);
+    expect(line.quantity, 600);
+    cart.setQuantity(line, 9000);
+    expect(line.quantity, 3000, reason: 'capped at stock');
+    cart.setQuantity(line, line.quantity - line.step * 40);
+    expect(cart.isEmpty, isTrue);
+    expect(
+        CartLine(
+            dishId: 'a',
+            name: 'x',
+            emoji: '',
+            tone: 'red',
+            optionIds: const [],
+            optionsText: '',
+            unitPriceMinor: 1,
+            quantity: 1,
+            substitution: 'CHOSEN',
+            substituteDishIds: const ['b']).toRequest(),
+        containsPair('substitution', 'CHOSEN'));
+  });
+
+  testWidgets('catalog filters hide closed restaurants and filter by cuisine',
+      (tester) async {
+    final backend = _FakeBackend()..withClosedRestaurant = true;
+    final services = await _services(backend, tester);
+    await _show(tester, FoodHomeScreen(services: services));
+    expect(find.text('Закрытая Пиццерия'), findsOneWidget);
+    await tester.tap(find.text('Открыто сейчас'));
+    await tester.pumpAndSettle();
+    expect(find.text('Закрытая Пиццерия'), findsNothing);
+    expect(find.text('Пицца Тест'), findsOneWidget);
+    await tester.tap(find.text('Итальянская'));
+    await tester.pumpAndSettle();
+    expect(find.text('Пицца Тест'), findsOneWidget);
+  });
+
+  testWidgets(
+      'order screen shows replaced and removed lines and the final total',
+      (tester) async {
+    final backend = _FakeBackend();
+    backend.orders.add({
+      'id': 'bbbbbbbb-0000-0000-0000-000000000001',
+      'restaurantId': _restaurantId,
+      'restaurantName': 'Маркет Тест',
+      'status': 'DELIVERED',
+      'paymentMethod': 'CASH_ON_DELIVERY',
+      'paymentStatus': 'PAY_ON_RECEIPT',
+      'subtotalMinor': 952000,
+      'deliveryFeeMinor': 60000,
+      'totalMinor': 1012000,
+      'finalTotalMinor': 580000,
+      'hasChanges': true,
+      'vertical': 'GROCERY',
+      'addressLabel': 'Дом',
+      'addressText': 'Алматы, Абая 10',
+      'comment': null,
+      'placedAt': DateTime.now().toUtc().toIso8601String(),
+      'cancellable': false,
+      'timeline': [
+        {'status': 'PLACED', 'at': DateTime.now().toUtc().toIso8601String()}
+      ],
+      'items': [
+        {
+          'name': 'Кефир 0,9 л',
+          'optionsText': '',
+          'quantity': 8,
+          'unit': 'PIECE',
+          'lineTotalMinor': 432000,
+          'substitution': 'CHOSEN',
+          'fulfillmentStatus': 'SUBSTITUTED',
+          'replacedByName': 'Молоко 1 л',
+          'finalLineTotalMinor': 432000,
+        },
+        {
+          'name': 'Говядина вырезка',
+          'optionsText': '',
+          'quantity': 1500,
+          'unit': 'KG',
+          'lineTotalMinor': 898500,
+          'substitution': 'NONE',
+          'fulfillmentStatus': 'REMOVED',
+          'finalLineTotalMinor': 0,
+        },
+      ],
+    });
+    final services = await _services(backend, tester);
+    await _show(
+        tester,
+        OrderScreen(
+            services: services,
+            orderId: 'bbbbbbbb-0000-0000-0000-000000000001'));
+    expect(find.text('Заменено на: Молоко 1 л'), findsOneWidget);
+    expect(find.text('Нет в наличии — убрано из заказа'), findsOneWidget);
+    expect(find.textContaining('1,5 кг Говядина вырезка'), findsOneWidget);
+    await tester.drag(find.byType(ListView).first, const Offset(0, -700));
+    await tester.pumpAndSettle();
+    expect(find.text('Итого с учётом изменений'), findsOneWidget);
+    expect(find.text('5\u00A0800\u00A0₸'), findsWidgets);
   });
 }

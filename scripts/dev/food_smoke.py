@@ -88,6 +88,23 @@ g_order = call("POST", "/api/v1/food/orders", dict(g_cart, addressId=address["id
 assert g_order["vertical"] == "GROCERY", g_order
 call("POST", "/api/v1/food/orders/" + g_order["id"] + "/cancel", token=token, expect=[200, 409])
 
+# Weighed goods (grams, per-kg price), stock limit and substitution rules.
+farm = next(x for x in stores if x["slug"] == "fermer-svezhest")
+farm_menu = call("GET", "/api/v1/food/restaurants/" + farm["id"])
+beef = next(d for sct in farm_menu["sections"] for d in sct["dishes"] if d["name"] == "Говядина вырезка")
+assert beef["unit"] == "KG", beef
+w_cart = {"restaurantId": farm["id"], "items": [{"dishId": beef["id"], "quantity": 1500, "optionIds": []}]}
+w_quote = call("POST", "/api/v1/food/cart/quote", w_cart, token=token)
+assert w_quote["subtotalMinor"] == (beef["priceMinor"] * 1500 + 500) // 1000, w_quote
+call("POST", "/api/v1/food/cart/quote", {"restaurantId": farm["id"], "items": [{"dishId": beef["id"], "quantity": 150, "optionIds": []}]},
+     token=token, expect=422)
+alts = call("GET", "/api/v1/food/dishes/" + bread["id"] + "/alternatives")
+assert alts and all(a["restaurantId"] == market["id"] for a in alts), alts
+call("POST", "/api/v1/food/cart/quote", {"restaurantId": market["id"], "items": [
+    {"dishId": bread["id"], "quantity": 20, "optionIds": [], "substitution": "CHOSEN", "substituteDishIds": []}]}, token=token, expect=422)
+call("POST", "/api/v1/food/cart/quote", {"restaurantId": market["id"], "items": [
+    {"dishId": bread["id"], "quantity": 20, "optionIds": [], "substitution": "CHOSEN", "substituteDishIds": [alts[0]["id"]]}]}, token=token)
+
 # Re-open: the app restores its session from the stored refresh token and still sees the persisted order.
 token2 = call("POST", "/api/v1/auth/token/refresh", {"refreshToken": session["refreshToken"]})["accessToken"]
 history2 = call("GET", "/api/v1/food/orders", token=token2)

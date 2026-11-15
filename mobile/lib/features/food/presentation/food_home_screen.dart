@@ -25,6 +25,9 @@ class FoodHomeScreen extends StatefulWidget {
 
 class _FoodHomeScreenState extends State<FoodHomeScreen> {
   bool get _grocery => widget.vertical == 'GROCERY';
+  bool _openOnly = false;
+  String? _cuisine;
+  String _sort = 'default';
   final _query = TextEditingController();
   Timer? _debounce;
   late Future<List<Restaurant>> _restaurants;
@@ -136,7 +139,7 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
         future: _restaurants,
         builder: (context, state) {
           if (state.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
+            return const RestaurantListSkeleton();
           }
           if (state.hasError) {
             final message = state.error is FoodException
@@ -150,8 +153,9 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
                 body: message,
                 onAction: _refresh);
           }
-          final list = state.data!;
-          if (list.isEmpty) {
+          final all = state.data!;
+          final list = _filtered(all);
+          if (all.isEmpty) {
             return FoodStateMessage(
                 icon: Icons.storefront_outlined,
                 title: _grocery ? 'Пока нет магазинов' : 'Пока нет ресторанов',
@@ -163,20 +167,86 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
             onRefresh: _refresh,
             child: ListView.separated(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-              itemCount: list.length,
+              itemCount: list.length + 1,
               separatorBuilder: (_, __) => const SizedBox(height: 14),
-              itemBuilder: (context, i) => RestaurantCard(
-                  restaurant: list[i], onTap: () => _openRestaurant(list[i])),
+              itemBuilder: (context, i) {
+                if (i == 0) return _filters(all);
+                if (list.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Text('По выбранным фильтрам ничего нет.',
+                        textAlign: TextAlign.center),
+                  );
+                }
+                return RestaurantCard(
+                    restaurant: list[i - 1],
+                    onTap: () => _openRestaurant(list[i - 1]));
+              },
             ),
           );
         },
       );
 
+  List<Restaurant> _filtered(List<Restaurant> all) {
+    final list = all
+        .where((r) =>
+            (!_openOnly || r.open) &&
+            (_cuisine == null || r.cuisine == _cuisine))
+        .toList();
+    switch (_sort) {
+      case 'eta':
+        list.sort((a, b) => a.etaMinMinutes.compareTo(b.etaMinMinutes));
+      case 'fee':
+        list.sort((a, b) => a.deliveryFeeMinor.compareTo(b.deliveryFeeMinor));
+    }
+    return list;
+  }
+
+  Widget _filters(List<Restaurant> all) {
+    final cuisines = {for (final r in all) r.cuisine}.toList()..sort();
+    return SizedBox(
+      height: 48,
+      child: ListView(scrollDirection: Axis.horizontal, children: [
+        FilterChip(
+          label: const Text('Открыто сейчас'),
+          selected: _openOnly,
+          onSelected: (v) => setState(() => _openOnly = v),
+        ),
+        const SizedBox(width: 8),
+        PopupMenuButton<String>(
+          tooltip: 'Сортировка',
+          onSelected: (v) => setState(() => _sort = v),
+          itemBuilder: (_) => const [
+            PopupMenuItem(value: 'default', child: Text('По умолчанию')),
+            PopupMenuItem(value: 'eta', child: Text('Быстрее доставка')),
+            PopupMenuItem(value: 'fee', child: Text('Дешевле доставка')),
+          ],
+          child: Chip(
+            avatar: const Icon(Icons.sort_rounded, size: 18),
+            label: Text(switch (_sort) {
+              'eta' => 'Быстрее доставка',
+              'fee' => 'Дешевле доставка',
+              _ => 'Сортировка',
+            }),
+          ),
+        ),
+        for (final c in cuisines) ...[
+          const SizedBox(width: 8),
+          ChoiceChip(
+            label: Text(c),
+            selected: _cuisine == c,
+            onSelected: (v) => setState(() => _cuisine = v ? c : null),
+          ),
+        ],
+      ]),
+    );
+  }
+
   Widget _results() => FutureBuilder<FoodSearchResult>(
         future: _search,
         builder: (context, state) {
           if (state.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
+            return const RestaurantListSkeleton(count: 3);
           }
           if (state.hasError) {
             return FoodStateMessage(
