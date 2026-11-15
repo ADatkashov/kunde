@@ -1,4 +1,8 @@
-# Next task — deploy KUNDE Food to DEV and verify it on a phone
+# Next task — owner phone check of Food, Grocery and Booking; then expand Booking
+
+Food, Grocery (V17) and Booking (V18) are deployed on DEV `kunde-backend-ty81` and pass the DEV smoke scripts (`scripts/dev/food_smoke.py`, `scripts/dev/booking_smoke.py`); the APK is `KUNDE-dev-release` of run 43767173233. Owner: check on the phone (see PROJECT_STATE) and report. Next engineering steps without new decisions: KK/EN texts for Food/Grocery/Booking screens, Booking polish (repeat booking, reminders only as DEV mock), cleaning as the second booking service once the owner confirms its scope (see [booking-mvp](docs/product/booking-mvp.md)).
+
+(Older item kept below.) Deploy KUNDE Food to DEV and verify it on a phone
 
 1. Owner: run *Terraform DEV* (`workflow_dispatch`, `apply=true`, `confirm=apply-dev`, `replace_render=true`) from `main` after the Food PRs merged; DEV then gets `FOOD_ENABLED` + `FOOD_SEED_DEMO`. Replacing the Render service changes its URL: take the new host from the run and pass it as `api-base-url` to *Android Release APK (DEV)*.
 2. Check: `python3 scripts/dev/food_smoke.py https://<dev-host> +77000000001` prints `SMOKE OK`; `GET /api/v1/capabilities` has `marketplaceEnabled=true`.
