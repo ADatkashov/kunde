@@ -22,6 +22,7 @@ flutter:
   assets:
     - assets/illustrations/
     - assets/photos/
+    - assets/fonts/LICENSE.txt
   fonts:
     - family: KundeSans
       fonts:
