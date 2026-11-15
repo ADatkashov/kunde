@@ -1,5 +1,15 @@
 """Resolve official public Linux/amd64 bases. Tokens stay in memory; no layers downloaded."""
 import argparse, datetime, hashlib, json, pathlib, re, urllib.parse, urllib.request
+class _DropAuthOnCrossHostRedirect(urllib.request.HTTPRedirectHandler):
+    """Docker Hub answers blob requests with a redirect to a CDN. Forwarding the registry bearer token there is a leak
+    and makes some CDN nodes reject the request (HTTP 400), so the token is dropped when the host changes."""
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        new = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if new is not None and urllib.parse.urlsplit(newurl).netloc != urllib.parse.urlsplit(req.full_url).netloc:
+            for store in (new.headers, new.unredirected_hdrs):
+                for key in [k for k in store if k.lower() == "authorization"]: del store[key]
+        return new
+_opener = urllib.request.build_opener(_DropAuthOnCrossHostRedirect)
 def resolve(image):
     source, separator, pinned=image.partition("@")
     repository,_,tag=source.partition(":")
@@ -9,7 +19,7 @@ def resolve(image):
     with urllib.request.urlopen("https://auth.docker.io/token?"+query,timeout=30) as r: token=json.load(r)["token"]
     headers={"Authorization":"Bearer "+token,"Accept":"application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json"}
     def get(path):
-        with urllib.request.urlopen(urllib.request.Request("https://registry-1.docker.io/v2/library/"+repository+"/"+path,headers=headers),timeout=30) as r:
+        with _opener.open(urllib.request.Request("https://registry-1.docker.io/v2/library/"+repository+"/"+path,headers=headers),timeout=30) as r:
             return r.read(),r.headers
     raw,meta=get("manifests/"+ref); manifest=json.loads(raw); digest=meta["Docker-Content-Digest"]
     if digest!="sha256:"+hashlib.sha256(raw).hexdigest(): raise ValueError("Manifest digest mismatch")
