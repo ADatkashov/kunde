@@ -126,11 +126,13 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                       ),
                     )
                   else if (state.data!.sections.isEmpty)
-                    const SliverFillRemaining(
+                    SliverFillRemaining(
                       hasScrollBody: false,
                       child: FoodStateMessage(
                           icon: Icons.menu_book_outlined,
-                          title: 'Меню пока пустое'),
+                          title: restaurant.vertical == 'GROCERY'
+                              ? 'Ассортимент пока пуст'
+                              : 'Меню пока пустое'),
                     )
                   else ...[
                     SliverToBoxAdapter(child: _chips(state.data!.sections)),
@@ -196,9 +198,11 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
             child: Material(
               color: theme.colorScheme.errorContainer,
               borderRadius: BorderRadius.circular(12),
-              child: const Padding(
-                padding: EdgeInsets.all(12),
-                child: Text('Ресторан сейчас закрыт — заказ недоступен.'),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Text(r.vertical == 'GROCERY'
+                    ? 'Магазин сейчас закрыт — заказ недоступен.'
+                    : 'Ресторан сейчас закрыт — заказ недоступен.'),
               ),
             ),
           ),

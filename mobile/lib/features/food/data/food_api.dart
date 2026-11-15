@@ -131,8 +131,9 @@ class FoodApi {
         return jsonDecode(utf8.decode(response.bodyBytes));
       });
 
-  Future<List<Restaurant>> restaurants() async =>
-      ((await _public('food/restaurants')) as List<dynamic>)
+  Future<List<Restaurant>> restaurants({String vertical = 'FOOD'}) async =>
+      ((await _public('food/restaurants', {'vertical': vertical}))
+              as List<dynamic>)
           .map((e) => Restaurant.fromJson(e as Map<String, dynamic>))
           .toList(growable: false);
 
@@ -140,9 +141,11 @@ class FoodApi {
       RestaurantMenu.fromJson((await _public('food/restaurants/$restaurantId'))
           as Map<String, dynamic>);
 
-  Future<FoodSearchResult> search(String query) async =>
+  Future<FoodSearchResult> search(String query,
+          {String vertical = 'FOOD'}) async =>
       FoodSearchResult.fromJson(
-          (await _public('food/search', {'q': query})) as Map<String, dynamic>);
+          (await _public('food/search', {'q': query, 'vertical': vertical}))
+              as Map<String, dynamic>);
 
   Future<FoodQuote> quote(
           String restaurantId, List<Map<String, dynamic>> items) =>

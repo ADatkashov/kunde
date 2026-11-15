@@ -59,10 +59,14 @@ class Restaurant {
     required this.etaMaxMinutes,
     required this.open,
     required this.synthetic,
+    this.vertical = 'FOOD',
   });
 
   final String id;
   final String name;
+
+  /// `FOOD` (restaurants) or `GROCERY` (stores); stores reuse the same catalog, cart and order model.
+  final String vertical;
   final String cuisine;
   final String description;
   final String emoji;
@@ -89,6 +93,7 @@ class Restaurant {
         etaMaxMinutes: (json['etaMaxMinutes'] as num).toInt(),
         open: json['open'] as bool? ?? false,
         synthetic: json['synthetic'] as bool? ?? false,
+        vertical: json['vertical'] as String? ?? 'FOOD',
       );
 }
 
@@ -380,8 +385,10 @@ class FoodOrder {
     required this.items,
     required this.timeline,
     required this.cancellable,
+    this.vertical = 'FOOD',
   });
 
+  final String vertical;
   final String id;
   final String restaurantId;
   final String restaurantName;
@@ -429,6 +436,7 @@ class FoodOrder {
             .map((e) => TimelineEntry.fromJson(e as Map<String, dynamic>))
             .toList(growable: false),
         cancellable: json['cancellable'] as bool? ?? false,
+        vertical: json['vertical'] as String? ?? 'FOOD',
       );
 }
 

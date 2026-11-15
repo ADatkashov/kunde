@@ -30,9 +30,11 @@ public class FoodDemoSeeder implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        try (InputStream in = new ClassPathResource("food/demo-catalog.json").getInputStream()) {
-            int inserted = seed(new ObjectMapper().readTree(in));
-            log.info("Food demo seed: {} synthetic restaurants inserted", inserted);
+        for (String file : new String[] {"food/demo-catalog.json", "food/grocery-demo-catalog.json"}) {
+            try (InputStream in = new ClassPathResource(file).getInputStream()) {
+                int inserted = seed(new ObjectMapper().readTree(in));
+                log.info("Demo seed {}: {} synthetic stores/restaurants inserted", file, inserted);
+            }
         }
     }
 
@@ -44,12 +46,13 @@ public class FoodDemoSeeder implements ApplicationRunner {
             order++;
             UUID id = db.query("""
                     insert into marketplace.food_restaurants (slug, name, cuisine, description, emoji, tone,
-                        delivery_fee_minor, min_order_minor, eta_min_minutes, eta_max_minutes, is_open, is_synthetic, sort_order)
-                    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, true, ?) on conflict (slug) do nothing returning id
+                        delivery_fee_minor, min_order_minor, eta_min_minutes, eta_max_minutes, is_open, is_synthetic, sort_order, vertical)
+                    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, true, ?, ?) on conflict (slug) do nothing returning id
                     """, rs -> rs.next() ? rs.getObject(1, UUID.class) : null, r.get("slug").asText(),
                     r.get("name").asText(), r.get("cuisine").asText(), r.get("description").asText(), r.get("emoji").asText(),
                     r.get("tone").asText(), r.get("deliveryFee").asLong(), r.get("minOrder").asLong(),
-                    r.get("etaMin").asInt(), r.get("etaMax").asInt(), r.get("open").asBoolean(), order);
+                    r.get("etaMin").asInt(), r.get("etaMax").asInt(), r.get("open").asBoolean(), order,
+                    r.has("vertical") ? r.get("vertical").asText() : "FOOD");
             if (id == null) { continue; }
             inserted++;
             int sectionOrder = 0;

@@ -47,8 +47,10 @@ class FoodApiIntegrationTest {
     @BeforeEach
     void seed() throws Exception {
         db.update("DELETE FROM identity.otp_challenges WHERE phone_e164 IN ('+77000000201', '+77000000202')");
-        try (var in = new ClassPathResource("food/demo-catalog.json").getInputStream()) {
-            new FoodDemoSeeder(db).seed(new ObjectMapper().readTree(in));
+        for (String file : new String[] {"food/demo-catalog.json", "food/grocery-demo-catalog.json"}) {
+            try (var in = new ClassPathResource(file).getInputStream()) {
+                new FoodDemoSeeder(db).seed(new ObjectMapper().readTree(in));
+            }
         }
     }
 
@@ -255,5 +257,34 @@ class FoodApiIntegrationTest {
         // Same idempotency key from another user is independent.
         send("POST", "/api/v1/food/orders", other, order(restaurant, dish, size, 2, otherAddress, "TEST_CARD"), "order-key-0000000012")
                 .andExpect(status().isCreated());
+    }
+
+    @Test
+    void groceryStoresShareTheCatalogCartAndOrdersButStayASeparateVertical() throws Exception {
+        String stores = body(send("GET", "/api/v1/food/restaurants?vertical=GROCERY", null, null, null).andExpect(status().isOk()));
+        assertThat((List<?>) JsonPath.read(stores, "$")).hasSize(4);
+        assertThat((String) JsonPath.read(stores, "$[0].vertical")).isEqualTo("GROCERY");
+        // The default vertical is FOOD and never lists stores; an unknown vertical is a client error.
+        assertThat((List<?>) JsonPath.read(body(send("GET", "/api/v1/food/restaurants", null, null, null)), "$")).hasSize(8);
+        send("GET", "/api/v1/food/restaurants?vertical=TAXI", null, null, null).andExpect(status().isBadRequest());
+        String found = body(send("GET", "/api/v1/food/search?q=гауда&vertical=GROCERY", null, null, null).andExpect(status().isOk()));
+        assertThat((List<?>) JsonPath.read(found, "$.dishes")).isNotEmpty();
+        assertThat((List<?>) JsonPath.read(body(send("GET", "/api/v1/food/search?q=гауда", null, null, null)), "$.dishes")).isEmpty();
+
+        String token = login("+77000000201");
+        String address = address(token);
+        String store = restaurantId("market-alatau");
+        String milk = dishId("market-alatau", "Молоко 1 л");
+        String fat = "\"" + optionId(milk, "2,5%") + "\"";
+        // 3 x 620 KZT = 1860 is below the 4000 minimum; 8 x 620 = 4960 passes. Delivery 600.
+        send("POST", "/api/v1/food/cart/quote", token, order(store, milk, fat, 3, address, "TEST_CARD"), null)
+                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("FOOD_MIN_ORDER_NOT_MET"));
+        String created = body(send("POST", "/api/v1/food/orders", token, order(store, milk, fat, 8, address, "CASH_ON_DELIVERY"),
+                "order-key-0000000020").andExpect(status().isCreated()).andExpect(jsonPath("$.vertical").value("GROCERY")));
+        assertThat((Integer) JsonPath.read(created, "$.totalMinor")).isEqualTo(496_000 + 60_000);
+        send("GET", "/api/v1/food/orders", token, null, null).andExpect(jsonPath("$[0].vertical").value("GROCERY"));
+        // An unavailable product cannot be ordered.
+        send("POST", "/api/v1/food/cart/quote", token, order(store, dishId("market-alatau", "Масло подсолнечное 1 л"), "", 5, address, "TEST_CARD"), null)
+                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("FOOD_ITEM_UNAVAILABLE"));
     }
 }

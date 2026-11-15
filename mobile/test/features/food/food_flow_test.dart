@@ -94,6 +94,7 @@ class _FakeBackend {
   final orders = <Map<String, dynamic>>[];
   final keys = <String, String>{};
   bool offline = false;
+  final requestedVerticals = <String?>[];
   int minOrder = 0;
 
   http.Response _json(Object body, [int status = 200]) =>
@@ -107,6 +108,19 @@ class _FakeBackend {
         ? null
         : jsonDecode(request.body) as Map<String, dynamic>;
     if (path == 'food/restaurants') {
+      requestedVerticals.add(request.url.queryParameters['vertical']);
+      if (request.url.queryParameters['vertical'] == 'GROCERY') {
+        return _json([
+          {
+            ..._restaurant(),
+            'id': '55555555-5555-5555-5555-555555555555',
+            'name': 'Маркет Тест',
+            'cuisine': 'Супермаркет',
+            'emoji': '🛒',
+            'vertical': 'GROCERY',
+          }
+        ]);
+      }
       return _json([_restaurant(minOrder: minOrder)]);
     }
     if (path == 'food/restaurants/$_restaurantId') {
@@ -322,7 +336,7 @@ void main() {
     final restarted = await _services(backend, tester);
     await _show(tester, Scaffold(body: FoodOrdersTab(services: restarted)));
     expect(find.text('Мои заказы'), findsOneWidget);
-    expect(find.text('Пицца Тест'), findsOneWidget);
+    expect(find.textContaining('Пицца Тест'), findsOneWidget);
     expect(find.textContaining('2× Маргарита'), findsOneWidget);
   });
 
@@ -354,5 +368,24 @@ void main() {
     await tester.tap(find.text('Повторить'));
     await tester.pumpAndSettle();
     expect(find.text('Пицца Тест'), findsOneWidget);
+  });
+
+  testWidgets('grocery vertical lists stores, not restaurants', (tester) async {
+    final backend = _FakeBackend();
+    final services = await _services(backend, tester);
+    await _show(
+        tester, FoodHomeScreen(services: services, vertical: 'GROCERY'));
+    expect(find.text('Продукты · Алматы'), findsOneWidget);
+    expect(find.text('Маркет Тест'), findsOneWidget);
+    expect(find.text('Пицца Тест'), findsNothing);
+    expect(find.text('Магазины и товары'), findsOneWidget);
+    expect(backend.requestedVerticals, contains('GROCERY'));
+  });
+
+  test('vertical defaults to FOOD in the models', () {
+    expect(Restaurant.fromJson(_restaurant()).vertical, 'FOOD');
+    expect(
+        Restaurant.fromJson({..._restaurant(), 'vertical': 'GROCERY'}).vertical,
+        'GROCERY');
   });
 }

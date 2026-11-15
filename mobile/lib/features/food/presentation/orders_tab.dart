@@ -135,7 +135,8 @@ class _OrderCard extends StatelessWidget {
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Expanded(
-                  child: Text(order.restaurantName,
+                  child: Text(
+                      '${order.vertical == 'GROCERY' ? '🛒' : '🍽️'} ${order.restaurantName}',
                       style: theme.textTheme.titleMedium)),
               Container(
                 padding:
