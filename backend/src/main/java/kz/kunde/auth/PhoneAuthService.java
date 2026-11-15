@@ -246,7 +246,23 @@ public class PhoneAuthService {
         db.update("INSERT INTO identity.refresh_tokens (session_id, token_hash, expires_at) VALUES (?, ?, ?)",
                 session, keys.refreshHash(refresh), refreshUntil);
         long refreshSeconds = Math.max(0, refreshUntil.toEpochSecond() - Instant.now().getEpochSecond());
-        return new Tokens(issuer.issue(user, session, Instant.now()), refresh, issuer.ttlSeconds(), (int) refreshSeconds);
+        return new Tokens(issuer.issue(user, session, scopesFor(user), Instant.now()), refresh, issuer.ttlSeconds(), (int) refreshSeconds);
+    }
+
+    /**
+     * ADR-018: every OTP-verified user is a consumer; {@code kunde.partner} needs an ACTIVE partner_staff row and
+     * {@code kunde.admin} an unrevoked admin grant. Re-evaluated on every token issue and refresh, so revocation
+     * takes effect at the next refresh (endpoints re-check membership/grants themselves).
+     */
+    String scopesFor(UUID user) {
+        var flags = db.queryForMap("""
+                SELECT EXISTS (SELECT 1 FROM marketplace.partner_staff WHERE user_id = ? AND status = 'ACTIVE') AS partner,
+                       EXISTS (SELECT 1 FROM identity.admin_grants WHERE user_id = ? AND revoked_at IS NULL) AS admin
+                """, user, user);
+        StringBuilder scope = new StringBuilder("kunde.consumer");
+        if (Boolean.TRUE.equals(flags.get("partner"))) scope.append(" kunde.partner");
+        if (Boolean.TRUE.equals(flags.get("admin"))) scope.append(" kunde.admin");
+        return scope.toString();
     }
 
     private void lockPhone(String phone) {
