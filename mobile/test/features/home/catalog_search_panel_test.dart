@@ -36,7 +36,7 @@ MockClientHandler _catalog(
         200,
         headers: _json);
 
-Map<String, dynamic> _offering(String name, {String? en, String? partner, int? price, bool? available}) => {
+Map<String, dynamic> _offering(String name, {String? en, String? partner}) => {
       'id': 'o-$name',
       'categoryId': 'c',
       'kind': 'SERVICE',
@@ -44,9 +44,15 @@ Map<String, dynamic> _offering(String name, {String? en, String? partner, int? p
       'nameKk': '$name-kk',
       if (en != null) 'nameEn': en,
       if (partner != null) 'partnerName': partner,
-      if (price != null) 'priceMinor': price,
-      if (price != null) 'currency': 'KZT',
-      if (available != null) 'available': available,
+    };
+
+Map<String, dynamic> _priced(Map<String, dynamic> offering, int price,
+        {bool available = true}) =>
+    {
+      ...offering,
+      'priceMinor': price,
+      'currency': 'KZT',
+      'available': available,
     };
 
 void main() {
@@ -92,8 +98,8 @@ void main() {
   testWidgets('shows the KZT price and an explicit unavailable marker',
       (tester) async {
     final api = _api(_catalog(offerings: [
-      _offering('Чистка', partner: 'Партнёр', price: 250050, available: true),
-      _offering('Стирка', price: 100000, available: false),
+      _priced(_offering('Чистка', partner: 'Партнёр'), 250050),
+      _priced(_offering('Стирка'), 100000, available: false),
     ]));
     await tester.pumpWidget(_app(CatalogSearchPanel(api: api)));
 
