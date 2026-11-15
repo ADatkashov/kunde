@@ -56,6 +56,10 @@ app:
       dev-otp:
         enabled: ${AUTH_DEV_OTP_ENABLED:false}
         allowed-phones: ${AUTH_DEV_OTP_ALLOWED_PHONES:}
+  # KUNDE Food DEV pilot: mock payment + simulated delivery; forbidden outside dev/local/test (FoodGuard).
+  food:
+    enabled: ${FOOD_ENABLED:false}
+    seed-demo: ${FOOD_SEED_DEMO:false}
   identity:
     consumer-enabled: ${CONSUMER_IDENTITY_ENABLED:false}
   security:

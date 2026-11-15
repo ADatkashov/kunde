@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 class PlatformControllerTest {
     @Test
     void reportsOnlyCapabilitiesThatAreActuallyAvailable() {
-        var capabilities = new PlatformController("", "").capabilities();
+        var capabilities = new PlatformController("", "", false).capabilities();
 
         assertThat(capabilities.releaseStage()).isEqualTo("FOUNDATION");
         assertThat(capabilities.marketplaceEnabled()).isFalse();
@@ -17,7 +17,7 @@ class PlatformControllerTest {
 
     @Test
     void doesNotReportOidcConfiguredUntilIssuerAndAudienceArePresent() {
-        var capabilities = new PlatformController("https://identity.example.test", "kunde-api").capabilities();
+        var capabilities = new PlatformController("https://identity.example.test", "kunde-api", false).capabilities();
 
         assertThat(capabilities.oidcIssuerConfigured()).isTrue();
         assertThat(capabilities.marketplaceEnabled()).isFalse();

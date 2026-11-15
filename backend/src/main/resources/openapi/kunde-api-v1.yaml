@@ -142,6 +142,109 @@ paths:
               schema:
                 type: array
                 items: { type: object }
+  /food/restaurants:
+    get:
+      operationId: listFoodRestaurants
+      description: KUNDE Food DEV pilot (only when app.food.enabled; absent otherwise). Synthetic demo restaurants.
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        '200':
+          description: Restaurants (id, slug, name, cuisine, description, emoji, tone, deliveryFeeMinor, minOrderMinor, eta range, open, synthetic). Money is integer KZT minor units.
+          content:
+            application/json:
+              schema: { type: array, items: { type: object } }
+  /food/restaurants/{restaurantId}:
+    get:
+      operationId: getFoodRestaurant
+      parameters:
+        - { name: restaurantId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '404':
+          description: RESTAURANT_NOT_FOUND.
+        '200':
+          description: Restaurant with menu sections, dishes and option groups.
+          content:
+            application/json:
+              schema: { type: object }
+  /food/search:
+    get:
+      operationId: searchFood
+      parameters:
+        - { name: q, in: query, schema: { type: string, maxLength: 100 } }
+      responses:
+        '200':
+          description: Restaurants and dishes matching q (case-insensitive substring). Empty for blank q.
+          content:
+            application/json:
+              schema: { type: object }
+  /food/cart/quote:
+    post:
+      operationId: quoteFoodCart
+      description: Authenticated. Server-side pricing; the client sends only dish and option ids, never prices.
+      responses:
+        '200':
+          description: Priced lines, subtotal, delivery fee and total.
+          content:
+            application/json:
+              schema: { type: object }
+        '409':
+          description: RESTAURANT_CLOSED.
+        '422':
+          description: FOOD_ITEM_UNAVAILABLE, FOOD_OPTIONS_INVALID, FOOD_MIN_ORDER_NOT_MET or FOOD_CART_TOO_LARGE.
+  /food/orders:
+    get:
+      operationId: listFoodOrders
+      description: Authenticated. The caller's own orders, newest first; mock fulfillment advances on read.
+      responses:
+        '200':
+          description: Orders with items and status timeline.
+          content:
+            application/json:
+              schema: { type: array, items: { type: object } }
+    post:
+      operationId: placeFoodOrder
+      description: Authenticated. Requires an Idempotency-Key header (16-64 chars). Payment is mocked (TEST_CARD or CASH_ON_DELIVERY); no card data is accepted. Delivery progress is simulated.
+      responses:
+        '201':
+          description: Order created (status PLACED).
+        '200':
+          description: Idempotent replay of the same key and restaurant.
+        '400':
+          description: IDEMPOTENCY_KEY_INVALID or validation failure.
+        '409':
+          description: IDEMPOTENCY_KEY_REUSED or TOO_MANY_ACTIVE_ORDERS.
+        '422':
+          description: PAYMENT_METHOD_UNSUPPORTED, ADDRESS_NOT_FOUND or a quote error.
+  /food/orders/{orderId}:
+    get:
+      operationId: getFoodOrder
+      parameters:
+        - { name: orderId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '404':
+          description: ORDER_NOT_FOUND (also for another user's order).
+        '200':
+          description: One order of the caller.
+  /food/orders/{orderId}/cancel:
+    post:
+      operationId: cancelFoodOrder
+      parameters:
+        - { name: orderId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '409':
+          description: ORDER_NOT_CANCELLABLE once the restaurant accepted the order (D-06).
+        '200':
+          description: Order cancelled and payment voided (only while PLACED).
+  /food/orders/{orderId}/repeat:
+    get:
+      operationId: repeatFoodOrder
+      parameters:
+        - { name: orderId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Items of the past order that can still be ordered, plus names of skipped items.
 components:
   responses:
     RequestBodyTooLarge:

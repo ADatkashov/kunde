@@ -41,7 +41,10 @@ class DomainSchemaOwnershipIntegrationTest {
             "marketplace.partner_profile_events -> identity.users",
             "marketplace.partner_staff_events -> identity.users",
             "marketplace.partner_verification_events -> identity.users",
-            "serviceability.zone_addresses -> profile.consumer_addresses");
+            "serviceability.zone_addresses -> profile.consumer_addresses",
+            "transactions.food_orders -> identity.users",
+            "transactions.food_orders -> marketplace.food_restaurants",
+            "transactions.food_order_items -> marketplace.food_dishes");
 
     @Autowired JdbcTemplate jdbc;
     @Autowired PlatformTransactionManager transactionManager;
