@@ -33,6 +33,13 @@ public class PartnerService {
     /** A partner the caller belongs to, with the caller's own role. */
     public record MyPartnerView(UUID id, String displayName, Status verificationStatus, long version, Role role) { }
 
+    /** Review queue row for KUNDE administrators: no applicant or staff personal data. */
+    public record ReviewQueueItem(UUID id, String displayName, Status verificationStatus, long version, Instant createdAt) { }
+
+    /** One immutable verification history entry; {@code actorUserId} is an internal id, never a phone number. */
+    public record VerificationHistoryItem(String decision, Status fromStatus, Status toStatus, UUID actorUserId,
+            String reason, Instant occurredAt) { }
+
     public record StaffView(UUID userId, Role role, String status) { }
 
     private static final RowMapper<PartnerView> PARTNER = (rs, i) -> new PartnerView(
@@ -117,6 +124,43 @@ public class PartnerService {
         db.update("""
                 INSERT INTO marketplace.partner_profile_events (partner_id, actor_user_id, event_type, old_value, new_value)
                 VALUES (?, ?, 'RENAMED', ?, ?)""", partnerId, actorUserId, current.displayName(), name);
+        return load(partnerId);
+    }
+
+    /**
+     * Partners awaiting or having had review, oldest first (max 100), optionally filtered by status. No authorization
+     * here: callers must already have proven an active admin grant (see {@code AdminPartnerController}).
+     */
+    @Transactional(readOnly = true)
+    public List<ReviewQueueItem> reviewQueue(Status status) {
+        String sql = "SELECT id, display_name, verification_status, version, created_at FROM marketplace.partners"
+                + (status == null ? "" : " WHERE verification_status = ?") + " ORDER BY created_at, id LIMIT 100";
+        RowMapper<ReviewQueueItem> mapper = (rs, i) -> new ReviewQueueItem(rs.getObject("id", UUID.class),
+                rs.getString("display_name"), Status.valueOf(rs.getString("verification_status")), rs.getLong("version"),
+                rs.getTimestamp("created_at").toInstant());
+        return status == null ? db.query(sql, mapper) : db.query(sql, mapper, status.name());
+    }
+
+    /** Partner plus its full verification history for a reviewer; same caller-proves-admin rule as {@link #reviewQueue}. */
+    @Transactional(readOnly = true)
+    public List<VerificationHistoryItem> verificationHistory(UUID partnerId) {
+        if (db.query("SELECT 1 FROM marketplace.partners WHERE id = ?", (rs, i) -> 1, partnerId).isEmpty()) {
+            throw notFound();
+        }
+        return db.query("""
+                SELECT decision, from_status, to_status, actor_user_id, reason, occurred_at
+                FROM marketplace.partner_verification_events WHERE partner_id = ? ORDER BY id""",
+                (rs, i) -> new VerificationHistoryItem(rs.getString("decision"),
+                        rs.getString("from_status") == null ? null : Status.valueOf(rs.getString("from_status")),
+                        Status.valueOf(rs.getString("to_status")), rs.getObject("actor_user_id", UUID.class),
+                        rs.getString("reason"), rs.getTimestamp("occurred_at").toInstant()), partnerId);
+    }
+
+    @Transactional(readOnly = true)
+    public PartnerView view(UUID partnerId) {
+        if (db.query("SELECT 1 FROM marketplace.partners WHERE id = ?", (rs, i) -> 1, partnerId).isEmpty()) {
+            throw notFound();
+        }
         return load(partnerId);
     }
 
