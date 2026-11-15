@@ -1,0 +1,1103 @@
+{
+ "restaurants": [
+  {
+   "slug": "dastarkhan-demo",
+   "name": "Дастархан",
+   "cuisine": "Казахская кухня",
+   "description": "Домашние блюда степной кухни. Вымышленный ресторан для демонстрации.",
+   "emoji": "🍖",
+   "tone": "orange",
+   "deliveryFee": 50000,
+   "minOrder": 300000,
+   "etaMin": 35,
+   "etaMax": 50,
+   "open": true,
+   "sections": [
+    {
+     "name": "Горячее",
+     "dishes": [
+      {
+       "name": "Бешбармак",
+       "description": "Конина и говядина, лапша, лук-сорпа",
+       "price": 490000,
+       "emoji": "🍲",
+       "tone": "orange",
+       "available": true,
+       "groups": [
+        {
+         "name": "Порция",
+         "min": 1,
+         "max": 1,
+         "options": [
+          {
+           "name": "Стандарт",
+           "delta": 0
+          },
+          {
+           "name": "Большая",
+           "delta": 180000
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Манты с мясом (5 шт)",
+       "description": "Нежные манты на пару со сметаной",
+       "price": 290000,
+       "emoji": "🥟",
+       "tone": "amber",
+       "available": true,
+       "groups": [
+        {
+         "name": "Добавки",
+         "min": 0,
+         "max": 2,
+         "options": [
+          {
+           "name": "Сметана",
+           "delta": 20000
+          },
+          {
+           "name": "Острый соус",
+           "delta": 15000
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Казы-карта",
+       "description": "Домашняя колбаса из конины, гарнир",
+       "price": 520000,
+       "emoji": "🍖",
+       "tone": "red",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Лагман",
+       "description": "Лапша ручной работы, говядина, овощи",
+       "price": 270000,
+       "emoji": "🍜",
+       "tone": "orange",
+       "available": true,
+       "groups": [
+        {
+         "name": "Острота",
+         "min": 1,
+         "max": 1,
+         "options": [
+          {
+           "name": "Мягкий",
+           "delta": 0
+          },
+          {
+           "name": "Средний",
+           "delta": 0
+          },
+          {
+           "name": "Острый",
+           "delta": 0
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "Выпечка",
+     "dishes": [
+      {
+       "name": "Баурсаки (10 шт)",
+       "description": "Пышные, с мёдом или сметаной",
+       "price": 120000,
+       "emoji": "🍩",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Самса с говядиной",
+       "description": "Слоёная, из тандыра",
+       "price": 90000,
+       "emoji": "🥐",
+       "tone": "amber",
+       "available": true,
+       "groups": [
+        {
+         "name": "Количество",
+         "min": 1,
+         "max": 1,
+         "options": [
+          {
+           "name": "1 шт",
+           "delta": 0
+          },
+          {
+           "name": "3 шт",
+           "delta": 170000
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "Напитки",
+     "dishes": [
+      {
+       "name": "Айран",
+       "description": "Холодный, 0.33 л",
+       "price": 60000,
+       "emoji": "🥛",
+       "tone": "blue",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Чай с чабрецом",
+       "description": "Чайник на двоих",
+       "price": 150000,
+       "emoji": "🫖",
+       "tone": "green",
+       "available": true,
+       "groups": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "pizza-alatau",
+   "name": "Пицца Алатау",
+   "cuisine": "Итальянская",
+   "description": "Тонкое тесто, дровяная печь. Вымышленный ресторан для демонстрации.",
+   "emoji": "🍕",
+   "tone": "red",
+   "deliveryFee": 60000,
+   "minOrder": 400000,
+   "etaMin": 30,
+   "etaMax": 45,
+   "open": true,
+   "sections": [
+    {
+     "name": "Пицца",
+     "dishes": [
+      {
+       "name": "Маргарита",
+       "description": "Томаты, моцарелла, базилик",
+       "price": 350000,
+       "emoji": "🍕",
+       "tone": "red",
+       "available": true,
+       "groups": [
+        {
+         "name": "Размер",
+         "min": 1,
+         "max": 1,
+         "options": [
+          {
+           "name": "25 см",
+           "delta": 0
+          },
+          {
+           "name": "30 см",
+           "delta": 150000
+          },
+          {
+           "name": "35 см",
+           "delta": 280000
+          }
+         ]
+        },
+        {
+         "name": "Добавки",
+         "min": 0,
+         "max": 3,
+         "options": [
+          {
+           "name": "Двойной сыр",
+           "delta": 80000
+          },
+          {
+           "name": "Грибы",
+           "delta": 60000
+          },
+          {
+           "name": "Пепперони",
+           "delta": 90000
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Пепперони",
+       "description": "Пепперони, моцарелла, томатный соус",
+       "price": 420000,
+       "emoji": "🍕",
+       "tone": "red",
+       "available": true,
+       "groups": [
+        {
+         "name": "Размер",
+         "min": 1,
+         "max": 1,
+         "options": [
+          {
+           "name": "25 см",
+           "delta": 0
+          },
+          {
+           "name": "30 см",
+           "delta": 150000
+          },
+          {
+           "name": "35 см",
+           "delta": 280000
+          }
+         ]
+        },
+        {
+         "name": "Добавки",
+         "min": 0,
+         "max": 3,
+         "options": [
+          {
+           "name": "Двойной сыр",
+           "delta": 80000
+          },
+          {
+           "name": "Халапеньо",
+           "delta": 40000
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Четыре сыра",
+       "description": "Моцарелла, дорблю, пармезан, чеддер",
+       "price": 480000,
+       "emoji": "🧀",
+       "tone": "amber",
+       "available": true,
+       "groups": [
+        {
+         "name": "Размер",
+         "min": 1,
+         "max": 1,
+         "options": [
+          {
+           "name": "25 см",
+           "delta": 0
+          },
+          {
+           "name": "30 см",
+           "delta": 150000
+          },
+          {
+           "name": "35 см",
+           "delta": 280000
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Гавайская",
+       "description": "Курица, ананас, моцарелла",
+       "price": 430000,
+       "emoji": "🍍",
+       "tone": "amber",
+       "available": false,
+       "groups": [
+        {
+         "name": "Размер",
+         "min": 1,
+         "max": 1,
+         "options": [
+          {
+           "name": "25 см",
+           "delta": 0
+          },
+          {
+           "name": "30 см",
+           "delta": 150000
+          },
+          {
+           "name": "35 см",
+           "delta": 280000
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "Закуски",
+     "dishes": [
+      {
+       "name": "Салат Цезарь",
+       "description": "Курица, романо, пармезан, соус",
+       "price": 290000,
+       "emoji": "🥗",
+       "tone": "green",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Картофель фри",
+       "description": "Хрустящий, с соусом на выбор",
+       "price": 140000,
+       "emoji": "🍟",
+       "tone": "amber",
+       "available": true,
+       "groups": [
+        {
+         "name": "Соус",
+         "min": 1,
+         "max": 1,
+         "options": [
+          {
+           "name": "Кетчуп",
+           "delta": 0
+          },
+          {
+           "name": "Сырный",
+           "delta": 25000
+          },
+          {
+           "name": "Чесночный",
+           "delta": 25000
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "name": "Напитки",
+     "dishes": [
+      {
+       "name": "Лимонад домашний",
+       "description": "0.5 л, лимон-мята",
+       "price": 130000,
+       "emoji": "🍋",
+       "tone": "green",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Кола",
+       "description": "0.5 л",
+       "price": 80000,
+       "emoji": "🥤",
+       "tone": "red",
+       "available": true,
+       "groups": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "burger-tau",
+   "name": "Бургер Тау",
+   "cuisine": "Бургеры",
+   "description": "Сочные бургеры из говядины мраморных пород. Вымышленный ресторан для демонстрации.",
+   "emoji": "🍔",
+   "tone": "amber",
+   "deliveryFee": 45000,
+   "minOrder": 300000,
+   "etaMin": 25,
+   "etaMax": 40,
+   "open": true,
+   "sections": [
+    {
+     "name": "Бургеры",
+     "dishes": [
+      {
+       "name": "Классик",
+       "description": "Говяжья котлета, чеддер, соус, овощи",
+       "price": 290000,
+       "emoji": "🍔",
+       "tone": "amber",
+       "available": true,
+       "groups": [
+        {
+         "name": "Прожарка",
+         "min": 1,
+         "max": 1,
+         "options": [
+          {
+           "name": "Medium",
+           "delta": 0
+          },
+          {
+           "name": "Well done",
+           "delta": 0
+          }
+         ]
+        },
+        {
+         "name": "Добавки",
+         "min": 0,
+         "max": 3,
+         "options": [
+          {
+           "name": "Бекон",
+           "delta": 60000
+          },
+          {
+           "name": "Двойная котлета",
+           "delta": 120000
+          },
+          {
+           "name": "Яйцо",
+           "delta": 30000
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Чизбургер Double",
+       "description": "Две котлеты, двойной чеддер",
+       "price": 380000,
+       "emoji": "🍔",
+       "tone": "orange",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Чикен бургер",
+       "description": "Хрустящая курица, коул слоу",
+       "price": 270000,
+       "emoji": "🍗",
+       "tone": "orange",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Веган бургер",
+       "description": "Нутовая котлета, авокадо",
+       "price": 310000,
+       "emoji": "🥑",
+       "tone": "green",
+       "available": true,
+       "groups": []
+      }
+     ]
+    },
+    {
+     "name": "Гарниры",
+     "dishes": [
+      {
+       "name": "Картофель по-деревенски",
+       "description": "Дольки со специями",
+       "price": 150000,
+       "emoji": "🍟",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Луковые кольца",
+       "description": "8 шт",
+       "price": 130000,
+       "emoji": "🧅",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      }
+     ]
+    },
+    {
+     "name": "Напитки",
+     "dishes": [
+      {
+       "name": "Милкшейк",
+       "description": "Ваниль / шоколад / клубника",
+       "price": 190000,
+       "emoji": "🥤",
+       "tone": "blue",
+       "available": true,
+       "groups": [
+        {
+         "name": "Вкус",
+         "min": 1,
+         "max": 1,
+         "options": [
+          {
+           "name": "Ваниль",
+           "delta": 0
+          },
+          {
+           "name": "Шоколад",
+           "delta": 0
+          },
+          {
+           "name": "Клубника",
+           "delta": 0
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "sushi-ki",
+   "name": "Суши Ки",
+   "cuisine": "Японская",
+   "description": "Роллы и сеты из свежей рыбы. Вымышленный ресторан для демонстрации.",
+   "emoji": "🍣",
+   "tone": "blue",
+   "deliveryFee": 70000,
+   "minOrder": 500000,
+   "etaMin": 40,
+   "etaMax": 60,
+   "open": true,
+   "sections": [
+    {
+     "name": "Роллы",
+     "dishes": [
+      {
+       "name": "Филадельфия (8 шт)",
+       "description": "Лосось, сливочный сыр, огурец",
+       "price": 440000,
+       "emoji": "🍣",
+       "tone": "orange",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Калифорния (8 шт)",
+       "description": "Краб, авокадо, икра масаго",
+       "price": 360000,
+       "emoji": "🍙",
+       "tone": "red",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Унаги ролл (8 шт)",
+       "description": "Угорь, соус унаги, кунжут",
+       "price": 460000,
+       "emoji": "🍱",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Ролл с огурцом (6 шт)",
+       "description": "Вегетарианский",
+       "price": 220000,
+       "emoji": "🥒",
+       "tone": "green",
+       "available": true,
+       "groups": []
+      }
+     ]
+    },
+    {
+     "name": "Горячее",
+     "dishes": [
+      {
+       "name": "Рамен с курицей",
+       "description": "Бульон, лапша, яйцо, нори",
+       "price": 340000,
+       "emoji": "🍜",
+       "tone": "orange",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Том ям",
+       "description": "Острый суп с креветками",
+       "price": 410000,
+       "emoji": "🍤",
+       "tone": "red",
+       "available": true,
+       "groups": []
+      }
+     ]
+    },
+    {
+     "name": "Добавки",
+     "dishes": [
+      {
+       "name": "Соевый соус",
+       "description": "Дополнительная порция",
+       "price": 20000,
+       "emoji": "🥢",
+       "tone": "blue",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Васаби и имбирь",
+       "description": "Набор",
+       "price": 15000,
+       "emoji": "🌶️",
+       "tone": "green",
+       "available": true,
+       "groups": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "plov-center",
+   "name": "Плов-Центр",
+   "cuisine": "Узбекская",
+   "description": "Плов в казане, как делают на праздник. Вымышленный ресторан для демонстрации.",
+   "emoji": "🍛",
+   "tone": "orange",
+   "deliveryFee": 50000,
+   "minOrder": 250000,
+   "etaMin": 30,
+   "etaMax": 45,
+   "open": true,
+   "sections": [
+    {
+     "name": "Плов и горячее",
+     "dishes": [
+      {
+       "name": "Плов праздничный",
+       "description": "Баранина, нут, изюм, перепелиное яйцо",
+       "price": 320000,
+       "emoji": "🍛",
+       "tone": "orange",
+       "available": true,
+       "groups": [
+        {
+         "name": "Порция",
+         "min": 1,
+         "max": 1,
+         "options": [
+          {
+           "name": "Стандарт",
+           "delta": 0
+          },
+          {
+           "name": "Большая",
+           "delta": 120000
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Шашлык из баранины (2 шп.)",
+       "description": "На углях, лук, лепёшка",
+       "price": 390000,
+       "emoji": "🍢",
+       "tone": "red",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Лагман жареный",
+       "description": "Говядина, перец, зелень",
+       "price": 290000,
+       "emoji": "🍝",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Самса с курицей",
+       "description": "Из тандыра",
+       "price": 80000,
+       "emoji": "🥐",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      }
+     ]
+    },
+    {
+     "name": "Салаты и напитки",
+     "dishes": [
+      {
+       "name": "Ачик-чучук",
+       "description": "Помидоры, лук, зелень",
+       "price": 110000,
+       "emoji": "🍅",
+       "tone": "red",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Компот из сухофруктов",
+       "description": "0.5 л",
+       "price": 70000,
+       "emoji": "🍹",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "kofeynya-arbat",
+   "name": "Кофейня Арбат",
+   "cuisine": "Кофе и десерты",
+   "description": "Свежая обжарка и выпечка каждый день. Вымышленный ресторан для демонстрации.",
+   "emoji": "☕",
+   "tone": "amber",
+   "deliveryFee": 35000,
+   "minOrder": 150000,
+   "etaMin": 15,
+   "etaMax": 25,
+   "open": true,
+   "sections": [
+    {
+     "name": "Кофе",
+     "dishes": [
+      {
+       "name": "Капучино",
+       "description": "Двойной эспрессо, молоко",
+       "price": 150000,
+       "emoji": "☕",
+       "tone": "amber",
+       "available": true,
+       "groups": [
+        {
+         "name": "Размер",
+         "min": 1,
+         "max": 1,
+         "options": [
+          {
+           "name": "250 мл",
+           "delta": 0
+          },
+          {
+           "name": "350 мл",
+           "delta": 30000
+          }
+         ]
+        },
+        {
+         "name": "Молоко",
+         "min": 1,
+         "max": 1,
+         "options": [
+          {
+           "name": "Коровье",
+           "delta": 0
+          },
+          {
+           "name": "Овсяное",
+           "delta": 25000
+          },
+          {
+           "name": "Миндальное",
+           "delta": 30000
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Латте",
+       "description": "Нежная молочная пенка",
+       "price": 160000,
+       "emoji": "🥛",
+       "tone": "amber",
+       "available": true,
+       "groups": [
+        {
+         "name": "Размер",
+         "min": 1,
+         "max": 1,
+         "options": [
+          {
+           "name": "250 мл",
+           "delta": 0
+          },
+          {
+           "name": "350 мл",
+           "delta": 30000
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Американо",
+       "description": "Эспрессо с горячей водой",
+       "price": 110000,
+       "emoji": "☕",
+       "tone": "orange",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Какао",
+       "description": "Горячий шоколад со сливками",
+       "price": 170000,
+       "emoji": "🍫",
+       "tone": "orange",
+       "available": true,
+       "groups": []
+      }
+     ]
+    },
+    {
+     "name": "Десерты",
+     "dishes": [
+      {
+       "name": "Чизкейк Нью-Йорк",
+       "description": "Классический, ягодный соус",
+       "price": 210000,
+       "emoji": "🍰",
+       "tone": "red",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Круассан с миндалём",
+       "description": "Тёплый, из печи",
+       "price": 140000,
+       "emoji": "🥐",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Макарон (3 шт)",
+       "description": "Ассорти вкусов",
+       "price": 180000,
+       "emoji": "🍪",
+       "tone": "red",
+       "available": true,
+       "groups": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "shaurma-express",
+   "name": "Шаурма Экспресс",
+   "cuisine": "Фастфуд",
+   "description": "Быстро, горячо и вкусно. Вымышленный ресторан для демонстрации.",
+   "emoji": "🌯",
+   "tone": "green",
+   "deliveryFee": 40000,
+   "minOrder": 200000,
+   "etaMin": 20,
+   "etaMax": 30,
+   "open": true,
+   "sections": [
+    {
+     "name": "Шаурма",
+     "dishes": [
+      {
+       "name": "Шаурма классическая",
+       "description": "Курица, овощи, чесночный соус, лаваш",
+       "price": 190000,
+       "emoji": "🌯",
+       "tone": "green",
+       "available": true,
+       "groups": [
+        {
+         "name": "Размер",
+         "min": 1,
+         "max": 1,
+         "options": [
+          {
+           "name": "Стандарт",
+           "delta": 0
+          },
+          {
+           "name": "Большая",
+           "delta": 50000
+          }
+         ]
+        },
+        {
+         "name": "Острота",
+         "min": 1,
+         "max": 1,
+         "options": [
+          {
+           "name": "Без остроты",
+           "delta": 0
+          },
+          {
+           "name": "С острым соусом",
+           "delta": 0
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Шаурма с сыром",
+       "description": "Курица, сыр, овощи",
+       "price": 230000,
+       "emoji": "🌯",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Шаурма вегетарианская",
+       "description": "Фалафель, хумус, овощи",
+       "price": 180000,
+       "emoji": "🥙",
+       "tone": "green",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Донер на тарелке",
+       "description": "Мясо, рис, салат",
+       "price": 280000,
+       "emoji": "🍽️",
+       "tone": "orange",
+       "available": true,
+       "groups": []
+      }
+     ]
+    },
+    {
+     "name": "Напитки",
+     "dishes": [
+      {
+       "name": "Айран",
+       "description": "0.33 л",
+       "price": 60000,
+       "emoji": "🥛",
+       "tone": "blue",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Лимонад",
+       "description": "0.5 л",
+       "price": 100000,
+       "emoji": "🍋",
+       "tone": "green",
+       "available": true,
+       "groups": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "zelyony-box",
+   "name": "Зелёный Бокс",
+   "cuisine": "Здоровое питание",
+   "description": "Сбалансированные боулы и свежие салаты. Вымышленный ресторан для демонстрации.",
+   "emoji": "🥗",
+   "tone": "green",
+   "deliveryFee": 50000,
+   "minOrder": 350000,
+   "etaMin": 25,
+   "etaMax": 35,
+   "open": true,
+   "sections": [
+    {
+     "name": "Боулы",
+     "dishes": [
+      {
+       "name": "Боул с лососем",
+       "description": "Рис, лосось, эдамаме, авокадо",
+       "price": 430000,
+       "emoji": "🥣",
+       "tone": "orange",
+       "available": true,
+       "groups": [
+        {
+         "name": "Соус",
+         "min": 1,
+         "max": 1,
+         "options": [
+          {
+           "name": "Терияки",
+           "delta": 0
+          },
+          {
+           "name": "Ореховый",
+           "delta": 0
+          },
+          {
+           "name": "Лимонный",
+           "delta": 0
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Боул с курицей",
+       "description": "Киноа, курица, овощи гриль",
+       "price": 350000,
+       "emoji": "🥗",
+       "tone": "green",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Веган боул",
+       "description": "Нут, батат, шпинат, тахини",
+       "price": 330000,
+       "emoji": "🥑",
+       "tone": "green",
+       "available": true,
+       "groups": []
+      }
+     ]
+    },
+    {
+     "name": "Салаты и напитки",
+     "dishes": [
+      {
+       "name": "Салат с индейкой",
+       "description": "Руккола, индейка, томаты",
+       "price": 320000,
+       "emoji": "🥗",
+       "tone": "green",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Смузи зелёный",
+       "description": "Шпинат, банан, яблоко, 0.4 л",
+       "price": 190000,
+       "emoji": "🥤",
+       "tone": "green",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Протеиновый батончик",
+       "description": "Домашний, без сахара",
+       "price": 90000,
+       "emoji": "🍫",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
