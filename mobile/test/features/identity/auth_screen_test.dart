@@ -124,14 +124,15 @@ void main() {
     auth.dispose();
     api.close();
   });
-  Future<void> start(WidgetTester tester) async {
+  Future<void> start(WidgetTester tester, {bool partner = false}) async {
     configure();
-    await tester.pumpWidget(KundeApp(api: api, auth: auth));
+    await tester
+        .pumpWidget(KundeApp(api: api, auth: auth, partnerEnabled: partner));
     await tester.pumpAndSettle();
   }
 
-  Future<void> login(WidgetTester tester) async {
-    await start(tester);
+  Future<void> login(WidgetTester tester, {bool partner = false}) async {
+    await start(tester, partner: partner);
     await tester.tap(find.text('Sign in'));
     await tester.pumpAndSettle();
   }
@@ -158,6 +159,31 @@ void main() {
     await tester.tap(find.descendant(of: bar, matching: find.text('Profile')));
     await tester.pumpAndSettle();
     expect(find.text('Edit profile'), findsOneWidget);
+  });
+
+  Future<void> openProfileWithTallWindow(WidgetTester tester,
+      {required bool partner}) async {
+    // A tall window builds the whole profile list, so lower panels exist.
+    tester.view.physicalSize = const Size(800, 6000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await login(tester, partner: partner);
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
+    expect(find.text('Support'), findsOneWidget);
+  }
+
+  testWidgets('partner section is hidden unless the build enables it',
+      (tester) async {
+    await openProfileWithTallWindow(tester, partner: false);
+    expect(find.text('For partners'), findsNothing);
+    expect(find.text('Become a partner'), findsNothing);
+  });
+
+  testWidgets('partner section is shown when the build enables it',
+      (tester) async {
+    await openProfileWithTallWindow(tester, partner: true);
+    expect(find.text('For partners'), findsOneWidget);
   });
 
   testWidgets('splash restores stored session and loads profile before home',

@@ -269,18 +269,30 @@ class AuthRepository extends ChangeNotifier {
         )) {
           return current.access;
         }
-        try {
-          final refreshed = await gateway.refresh(current.refresh);
-          await _replace(AuthTokens(refreshed.access, refreshed.refresh,
-              refreshed.id ?? current.id, refreshed.expires));
-          return _tokens!.access;
-        } on IdentityUnavailable {
-          rethrow;
-        } catch (_) {
-          await _invalidate();
-          throw SessionExpired();
-        }
+        await _refreshLocked(current);
+        return _tokens!.access;
       });
+
+  /// Forces a token refresh now. The partner scope is derived on the server at
+  /// token issue, so a new applicant needs a fresh token before partner calls.
+  Future<void> refreshTokens() => _exclusive(() async {
+        final current = _tokens;
+        if (current == null) throw SessionExpired();
+        await _refreshLocked(current);
+      });
+
+  Future<void> _refreshLocked(AuthTokens current) async {
+    try {
+      final refreshed = await gateway.refresh(current.refresh);
+      await _replace(AuthTokens(refreshed.access, refreshed.refresh,
+          refreshed.id ?? current.id, refreshed.expires));
+    } on IdentityUnavailable {
+      rethrow;
+    } catch (_) {
+      await _invalidate();
+      throw SessionExpired();
+    }
+  }
 
   Future<Map<String, dynamic>> profile() => _request('GET');
   Future<Map<String, dynamic>> updateProfile(
@@ -406,6 +418,116 @@ class AuthRepository extends ChangeNotifier {
     return (await _requestJson('POST', 'me/support/cases/$caseId/escalation'))
         as Map<String, dynamic>;
   }
+
+  static final _uuidPattern = RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+
+  static String _id(String value) {
+    if (!_uuidPattern.hasMatch(value)) {
+      throw ArgumentError.value(value, 'id', 'Invalid ID');
+    }
+    return value;
+  }
+
+  /// Partner application (ADR-018): the caller becomes OWNER of a new partner
+  /// that stays hidden until KUNDE approves it. Refresh tokens afterwards.
+  Future<Map<String, dynamic>> applyAsPartner(String displayName) async {
+    final name = displayName.trim();
+    if (name.isEmpty || name.length > 120) {
+      throw ArgumentError.value(displayName, 'displayName', 'Invalid name');
+    }
+    return (await _requestJson(
+            'POST', 'partner/applications', {'displayName': name}, {201}))
+        as Map<String, dynamic>;
+  }
+
+  /// Partners the caller is staff of. A 403 means the token has no partner
+  /// scope (not a partner yet), which is an empty list rather than an error.
+  Future<List<Map<String, dynamic>>> partners() async {
+    try {
+      final result = await _requestJson('GET', 'partner/partners');
+      return (result as List<dynamic>)
+          .map((entry) => entry as Map<String, dynamic>)
+          .toList(growable: false);
+    } on IdentityApiError catch (error) {
+      if (error.status == 403) return const [];
+      rethrow;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> partnerCategories() async {
+    final result = await _requestJson('GET', 'partner/categories');
+    return (result as List<dynamic>)
+        .map((entry) => entry as Map<String, dynamic>)
+        .toList(growable: false);
+  }
+
+  Future<List<Map<String, dynamic>>> partnerOfferings(String partnerId) async {
+    final result = await _requestJson(
+        'GET', 'partner/partners/${_id(partnerId)}/offerings');
+    return (result as List<dynamic>)
+        .map((entry) => entry as Map<String, dynamic>)
+        .toList(growable: false);
+  }
+
+  /// [priceMinor] is the single final KZT price in tiyn (D-04), or null while
+  /// the offering is only a draft.
+  Future<Map<String, dynamic>> createPartnerOffering(
+    String partnerId, {
+    required String categoryId,
+    required String kind,
+    required String nameRu,
+    required String nameKk,
+    String? nameEn,
+    int? priceMinor,
+    required bool available,
+  }) async =>
+      (await _requestJson(
+          'POST', 'partner/partners/${_id(partnerId)}/offerings', {
+        'categoryId': _id(categoryId),
+        'kind': kind,
+        'nameRu': nameRu.trim(),
+        'nameKk': nameKk.trim(),
+        if (nameEn != null && nameEn.trim().isNotEmpty) 'nameEn': nameEn.trim(),
+        'priceMinor': priceMinor,
+        'availability': available ? 'AVAILABLE' : 'UNAVAILABLE',
+      }, {
+        201
+      })) as Map<String, dynamic>;
+
+  Future<Map<String, dynamic>> updatePartnerOffering(
+    String partnerId,
+    String offeringId, {
+    required String nameRu,
+    required String nameKk,
+    String? nameEn,
+    int? priceMinor,
+    required bool available,
+    required int version,
+  }) async =>
+      (await _requestJson('PATCH',
+          'partner/partners/${_id(partnerId)}/offerings/${_id(offeringId)}', {
+        'nameRu': nameRu.trim(),
+        'nameKk': nameKk.trim(),
+        'nameEn':
+            (nameEn == null || nameEn.trim().isEmpty) ? null : nameEn.trim(),
+        'priceMinor': priceMinor,
+        'availability': available ? 'AVAILABLE' : 'UNAVAILABLE',
+        'version': version,
+      })) as Map<String, dynamic>;
+
+  /// Publishing needs an APPROVED partner and a price; the server enforces it.
+  Future<Map<String, dynamic>> setPartnerOfferingPublished(
+    String partnerId,
+    String offeringId, {
+    required bool published,
+    required int version,
+  }) async =>
+      (await _requestJson(
+          'POST',
+          'partner/partners/${_id(partnerId)}/offerings/${_id(offeringId)}/'
+              '${published ? 'publish' : 'unpublish'}',
+          {'version': version})) as Map<String, dynamic>;
 
   Future<Map<String, dynamic>> _request(
     String method, [

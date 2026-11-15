@@ -20,3 +20,7 @@ Use only the synthetic numbers in the allowlist (default `+7 700 000 00 01`..`03
 - Without the backend variables above, `/auth/*` answers 503 and sign-in fails closed; only public catalog screens work.
 - applicationId stays `com.example.kunde_mobile` (changing it affects the native E2E harness); decide before any store release.
 - Not verified on a physical device.
+
+## Partner section (ADR-018 step 5)
+
+The manual workflow has an input `partner-features` (default `false`) that passes `--dart-define=PARTNER_FEATURES_ENABLED=true`. When on, the Profile tab shows "For partners": apply as a partner, then (after KUNDE approval by an out-of-band admin) create and edit offerings in KZT, set availability and publish. Consumer builds keep it off. Partners need a backend that runs phone-auth; the admin account that approves them is provisioned by the owner with a row in `identity.admin_grants` (no endpoint creates it).

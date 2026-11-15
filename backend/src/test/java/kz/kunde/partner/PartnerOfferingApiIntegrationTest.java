@@ -235,6 +235,20 @@ class PartnerOfferingApiIntegrationTest {
     }
 
     @Test
+    void categoryOptionsListDraftAndPublishedButNotRetiredCategories() throws Exception {
+        String loginA = login("+77000000114");
+        apply(loginA, "Category Cafe");
+        String token = refreshed(loginA);
+        UUID draft = category("DRAFT");
+        UUID published = category("PUBLISHED");
+        UUID retired = category("RETIRED");
+        String body = fetch("/api/v1/partner/categories", token).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat((java.util.List<String>) JsonPath.read(body, "$[*].id")).contains(draft.toString(), published.toString())
+                .doesNotContain(retired.toString());
+        fetch("/api/v1/partner/categories", JsonPath.read(loginA, "$.accessToken")).andExpect(status().isForbidden());
+    }
+
+    @Test
     void anonymousAndConsumerOnlyTokensAreRejected() throws Exception {
         String loginA = login("+77000000114");
         UUID partner = apply(loginA, "Auth Cafe");

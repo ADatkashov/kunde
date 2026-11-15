@@ -24,9 +24,14 @@ Phone-OTP authentication is implemented (see [phone-otp-auth](docs/identity/phon
 
 DEV Render + Neon is deployed and verified (see [PROJECT_STATE.md](PROJECT_STATE.md), [docs/infrastructure/terraform-dev-render-neon.md](docs/infrastructure/terraform-dev-render-neon.md)). Open: (1) add **Required reviewers** to the GitHub Environment `dev`; (2) watch Render free hours (shared with other services) and Neon CU-hours; (3) any change to the Render service needs the workflow with `replace_render=true` and a separate explicit apply permission; (4) production hosting/residency remains TASK-051 / D-08 — DEV must not hold real personal data.
 
-## Next: implement ADR-018 (D-14, accepted 2026-11-15)
+## ADR-018 (D-14) is implemented for DEV — owner steps to run the first partner pilot
 
-Follow [ADR-018](docs/architecture/adr/ADR-018-partner-and-admin-identity-roles.md) plan in order (steps 1-4 done: admin grants + scope derivation, partner application/profile, partner offerings, admin approval): Flutter behind a flag. D-03/D-04 are approved only for the DEV pilot (pay on receipt, KZT, 0% commission).
+All five plan steps are merged (admin grants and scopes, partner application/profile, offerings, admin approval, Flutter section behind `PARTNER_FEATURES_ENABLED`). D-03/D-04 stay approved only for the DEV pilot (pay on receipt, KZT, 0% commission). To try it end to end on DEV with synthetic data:
+
+1. Phone-auth must be live on DEV (see "DEV phone sign-in follow-ups" above: `AUTH_PHONE_SECRET`, Terraform apply with `replace_render=true`).
+2. Provision one synthetic admin (owner, out of band; no endpoint creates it): after that user has logged in once, run on the DEV database `INSERT INTO identity.admin_grants (user_id, permission, reason) SELECT user_id, 'PARTNER_VERIFICATION', 'DEV pilot admin' FROM identity.phone_identities WHERE phone_e164 = '<synthetic number>'`. The admin then calls `/api/v1/admin/partners` (queue, detail, decision) with a refreshed token; there is no admin screen in the app.
+3. Run *Android Release APK (DEV)* with input `partner-features=true`, install it, apply as a partner (Profile → For partners), approve it through the admin API, then add and publish an offering; a published offering needs a PUBLISHED category (the `food-ordering` category is still an unpublished DRAFT by ADR-014, so nothing is public until the owner publishes a category).
+4. Gaps: no admin UI, no device/TalkBack run of the partner screens, no staff-management endpoints (grant/revoke roles exist only in the service), production admin needs step-up/dual control.
 
 ## Owner decisions needed (blocking further roadmap work)
 

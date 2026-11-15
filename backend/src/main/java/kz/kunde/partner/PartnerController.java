@@ -27,9 +27,11 @@ import org.springframework.web.bind.annotation.*;
 @ConditionalOnProperty(name = {"app.identity.consumer-enabled", "app.auth.phone.enabled"}, havingValue = "true")
 public class PartnerController {
     private final PartnerService partners;
+    private final PartnerOfferingService offerings;
 
-    public PartnerController(PartnerService partners) {
+    public PartnerController(PartnerService partners, PartnerOfferingService offerings) {
         this.partners = partners;
+        this.offerings = offerings;
     }
 
     /** Any consumer may apply; the applicant becomes the first OWNER and the partner starts as PENDING_REVIEW. */
@@ -39,6 +41,13 @@ public class PartnerController {
             @Valid @RequestBody ApplicationRequest request) {
         var view = partners.apply(user(principal), request.displayName());
         return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).body(view);
+    }
+
+    /** Categories an offering can be filed under (ADR-018 step 5 form); any partner-scoped caller may read them. */
+    @GetMapping("/categories")
+    @PreAuthorize("@partnerAccessPolicy.allowed(authentication)")
+    ResponseEntity<List<PartnerOfferingService.CategoryOption>> categories() {
+        return privateResponse(offerings.categories());
     }
 
     @GetMapping("/partners")
