@@ -105,3 +105,24 @@ run "food_rejected_outside_dev" {
   }
   expect_failures = [var.food_enabled]
 }
+
+run "booking_only_in_dev_and_sets_env_vars" {
+  command = plan
+  variables {
+    environment_name = "dev"
+    booking_enabled  = true
+  }
+  assert {
+    condition     = render_web_service.this.env_vars["BOOKING_ENABLED"].value == "true" && render_web_service.this.env_vars["BOOKING_SEED_DEMO"].value == "true"
+    error_message = "Booking env vars expected in dev"
+  }
+}
+
+run "booking_rejected_outside_dev" {
+  command = plan
+  variables {
+    environment_name = "production"
+    booking_enabled  = true
+  }
+  expect_failures = [var.booking_enabled]
+}

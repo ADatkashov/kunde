@@ -44,7 +44,11 @@ class DomainSchemaOwnershipIntegrationTest {
             "serviceability.zone_addresses -> profile.consumer_addresses",
             "transactions.food_orders -> identity.users",
             "transactions.food_orders -> marketplace.food_restaurants",
-            "transactions.food_order_items -> marketplace.food_dishes");
+            "transactions.food_order_items -> marketplace.food_dishes",
+            "transactions.bookings -> identity.users",
+            "transactions.bookings -> marketplace.booking_venues",
+            "transactions.bookings -> marketplace.booking_services",
+            "transactions.bookings -> marketplace.booking_masters");
 
     @Autowired JdbcTemplate jdbc;
     @Autowired PlatformTransactionManager transactionManager;

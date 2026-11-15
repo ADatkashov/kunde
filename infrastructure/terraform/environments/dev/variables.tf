@@ -75,3 +75,9 @@ variable "food_enabled" {
   type        = bool
   default     = true
 }
+
+variable "booking_enabled" {
+  description = "Service booking (barbershops) DEV pilot on the DEV backend (DEV mock confirmation, synthetic venues). DEV environment only."
+  type        = bool
+  default     = true
+}

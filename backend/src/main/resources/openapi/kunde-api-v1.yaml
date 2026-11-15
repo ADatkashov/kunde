@@ -245,6 +245,81 @@ paths:
       responses:
         '200':
           description: Items of the past order that can still be ordered, plus names of skipped items.
+  /booking/venues:
+    get:
+      operationId: listBookingVenues
+      description: Barbershop booking DEV pilot (only when app.booking.enabled; absent otherwise). Synthetic venues.
+      parameters:
+        - { name: category, in: query, schema: { type: string, enum: [BARBER, CLEANING], default: BARBER } }
+      responses:
+        '200':
+          description: Venues (id, slug, category, name, address, emoji, open, synthetic, fromPriceMinor).
+          content:
+            application/json:
+              schema: { type: array, items: { type: object } }
+  /booking/venues/{venueId}:
+    get:
+      operationId: getBookingVenue
+      parameters:
+        - { name: venueId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '404':
+          description: VENUE_NOT_FOUND.
+        '200':
+          description: Venue with services (duration, KZT price) and masters (with the service ids they perform).
+  /booking/slots:
+    get:
+      operationId: listBookingSlots
+      description: Free start times (15-minute grid inside working hours, outside breaks, 30 min lead, 14-day horizon) for one master or any master.
+      parameters:
+        - { name: venueId, in: query, required: true, schema: { type: string, format: uuid } }
+        - { name: serviceId, in: query, required: true, schema: { type: string, format: uuid } }
+        - { name: masterId, in: query, schema: { type: string, format: uuid } }
+        - { name: date, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        '200':
+          description: Slots (startsAt with venue offset, masterId, masterName).
+        '400':
+          description: BOOKING_DATE_INVALID.
+        '404':
+          description: VENUE_NOT_FOUND, SERVICE_NOT_FOUND or MASTER_NOT_FOUND.
+  /booking/bookings:
+    get:
+      operationId: listBookings
+      description: Authenticated. The caller's own bookings, newest start first; past confirmed bookings become COMPLETED.
+      responses:
+        '200':
+          description: Bookings.
+    post:
+      operationId: createBooking
+      description: Authenticated. Requires Idempotency-Key. Only a slot offered by /booking/slots can be booked. Confirmation is a DEV mock; payment is on site.
+      responses:
+        '201':
+          description: Booking confirmed (confirmation DEV_MOCK).
+        '200':
+          description: Idempotent replay.
+        '409':
+          description: SLOT_UNAVAILABLE, SLOT_TAKEN (database exclusion on overlapping time of one master), BOOKING_OVERLAPS_YOURS, TOO_MANY_UPCOMING_BOOKINGS or IDEMPOTENCY_KEY_REUSED.
+  /booking/bookings/{id}:
+    get:
+      operationId: getBooking
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '404':
+          description: BOOKING_NOT_FOUND (also for another user's booking).
+        '200':
+          description: One booking of the caller.
+  /booking/bookings/{id}/cancel:
+    post:
+      operationId: cancelBooking
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '409':
+          description: BOOKING_NOT_CANCELLABLE (already cancelled, completed or started).
+        '200':
+          description: Cancelled; free until the appointment starts.
 components:
   responses:
     RequestBodyTooLarge:

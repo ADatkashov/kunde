@@ -1,5 +1,10 @@
 # KUNDE project state
 
+## KUNDE Booking MVP — barbershops (2026-11-15, owner-approved category B)
+
+- Owner approved booking as the next category, first service barbershops (cleaning/other services later). Implemented for DEV: Flyway V18 (`btree_gist` exclusion constraint prevents overlapping bookings of one master), slots API, idempotent booking, free cancellation before the start, 4 synthetic barbershops (9 masters), DEV-mock confirmation (labelled), Flutter «Услуги» → barbershop → service → master → slot → confirm, bookings history in Orders → «Записи». Details/limits: [docs/product/booking-mvp.md](docs/product/booking-mvp.md).
+- Verified automatically: backend 243 tests on PostgreSQL 16 (incl. direct-SQL overlap rejection), real-HTTP `scripts/dev/booking_smoke.py` against a local jar, Flutter analyze clean and 163 tests. **Not verified:** DEV deploy (needs separate approval: `BOOKING_ENABLED`/`BOOKING_SEED_DEMO`, V18), a new APK on a phone.
+
 ## Product Delivery 2.0 — 2026-11-15
 
 - **Manual confirmation (owner):** the Release APK from run 43734913344 (`58cf20a`, Food + Grocery MVP, DEV `kunde-backend-ty81`) was installed on a real Samsung phone; the owner reported "Установил, проверил, всё работает". Nothing more detailed was reported (no scenario list, TalkBack or other devices).
