@@ -75,11 +75,11 @@ class CatalogControllerTest {
                     insert into marketplace.categories (code, name_ru, name_kk) values ('o-draft', 'Ч', 'Ч') returning id""",
                     java.util.UUID.class);
             jdbc.update("""
-                    insert into marketplace.offerings (category_id, kind, name_ru, name_kk, status, published_at, partner_id) values
-                    (?, 'SERVICE', 'Опубликовано', 'Жарияланды', 'PUBLISHED', now(), (select id from marketplace.partners)),
-                    (?, 'SERVICE', 'Черновик', 'Қара', 'DRAFT', null, (select id from marketplace.partners)),
-                    (?, 'PRODUCT', 'Приостановлено', 'Тоқтатылды', 'SUSPENDED', null, (select id from marketplace.partners)),
-                    (?, 'SERVICE', 'В черновой категории', 'Қара санат', 'PUBLISHED', now(), (select id from marketplace.partners))""",
+                    insert into marketplace.offerings (category_id, kind, name_ru, name_kk, status, published_at, partner_id, price_minor) values
+                    (?, 'SERVICE', 'Опубликовано', 'Жарияланды', 'PUBLISHED', now(), (select id from marketplace.partners), 150000),
+                    (?, 'SERVICE', 'Черновик', 'Қара', 'DRAFT', null, (select id from marketplace.partners), 150000),
+                    (?, 'PRODUCT', 'Приостановлено', 'Тоқтатылды', 'SUSPENDED', null, (select id from marketplace.partners), 150000),
+                    (?, 'SERVICE', 'В черновой категории', 'Қара санат', 'PUBLISHED', now(), (select id from marketplace.partners), 150000)""",
                     pub, pub, pub, draft);
             assertThat(controller.offerings(pub, 50, 0)).extracting(Offering::nameRu).containsExactly("Опубликовано");
             assertThat(controller.offerings(draft, 50, 0)).isEmpty();
@@ -109,14 +109,14 @@ class CatalogControllerTest {
                     insert into marketplace.categories (code, name_ru, name_kk) values ('os-draft', 'Ч', 'Ч') returning id""",
                     java.util.UUID.class);
             jdbc.update("""
-                    insert into marketplace.offerings (category_id, kind, name_ru, name_kk, name_en, status, published_at, partner_id) values
-                    (?, 'SERVICE', 'Генеральная уборка', 'Бас тазалау', null, 'PUBLISHED', now() - interval '3 minute', (select id from marketplace.partners)),
-                    (?, 'SERVICE', 'Уборка квартиры', 'Пәтер', null, 'PUBLISHED', now() - interval '2 minute', (select id from marketplace.partners)),
-                    (?, 'SERVICE', 'Уборка', 'Тазалау', 'Cleaning', 'PUBLISHED', now() - interval '1 minute', (select id from marketplace.partners)),
-                    (?, 'SERVICE', 'Уборка черновик', 'Қара', null, 'DRAFT', null, (select id from marketplace.partners)),
-                    (?, 'PRODUCT', 'Уборка приостановлена', 'Тоқтатылды', null, 'SUSPENDED', null, (select id from marketplace.partners)),
-                    (?, 'SERVICE', 'Уборка в черновой категории', 'Қара санат', null, 'PUBLISHED', now(), (select id from marketplace.partners)),
-                    (?, 'PRODUCT', '100% чистота', 'Тазалық', null, 'PUBLISHED', now(), (select id from marketplace.partners))""",
+                    insert into marketplace.offerings (category_id, kind, name_ru, name_kk, name_en, status, published_at, partner_id, price_minor) values
+                    (?, 'SERVICE', 'Генеральная уборка', 'Бас тазалау', null, 'PUBLISHED', now() - interval '3 minute', (select id from marketplace.partners), 150000),
+                    (?, 'SERVICE', 'Уборка квартиры', 'Пәтер', null, 'PUBLISHED', now() - interval '2 minute', (select id from marketplace.partners), 150000),
+                    (?, 'SERVICE', 'Уборка', 'Тазалау', 'Cleaning', 'PUBLISHED', now() - interval '1 minute', (select id from marketplace.partners), 150000),
+                    (?, 'SERVICE', 'Уборка черновик', 'Қара', null, 'DRAFT', null, (select id from marketplace.partners), 150000),
+                    (?, 'PRODUCT', 'Уборка приостановлена', 'Тоқтатылды', null, 'SUSPENDED', null, (select id from marketplace.partners), 150000),
+                    (?, 'SERVICE', 'Уборка в черновой категории', 'Қара санат', null, 'PUBLISHED', now(), (select id from marketplace.partners), 150000),
+                    (?, 'PRODUCT', '100% чистота', 'Тазалық', null, 'PUBLISHED', now(), (select id from marketplace.partners), 150000)""",
                     pub, pub, pub, pub, pub, draft, pub);
             assertThat(controller.searchOfferings("уборка", 50, 0)).extracting(Offering::nameRu)
                     .containsExactly("Уборка", "Уборка квартиры", "Генеральная уборка");
@@ -145,8 +145,8 @@ class CatalogControllerTest {
             for (var row : java.util.List.of(new Object[] {"Одобренный", approved}, new Object[] {"Ожидает", pending},
                     new Object[] {"Приостановленный", suspended})) {
                 jdbc.update("""
-                        insert into marketplace.offerings (category_id, kind, name_ru, name_kk, status, published_at, partner_id)
-                        values (?, 'SERVICE', ?, 'Қ', 'PUBLISHED', now(), ?)""", cat, row[0], row[1]);
+                        insert into marketplace.offerings (category_id, kind, name_ru, name_kk, status, published_at, partner_id, price_minor)
+                        values (?, 'SERVICE', ?, 'Қ', 'PUBLISHED', now(), ?, 150000)""", cat, row[0], row[1]);
             }
             var shown = controller.offerings(cat, 50, 0);
             assertThat(shown).extracting(Offering::nameRu).containsExactly("Одобренный");
@@ -188,5 +188,53 @@ class CatalogControllerTest {
                         .hasFieldOrPropertyWithValue("code", "PARTNER_NOT_FOUND");
             }
         });
+    }
+
+    @Test
+    void offeringsExposeKztPriceAndAvailabilityAndPublishingNeedsAPrice() {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            status.setRollbackOnly();
+            var cat = jdbc.queryForObject("""
+                    insert into marketplace.categories (code, name_ru, name_kk, status, published_at)
+                    values ('pr-cat', 'К', 'К', 'PUBLISHED', now()) returning id""", java.util.UUID.class);
+            var partner = partner("APPROVED");
+            jdbc.update("""
+                    insert into marketplace.offerings (category_id, kind, name_ru, name_kk, status, published_at, partner_id, price_minor, availability)
+                    values (?, 'SERVICE', 'Есть', 'Бар', 'PUBLISHED', now(), ?, 250050, 'AVAILABLE'),
+                           (?, 'SERVICE', 'Нет', 'Жоқ', 'PUBLISHED', now() + interval '1 second', ?, 0, 'UNAVAILABLE')""",
+                    cat, partner, cat, partner);
+            var shown = controller.offerings(cat, 50, 0);
+            assertThat(shown).extracting(Offering::nameRu).containsExactly("Есть", "Нет");
+            assertThat(shown.get(0).priceMinor()).isEqualTo(250050L);
+            assertThat(shown.get(0).currency()).isEqualTo("KZT");
+            assertThat(shown.get(0).available()).isTrue();
+            assertThat(shown.get(1).available()).isFalse();
+            assertThat(controller.searchOfferings("Есть", 50, 0).get(0).priceMinor()).isEqualTo(250050L);
+        });
+    }
+
+    private void assertRejectedInOwnTransaction(String constraint, String sql) {
+        org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+                new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+                    status.setRollbackOnly();
+                    var cat = jdbc.queryForObject("""
+                            insert into marketplace.categories (code, name_ru, name_kk, status, published_at)
+                            values ('rj-cat', 'К', 'К', 'PUBLISHED', now()) returning id""", java.util.UUID.class);
+                    var partner = partner("APPROVED");
+                    jdbc.update(sql, cat, partner);
+                })).hasMessageContaining(constraint);
+    }
+
+    @Test
+    void databaseRejectsPublishedWithoutPriceNonKztCurrencyAndNegativePrice() {
+        assertRejectedInOwnTransaction("offerings_published_has_price", """
+                insert into marketplace.offerings (category_id, kind, name_ru, name_kk, status, published_at, partner_id)
+                values (?, 'SERVICE', 'Без цены', 'Қ', 'PUBLISHED', now(), ?)""");
+        assertRejectedInOwnTransaction("offerings_currency_check", """
+                insert into marketplace.offerings (category_id, kind, name_ru, name_kk, partner_id, price_minor, currency)
+                values (?, 'SERVICE', 'USD', 'Қ', ?, 100, 'USD')""");
+        assertRejectedInOwnTransaction("offerings_price_minor_check", """
+                insert into marketplace.offerings (category_id, kind, name_ru, name_kk, partner_id, price_minor)
+                values (?, 'SERVICE', 'Минус', 'Қ', ?, -1)""");
     }
 }

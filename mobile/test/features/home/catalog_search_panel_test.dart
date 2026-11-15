@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:kunde_mobile/core/localization/kunde_formats.dart';
 import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
 import 'package:kunde_mobile/features/home/data/kunde_api.dart';
 import 'package:kunde_mobile/features/home/presentation/catalog_search_panel.dart';
@@ -45,6 +46,15 @@ Map<String, dynamic> _offering(String name, {String? en, String? partner}) => {
       if (partner != null) 'partnerName': partner,
     };
 
+Map<String, dynamic> _priced(Map<String, dynamic> offering, int price,
+        {bool available = true}) =>
+    {
+      ...offering,
+      'priceMinor': price,
+      'currency': 'KZT',
+      'available': available,
+    };
+
 void main() {
   testWidgets('shows server results in the active language', (tester) async {
     String? requestedQuery;
@@ -82,6 +92,24 @@ void main() {
     expect(find.text('Чистка'), findsOneWidget);
     expect(find.text('Синтетический партнёр'), findsOneWidget);
     expect(find.text('Без партнёра'), findsOneWidget);
+    api.close();
+  });
+
+  testWidgets('shows the KZT price and an explicit unavailable marker',
+      (tester) async {
+    final api = _api(_catalog(offerings: [
+      _priced(_offering('Чистка', partner: 'Партнёр'), 250050),
+      _priced(_offering('Стирка'), 100000, available: false),
+    ]));
+    await tester.pumpWidget(_app(CatalogSearchPanel(api: api)));
+
+    await tester.enterText(find.byType(TextField), 'чист');
+    await tester.tap(find.byIcon(Icons.search));
+    await tester.pumpAndSettle();
+
+    final price = KundeFormats.money(250050, 'KZT', const Locale('ru'));
+    expect(find.text('Партнёр · $price'), findsOneWidget);
+    expect(find.textContaining('Сейчас недоступно'), findsOneWidget);
     api.close();
   });
 

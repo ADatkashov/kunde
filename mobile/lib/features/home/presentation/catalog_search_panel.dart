@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/kunde_formats.dart';
 import '../../../core/localization/kunde_localizations.dart';
 import '../data/catalog_category.dart';
 import '../data/catalog_offering.dart';
@@ -109,14 +110,26 @@ class _CatalogSearchPanelState extends State<CatalogSearchPanel> {
                   ListTile(
                     leading: const Icon(Icons.sell_outlined),
                     title: Text(offering.localizedName(language)),
-                    subtitle: offering.partnerName == null
-                        ? null
-                        : Text(offering.partnerName!),
+                    subtitle: _subtitle(context, offering, strings),
                   ),
               ],
             ),
         },
       ],
     );
+  }
+
+  /// Partner, the single final KZT price (D-04 DEV pilot, no added fees) and
+  /// an explicit unavailable marker; null when the server sent none of them.
+  Widget? _subtitle(BuildContext context, CatalogOffering offering,
+      KundeLocalizations strings) {
+    final price = offering.priceMinor;
+    final lines = <String>[
+      if (offering.partnerName != null) offering.partnerName!,
+      if (price != null && offering.currency == 'KZT')
+        KundeFormats.money(price, 'KZT', Localizations.localeOf(context)),
+      if (!offering.available) strings.offeringUnavailable,
+    ];
+    return lines.isEmpty ? null : Text(lines.join(' · '));
   }
 }
