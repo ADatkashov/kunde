@@ -25,7 +25,9 @@ import org.springframework.test.web.servlet.MockMvc;
         "app.auth.phone.enabled=true",
         "app.auth.phone.secret=synthetic-test-secret-synthetic-test-secret",
         "app.auth.phone.dev-otp.enabled=true",
-        "app.auth.phone.dev-otp.allowed-phones=+77000000112,+77000000113",
+        "app.auth.phone.dev-otp.allowed-phones=+77000000101,+77000000102,+77000000103,+77000000104,+77000000105,"
+                + "+77000000106,+77000000107,+77000000108,+77000000109,+77000000110,+77000000111,"
+                + "+77000000112,+77000000113,+77000000114,+77000000115,+77000000116",
         "app.security.rate-limit.requests=100000",
         "app.security.authenticated-rate-limit.requests=100000"
 })

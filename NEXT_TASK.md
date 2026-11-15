@@ -26,7 +26,7 @@ DEV Render + Neon is deployed and verified (see [PROJECT_STATE.md](PROJECT_STATE
 
 ## Next: implement ADR-018 (D-14, accepted 2026-11-15)
 
-Follow [ADR-018](docs/architecture/adr/ADR-018-partner-and-admin-identity-roles.md) plan in order (step 1 admin grants + scope derivation is done): partner application/profile, partner offerings (IDOR tests), admin approval, Flutter behind a flag. D-03/D-04 are approved only for the DEV pilot (pay on receipt, KZT, 0% commission).
+Follow [ADR-018](docs/architecture/adr/ADR-018-partner-and-admin-identity-roles.md) plan in order (steps 1-2 done: admin grants + scope derivation, partner application/profile): partner offerings (IDOR tests), admin approval, Flutter behind a flag. D-03/D-04 are approved only for the DEV pilot (pay on receipt, KZT, 0% commission).
 
 ## Owner decisions needed (blocking further roadmap work)
 
