@@ -1,6 +1,6 @@
 # ADR-018: Partner and Admin identity roles on the own phone-OTP authentication (D-14)
 
-- **Status:** PROPOSED — awaits Product Owner approval (D-14 owners: Finance + Security). No code, schema or token change in this ADR's PR. No Keycloak, ZITADEL or other external IdP is introduced.
+- **Status:** ACCEPTED for synthetic DEV implementation — Product Owner, 2026-11-15. Production admin use stays gated (Security review of step-up, dual control per D-14). No Keycloak, ZITADEL or other external IdP is introduced. Implementation follows the plan below.
 - **Date:** 2026-11-14
 - **Related:** ADR-015 (own phone-OTP, amended 2026-11-14), ADR-013 (fail-closed boundary), ADR-014 (catalog stays empty), PRD 1.1 §23 D-07 (approved roles) and D-14 (open), [authorization model](../../identity/authorization-model.md), V8 `marketplace.partner*`.
 
@@ -41,6 +41,6 @@ Phone-OTP already issues an access JWT; `ConsumerAccessPolicy` requires scope `k
 4. `GET /api/v1/admin/partners?status=`, `POST /api/v1/admin/partners/{id}/decision` with reason; admin-cannot-approve-own test.
 5. Flutter partner screens only behind a feature flag after approval; consumer app unchanged.
 
-## Gates before acceptance
+## Gates before production use
 
-Owner approval of this ADR (D-14 owners), confirmation that DEV admin is owner-provisioned only, and a Security review of the step-up requirement before any production admin use.
+Owner approval is recorded (2026-11-15). Remaining: confirmation that DEV admin is owner-provisioned only, and a Security review of the step-up requirement before any production admin use.
