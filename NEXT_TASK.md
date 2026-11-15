@@ -1,3 +1,9 @@
+# Next task — verify the premium Flutter Release APK on Samsung
+
+Premium UI is implemented on `feature/kunde-premium-ui`; local analyze/format and 177 tests pass. Complete PR CI, merge only when green, then build with the existing `android-release.yml` against `kunde-backend-ty81` (preserve partner features). On the phone check light default even with dark system settings, city/search/category navigation, Food/Grocery → cart → checkout → order → restart/history, Services → booking/cancel, profile/language/logout, 200% text and TalkBack. Evidence and limitations: [premium-ui-redesign](docs/design/premium-ui-redesign.md). Record CI/build/phone results separately in PROJECT_STATE; do not infer device success from widget/golden tests.
+
+---
+
 # Next task — owner phone check of Food, Grocery and Booking; then expand Booking
 
 Food, Grocery (V17) and Booking (V18) are deployed on DEV `kunde-backend-ty81` and pass the DEV smoke scripts (`scripts/dev/food_smoke.py`, `scripts/dev/booking_smoke.py`); the APK is `KUNDE-dev-release` of run 43767173233. Owner: check on the phone (see PROJECT_STATE) and report. Next engineering steps without new decisions: KK/EN texts for Food/Grocery/Booking screens, Booking polish (repeat booking, reminders only as DEV mock), cleaning as the second booking service once the owner confirms its scope (see [booking-mvp](docs/product/booking-mvp.md)).

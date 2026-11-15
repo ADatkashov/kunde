@@ -32,6 +32,7 @@ class _KundeShellState extends State<KundeShell> {
             onOpenOrders: () => setState(() => _tab = KundeTab.orders)),
         KundeTab.search => SafeArea(child: SearchTab(api: widget.api)),
         KundeTab.orders => const SafeArea(child: OrdersTab()),
+        KundeTab.services => SafeArea(child: ServicesTab(api: widget.api)),
         KundeTab.profile => SafeArea(
             child: ListView(padding: const EdgeInsets.all(16), children: [
               EmptyStateCard(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/food_models.dart';
 import '../food_services.dart';
 import 'cart_screen.dart';
+import '../../../shared/theme/kunde_art.dart';
 
 /// Rounded tile for dishes and restaurants. Shows [imageUrl] when the catalog has a photo (HTTPS only), otherwise
 /// a tone gradient with a large emoji, so a missing or failing image never breaks the layout.
@@ -13,6 +14,7 @@ class EmojiTile extends StatelessWidget {
       this.size = 64,
       this.radius = 16,
       this.imageUrl,
+      this.plain = false,
       super.key});
 
   final String emoji;
@@ -20,6 +22,7 @@ class EmojiTile extends StatelessWidget {
   final double size;
   final double radius;
   final String? imageUrl;
+  final bool plain;
 
   @override
   Widget build(BuildContext context) {
@@ -28,15 +31,22 @@ class EmojiTile extends StatelessWidget {
       width: size,
       height: size,
       alignment: Alignment.center,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Colors.white.withValues(alpha: 0.85), colors.background],
-        ),
-        borderRadius: BorderRadius.circular(radius),
-      ),
-      child: Text(emoji, style: TextStyle(fontSize: size * 0.5)),
+      decoration: plain
+          ? null
+          : BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: 0.85),
+                  colors.background
+                ],
+              ),
+              borderRadius: BorderRadius.circular(radius),
+            ),
+      child: illustrationForEmoji(emoji) != null
+          ? KundeIllustration(illustrationForEmoji(emoji)!, size: size * .8)
+          : Text(emoji, style: TextStyle(fontSize: size * 0.5)),
     );
     final url = imageUrl;
     return ExcludeSemantics(
@@ -93,7 +103,7 @@ class RestaurantListSkeleton extends StatelessWidget {
           itemBuilder: (_, __) => const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SkeletonBox(height: 104, radius: 20),
+              SkeletonBox(height: 140, radius: 20),
               SizedBox(height: 10),
               SkeletonBox(height: 18, width: 180),
               SizedBox(height: 8),
@@ -132,7 +142,6 @@ class RestaurantCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colors = toneColors(restaurant.tone);
     final fee = restaurant.deliveryFeeMinor == 0
         ? 'Доставка бесплатно'
         : 'Доставка ${formatTenge(restaurant.deliveryFeeMinor)}';
@@ -156,32 +165,32 @@ class RestaurantCard extends StatelessWidget {
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Container(
-                height: 104,
+                height: 140,
                 width: double.infinity,
-                color: colors.background,
                 alignment: Alignment.center,
-                child: Stack(alignment: Alignment.center, children: [
-                  ExcludeSemantics(
-                      child: Text(restaurant.emoji,
-                          style: const TextStyle(fontSize: 56))),
-                  if (!restaurant.open)
-                    Positioned(
-                      right: 12,
-                      top: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                            color: Colors.black87,
-                            borderRadius: BorderRadius.circular(999)),
-                        child: const Text('Закрыто',
-                            style:
-                                TextStyle(color: Colors.white, fontSize: 12)),
-                      ),
-                    ),
-                  if (restaurant.synthetic)
-                    const Positioned(left: 12, top: 12, child: DemoBadge()),
-                ]),
+                child: Stack(
+                    fit: StackFit.expand,
+                    alignment: Alignment.center,
+                    children: [
+                      MerchantArtwork(restaurant: restaurant, height: 140),
+                      if (!restaurant.open)
+                        Positioned(
+                          right: 12,
+                          top: 12,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                                color: Colors.black87,
+                                borderRadius: BorderRadius.circular(999)),
+                            child: const Text('Закрыто',
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 12)),
+                          ),
+                        ),
+                      if (restaurant.synthetic)
+                        const Positioned(left: 12, top: 12, child: DemoBadge()),
+                    ]),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
@@ -220,7 +229,7 @@ class _Meta extends StatelessWidget {
     return Row(mainAxisSize: MainAxisSize.min, children: [
       Icon(icon, size: 16, color: color),
       const SizedBox(width: 4),
-      Text(text, style: TextStyle(fontSize: 13, color: color)),
+      Flexible(child: Text(text, style: TextStyle(fontSize: 13, color: color))),
     ]);
   }
 }
@@ -311,4 +320,104 @@ class FoodStateMessage extends StatelessWidget {
 String formatOrderDate(DateTime time) {
   String two(int v) => v.toString().padLeft(2, '0');
   return '${two(time.day)}.${two(time.month)} ${two(time.hour)}:${two(time.minute)}';
+}
+
+/// Shared stage hierarchy for cart and checkout; server pricing is unchanged.
+class OrderProgressHeader extends StatelessWidget {
+  const OrderProgressHeader({required this.checkout, super.key});
+  final bool checkout;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+          color: colors.primaryContainer,
+          borderRadius: BorderRadius.circular(20)),
+      child: Row(children: [
+        Icon(
+            checkout
+                ? Icons.local_shipping_outlined
+                : Icons.shopping_bag_outlined,
+            color: colors.primary),
+        const SizedBox(width: 10),
+        Expanded(
+            child: Text(checkout ? '2 / 2 · Оформление' : '1 / 2 · Ваш заказ',
+                style: TextStyle(
+                    color: colors.onPrimaryContainer,
+                    fontWeight: FontWeight.w800))),
+        Icon(
+            checkout ? Icons.check_circle_rounded : Icons.arrow_forward_rounded,
+            color: colors.primary,
+            size: 20),
+      ]),
+    );
+  }
+}
+
+class FoodCollectionHeader extends StatelessWidget {
+  const FoodCollectionHeader({required this.grocery, super.key});
+  final bool grocery;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 14),
+        child: Row(children: [
+          Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                Text(grocery ? 'Всё для вашего дня' : 'Что-нибудь вкусное?',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w800, letterSpacing: -.5)),
+                const SizedBox(height: 5),
+                Text(
+                    grocery
+                        ? 'Магазины и свежие продукты рядом'
+                        : 'Любимые блюда с доставкой',
+                    style: Theme.of(context).textTheme.bodySmall),
+              ])),
+          const SizedBox(width: 12),
+          KundeIllustration(grocery ? 'grocery' : 'food', size: 68),
+        ]),
+      );
+}
+
+/// Catalog photographs are used only when supplied by the merchant API.
+/// An offline, missing or broken image always falls back to a licensed illustration.
+class MerchantArtwork extends StatelessWidget {
+  const MerchantArtwork(
+      {required this.restaurant, this.height = 140, super.key});
+  final Restaurant restaurant;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final fallback = Container(
+      height: height,
+      width: double.infinity,
+      color: toneColors(restaurant.tone).background,
+      alignment: Alignment.center,
+      child: EmojiTile(
+          emoji: restaurant.emoji,
+          tone: restaurant.tone,
+          size: height * .85,
+          plain: true,
+          radius: 0),
+    );
+    final url = restaurant.imageUrl;
+    if (url == null || !url.startsWith('https://')) return fallback;
+    return ExcludeSemantics(
+        child: Image.network(
+      url,
+      height: height,
+      width: double.infinity,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => fallback,
+      loadingBuilder: (_, child, progress) =>
+          progress == null ? child : fallback,
+    ));
+  }
 }

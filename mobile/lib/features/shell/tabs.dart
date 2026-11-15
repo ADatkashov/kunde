@@ -6,8 +6,10 @@ import '../home/data/platform_snapshot.dart';
 import '../home/presentation/catalog_search_panel.dart';
 import '../home/presentation/super_app_widgets.dart';
 import 'shell_strings.dart';
+import '../booking/booking_services.dart';
+import '../booking/presentation/services_home_screen.dart';
 
-enum KundeTab { home, search, orders, profile }
+enum KundeTab { home, search, orders, services, profile }
 
 class KundeNavigationBar extends StatelessWidget {
   const KundeNavigationBar(
@@ -40,12 +42,61 @@ class KundeNavigationBar extends StatelessWidget {
               selectedIcon: const Icon(Icons.receipt_long_rounded),
               label: s.navOrders),
           NavigationDestination(
+              icon: const Icon(Icons.grid_view_outlined),
+              selectedIcon: const Icon(Icons.grid_view_rounded),
+              label: s.navServices),
+          NavigationDestination(
               icon: const Icon(Icons.person_outline),
               selectedIcon: const Icon(Icons.person_rounded),
               label: s.navProfile),
         ],
       ),
     );
+  }
+}
+
+/// Uses the same server capability gate as the home category.
+class ServicesTab extends StatefulWidget {
+  const ServicesTab({required this.api, this.booking, super.key});
+  final KundeApi api;
+  final BookingServices? booking;
+
+  @override
+  State<ServicesTab> createState() => _ServicesTabState();
+}
+
+class _ServicesTabState extends State<ServicesTab> {
+  late Future<PlatformSnapshot> _snapshot = widget.api.loadPlatformSnapshot();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = KundeLocalizations.of(context);
+    return FutureBuilder<PlatformSnapshot>(
+        future: _snapshot,
+        builder: (context, state) {
+          if (state.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (state.data?.bookingEnabled == true && widget.booking != null) {
+            return ServicesHomeScreen(services: widget.booking!);
+          }
+          return ListView(padding: const EdgeInsets.all(20), children: [
+            Text(s.navServices,
+                style: Theme.of(context).textTheme.headlineLarge),
+            const SizedBox(height: 24),
+            EmptyStateCard(
+                icon: Icons.grid_view_rounded,
+                title: state.hasError ? s.offline : s.servicesUnavailableTitle,
+                body:
+                    state.hasError ? s.retryHint : s.searchTabUnavailableBody),
+            if (state.hasError)
+              TextButton.icon(
+                  onPressed: () => setState(
+                      () => _snapshot = widget.api.loadPlatformSnapshot()),
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: Text(s.retry)),
+          ]);
+        });
   }
 }
 

@@ -188,35 +188,38 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
         }
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('KUNDE'), actions: [
-          if (!_editing)
-            PopupMenuButton<String>(
-              tooltip: s.language,
-              icon: const Icon(Icons.language),
-              onSelected: (value) => widget.onLocale(Locale(value)),
-              itemBuilder: (_) => const [
-                PopupMenuItem(value: 'ru', child: Text('Русский')),
-                PopupMenuItem(value: 'kk', child: Text('Қазақша')),
-                PopupMenuItem(value: 'en', child: Text('English'))
-              ],
-            ),
-          if (signedIn)
-            TextButton(
-                onPressed: _busy
-                    ? null
-                    : () async {
-                        if (!await _mayLeave() || !mounted) return;
-                        await _run(() async {
-                          if (!await widget.auth.logout()) {
-                            _notice = widget.auth.usesPhoneOtp
-                                ? 'logoutPartialPhone'
-                                : 'logoutPartial';
-                          }
-                        });
-                      },
-                child: Text(s.logout)),
-        ]),
-        body: Column(children: [
+        appBar: signedIn && _profile != null && _tab != KundeTab.profile
+            ? null
+            : AppBar(title: const Text('KUNDE'), actions: [
+                if (!_editing)
+                  PopupMenuButton<String>(
+                    tooltip: s.language,
+                    icon: const Icon(Icons.language),
+                    onSelected: (value) => widget.onLocale(Locale(value)),
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'ru', child: Text('Русский')),
+                      PopupMenuItem(value: 'kk', child: Text('Қазақша')),
+                      PopupMenuItem(value: 'en', child: Text('English'))
+                    ],
+                  ),
+                if (signedIn)
+                  TextButton(
+                      onPressed: _busy
+                          ? null
+                          : () async {
+                              if (!await _mayLeave() || !mounted) return;
+                              await _run(() async {
+                                if (!await widget.auth.logout()) {
+                                  _notice = widget.auth.usesPhoneOtp
+                                      ? 'logoutPartialPhone'
+                                      : 'logoutPartial';
+                                }
+                              });
+                            },
+                      child: Text(s.logout)),
+              ]),
+        body: SafeArea(
+            child: Column(children: [
           if (_error != null || widget.auth.expired || _notice != null)
             Material(
               color: _notice != null
@@ -256,6 +259,8 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                           : switch (_tab) {
                               KundeTab.profile => _profileView(s),
                               KundeTab.search => SearchTab(api: widget.api),
+                              KundeTab.services => ServicesTab(
+                                  api: widget.api, booking: widget.booking),
                               KundeTab.orders =>
                                 widget.food != null && widget.booking != null
                                     ? OrdersHubTab(
@@ -273,7 +278,7 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                                   onOpenOrders: () =>
                                       setState(() => _tab = KundeTab.orders)),
                             }),
-        ]),
+        ])),
         bottomNavigationBar: signedIn && _profile != null
             ? KundeNavigationBar(
                 selected: _tab,
@@ -380,13 +385,19 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                             'K',
                         style: const TextStyle(fontSize: 28))),
                 const SizedBox(height: 24),
-                ListTile(
-                    title: Text(s.name),
-                    subtitle: Text(_profile!['displayName'] as String? ?? '—')),
-                ListTile(
-                    title: Text(s.language),
-                    subtitle: Text(_profile!['preferredLanguage'] as String? ??
-                        Localizations.localeOf(context).languageCode)),
+                Card(
+                    child: ListTile(
+                        leading: const Icon(Icons.person_outline_rounded),
+                        title: Text(s.name),
+                        subtitle:
+                            Text(_profile!['displayName'] as String? ?? '—'))),
+                Card(
+                    child: ListTile(
+                        leading: const Icon(Icons.language_rounded),
+                        title: Text(s.language),
+                        subtitle: Text(
+                            _profile!['preferredLanguage'] as String? ??
+                                Localizations.localeOf(context).languageCode))),
                 const SizedBox(height: 24),
                 FilledButton(
                     onPressed: _busy

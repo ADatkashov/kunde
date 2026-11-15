@@ -1,4 +1,10 @@
 import 'dart:convert';
+import 'package:kunde_mobile/features/home/presentation/home_screen.dart';
+import 'package:kunde_mobile/features/home/data/kunde_api.dart';
+import 'package:kunde_mobile/features/shell/tabs.dart';
+import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
+import '../../support/premium_goldens.dart';
+import 'package:kunde_mobile/shared/theme/kunde_theme.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -254,17 +260,122 @@ Future<FoodServices> _services(
   );
 }
 
-Future<void> _show(WidgetTester tester, Widget home) async {
-  tester.view.physicalSize = const Size(1080, 2200);
-  tester.view.devicePixelRatio = 2.75;
+Future<void> _show(WidgetTester tester, Widget home,
+    {Size size = const Size(1080, 2200),
+    double pixelRatio = 2.75,
+    double textScale = 1}) async {
+  tester.view.physicalSize = size;
+  tester.view.devicePixelRatio = pixelRatio;
   addTearDown(tester.view.reset);
   // Tear the previous app down completely (like a process restart) before showing the next one.
   await tester.pumpWidget(const SizedBox());
-  await tester.pumpWidget(MaterialApp(home: home));
+  await tester.pumpWidget(MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: KundeTheme.light,
+      builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!),
+      home: home));
   await tester.pumpAndSettle();
 }
 
 void main() {
+  for (final width in [360.0, 390.0, 412.0]) {
+    for (final vertical in ['FOOD', 'GROCERY']) {
+      testWidgets('Samsung $width $vertical large text layout', (tester) async {
+        await tester.runAsync(loadPremiumFonts);
+        final services = await _services(_FakeBackend(), tester);
+        await _show(
+            tester, FoodHomeScreen(services: services, vertical: vertical),
+            size: Size(width, 844), pixelRatio: 1, textScale: 2);
+        expect(tester.takeException(), isNull);
+        await tester.drag(find.byType(ListView).last, const Offset(0, -600));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
+
+  testWidgets('premium golden complete home with nearby merchants',
+      (tester) async {
+    await tester.runAsync(loadPremiumFonts);
+    final services = await _services(_FakeBackend(), tester);
+    final api = KundeApi(
+        baseUri: Uri.parse('https://api.example.test/api/v1/'),
+        client: MockClient((_) async => http.Response(
+            jsonEncode({
+              'releaseStage': 'DEV',
+              'marketplaceEnabled': true,
+              'oidcIssuerConfigured': false,
+              'aiEnabled': false,
+            }),
+            200)));
+    addTearDown(api.close);
+    tester.view.physicalSize = const Size(390, 1250);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: KundeTheme.light,
+        locale: const Locale('ru'),
+        localizationsDelegates: KundeLocalizations.localizationsDelegates,
+        supportedLocales: KundeLocalizations.supportedLocales,
+        home: Scaffold(
+            body: HomeScreen(api: api, food: services),
+            bottomNavigationBar: KundeNavigationBar(
+                selected: KundeTab.home, onSelected: (_) {}))));
+    await premiumGolden(tester, 'premium_home_nearby');
+  });
+
+  testWidgets('premium golden Food and Grocery Samsung', (tester) async {
+    await tester.runAsync(loadPremiumFonts);
+    final services = await _services(_FakeBackend(), tester);
+    await _show(tester, FoodHomeScreen(services: services));
+    await premiumGolden(tester, 'premium_food');
+    await _show(
+        tester, FoodHomeScreen(services: services, vertical: 'GROCERY'));
+    await premiumGolden(tester, 'premium_grocery');
+  });
+
+  testWidgets('premium golden cart checkout and history', (tester) async {
+    await tester.runAsync(loadPremiumFonts);
+    final backend = _FakeBackend();
+    final services = await _services(backend, tester);
+    await _show(tester, FoodHomeScreen(services: services));
+    await tester.tap(find.text('Пицца Тест'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Маргарита'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Добавить ·'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Корзина · 1'));
+    await premiumGolden(tester, 'premium_cart');
+    await tester.tap(find.textContaining('Оформить заказ'));
+    await premiumGolden(tester, 'premium_checkout');
+    await _show(tester, Scaffold(body: FoodOrdersTab(services: services)));
+    await premiumGolden(tester, 'premium_history_empty');
+    // A deterministic order date keeps the populated history baseline stable.
+    await backend.handle(http.Request(
+        'POST', Uri.parse('https://api.example.test/api/v1/food/orders'))
+      ..headers['Idempotency-Key'] = 'golden-history'
+      ..body = jsonEncode({
+        'restaurantId': _restaurantId,
+        'addressId': _addressId,
+        'paymentMethod': 'CASH_ON_DELIVERY',
+        'items': [
+          {
+            'dishId': _dishId,
+            'quantity': 1,
+            'optionIds': [_sizeS]
+          }
+        ]
+      }));
+    backend.orders.single['placedAt'] = '2026-11-15T09:41:00Z';
+    await _show(tester, Scaffold(body: FoodOrdersTab(services: services)));
+    await premiumGolden(tester, 'premium_history');
+  });
+
   test('formatTenge groups thousands and hides zero tiyn', () {
     expect(formatTenge(350000), '3 500 ₸');
     expect(formatTenge(1220000), '12 200 ₸');
@@ -458,7 +569,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Закрытая Пиццерия'), findsNothing);
     expect(find.text('Пицца Тест'), findsOneWidget);
-    await tester.tap(find.text('Итальянская'));
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Итальянская'));
     await tester.pumpAndSettle();
     expect(find.text('Пицца Тест'), findsOneWidget);
   });

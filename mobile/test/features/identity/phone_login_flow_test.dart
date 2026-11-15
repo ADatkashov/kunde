@@ -300,6 +300,8 @@ void main() {
     await enterPhone(tester);
     await tester.enterText(find.byKey(const Key('otp-field')), '123456');
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Sign out'));
     await tester.pumpAndSettle();
     expect(jsonDecode(lastLogoutBody!), {'refreshToken': 'refresh-1'});
@@ -314,6 +316,8 @@ void main() {
     await tester.enterText(find.byKey(const Key('otp-field')), '123456');
     await tester.pumpAndSettle();
     logoutStatus = 503;
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Sign out'));
     await tester.pumpAndSettle();
     expect(vault.value, isNull);
