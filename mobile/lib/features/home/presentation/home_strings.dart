@@ -28,6 +28,7 @@ extension HomeStrings on KundeLocalizations {
       'KUNDE AI әзірге қолжетімсіз. Бекітілгеннен кейін шығады.',
       'KUNDE AI is not available yet. It will appear once approved.');
   String get catFood => _t('Еда', 'Тамақ', 'Food');
+  String get catServices => _t('Услуги', 'Қызметтер', 'Services');
   String get catGroceries => _t('Продукты', 'Азық-түлік', 'Groceries');
   String get catRides => _t('Поездки', 'Сапарлар', 'Rides');
   String get catDelivery => _t('Доставка', 'Жеткізу', 'Delivery');

@@ -4,12 +4,16 @@ class PlatformSnapshot {
     required this.marketplaceEnabled,
     required this.oidcIssuerConfigured,
     required this.aiEnabled,
+    this.bookingEnabled = false,
   });
 
   final String releaseStage;
   final bool marketplaceEnabled;
   final bool oidcIssuerConfigured;
   final bool aiEnabled;
+
+  /// Service booking (barbershops) DEV pilot; absent on older servers.
+  final bool bookingEnabled;
 
   factory PlatformSnapshot.fromJson(Map<String, dynamic> json) {
     final stage = json['releaseStage'];
@@ -27,6 +31,7 @@ class PlatformSnapshot {
       marketplaceEnabled: marketplace,
       oidcIssuerConfigured: issuer,
       aiEnabled: ai,
+      bookingEnabled: json['bookingEnabled'] == true,
     );
   }
 }

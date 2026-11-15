@@ -103,6 +103,17 @@ variable "food_enabled" {
   }
 }
 
+variable "booking_enabled" {
+  description = "Service booking (barbershops) DEV pilot (DEV mock confirmation, synthetic demo seed). Forbidden outside dev/local/test and needs consumer identity."
+  type        = bool
+  default     = false
+
+  validation {
+    condition     = !var.booking_enabled || contains(["dev", "local", "test"], var.environment_name)
+    error_message = "booking_enabled is only allowed when environment_name is dev, local or test."
+  }
+}
+
 variable "auth_phone_enabled" {
   description = "Own phone-OTP authentication (ADR-015, amended 2026-11-14)."
   type        = bool

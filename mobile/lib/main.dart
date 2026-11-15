@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'core/localization/kunde_localizations.dart';
+import 'features/booking/booking_services.dart';
+import 'features/booking/data/booking_api.dart';
 import 'features/food/data/cart_controller.dart';
 import 'features/food/data/food_api.dart';
 import 'features/food/food_services.dart';
@@ -57,6 +59,15 @@ void main() {
                     seconds: apiTimeoutSeconds < 20 ? 20 : apiTimeoutSeconds)),
             cart: CartController(),
             auth: auth),
+    booking: auth == null
+        ? null
+        : BookingServices(
+            api: BookingApi(
+                baseUri: Uri.parse(apiBaseUrl),
+                auth: auth,
+                timeout: const Duration(
+                    seconds: apiTimeoutSeconds < 20 ? 20 : apiTimeoutSeconds)),
+            auth: auth),
     identityPocEnabled: const bool.fromEnvironment('IDENTITY_POC_ENABLED'),
     devOtpHint: const bool.fromEnvironment('DEV_OTP_HINT'),
     partnerEnabled: const bool.fromEnvironment('PARTNER_FEATURES_ENABLED'),
@@ -71,6 +82,7 @@ class KundeApp extends StatefulWidget {
       this.devOtpHint = false,
       this.partnerEnabled = false,
       this.food,
+      this.booking,
       super.key});
 
   final KundeApi api;
@@ -83,6 +95,7 @@ class KundeApp extends StatefulWidget {
   /// Partner screens (ADR-018); off by default and in every consumer build.
   final bool partnerEnabled;
   final FoodServices? food;
+  final BookingServices? booking;
 
   @override
   State<KundeApp> createState() => _KundeAppState();
@@ -107,6 +120,7 @@ class _KundeAppState extends State<KundeApp> {
                 devOtpHint: widget.devOtpHint,
                 partnerEnabled: widget.partnerEnabled,
                 food: widget.food,
+                booking: widget.booking,
                 onLocale: (locale) => setState(() => _locale = locale))
             : widget.identityPocEnabled
                 ? const IdentityPocScreen()

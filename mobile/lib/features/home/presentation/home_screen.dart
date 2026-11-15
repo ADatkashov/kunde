@@ -1,3 +1,5 @@
+import '../../booking/booking_services.dart';
+import '../../booking/presentation/services_home_screen.dart';
 import '../../food/food_services.dart';
 import '../../food/presentation/food_home_screen.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +20,7 @@ class HomeScreen extends StatefulWidget {
       this.onOpenSearch,
       this.onOpenOrders,
       this.food,
+      this.booking,
       super.key});
 
   final KundeApi api;
@@ -28,6 +31,9 @@ class HomeScreen extends StatefulWidget {
 
   /// KUNDE Food screens; when set and the server enables the marketplace, Food opens the restaurant catalog.
   final FoodServices? food;
+
+  /// Service booking (barbershops); shown when the server enables it.
+  final BookingServices? booking;
 
   /// Opens the Orders tab when the host has one.
   final VoidCallback? onOpenOrders;
@@ -103,7 +109,9 @@ class _HomeScreenState extends State<HomeScreen> {
     ));
   }
 
-  List<ServiceCategory> _categories(KundeLocalizations s, bool foodEnabled) => [
+  List<ServiceCategory> _categories(
+          KundeLocalizations s, bool foodEnabled, bool bookingEnabled) =>
+      [
         ServiceCategory(
             icon: Icons.ramen_dining_rounded,
             label: s.catFood,
@@ -127,9 +135,10 @@ class _HomeScreenState extends State<HomeScreen> {
             label: s.catHome,
             color: const Color(0xFF176B52)),
         ServiceCategory(
-            icon: Icons.spa_rounded,
-            label: s.catBeauty,
-            color: const Color(0xFFB83280)),
+            icon: Icons.content_cut_rounded,
+            label: s.catServices,
+            color: const Color(0xFFB83280),
+            enabled: bookingEnabled && widget.booking != null),
         ServiceCategory(
             icon: Icons.favorite_rounded,
             label: s.catHealth,
@@ -149,11 +158,16 @@ class _HomeScreenState extends State<HomeScreen> {
             isAll: true),
       ];
 
-  void _onCategory(
-      ServiceCategory c, List<ServiceCategory> all, bool foodEnabled) {
+  void _onCategory(ServiceCategory c, List<ServiceCategory> all,
+      bool foodEnabled, bool bookingEnabled) {
     final s = KundeLocalizations.of(context);
     if (c.isAll) {
       _showAll(all);
+    } else if (c.label == s.catServices &&
+        bookingEnabled &&
+        widget.booking != null) {
+      Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => ServicesHomeScreen(services: widget.booking!)));
     } else if (c.label == s.catGroceries &&
         foodEnabled &&
         widget.food != null) {
@@ -213,7 +227,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 final failed = !loading && (state.hasError || !state.hasData);
                 final snapshot = state.data;
                 final marketplace = snapshot?.marketplaceEnabled ?? false;
-                final categories = _categories(s, marketplace);
+                final categories = _categories(
+                    s, marketplace, snapshot?.bookingEnabled ?? false);
                 void openSoon(String title, [String? body]) =>
                     _showInfo(title, body ?? s.comingSoonBody);
                 return ListView(
@@ -242,7 +257,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       delay: 60,
                       child: CategoryGrid(
                         categories: categories,
-                        onTap: (c) => _onCategory(c, categories, marketplace),
+                        onTap: (c) => _onCategory(c, categories, marketplace,
+                            snapshot?.bookingEnabled ?? false),
                       ),
                     ),
                     const SizedBox(height: 20),

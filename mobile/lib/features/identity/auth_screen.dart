@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../booking/booking_services.dart';
+import '../booking/presentation/orders_hub.dart';
 import '../food/food_services.dart';
 import '../food/presentation/orders_tab.dart';
 import '../home/data/kunde_api.dart';
@@ -22,6 +24,7 @@ class AuthScreen extends StatefulWidget {
       this.devOtpHint = false,
       this.partnerEnabled = false,
       this.food,
+      this.booking,
       super.key});
   final AuthRepository auth;
   final KundeApi api;
@@ -33,6 +36,9 @@ class AuthScreen extends StatefulWidget {
 
   /// KUNDE Food (restaurants, cart, orders); shown when the server enables the marketplace.
   final FoodServices? food;
+
+  /// Service booking (barbershops); shown when the server enables it.
+  final BookingServices? booking;
   @override
   State<AuthScreen> createState() => _AuthScreenState();
 }
@@ -250,12 +256,18 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                           : switch (_tab) {
                               KundeTab.profile => _profileView(s),
                               KundeTab.search => SearchTab(api: widget.api),
-                              KundeTab.orders => widget.food != null
-                                  ? FoodOrdersTab(services: widget.food!)
-                                  : const OrdersTab(),
+                              KundeTab.orders =>
+                                widget.food != null && widget.booking != null
+                                    ? OrdersHubTab(
+                                        food: widget.food!,
+                                        booking: widget.booking!)
+                                    : widget.food != null
+                                        ? FoodOrdersTab(services: widget.food!)
+                                        : const OrdersTab(),
                               KundeTab.home => HomeScreen(
                                   api: widget.api,
                                   food: widget.food,
+                                  booking: widget.booking,
                                   onOpenSearch: () =>
                                       setState(() => _tab = KundeTab.search),
                                   onOpenOrders: () =>
