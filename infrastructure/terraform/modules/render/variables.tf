@@ -92,6 +92,17 @@ variable "environment_name" {
   default     = "production"
 }
 
+variable "food_enabled" {
+  description = "KUNDE Food DEV pilot (mock payment, simulated delivery, synthetic demo seed). Forbidden outside dev/local/test and needs consumer identity."
+  type        = bool
+  default     = false
+
+  validation {
+    condition     = !var.food_enabled || contains(["dev", "local", "test"], var.environment_name)
+    error_message = "food_enabled is only allowed when environment_name is dev, local or test."
+  }
+}
+
 variable "auth_phone_enabled" {
   description = "Own phone-OTP authentication (ADR-015, amended 2026-11-14)."
   type        = bool

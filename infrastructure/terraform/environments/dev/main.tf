@@ -38,6 +38,7 @@ module "backend" {
   consumer_identity_enabled = tobool(module.cell.cell.app_env.CONSUMER_IDENTITY_ENABLED) || tobool(var.auth_phone_enabled)
 
   environment_name            = "dev"
+  food_enabled                = var.food_enabled
   auth_phone_enabled          = tobool(var.auth_phone_enabled)
   auth_phone_secret           = var.auth_phone_secret
   auth_dev_otp_enabled        = tobool(var.auth_dev_otp_enabled)
