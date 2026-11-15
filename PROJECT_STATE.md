@@ -1,5 +1,9 @@
 # KUNDE project state
 
+## DEV deploy permission (owner, 2026-11-15)
+
+- Owner gave a standing permission to deploy `main` to the existing DEV backend and set DEV pilot flags without asking each time; scope and exclusions (no PROD, no service/DB replacement, no `terraform apply`, no secrets, no real payments) are recorded in [AGENTS.md](AGENTS.md). Booking (V18) was deployed to DEV under this permission: deploy `dep-dbt2t4u7bikc73css3g0` of `420b595` with `BOOKING_ENABLED`/`BOOKING_SEED_DEMO` (result below once verified).
+
 ## KUNDE Booking MVP — barbershops (2026-11-15, owner-approved category B)
 
 - Owner approved booking as the next category, first service barbershops (cleaning/other services later). Implemented for DEV: Flyway V18 (`btree_gist` exclusion constraint prevents overlapping bookings of one master), slots API, idempotent booking, free cancellation before the start, 4 synthetic barbershops (9 masters), DEV-mock confirmation (labelled), Flutter «Услуги» → barbershop → service → master → slot → confirm, bookings history in Orders → «Записи». Details/limits: [docs/product/booking-mvp.md](docs/product/booking-mvp.md).
