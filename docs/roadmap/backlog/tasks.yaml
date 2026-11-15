@@ -101,7 +101,7 @@
     "release": "REL-0",
     "user_story_id": "US-003",
     "implementation_status": "blocked",
-    "implementation_note": "ADR-015 owner approval (2026-11-11) accepts Keycloak primary/ZITADEL fallback for synthetic implementation. Production provider/privacy/residency/operations/OTP gates remain blocked; historical PROPOSED statements are superseded."
+    "implementation_note": "ADR-015 owner approval (2026-11-11) accepts Keycloak primary/ZITADEL fallback for synthetic implementation. Production provider/privacy/residency/operations/OTP gates remain blocked; historical PROPOSED statements are superseded. Update 2026-11-15: ADR-015 was amended 2026-11-14 (PR #80) — no external IdP; Spring Boot issues its own phone-OTP access JWT and rotating refresh tokens (DEV only, off by default). The Keycloak/ZITADEL wording above is historical. Production identity/OTP vendor (D-11), privacy/residency and independent security review remain blocked."
   },
   {
     "id": "TASK-006",
@@ -311,7 +311,7 @@
     "release": "REL-1",
     "user_story_id": "US-006",
     "implementation_status": "in_progress",
-    "implementation_note": "D-07 approved 2026-11-13. Contract-only PartnerVerification state machine (PB-01/PB-02 draft playbooks) plus persistence (Flyway V8): marketplace.partners, partner_staff (Owner/Manager/Operator, individual users, revocable), append-only staff and verification audit (DB triggers). PartnerService enforces roles and partner isolation in the backend (strangers/revoked get 404, wrong role 403, last-owner rule, version conflict, applicant-only resubmit, reviewers cannot be partner staff); 9 integration tests against PostgreSQL. No HTTP API: there is no partner-app client/audience or KUNDE Administrator identity (D-14 open), so reviewVerification trusts its caller. No documents/KYC (proofing method, documents, retention and provider unapproved), no catalog activation (ADR-014 gates unchanged), no abuse caps. Not Done."
+    "implementation_note": "D-07 approved 2026-11-13. Contract-only PartnerVerification state machine (PB-01/PB-02 draft playbooks) plus persistence (Flyway V8): marketplace.partners, partner_staff (Owner/Manager/Operator, individual users, revocable), append-only staff and verification audit (DB triggers). PartnerService enforces roles and partner isolation in the backend (strangers/revoked get 404, wrong role 403, last-owner rule, version conflict, applicant-only resubmit, reviewers cannot be partner staff); 9 integration tests against PostgreSQL. No HTTP API: there is no partner-app client/audience or KUNDE Administrator identity (D-14 open), so reviewVerification trusts its caller. No documents/KYC (proofing method, documents, retention and provider unapproved), no catalog activation (ADR-014 gates unchanged), no abuse caps. Not Done. Update 2026-11-15 (ADR-018 accepted for synthetic DEV): the 'No HTTP API / reviewVerification trusts its caller' statement above is superseded. PR #85 (V12 admin grants, server-derived kunde.partner/kunde.admin scopes), #86 (V13, /api/v1/partner/applications and /partner/partners with per-request membership re-check) and #88 (/api/v1/admin/partners queue/detail/decision, PARTNER_VERIFICATION grant, self-review refused) add the HTTP API and KUNDE Administrator identity. Still missing: documents/KYC, staff-management endpoints, admin UI, production step-up/dual control (D-14 production gate), DEV end-to-end run on the deployed service (DEV currently runs the pre-#85 build). Not Done."
   },
   {
     "id": "TASK-016",
@@ -333,7 +333,7 @@
     "release": "REL-1",
     "user_story_id": "US-008",
     "implementation_status": "in_progress",
-    "implementation_note": "Flyway V10 links offerings to partners (PUBLISHED requires partner_id); consumer offering list/detail/search show only offerings of APPROVED partners and expose partner id and display name; public GET /partners/{id} returns an APPROVED partner (id, displayName) or 404 PARTNER_NOT_FOUND; migrations seed no partners (test-guarded). Still missing: partner-scoped write/authorization API, price/availability (TASK-022/014), device checks; ADR-014 gates unchanged."
+    "implementation_note": "Flyway V10 links offerings to partners (PUBLISHED requires partner_id); consumer offering list/detail/search show only offerings of APPROVED partners and expose partner id and display name; public GET /partners/{id} returns an APPROVED partner (id, displayName) or 404 PARTNER_NOT_FOUND; migrations seed no partners (test-guarded). Still missing: partner-scoped write/authorization API, price/availability (TASK-022/014), device checks; ADR-014 gates unchanged. Update 2026-11-15: PR #84 (V11 price_minor/currency KZT/availability, PUBLISHED needs a price) and #87 (V14, /partner/partners/{id}/offerings create/list/edit/publish/unpublish, publish only for APPROVED partners) supersede the 'missing' list above for price and partner-scoped writes. Still missing: device checks, DEV end-to-end run, TASK-022 quotes. ADR-014 unchanged (no seeded partners/offerings). Not Done."
   },
   {
     "id": "TASK-017",
@@ -352,8 +352,8 @@
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-1",
     "user_story_id": "US-011",
-    "implementation_status": "not_started",
-    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation. D-01 category/market approved 2026-11-13 (cohort/zone open); synthetic-data work may proceed, TASK-017 needs a web stack and partner identity contract (D-07, TASK-015), TASK-018 needs the order lifecycle (D-05/D-06); status unchanged. D-07 approved 2026-11-13 (partner roles); still needs a web stack and partner identity contract."
+    "implementation_status": "in_progress",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation. D-01 category/market approved 2026-11-13 (cohort/zone open); synthetic-data work may proceed, TASK-017 needs a web stack and partner identity contract (D-07, TASK-015), TASK-018 needs the order lifecycle (D-05/D-06); status unchanged. D-07 approved 2026-11-13 (partner roles); still needs a web stack and partner identity contract. Update 2026-11-15: partial implementation via ADR-018 (accepted for synthetic DEV): partner application and profile API (#86), offerings API with publish gated on APPROVED (#87), admin verification API (#88) and a Flutter partner section behind PARTNER_FEATURES_ENABLED (#89). Missing: admin/partner web UI, documents/KYC, device and DEV end-to-end evidence, D-01 cohort. Not Done."
   },
   {
     "id": "TASK-018",

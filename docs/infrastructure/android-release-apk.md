@@ -1,7 +1,7 @@
 # Android Release APK (DEV only)
 
 Workflow `android-release.yml` (manual) builds `KUNDE-dev-release.apk`: `flutter build apk --release`, arm64, API
-`https://kunde-backend-5wwg.onrender.com/api/v1/` via `--dart-define=API_BASE_URL`, 90 s request timeout (Render Free cold start ~1 min).
+`https://kunde-backend-ty81.onrender.com/api/v1/` via `--dart-define=API_BASE_URL`, 90 s request timeout (Render Free cold start ~1 min).
 Release signing is read only from environment variables; without them the release build fails (no debug-key fallback).
 
 ## One-time owner setup (keystore is not in Git)

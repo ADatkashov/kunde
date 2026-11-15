@@ -1,6 +1,10 @@
 # Next task — TASK-006 / ADA-72 remaining device/accessibility/session-admin verification
 
-Last main merge: `ab001ac18ec7dd98986aa77d67fb36f3970ed693` (PR #41, 2026-11-13).
+Last main merge: `86a6c31ea8ea2aa60b9e0af6bddd5968c7315404` (PR #89, 2026-11-15); see the audit section in [PROJECT_STATE.md](PROJECT_STATE.md).
+
+## Priority now: DEV pilot end-to-end (owner actions first)
+
+DEV currently runs the PR #80 build; partner/admin endpoints return 404. Order: (1) owner approves a redeploy of `main` to Render `kunde-backend-ty81` (Flyway V10–V14 on Neon DEV; additive, synthetic data only; not a Terraform apply — keep `replace_render` for any Terraform change); (2) owner provisions one synthetic admin (SQL in the ADR-018 section below); (3) run *Android Release APK (DEV)* with `partner-features=true`; (4) walk Consumer login → Partner application → Admin approval → Offering → Publish → Consumer catalog (needs a PUBLISHED category, owner decision under ADR-014). Acceptance: each step recorded as VERIFIED with run/request evidence; until then the pilot is not ready. Check: `curl https://kunde-backend-ty81.onrender.com/api/v1/partner/categories` returns 401 (not 404) after the redeploy.
 Consent API (PR #23), Flutter consent UI (PR #24), and Flutter saved addresses
 (PR #25) are already merged. Do **not** rebuild them or close their canonical
 tasks without remaining product/privacy/UX acceptance evidence.
@@ -18,7 +22,7 @@ presentation per reader language; fallback order is kk → ru → en by owner de
 
 ## DEV phone sign-in follow-ups (owner)
 
-Phone-OTP authentication is implemented (see [phone-otp-auth](docs/identity/phone-otp-auth.md#dev-setup)); it is **not live** until the owner (1) adds GitHub secret `AUTH_PHONE_SECRET` (32+ random chars) and variables `AUTH_PHONE_ENABLED=true`, `AUTH_DEV_OTP_ENABLED=true`, (2) reviews the Terraform DEV plan and explicitly approves an apply with `replace_render=true`, (3) re-runs *Android Release APK (DEV)* and installs it; sign in with `+7 700 000 00 01` / `123456`. Then report phone-check results. Also: keep the keystore backup; decide the final applicationId before any store release (affects `scripts/ci/consumer_native_e2e.py`). Production gates for own auth are listed in the doc (independent security review, OTP vendor D-11, privacy/residency, key management, distributed rate limits).
+Phone-OTP authentication is implemented and **was found live on DEV on 2026-11-15** (login with a synthetic number verified; the owner's apply with `replace_render=true` evidently ran, new host `kunde-backend-ty81`). The steps below are kept as the setup record (see [phone-otp-auth](docs/identity/phone-otp-auth.md#dev-setup)); originally it was not live until the owner (1) adds GitHub secret `AUTH_PHONE_SECRET` (32+ random chars) and variables `AUTH_PHONE_ENABLED=true`, `AUTH_DEV_OTP_ENABLED=true`, (2) reviews the Terraform DEV plan and explicitly approves an apply with `replace_render=true`, (3) re-runs *Android Release APK (DEV)* and installs it; sign in with `+7 700 000 00 01` / `123456`. Then report phone-check results. Also: keep the keystore backup; decide the final applicationId before any store release (affects `scripts/ci/consumer_native_e2e.py`). Production gates for own auth are listed in the doc (independent security review, OTP vendor D-11, privacy/residency, key management, distributed rate limits).
 
 ## Infrastructure DEV follow-ups (DEV is live; owner actions)
 
