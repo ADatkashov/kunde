@@ -1,5 +1,11 @@
 # KUNDE project state
 
+## KUNDE Food MVP (DEV pilot) — 2026-11-15
+
+- **Product-first priority (owner, 2026-11-15):** a working Food scenario before more infrastructure. Backend merged in PR #92 (`1b12038`): Flyway V15, `/api/v1/food` (restaurants, menus, search, server-side cart quote, idempotent orders, history, cancel before acceptance, repeat), synthetic demo seed (8 invented restaurants, 56 dishes, KZT), DEV-only mock payment (`TEST_CARD` / cash on delivery) and **simulated** fulfillment by elapsed time. `FoodGuard` forbids it outside dev/local/test; ADR-014 default is unchanged. Details and limits: [docs/product/food-mvp.md](docs/product/food-mvp.md).
+- **Verified (local):** backend `mvn test` on PostgreSQL 16 — 232 tests, 0 failures; real-HTTP smoke `scripts/dev/food_smoke.py` against a locally started jar — OK (order persisted, idempotent replay, restored after session refresh, cancel). Flutter (PR #93): `analyze --fatal-infos` clean, 153 tests pass incl. order → app restart → order in history on an in-memory backend.
+- **Not verified:** DEV deployment of Food (needs Terraform apply with `replace_render=true`, owner approval; the Render URL changes on replace), install/use on a physical Samsung, TalkBack. No real payments, couriers, photos, notifications or serviceability zones; UI strings are Russian only.
+
 ## Audit 2026-11-15 (main `86a6c31`, PR #89)
 
 - **GitHub:** all four automatic workflows (Backend, Flutter, Security, CI configuration) green on `86a6c31`; PR #84–#89 merged, no open PRs, #79 closed unmerged. Security CI `containers` job failed on three earlier main pushes (`a9cb8e0`, `ddc8ae4`, `254587b`) at step "Resolve immutable linux-amd64 manifests" (registry resolution, not a finding) and passed on later runs. CodeRabbit left only summary comments on #84–#89 (no inline threads found). **Not verifiable by the agent (API 403 through the proxy):** branch protection/required checks, Environments (`dev` reviewers), Secrets/Variables metadata, secret scanning; Dependabot alerts are disabled for the repository.

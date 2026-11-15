@@ -420,13 +420,13 @@ class FoodBanner extends StatelessWidget {
                       height: 1.15,
                       fontWeight: FontWeight.w800)),
               const SizedBox(height: 8),
-              Text(s.bannerBody,
+              Text(onOrder == null ? s.bannerBody : s.bannerBodyLive,
                   style: const TextStyle(color: Colors.white, fontSize: 14)),
               const SizedBox(height: 14),
               FilledButton.icon(
                 onPressed: onOrder,
                 icon: const Icon(Icons.arrow_forward_rounded),
-                label: Text(onOrder == null ? s.homeSoon : s.bannerCta),
+                label: Text(onOrder == null ? s.homeSoon : s.bannerCtaLive),
                 iconAlignment: IconAlignment.end,
                 style: FilledButton.styleFrom(
                     backgroundColor: Colors.white,

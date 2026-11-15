@@ -69,3 +69,9 @@ variable "auth_dev_otp_allowed_phones" {
   type        = string
   default     = "+77000000001,+77000000002,+77000000003"
 }
+
+variable "food_enabled" {
+  description = "KUNDE Food DEV pilot on the DEV backend (mock payment, simulated delivery, synthetic demo restaurants). DEV environment only."
+  type        = bool
+  default     = true
+}

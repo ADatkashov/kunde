@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../food/food_services.dart';
+import '../food/presentation/orders_tab.dart';
 import '../home/data/kunde_api.dart';
 import '../home/presentation/home_screen.dart';
 import '../shell/tabs.dart';
@@ -19,6 +21,7 @@ class AuthScreen extends StatefulWidget {
       required this.onLocale,
       this.devOtpHint = false,
       this.partnerEnabled = false,
+      this.food,
       super.key});
   final AuthRepository auth;
   final KundeApi api;
@@ -27,6 +30,9 @@ class AuthScreen extends StatefulWidget {
 
   /// Partner onboarding and offerings (ADR-018); off unless the build enables it.
   final bool partnerEnabled;
+
+  /// KUNDE Food (restaurants, cart, orders); shown when the server enables the marketplace.
+  final FoodServices? food;
   @override
   State<AuthScreen> createState() => _AuthScreenState();
 }
@@ -244,9 +250,12 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                           : switch (_tab) {
                               KundeTab.profile => _profileView(s),
                               KundeTab.search => SearchTab(api: widget.api),
-                              KundeTab.orders => const OrdersTab(),
+                              KundeTab.orders => widget.food != null
+                                  ? FoodOrdersTab(services: widget.food!)
+                                  : const OrdersTab(),
                               KundeTab.home => HomeScreen(
                                   api: widget.api,
+                                  food: widget.food,
                                   onOpenSearch: () =>
                                       setState(() => _tab = KundeTab.search),
                                   onOpenOrders: () =>

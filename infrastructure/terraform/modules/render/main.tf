@@ -63,6 +63,10 @@ resource "render_web_service" "this" {
       AUTH_PHONE_ENABLED = { value = "true" }
       AUTH_PHONE_SECRET  = { value = var.auth_phone_secret }
     } : {},
+    var.food_enabled ? {
+      FOOD_ENABLED   = { value = "true" }
+      FOOD_SEED_DEMO = { value = "true" }
+    } : {},
     var.auth_phone_enabled && var.auth_dev_otp_enabled ? {
       AUTH_DEV_OTP_ENABLED        = { value = "true" }
       AUTH_DEV_OTP_ALLOWED_PHONES = { value = var.auth_dev_otp_allowed_phones }

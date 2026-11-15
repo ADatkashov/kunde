@@ -1,4 +1,10 @@
-# Next task — TASK-006 / ADA-72 remaining device/accessibility/session-admin verification
+# Next task — deploy KUNDE Food to DEV and verify it on a phone
+
+1. Owner: run *Terraform DEV* (`workflow_dispatch`, `apply=true`, `confirm=apply-dev`, `replace_render=true`) from `main` after the Food PRs merged; DEV then gets `FOOD_ENABLED` + `FOOD_SEED_DEMO`. Replacing the Render service changes its URL: take the new host from the run and pass it as `api-base-url` to *Android Release APK (DEV)*.
+2. Check: `python3 scripts/dev/food_smoke.py https://<dev-host> +77000000001` prints `SMOKE OK`; `GET /api/v1/capabilities` has `marketplaceEnabled=true`.
+3. Install the APK; sign in `+7 700 000 00 01` / `123456`; Home → Food → restaurant → dish → cart → checkout → order status → restart app → Orders tab shows the order. Record the result in PROJECT_STATE.
+
+Previous priority (kept below): TASK-006 / ADA-72 remaining device/accessibility/session-admin verification.
 
 Last main merge: `86a6c31ea8ea2aa60b9e0af6bddd5968c7315404` (PR #89, 2026-11-15); see the audit section in [PROJECT_STATE.md](PROJECT_STATE.md).
 

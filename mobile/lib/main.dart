@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'core/localization/kunde_localizations.dart';
+import 'features/food/data/cart_controller.dart';
+import 'features/food/data/food_api.dart';
+import 'features/food/food_services.dart';
 import 'features/home/data/kunde_api.dart';
 import 'features/shell/kunde_shell.dart';
 import 'features/identity_poc/identity_poc_screen.dart';
@@ -20,28 +23,40 @@ void main() {
     'API_TIMEOUT_SECONDS',
     defaultValue: 4,
   );
+  final auth = const bool.fromEnvironment('PHONE_AUTH_ENABLED')
+      ? AuthRepository(
+          gateway: PhoneAuthGateway(apiBase: Uri.parse(apiBaseUrl)),
+          vault: SecureTokenVault(),
+          apiBase: Uri.parse(apiBaseUrl),
+        )
+      : const bool.fromEnvironment('CONSUMER_IDENTITY_ENABLED')
+          ? AuthRepository(
+              gateway: AppAuthGateway(
+                issuer: const String.fromEnvironment('OIDC_ISSUER_URI'),
+                clientId: const String.fromEnvironment('OIDC_CLIENT_ID',
+                    defaultValue: 'kunde-consumer'),
+              ),
+              vault: SecureTokenVault(),
+              apiBase: Uri.parse(apiBaseUrl),
+            )
+          : null;
   runApp(KundeApp(
     api: KundeApi(
       baseUri: Uri.parse(apiBaseUrl),
       timeout: const Duration(seconds: apiTimeoutSeconds),
     ),
-    auth: const bool.fromEnvironment('PHONE_AUTH_ENABLED')
-        ? AuthRepository(
-            gateway: PhoneAuthGateway(apiBase: Uri.parse(apiBaseUrl)),
-            vault: SecureTokenVault(),
-            apiBase: Uri.parse(apiBaseUrl),
-          )
-        : const bool.fromEnvironment('CONSUMER_IDENTITY_ENABLED')
-            ? AuthRepository(
-                gateway: AppAuthGateway(
-                  issuer: const String.fromEnvironment('OIDC_ISSUER_URI'),
-                  clientId: const String.fromEnvironment('OIDC_CLIENT_ID',
-                      defaultValue: 'kunde-consumer'),
-                ),
-                vault: SecureTokenVault(),
-                apiBase: Uri.parse(apiBaseUrl),
-              )
-            : null,
+    auth: auth,
+    // Food screens only appear when the server reports marketplaceEnabled (DEV pilot); never in production.
+    food: auth == null
+        ? null
+        : FoodServices(
+            api: FoodApi(
+                baseUri: Uri.parse(apiBaseUrl),
+                auth: auth,
+                timeout: const Duration(
+                    seconds: apiTimeoutSeconds < 20 ? 20 : apiTimeoutSeconds)),
+            cart: CartController(),
+            auth: auth),
     identityPocEnabled: const bool.fromEnvironment('IDENTITY_POC_ENABLED'),
     devOtpHint: const bool.fromEnvironment('DEV_OTP_HINT'),
     partnerEnabled: const bool.fromEnvironment('PARTNER_FEATURES_ENABLED'),
@@ -55,6 +70,7 @@ class KundeApp extends StatefulWidget {
       this.identityPocEnabled = false,
       this.devOtpHint = false,
       this.partnerEnabled = false,
+      this.food,
       super.key});
 
   final KundeApi api;
@@ -66,6 +82,7 @@ class KundeApp extends StatefulWidget {
 
   /// Partner screens (ADR-018); off by default and in every consumer build.
   final bool partnerEnabled;
+  final FoodServices? food;
 
   @override
   State<KundeApp> createState() => _KundeAppState();
@@ -89,6 +106,7 @@ class _KundeAppState extends State<KundeApp> {
                 api: widget.api,
                 devOtpHint: widget.devOtpHint,
                 partnerEnabled: widget.partnerEnabled,
+                food: widget.food,
                 onLocale: (locale) => setState(() => _locale = locale))
             : widget.identityPocEnabled
                 ? const IdentityPocScreen()

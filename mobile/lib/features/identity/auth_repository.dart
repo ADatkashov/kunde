@@ -529,6 +529,17 @@ class AuthRepository extends ChangeNotifier {
               '${published ? 'publish' : 'unpublish'}',
           {'version': version})) as Map<String, dynamic>;
 
+  /// Authenticated JSON call for feature modules (Food). Same token handling,
+  /// timeout and 401 behavior as the profile calls.
+  Future<dynamic> authorizedJson(
+    String method,
+    String path, {
+    Map<String, dynamic>? body,
+    Set<int> expected = const {200},
+    Map<String, String>? headers,
+  }) =>
+      _requestJson(method, path, body, expected, headers);
+
   Future<Map<String, dynamic>> _request(
     String method, [
     Map<String, dynamic>? body,
@@ -570,7 +581,14 @@ class AuthRepository extends ChangeNotifier {
       throw SessionExpired();
     }
     if (!expected.contains(response.statusCode)) {
-      throw IdentityApiError(response.statusCode);
+      String? code;
+      try {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic> && decoded['code'] is String) {
+          code = decoded['code'] as String;
+        }
+      } catch (_) {}
+      throw IdentityApiError(response.statusCode, code);
     }
     if (response.statusCode == 204) return null;
     return jsonDecode(response.body);
@@ -604,6 +622,9 @@ class AuthRepository extends ChangeNotifier {
 }
 
 class IdentityApiError implements Exception {
-  IdentityApiError(this.status);
+  IdentityApiError(this.status, [this.code]);
   final int status;
+
+  /// Machine-readable API error code (for example `FOOD_MIN_ORDER_NOT_MET`), when the server sent one.
+  final String? code;
 }

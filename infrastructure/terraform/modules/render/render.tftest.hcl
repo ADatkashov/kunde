@@ -84,3 +84,24 @@ run "dev_otp_allowed_in_dev" {
     error_message = "DEV OTP env vars expected in dev"
   }
 }
+
+run "food_only_in_dev_and_sets_env_vars" {
+  command = plan
+  variables {
+    environment_name = "dev"
+    food_enabled     = true
+  }
+  assert {
+    condition     = render_web_service.this.env_vars["FOOD_ENABLED"].value == "true" && render_web_service.this.env_vars["FOOD_SEED_DEMO"].value == "true"
+    error_message = "Food env vars expected in dev"
+  }
+}
+
+run "food_rejected_outside_dev" {
+  command = plan
+  variables {
+    environment_name = "production"
+    food_enabled     = true
+  }
+  expect_failures = [var.food_enabled]
+}

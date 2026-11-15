@@ -62,6 +62,11 @@ extension HomeStrings on KundeLocalizations {
       'Рестораны Алматы в одном приложении. Запуск готовится.',
       'Алматы мейрамханалары бір қосымшада. Іске қосу дайындалуда.',
       'Almaty restaurants in one app. Launch in preparation.');
+  String get bannerBodyLive => _t(
+      'Рестораны Алматы в одном приложении. Демо-режим: тестовые рестораны, оплата и доставка имитируются.',
+      'Алматы мейрамханалары бір қосымшада. Демо режим: сынақ мейрамханалары, төлем мен жеткізу имитацияланады.',
+      'Almaty restaurants in one app. Demo mode: test restaurants, mock payment and simulated delivery.');
+  String get bannerCtaLive => _t('Заказать', 'Тапсырыс беру', 'Order');
   String get bannerCta => _t('Найти', 'Іздеу', 'Search');
   String get quickOrders => _t('Мои заказы', 'Тапсырыстарым', 'My orders');
   String get quickFavorites => _t('Избранное', 'Таңдаулылар', 'Favorites');
