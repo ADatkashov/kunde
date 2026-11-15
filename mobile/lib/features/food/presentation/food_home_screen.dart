@@ -11,15 +11,20 @@ import 'restaurant_screen.dart';
 
 /// KUNDE Food: restaurant catalog with search over restaurants and dishes.
 class FoodHomeScreen extends StatefulWidget {
-  const FoodHomeScreen({required this.services, super.key});
+  const FoodHomeScreen(
+      {required this.services, this.vertical = 'FOOD', super.key});
 
   final FoodServices services;
+
+  /// `FOOD` (restaurants) or `GROCERY` (stores).
+  final String vertical;
 
   @override
   State<FoodHomeScreen> createState() => _FoodHomeScreenState();
 }
 
 class _FoodHomeScreenState extends State<FoodHomeScreen> {
+  bool get _grocery => widget.vertical == 'GROCERY';
   final _query = TextEditingController();
   Timer? _debounce;
   late Future<List<Restaurant>> _restaurants;
@@ -29,7 +34,7 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
   @override
   void initState() {
     super.initState();
-    _restaurants = widget.services.api.restaurants();
+    _restaurants = widget.services.api.restaurants(vertical: widget.vertical);
   }
 
   @override
@@ -46,7 +51,9 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
       if (!mounted || term == _term) return;
       setState(() {
         _term = term;
-        _search = term.isEmpty ? null : widget.services.api.search(term);
+        _search = term.isEmpty
+            ? null
+            : widget.services.api.search(term, vertical: widget.vertical);
       });
     });
   }
@@ -57,7 +64,7 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
               services: widget.services, restaurant: restaurant)));
 
   Future<void> _refresh() async {
-    final next = widget.services.api.restaurants();
+    final next = widget.services.api.restaurants(vertical: widget.vertical);
     setState(() {
       _restaurants = next;
     });
@@ -69,7 +76,7 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
-          title: const Text('Еда · Алматы'),
+          title: Text(_grocery ? 'Продукты · Алматы' : 'Еда · Алматы'),
           actions: [
             ListenableBuilder(
               listenable: widget.services.cart,
@@ -97,7 +104,8 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                 child: SearchBar(
                   controller: _query,
-                  hintText: 'Рестораны и блюда',
+                  hintText:
+                      _grocery ? 'Магазины и товары' : 'Рестораны и блюда',
                   leading: const Icon(Icons.search_rounded),
                   trailing: [
                     if (_query.text.isNotEmpty)
@@ -136,16 +144,20 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
                 : null;
             return FoodStateMessage(
                 icon: Icons.cloud_off_outlined,
-                title: 'Не удалось загрузить рестораны',
+                title: _grocery
+                    ? 'Не удалось загрузить магазины'
+                    : 'Не удалось загрузить рестораны',
                 body: message,
                 onAction: _refresh);
           }
           final list = state.data!;
           if (list.isEmpty) {
-            return const FoodStateMessage(
+            return FoodStateMessage(
                 icon: Icons.storefront_outlined,
-                title: 'Пока нет ресторанов',
-                body: 'Рестораны появятся здесь, когда будут добавлены.');
+                title: _grocery ? 'Пока нет магазинов' : 'Пока нет ресторанов',
+                body: _grocery
+                    ? 'Магазины появятся здесь, когда будут добавлены.'
+                    : 'Рестораны появятся здесь, когда будут добавлены.');
           }
           return RefreshIndicator(
             onRefresh: _refresh,
@@ -170,15 +182,17 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
             return FoodStateMessage(
                 icon: Icons.cloud_off_outlined,
                 title: 'Поиск не удался',
-                onAction: () => setState(
-                    () => _search = widget.services.api.search(_term)));
+                onAction: () => setState(() => _search = widget.services.api
+                    .search(_term, vertical: widget.vertical)));
           }
           final result = state.data!;
           if (result.isEmpty) {
             return FoodStateMessage(
                 icon: Icons.search_off_rounded,
                 title: 'Ничего не найдено',
-                body: 'По запросу «$_term» нет ресторанов и блюд.');
+                body: _grocery
+                    ? 'По запросу «$_term» нет магазинов и товаров.'
+                    : 'По запросу «$_term» нет ресторанов и блюд.');
           }
           return ListView(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
@@ -195,7 +209,8 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
                 ],
                 if (result.dishes.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  Text('Блюда', style: Theme.of(context).textTheme.titleMedium),
+                  Text(_grocery ? 'Товары' : 'Блюда',
+                      style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 8),
                   for (final d in result.dishes)
                     ListTile(

@@ -61,7 +61,8 @@ public class FoodOrderService {
     public record OrderView(String id, String restaurantId, String restaurantName, String status,
             String paymentMethod, String paymentStatus, String currency, long subtotalMinor, long deliveryFeeMinor,
             long totalMinor, String addressLabel, String addressText, String comment, OffsetDateTime placedAt,
-            List<OrderLine> items, List<TimelineEntry> timeline, boolean cancellable, boolean simulated) {}
+            List<OrderLine> items, List<TimelineEntry> timeline, boolean cancellable, boolean simulated,
+            String vertical) {}
 
     public record RepeatItem(String dishId, String name, int quantity, List<String> optionIds) {}
 
@@ -192,11 +193,11 @@ public class FoodOrderService {
         String comment = request.comment() == null || request.comment().isBlank() ? null : request.comment().strip();
         UUID orderId = db.queryForObject("""
                 insert into transactions.food_orders (user_id, restaurant_id, restaurant_name, payment_method, payment_status,
-                    subtotal_minor, delivery_fee_minor, total_minor, address_label, address_text, comment, idempotency_key)
-                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning id
+                    subtotal_minor, delivery_fee_minor, total_minor, address_label, address_text, comment, idempotency_key, vertical)
+                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (select vertical from marketplace.food_restaurants where id = ?)) returning id
                 """, UUID.class, user, request.restaurantId(), quote.restaurantName(), payment,
                 "TEST_CARD".equals(payment) ? "TEST_PAID" : "PAY_ON_RECEIPT", quote.subtotalMinor(),
-                quote.deliveryFeeMinor(), quote.totalMinor(), address[0], address[1], comment, idempotencyKey);
+                quote.deliveryFeeMinor(), quote.totalMinor(), address[0], address[1], comment, idempotencyKey, request.restaurantId());
         for (QuoteLine line : quote.lines()) {
             db.update("""
                     insert into transactions.food_order_items (order_id, dish_id, dish_name, options_text, option_ids,
@@ -338,7 +339,7 @@ public class FoodOrderService {
         Map<UUID, OrderView> byId = new LinkedHashMap<>();
         db.query("""
                 select id, restaurant_id, restaurant_name, status, payment_method, payment_status, currency,
-                       subtotal_minor, delivery_fee_minor, total_minor, address_label, address_text, comment, placed_at
+                       subtotal_minor, delivery_fee_minor, total_minor, address_label, address_text, comment, placed_at, vertical
                 from transactions.food_orders where user_id = ? and id = any (?)
                 """, rs -> {
                     UUID id = rs.getObject("id", UUID.class);
@@ -348,7 +349,7 @@ public class FoodOrderService {
                             rs.getLong("total_minor"), rs.getString("address_label"), rs.getString("address_text"),
                             rs.getString("comment"), rs.getObject("placed_at", OffsetDateTime.class),
                             items.getOrDefault(id, List.of()), timeline.getOrDefault(id, List.of()),
-                            "PLACED".equals(rs.getString("status")), true));
+                            "PLACED".equals(rs.getString("status")), true, rs.getString("vertical")));
                 }, user, array);
         return ids.stream().map(byId::get).filter(java.util.Objects::nonNull).toList();
     }

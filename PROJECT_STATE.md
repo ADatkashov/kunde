@@ -1,5 +1,9 @@
 # KUNDE project state
 
+## KUNDE Grocery MVP (DEV pilot) — 2026-11-15
+
+- Reuses the Food stack via `vertical=GROCERY` (Flyway V16, 4 synthetic stores, 45 products): same cart quote, idempotent orders, mock payment, simulated delivery, history; Flutter Home category «Продукты». Details/limits: [docs/product/food-mvp.md](docs/product/food-mvp.md#grocery-mvp-same-dev-pilot-same-gates). Verified locally: backend 233 tests pass on PostgreSQL 16, Flutter analyze clean and 155 tests pass. **Not verified:** DEV deploy of V16/Grocery, device run.
+
 ## KUNDE Food MVP (DEV pilot) — 2026-11-15
 
 - **Product-first priority (owner, 2026-11-15):** a working Food scenario before more infrastructure. Backend merged in PR #92 (`1b12038`): Flyway V15, `/api/v1/food` (restaurants, menus, search, server-side cart quote, idempotent orders, history, cancel before acceptance, repeat), synthetic demo seed (8 invented restaurants, 56 dishes, KZT), DEV-only mock payment (`TEST_CARD` / cash on delivery) and **simulated** fulfillment by elapsed time. `FoodGuard` forbids it outside dev/local/test; ADR-014 default is unchanged. Details and limits: [docs/product/food-mvp.md](docs/product/food-mvp.md).

@@ -1,0 +1,558 @@
+{
+ "restaurants": [
+  {
+   "slug": "market-alatau",
+   "name": "Маркет Алатау",
+   "cuisine": "Супермаркет",
+   "description": "Продукты на каждый день у дома. Вымышленный магазин для демонстрации.",
+   "emoji": "🛒",
+   "tone": "green",
+   "deliveryFee": 60000,
+   "minOrder": 400000,
+   "etaMin": 35,
+   "etaMax": 60,
+   "open": true,
+   "vertical": "GROCERY",
+   "sections": [
+    {
+     "name": "Молочные продукты",
+     "dishes": [
+      {
+       "name": "Молоко 1 л",
+       "description": "Пастеризованное",
+       "price": 62000,
+       "emoji": "🥛",
+       "tone": "blue",
+       "available": true,
+       "groups": [
+        {
+         "name": "Жирность",
+         "min": 1,
+         "max": 1,
+         "options": [
+          {
+           "name": "1,5%",
+           "delta": 0
+          },
+          {
+           "name": "2,5%",
+           "delta": 0
+          },
+          {
+           "name": "3,2%",
+           "delta": 5000
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "Кефир 0,9 л",
+       "description": "Классический",
+       "price": 54000,
+       "emoji": "🥛",
+       "tone": "blue",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Сыр Гауда 200 г",
+       "description": "Нарезка",
+       "price": 189000,
+       "emoji": "🧀",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Яйца С1 (10 шт)",
+       "description": "Столовые",
+       "price": 115000,
+       "emoji": "🥚",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Сливочное масло 180 г",
+       "description": "82,5%",
+       "price": 148000,
+       "emoji": "🧈",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      }
+     ]
+    },
+    {
+     "name": "Овощи и фрукты",
+     "dishes": [
+      {
+       "name": "Яблоки, 1 кг",
+       "description": "Сезонные",
+       "price": 89000,
+       "emoji": "🍎",
+       "tone": "red",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Бананы, 1 кг",
+       "description": "Спелые",
+       "price": 110000,
+       "emoji": "🍌",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Картофель, 1 кг",
+       "description": "Мытый",
+       "price": 32000,
+       "emoji": "🥔",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Помидоры, 1 кг",
+       "description": "Тепличные",
+       "price": 129000,
+       "emoji": "🍅",
+       "tone": "red",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Огурцы, 1 кг",
+       "description": "Тепличные",
+       "price": 105000,
+       "emoji": "🥒",
+       "tone": "green",
+       "available": true,
+       "groups": []
+      }
+     ]
+    },
+    {
+     "name": "Бакалея",
+     "dishes": [
+      {
+       "name": "Рис 900 г",
+       "description": "Длиннозёрный",
+       "price": 98000,
+       "emoji": "🍚",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Гречка 800 г",
+       "description": "Ядрица",
+       "price": 89000,
+       "emoji": "🌾",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Макароны 400 г",
+       "description": "Твёрдые сорта",
+       "price": 42000,
+       "emoji": "🍝",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Сахар 1 кг",
+       "description": "Белый",
+       "price": 56000,
+       "emoji": "🧂",
+       "tone": "blue",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Масло подсолнечное 1 л",
+       "description": "Рафинированное",
+       "price": 139000,
+       "emoji": "🫒",
+       "tone": "amber",
+       "available": false,
+       "groups": []
+      }
+     ]
+    },
+    {
+     "name": "Хлеб",
+     "dishes": [
+      {
+       "name": "Хлеб белый",
+       "description": "Нарезной, 500 г",
+       "price": 26000,
+       "emoji": "🍞",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Лепёшка",
+       "description": "Свежая",
+       "price": 30000,
+       "emoji": "🫓",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      }
+     ]
+    },
+    {
+     "name": "Напитки",
+     "dishes": [
+      {
+       "name": "Вода негазированная 1,5 л",
+       "description": "Питьевая",
+       "price": 25000,
+       "emoji": "💧",
+       "tone": "blue",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Сок яблочный 1 л",
+       "description": "Прямого отжима",
+       "price": 99000,
+       "emoji": "🧃",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Чай чёрный 100 г",
+       "description": "Листовой",
+       "price": 129000,
+       "emoji": "🍵",
+       "tone": "green",
+       "available": true,
+       "groups": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "sutki-24",
+   "name": "Сутки 24",
+   "cuisine": "Магазин у дома",
+   "description": "Всё необходимое ночью и днём. Вымышленный магазин для демонстрации.",
+   "emoji": "🏪",
+   "tone": "blue",
+   "deliveryFee": 50000,
+   "minOrder": 250000,
+   "etaMin": 20,
+   "etaMax": 35,
+   "open": true,
+   "vertical": "GROCERY",
+   "sections": [
+    {
+     "name": "Снеки и сладкое",
+     "dishes": [
+      {
+       "name": "Чипсы 150 г",
+       "description": "Сметана и зелень",
+       "price": 89000,
+       "emoji": "🥔",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Шоколад молочный 90 г",
+       "description": "Плитка",
+       "price": 69000,
+       "emoji": "🍫",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Печенье овсяное 300 г",
+       "description": "Домашнее",
+       "price": 76000,
+       "emoji": "🍪",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Орешки солёные 100 г",
+       "description": "Арахис",
+       "price": 59000,
+       "emoji": "🥜",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      }
+     ]
+    },
+    {
+     "name": "Напитки",
+     "dishes": [
+      {
+       "name": "Кола 1 л",
+       "description": "Газированный напиток",
+       "price": 69000,
+       "emoji": "🥤",
+       "tone": "red",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Энергетик 0,45 л",
+       "description": "Банка",
+       "price": 75000,
+       "emoji": "🥫",
+       "tone": "blue",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Холодный чай 0,5 л",
+       "description": "Лимон",
+       "price": 45000,
+       "emoji": "🧋",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      }
+     ]
+    },
+    {
+     "name": "Готовая еда",
+     "dishes": [
+      {
+       "name": "Сэндвич с курицей",
+       "description": "Свежий, 180 г",
+       "price": 119000,
+       "emoji": "🥪",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Салат Цезарь",
+       "description": "Контейнер 200 г",
+       "price": 149000,
+       "emoji": "🥗",
+       "tone": "green",
+       "available": true,
+       "groups": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "fermer-svezhest",
+   "name": "Фермерская свежесть",
+   "cuisine": "Фермерские продукты",
+   "description": "Овощи, мясо и молочное с местных ферм. Вымышленный магазин для демонстрации.",
+   "emoji": "🧺",
+   "tone": "amber",
+   "deliveryFee": 70000,
+   "minOrder": 500000,
+   "etaMin": 45,
+   "etaMax": 75,
+   "open": true,
+   "vertical": "GROCERY",
+   "sections": [
+    {
+     "name": "Мясо и птица",
+     "dishes": [
+      {
+       "name": "Курица охлаждённая, 1 кг",
+       "description": "Тушка",
+       "price": 219000,
+       "emoji": "🍗",
+       "tone": "red",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Говядина вырезка, 1 кг",
+       "description": "Охлаждённая",
+       "price": 599000,
+       "emoji": "🥩",
+       "tone": "red",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Фарш говяжий, 500 г",
+       "description": "Домашний",
+       "price": 245000,
+       "emoji": "🍖",
+       "tone": "red",
+       "available": true,
+       "groups": []
+      }
+     ]
+    },
+    {
+     "name": "Овощи и зелень",
+     "dishes": [
+      {
+       "name": "Морковь, 1 кг",
+       "description": "Фермерская",
+       "price": 42000,
+       "emoji": "🥕",
+       "tone": "orange",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Лук репчатый, 1 кг",
+       "description": "Сушёный",
+       "price": 30000,
+       "emoji": "🧅",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Зелень (укроп, петрушка)",
+       "description": "Пучок",
+       "price": 25000,
+       "emoji": "🌿",
+       "tone": "green",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Тыква, 1 кг",
+       "description": "Мускатная",
+       "price": 65000,
+       "emoji": "🎃",
+       "tone": "orange",
+       "available": true,
+       "groups": []
+      }
+     ]
+    },
+    {
+     "name": "Молочное",
+     "dishes": [
+      {
+       "name": "Творог 5%, 400 г",
+       "description": "Фермерский",
+       "price": 129000,
+       "emoji": "🥣",
+       "tone": "blue",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Сметана 20%, 400 г",
+       "description": "Домашняя",
+       "price": 99000,
+       "emoji": "🥛",
+       "tone": "blue",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Мёд 500 г",
+       "description": "Горный",
+       "price": 389000,
+       "emoji": "🍯",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "dom-i-byt",
+   "name": "Дом и быт",
+   "cuisine": "Хозяйственные товары",
+   "description": "Бытовая химия и товары для дома. Вымышленный магазин для демонстрации.",
+   "emoji": "🧴",
+   "tone": "blue",
+   "deliveryFee": 50000,
+   "minOrder": 300000,
+   "etaMin": 40,
+   "etaMax": 60,
+   "open": true,
+   "vertical": "GROCERY",
+   "sections": [
+    {
+     "name": "Для уборки",
+     "dishes": [
+      {
+       "name": "Средство для посуды 450 мл",
+       "description": "Лимон",
+       "price": 79000,
+       "emoji": "🧼",
+       "tone": "green",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Порошок стиральный 3 кг",
+       "description": "Универсальный",
+       "price": 349000,
+       "emoji": "🧺",
+       "tone": "blue",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Губки для посуды (5 шт)",
+       "description": "Мягкие",
+       "price": 39000,
+       "emoji": "🧽",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      }
+     ]
+    },
+    {
+     "name": "Бумажная продукция",
+     "dishes": [
+      {
+       "name": "Туалетная бумага (8 рулонов)",
+       "description": "Трёхслойная",
+       "price": 159000,
+       "emoji": "🧻",
+       "tone": "blue",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Бумажные полотенца (2 рулона)",
+       "description": "Универсальные",
+       "price": 89000,
+       "emoji": "🧻",
+       "tone": "blue",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Салфетки (100 шт)",
+       "description": "Белые",
+       "price": 29000,
+       "emoji": "🗒️",
+       "tone": "blue",
+       "available": true,
+       "groups": []
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

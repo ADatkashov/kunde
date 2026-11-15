@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class FoodCatalogController {
     public record RestaurantSummary(String id, String slug, String name, String cuisine, String description,
             String emoji, String tone, long deliveryFeeMinor, long minOrderMinor, int etaMinMinutes,
-            int etaMaxMinutes, boolean open, boolean synthetic) {}
+            int etaMaxMinutes, boolean open, boolean synthetic, String vertical) {}
 
     public record Option(String id, String name, long priceDeltaMinor) {}
 
@@ -53,7 +53,7 @@ public class FoodCatalogController {
 
     static final String RESTAURANT_SELECT = """
             select id, slug, name, cuisine, description, emoji, tone, delivery_fee_minor, min_order_minor,
-                   eta_min_minutes, eta_max_minutes, is_open, is_synthetic
+                   eta_min_minutes, eta_max_minutes, is_open, is_synthetic, vertical
             from marketplace.food_restaurants
             """;
 
@@ -61,16 +61,26 @@ public class FoodCatalogController {
         return new RestaurantSummary(rs.getString("id"), rs.getString("slug"), rs.getString("name"),
                 rs.getString("cuisine"), rs.getString("description"), rs.getString("emoji"), rs.getString("tone"),
                 rs.getLong("delivery_fee_minor"), rs.getLong("min_order_minor"), rs.getInt("eta_min_minutes"),
-                rs.getInt("eta_max_minutes"), rs.getBoolean("is_open"), rs.getBoolean("is_synthetic"));
+                rs.getInt("eta_max_minutes"), rs.getBoolean("is_open"), rs.getBoolean("is_synthetic"),
+                rs.getString("vertical"));
     }
 
+    private static String vertical(String value) {
+        if (!"FOOD".equals(value) && !"GROCERY".equals(value)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "VERTICAL_INVALID", "vertical must be FOOD or GROCERY");
+        }
+        return value;
+    }
+
+    /** Stores/restaurants of one vertical (default FOOD, so existing clients are unchanged). */
     @GetMapping("/restaurants")
     public ResponseEntity<List<RestaurantSummary>> restaurants(
+            @RequestParam(defaultValue = "FOOD") String vertical,
             @RequestParam(defaultValue = "50") @Min(1) @Max(100) int limit,
             @RequestParam(defaultValue = "0") @Min(0) @Max(100000) int offset) {
         List<RestaurantSummary> list = jdbc.query(RESTAURANT_SELECT
-                + " order by is_open desc, sort_order, name, id limit ? offset ?",
-                FoodCatalogController::mapRestaurant, limit, offset);
+                + " where vertical = ? order by is_open desc, sort_order, name, id limit ? offset ?",
+                FoodCatalogController::mapRestaurant, vertical(vertical), limit, offset);
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(list);
     }
 
@@ -129,24 +139,26 @@ public class FoodCatalogController {
 
     /** Case-insensitive substring search over restaurant names/cuisine and dish names/descriptions; LIKE wildcards are literal. */
     @GetMapping("/search")
-    public ResponseEntity<SearchResult> search(@RequestParam(defaultValue = "") @Size(max = 100) String q) {
+    public ResponseEntity<SearchResult> search(@RequestParam(defaultValue = "") @Size(max = 100) String q,
+            @RequestParam(defaultValue = "FOOD") String vertical) {
+        vertical(vertical);
         String term = q.strip();
         if (term.isEmpty()) {
             return ResponseEntity.ok(new SearchResult(List.of(), List.of()));
         }
         String contains = "%" + term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
         List<RestaurantSummary> restaurants = jdbc.query(RESTAURANT_SELECT
-                + " where name ilike ? or cuisine ilike ? order by is_open desc, sort_order, name limit 30",
-                FoodCatalogController::mapRestaurant, contains, contains);
+                + " where vertical = ? and (name ilike ? or cuisine ilike ?) order by is_open desc, sort_order, name limit 30",
+                FoodCatalogController::mapRestaurant, vertical, contains, contains);
         List<DishHit> dishes = jdbc.query("""
                 select d.id, d.name, d.description, d.price_minor, d.emoji, d.tone, d.available,
                        r.id as restaurant_id, r.name as restaurant_name
                 from marketplace.food_dishes d join marketplace.food_restaurants r on r.id = d.restaurant_id
-                where d.name ilike ? or d.description ilike ?
+                where r.vertical = ? and (d.name ilike ? or d.description ilike ?)
                 order by d.available desc, r.sort_order, d.name limit 50
                 """, (rs, row) -> new DishHit(rs.getString("id"), rs.getString("name"), rs.getString("description"),
                 rs.getLong("price_minor"), rs.getString("emoji"), rs.getString("tone"), rs.getBoolean("available"),
-                rs.getString("restaurant_id"), rs.getString("restaurant_name")), contains, contains);
+                rs.getString("restaurant_id"), rs.getString("restaurant_name")), vertical, contains, contains);
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(new SearchResult(restaurants, dishes));
     }
 }

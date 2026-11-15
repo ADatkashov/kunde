@@ -76,6 +76,18 @@ call("GET", "/api/v1/food/orders/" + order["id"] + "/repeat", token=token)
 call("POST", "/api/v1/food/orders", dict(order_req, paymentMethod="BITCOIN"), token=token,
      headers={"Idempotency-Key": "smoke-" + uuid.uuid4().hex}, expect=422)
 
+# Grocery vertical: same cart/order model, separate store list.
+stores = call("GET", "/api/v1/food/restaurants?vertical=GROCERY")
+assert len(stores) >= 3 and all(x["vertical"] == "GROCERY" for x in stores), "grocery stores missing"
+market = next(x for x in stores if x["slug"] == "market-alatau")
+market_menu = call("GET", "/api/v1/food/restaurants/" + market["id"])
+bread = next(d for sct in market_menu["sections"] for d in sct["dishes"] if d["name"] == "Хлеб белый")
+g_cart = {"restaurantId": market["id"], "items": [{"dishId": bread["id"], "quantity": 20, "optionIds": []}]}
+g_order = call("POST", "/api/v1/food/orders", dict(g_cart, addressId=address["id"], paymentMethod="CASH_ON_DELIVERY"),
+               token=token, headers={"Idempotency-Key": "smoke-" + uuid.uuid4().hex}, expect=201)
+assert g_order["vertical"] == "GROCERY", g_order
+call("POST", "/api/v1/food/orders/" + g_order["id"] + "/cancel", token=token, expect=[200, 409])
+
 # Re-open: the app restores its session from the stored refresh token and still sees the persisted order.
 token2 = call("POST", "/api/v1/auth/token/refresh", {"refreshToken": session["refreshToken"]})["accessToken"]
 history2 = call("GET", "/api/v1/food/orders", token=token2)

@@ -30,3 +30,9 @@ Local end-to-end check against a running backend: `python3 scripts/dev/food_smok
 ## Not included
 
 Real payments (D-03/D-04 production model), real restaurant/partner order handling and courier logistics, notifications, promo codes, ratings, photos, serviceability zones, restaurant-side order screens. These stay gated by their own decisions.
+
+## Grocery MVP (same DEV pilot, same gates)
+
+Grocery reuses the Food catalog, server-side cart pricing, idempotent orders, mock payment, simulated fulfillment and history instead of a second stack. Flyway V16 adds `vertical` (`FOOD` default, `GROCERY`) to `marketplace.food_restaurants` and `transactions.food_orders`: a store is a restaurant row, a product is a dish row (options optional, e.g. fat content). API: `GET /food/restaurants?vertical=GROCERY`, `GET /food/search?q=&vertical=GROCERY`; the default vertical stays `FOOD`, an unknown one is `400 VERTICAL_INVALID`. Orders carry `vertical`. Seed `food/grocery-demo-catalog.json`: 4 invented stores, 45 products in KZT (one deliberately out of stock). The app opens it from the Home category «Продукты» (only when the server enables the marketplace); the Orders tab lists food and grocery orders together.
+
+Not included: weights/units, substitutions, stock levels, barcodes, real store integrations, age-restricted goods rules, photos (emoji tiles), per-store delivery slots.
