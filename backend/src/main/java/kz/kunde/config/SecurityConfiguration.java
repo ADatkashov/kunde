@@ -134,7 +134,7 @@ public class SecurityConfiguration {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/food/restaurants",
-                                "/api/v1/food/restaurants/*", "/api/v1/food/search")
+                                "/api/v1/food/restaurants/*", "/api/v1/food/search", "/api/v1/food/dishes/*/alternatives")
                         .permitAll()
                         .requestMatchers("/api/v1/health", "/api/v1/capabilities", "/api/v1/categories", "/api/v1/categories/*/offerings", "/api/v1/offerings/*", "/api/v1/partners/*", "/api/v1/search", "/api/v1/search/offerings", "/api/v1/openapi.yaml",
                                 "/actuator/health", "/actuator/health/**")
@@ -167,7 +167,7 @@ public class SecurityConfiguration {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/food/restaurants",
-                                "/api/v1/food/restaurants/*", "/api/v1/food/search")
+                                "/api/v1/food/restaurants/*", "/api/v1/food/search", "/api/v1/food/dishes/*/alternatives")
                         .permitAll()
                         .requestMatchers("/api/v1/health", "/api/v1/capabilities", "/api/v1/categories", "/api/v1/categories/*/offerings", "/api/v1/offerings/*", "/api/v1/partners/*", "/api/v1/search", "/api/v1/search/offerings", "/api/v1/openapi.yaml",
                                 "/actuator/health", "/actuator/health/**")

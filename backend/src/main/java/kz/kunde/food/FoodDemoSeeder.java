@@ -38,6 +38,37 @@ public class FoodDemoSeeder implements ApplicationRunner {
         }
     }
 
+    /**
+     * Brings attributes added after a restaurant was first seeded (unit, initial stock) onto the existing synthetic rows:
+     * the unit is set when it differs, stock only when it has never been set. Prices, names and availability are untouched.
+     */
+    private void syncDishAttributes(JsonNode restaurant) {
+        for (JsonNode s : restaurant.get("sections")) {
+            for (JsonNode d : s.get("dishes")) {
+                if (d.has("legacyName")) {
+                    // The first DEV seed priced these per kg but named them "..., 1 кг" and counted pieces.
+                    db.update("""
+                            update marketplace.food_dishes set name = ?, description = ?, unit = ? where name = ? and restaurant_id =
+                                (select id from marketplace.food_restaurants where slug = ? and is_synthetic)
+                            """, d.get("name").asText(), d.get("description").asText(), d.get("unit").asText(),
+                            d.get("legacyName").asText(), restaurant.get("slug").asText());
+                }
+                if (d.has("unit")) {
+                    db.update("""
+                            update marketplace.food_dishes set unit = ? where name = ? and unit <> ? and restaurant_id =
+                                (select id from marketplace.food_restaurants where slug = ? and is_synthetic)
+                            """, d.get("unit").asText(), d.get("name").asText(), d.get("unit").asText(), restaurant.get("slug").asText());
+                }
+                if (d.has("stock")) {
+                    db.update("""
+                            update marketplace.food_dishes set stock_qty = ? where name = ? and stock_qty is null and restaurant_id =
+                                (select id from marketplace.food_restaurants where slug = ? and is_synthetic)
+                            """, d.get("stock").asInt(), d.get("name").asText(), restaurant.get("slug").asText());
+                }
+            }
+        }
+    }
+
     @Transactional
     public int seed(JsonNode catalog) {
         int inserted = 0;
@@ -53,7 +84,10 @@ public class FoodDemoSeeder implements ApplicationRunner {
                     r.get("tone").asText(), r.get("deliveryFee").asLong(), r.get("minOrder").asLong(),
                     r.get("etaMin").asInt(), r.get("etaMax").asInt(), r.get("open").asBoolean(), order,
                     r.has("vertical") ? r.get("vertical").asText() : "FOOD");
-            if (id == null) { continue; }
+            if (id == null) {
+                syncDishAttributes(r);
+                continue;
+            }
             inserted++;
             int sectionOrder = 0;
             for (JsonNode s : r.get("sections")) {
@@ -64,10 +98,12 @@ public class FoodDemoSeeder implements ApplicationRunner {
                 for (JsonNode d : s.get("dishes")) {
                     UUID dishId = db.queryForObject("""
                             insert into marketplace.food_dishes (restaurant_id, section_id, name, description, price_minor,
-                                emoji, tone, available, sort_order) values (?, ?, ?, ?, ?, ?, ?, ?, ?) returning id
+                                emoji, tone, available, sort_order, unit, stock_qty)
+                            values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning id
                             """, UUID.class, id, sectionId, d.get("name").asText(), d.get("description").asText(),
                             d.get("price").asLong(), d.get("emoji").asText(), d.get("tone").asText(),
-                            d.get("available").asBoolean(), dishOrder++);
+                            d.get("available").asBoolean(), dishOrder++, d.has("unit") ? d.get("unit").asText() : "PIECE",
+                            d.has("stock") ? d.get("stock").asInt() : null);
                     int groupOrder = 0;
                     for (JsonNode g : d.get("groups")) {
                         UUID groupId = db.queryForObject("""
