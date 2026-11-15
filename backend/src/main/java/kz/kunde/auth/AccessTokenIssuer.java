@@ -21,7 +21,8 @@ public class AccessTokenIssuer {
         this.key = keys.jwtKey();
     }
 
-    public String issue(UUID userId, UUID sessionId, Instant now) {
+    /** {@code scope} is derived server-side from database state (ADR-018), never from client input. */
+    public String issue(UUID userId, UUID sessionId, String scope, Instant now) {
         try {
             JWTClaimsSet claims = new JWTClaimsSet.Builder()
                     .issuer(props.issuer())
@@ -34,7 +35,7 @@ public class AccessTokenIssuer {
                     .claim("sid", sessionId.toString())
                     .claim("typ", "Bearer")
                     .claim("azp", props.clientId())
-                    .claim("scope", "kunde.consumer")
+                    .claim("scope", scope)
                     .build();
             SignedJWT jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims);
             jwt.sign(new MACSigner(key));
