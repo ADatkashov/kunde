@@ -26,6 +26,7 @@ class RestaurantScreen extends StatefulWidget {
 class _RestaurantScreenState extends State<RestaurantScreen> {
   late Future<RestaurantMenu> _menu;
   final _sectionKeys = <String, GlobalKey>{};
+  bool _inStockOnly = false;
 
   @override
   void initState() {
@@ -42,7 +43,11 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
       isScrollControlled: true,
       showDragHandle: true,
       useSafeArea: true,
-      builder: (_) => DishSheet(dish: dish, restaurantOpen: restaurant.open),
+      builder: (_) => DishSheet(
+          dish: dish,
+          restaurantOpen: restaurant.open,
+          api: widget.services.api,
+          grocery: restaurant.vertical == 'GROCERY'),
     );
     if (added == null || !mounted) return;
     if (cart.conflictsWith(restaurant.id)) {
@@ -136,7 +141,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                     )
                   else ...[
                     SliverToBoxAdapter(child: _chips(state.data!.sections)),
-                    for (final section in state.data!.sections) ...[
+                    for (final section in _visible(state.data!.sections)) ...[
                       SliverToBoxAdapter(
                         child: Padding(
                           key: _sectionKeys.putIfAbsent(
@@ -210,16 +215,33 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
     );
   }
 
+  /// Sections with only products that can be ordered when the in-stock filter is on.
+  List<MenuSection> _visible(List<MenuSection> sections) => !_inStockOnly
+      ? sections
+      : [
+          for (final s in sections)
+            if (s.dishes.any((d) => d.available && d.maxQuantity > 0))
+              MenuSection(id: s.id, name: s.name, dishes: [
+                for (final d in s.dishes)
+                  if (d.available && d.maxQuantity > 0) d
+              ]),
+        ];
+
   Widget _chips(List<MenuSection> sections) => SizedBox(
         height: 56,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-          itemCount: sections.length,
+          itemCount: sections.length + 1,
           separatorBuilder: (_, __) => const SizedBox(width: 8),
-          itemBuilder: (context, i) => ActionChip(
-              label: Text(sections[i].name),
-              onPressed: () => _scrollTo(sections[i].id)),
+          itemBuilder: (context, i) => i == 0
+              ? FilterChip(
+                  label: const Text('В наличии'),
+                  selected: _inStockOnly,
+                  onSelected: (v) => setState(() => _inStockOnly = v))
+              : ActionChip(
+                  label: Text(sections[i - 1].name),
+                  onPressed: () => _scrollTo(sections[i - 1].id)),
         ),
       );
 }
@@ -239,7 +261,7 @@ class _DishTile extends StatelessWidget {
     return Semantics(
       button: canOrder,
       label:
-          '${dish.name}, ${formatTenge(dish.priceMinor)}${dish.available ? '' : ', нет в наличии'}',
+          '${dish.name}, ${unitPriceLabel(dish.unit, dish.priceMinor)}${dish.available ? '' : ', нет в наличии'}',
       child: InkWell(
         onTap: canOrder ? onTap : null,
         child: Opacity(
@@ -262,8 +284,8 @@ class _DishTile extends StatelessWidget {
                       ],
                       const SizedBox(height: 8),
                       Text(
-                          dish.available
-                              ? formatTenge(dish.priceMinor)
+                          dish.available && dish.maxQuantity > 0
+                              ? unitPriceLabel(dish.unit, dish.priceMinor)
                               : 'Нет в наличии',
                           style: theme.textTheme.titleSmall
                               ?.copyWith(fontWeight: FontWeight.w700)),

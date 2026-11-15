@@ -146,7 +146,12 @@ class _OrderScreenState extends State<OrderScreen> {
           optionsText: chosen.map((o) => o.name).join(', '),
           unitPriceMinor:
               dish.priceMinor + chosen.fold(0, (s, o) => s + o.priceDeltaMinor),
-          quantity: item.quantity,
+          quantity: item.quantity
+              .clamp(1, dish.maxQuantity < 1 ? 1 : dish.maxQuantity),
+          unit: dish.unit,
+          maxQuantity: dish.maxQuantity,
+          substitution: item.substitution,
+          substituteDishIds: item.substituteDishIds,
         );
       }
     }
@@ -214,15 +219,20 @@ class _OrderScreenState extends State<OrderScreen> {
       const Divider(height: 32),
       Text('Состав заказа', style: theme.textTheme.titleLarge),
       const SizedBox(height: 8),
-      for (final l in order.items)
+      for (final l in order.items) _OrderLineTile(line: l),
+      if (order.hasChanges)
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 3),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Expanded(
-                child: Text(
-                    '${l.quantity} × ${l.name}${l.optionsText.isEmpty ? '' : '\n${l.optionsText}'}')),
-            Text(formatTenge(l.lineTotalMinor)),
-          ]),
+          padding: const EdgeInsets.only(top: 8),
+          child: Material(
+            color: theme.colorScheme.tertiaryContainer,
+            borderRadius: BorderRadius.circular(12),
+            child: const Padding(
+              padding: EdgeInsets.all(12),
+              child: Text(
+                  'Магазин изменил заказ: часть товаров заменена по вашему выбору '
+                  'или убрана, так как их не оказалось. Сумма пересчитана.'),
+            ),
+          ),
         ),
       const Divider(height: 24),
       _kv('Блюда', formatTenge(order.subtotalMinor)),
@@ -231,7 +241,13 @@ class _OrderScreenState extends State<OrderScreen> {
           order.deliveryFeeMinor == 0
               ? 'Бесплатно'
               : formatTenge(order.deliveryFeeMinor)),
-      _kv('Итого', formatTenge(order.totalMinor), bold: true),
+      if (order.finalTotalMinor != null &&
+          order.finalTotalMinor != order.totalMinor) ...[
+        _kv('Было', formatTenge(order.totalMinor)),
+        _kv('Итого с учётом изменений', formatTenge(order.finalTotalMinor!),
+            bold: true),
+      ] else
+        _kv('Итого', formatTenge(order.totalMinor), bold: true),
       const Divider(height: 32),
       ListTile(
           contentPadding: EdgeInsets.zero,
@@ -367,6 +383,59 @@ class _StatusTimeline extends StatelessWidget {
             ]),
           ),
         ),
+      ]),
+    );
+  }
+}
+
+/// One order line: quantity with unit, and what the store did with it once it collected the order.
+class _OrderLineTile extends StatelessWidget {
+  const _OrderLineTile({required this.line});
+
+  final OrderLine line;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final removed = line.fulfillmentStatus == 'REMOVED';
+    final replaced = line.fulfillmentStatus == 'SUBSTITUTED';
+    final qty = formatQuantity(line.unit, line.quantity);
+    final title = '$qty${line.unit == 'KG' ? ' ' : ' × '}${line.name}';
+    final strike = removed || replaced;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(
+              child: Text(
+                  '$title${line.optionsText.isEmpty ? '' : '\n${line.optionsText}'}',
+                  style: strike
+                      ? const TextStyle(decoration: TextDecoration.lineThrough)
+                      : null)),
+          Text(formatTenge(line.lineTotalMinor),
+              style: strike
+                  ? const TextStyle(decoration: TextDecoration.lineThrough)
+                  : null),
+        ]),
+        if (replaced)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Row(children: [
+              Icon(Icons.swap_horiz_rounded,
+                  size: 18, color: theme.colorScheme.primary),
+              const SizedBox(width: 6),
+              Expanded(
+                  child: Text('Заменено на: ${line.replacedByName}',
+                      style: TextStyle(color: theme.colorScheme.primary))),
+              Text(formatTenge(line.finalLineTotalMinor ?? 0)),
+            ]),
+          ),
+        if (removed)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text('Нет в наличии — убрано из заказа',
+                style: TextStyle(color: theme.colorScheme.error)),
+          ),
       ]),
     );
   }

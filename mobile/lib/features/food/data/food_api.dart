@@ -15,6 +15,9 @@ enum FoodFailure {
   closed,
   itemUnavailable,
   optionsInvalid,
+  stock,
+  quantity,
+  substitution,
   addressMissing,
   tooManyOrders,
   notCancellable,
@@ -38,6 +41,12 @@ class FoodException implements Exception {
           'Одно из блюд больше недоступно. Обновите корзину.',
         FoodFailure.optionsInvalid =>
           'Выбор опций блюда устарел. Удалите блюдо и добавьте снова.',
+        FoodFailure.stock =>
+          'Товара столько нет в наличии. Уменьшите количество.',
+        FoodFailure.quantity =>
+          'Недопустимое количество. Проверьте вес или число штук.',
+        FoodFailure.substitution =>
+          'Выбор замены устарел. Откройте товар и выберите замену заново.',
         FoodFailure.addressMissing => 'Выберите адрес доставки.',
         FoodFailure.tooManyOrders =>
           'Слишком много активных заказов. Дождитесь доставки.',
@@ -110,6 +119,9 @@ class FoodApi {
         'RESTAURANT_CLOSED' => FoodFailure.closed,
         'FOOD_ITEM_UNAVAILABLE' => FoodFailure.itemUnavailable,
         'FOOD_OPTIONS_INVALID' => FoodFailure.optionsInvalid,
+        'FOOD_STOCK_INSUFFICIENT' => FoodFailure.stock,
+        'FOOD_QUANTITY_INVALID' => FoodFailure.quantity,
+        'FOOD_SUBSTITUTION_INVALID' => FoodFailure.substitution,
         'ADDRESS_NOT_FOUND' => FoodFailure.addressMissing,
         'TOO_MANY_ACTIVE_ORDERS' => FoodFailure.tooManyOrders,
         'ORDER_NOT_CANCELLABLE' => FoodFailure.notCancellable,
@@ -140,6 +152,12 @@ class FoodApi {
   Future<RestaurantMenu> menu(String restaurantId) async =>
       RestaurantMenu.fromJson((await _public('food/restaurants/$restaurantId'))
           as Map<String, dynamic>);
+
+  /// Acceptable replacements for a product (same store and unit, available).
+  Future<List<DishHit>> alternatives(String dishId) async =>
+      ((await _public('food/dishes/$dishId/alternatives')) as List<dynamic>)
+          .map((e) => DishHit.fromJson(e as Map<String, dynamic>))
+          .toList(growable: false);
 
   Future<FoodSearchResult> search(String query,
           {String vertical = 'FOOD'}) async =>

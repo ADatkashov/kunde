@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.regex.Pattern;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -24,22 +23,30 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Food cart pricing (server-side quote), orders and the DEV mock fulfillment simulator. Prices are always
- * recomputed from the catalog on the server; the client only sends dish and option ids. Payment is mocked
- * (no card data is ever accepted) and delivery progress is simulated from elapsed time since placement.
+ * Food/Grocery cart pricing (server-side quote), orders and the DEV mock fulfillment simulator. Prices are always
+ * recomputed from the catalog on the server; the client only sends ids, quantities and substitution preferences.
+ * Quantities are pieces (unit PIECE) or grams (unit KG, price is per kg, step 100 g). Stock is reserved when the
+ * order is placed and returned on cancellation. Payment is mocked (no card data) and delivery is simulated.
  */
 @Service
 @ConditionalOnProperty(name = "app.food.enabled", havingValue = "true")
 public class FoodOrderService {
     public static final List<String> FLOW = List.of("PLACED", "ACCEPTED", "PREPARING", "ON_THE_WAY", "DELIVERED");
     private static final Set<String> TERMINAL = Set.of("DELIVERED", "CANCELLED");
-    private static final Pattern KEY = Pattern.compile("^[A-Za-z0-9_-]{16,64}$");
+    private static final java.util.regex.Pattern KEY = java.util.regex.Pattern.compile("^[A-Za-z0-9_-]{16,64}$");
     private static final int MAX_ACTIVE_ORDERS = 5;
-    private static final int MAX_TOTAL_QUANTITY = 50;
+    private static final int MAX_PIECES = 20;
+    private static final int MAX_GRAMS = 5000;
+    private static final int GRAM_STEP = 100;
+    private static final int MAX_TOTAL_PIECES = 50;
 
-    public record CartItem(@NotNull UUID dishId, @Min(1) @Max(20) int quantity,
-            @Size(max = 20) List<@NotNull UUID> optionIds) {
+    public record CartItem(@NotNull UUID dishId, @Min(1) @Max(10000) int quantity,
+            @Size(max = 20) List<@NotNull UUID> optionIds,
+            @jakarta.validation.constraints.Pattern(regexp = "NONE|ANY_SIMILAR|CHOSEN") String substitution,
+            @Size(max = 5) List<@NotNull UUID> substituteDishIds) {
         List<UUID> options() { return optionIds == null ? List.of() : optionIds; }
+        String policy() { return substitution == null ? "NONE" : substitution; }
+        List<UUID> substitutes() { return substituteDishIds == null ? List.of() : substituteDishIds; }
     }
 
     public record QuoteRequest(@NotNull UUID restaurantId, @NotEmpty @Size(max = 30) List<@Valid @NotNull CartItem> items) {}
@@ -47,24 +54,26 @@ public class FoodOrderService {
     public record OrderRequest(@NotNull UUID restaurantId, @NotEmpty @Size(max = 30) List<@Valid @NotNull CartItem> items,
             @NotNull UUID addressId, @NotNull String paymentMethod, @Size(max = 300) String comment) {}
 
-    public record QuoteLine(String dishId, String name, String optionsText, List<String> optionIds,
-            long unitPriceMinor, int quantity, long lineTotalMinor) {}
+    public record QuoteLine(String dishId, String name, String optionsText, List<String> optionIds, String unit,
+            long unitPriceMinor, int quantity, long lineTotalMinor, String substitution, List<String> substituteDishIds) {}
 
     public record Quote(String restaurantId, String restaurantName, List<QuoteLine> lines, long subtotalMinor,
             long deliveryFeeMinor, long totalMinor, String currency, long minOrderMinor) {}
 
     public record TimelineEntry(String status, OffsetDateTime at) {}
 
-    public record OrderLine(String dishId, String name, String optionsText, long unitPriceMinor, int quantity,
-            long lineTotalMinor) {}
+    public record OrderLine(String dishId, String name, String optionsText, String unit, long unitPriceMinor, int quantity,
+            long lineTotalMinor, String substitution, String fulfillmentStatus, String replacedByName,
+            Long finalLineTotalMinor) {}
 
     public record OrderView(String id, String restaurantId, String restaurantName, String status,
             String paymentMethod, String paymentStatus, String currency, long subtotalMinor, long deliveryFeeMinor,
             long totalMinor, String addressLabel, String addressText, String comment, OffsetDateTime placedAt,
             List<OrderLine> items, List<TimelineEntry> timeline, boolean cancellable, boolean simulated,
-            String vertical) {}
+            String vertical, Long finalTotalMinor, boolean hasChanges) {}
 
-    public record RepeatItem(String dishId, String name, int quantity, List<String> optionIds) {}
+    public record RepeatItem(String dishId, String name, int quantity, List<String> optionIds, String unit,
+            String substitution, List<String> substituteDishIds) {}
 
     public record RepeatResult(String restaurantId, String restaurantName, List<RepeatItem> items, List<String> skipped) {}
 
@@ -76,6 +85,10 @@ public class FoodOrderService {
     public FoodOrderService(JdbcTemplate db, FoodProperties props) {
         this.db = db;
         this.props = props;
+    }
+
+    static long lineTotal(String unit, long unitPrice, int quantity) {
+        return "KG".equals(unit) ? (unitPrice * quantity + 500) / 1000 : unitPrice * quantity;
     }
 
     // ---- pricing ---------------------------------------------------------------------------------
@@ -90,15 +103,17 @@ public class FoodOrderService {
         if (!(boolean) restaurant[3]) {
             throw new ApiException(HttpStatus.CONFLICT, "RESTAURANT_CLOSED", "Restaurant is closed");
         }
-        if (items.stream().mapToInt(CartItem::quantity).sum() > MAX_TOTAL_QUANTITY) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "FOOD_CART_TOO_LARGE", "Too many items in the cart");
-        }
         List<QuoteLine> lines = new ArrayList<>();
         long subtotal = 0;
+        int pieces = 0;
         for (CartItem item : items) {
             QuoteLine line = priceLine(restaurantId, item);
             lines.add(line);
             subtotal += line.lineTotalMinor();
+            if ("PIECE".equals(line.unit())) { pieces += line.quantity(); }
+        }
+        if (pieces > MAX_TOTAL_PIECES) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "FOOD_CART_TOO_LARGE", "Too many items in the cart");
         }
         long minOrder = (long) restaurant[2];
         if (subtotal < minOrder) {
@@ -111,12 +126,28 @@ public class FoodOrderService {
 
     private QuoteLine priceLine(UUID restaurantId, CartItem item) {
         var dish = db.query("""
-                select name, price_minor, available from marketplace.food_dishes where id = ? and restaurant_id = ?
-                """, (rs, row) -> new Object[] {rs.getString(1), rs.getLong(2), rs.getBoolean(3)},
+                select name, price_minor, available, unit, stock_qty, section_id
+                from marketplace.food_dishes where id = ? and restaurant_id = ?
+                """, (rs, row) -> new Object[] {rs.getString(1), rs.getLong(2), rs.getBoolean(3), rs.getString(4),
+                        rs.getObject(5, Integer.class), rs.getObject(6, UUID.class)},
                 item.dishId(), restaurantId).stream().findFirst().orElseThrow(() -> new ApiException(
                 HttpStatus.UNPROCESSABLE_ENTITY, "FOOD_ITEM_UNAVAILABLE", "A dish is not available"));
         if (!(boolean) dish[2]) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "FOOD_ITEM_UNAVAILABLE", "A dish is not available");
+        }
+        String unit = (String) dish[3];
+        int quantity = item.quantity();
+        if ("KG".equals(unit)) {
+            if (quantity < GRAM_STEP || quantity > MAX_GRAMS || quantity % GRAM_STEP != 0) {
+                throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "FOOD_QUANTITY_INVALID",
+                        "Weighed goods are ordered in 100 g steps from 100 g to 5 kg");
+            }
+        } else if (quantity > MAX_PIECES) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "FOOD_QUANTITY_INVALID", "At most 20 pieces per line");
+        }
+        Integer stock = (Integer) dish[4];
+        if (stock != null && quantity > stock) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "FOOD_STOCK_INSUFFICIENT", "Not enough in stock");
         }
         Map<UUID, Integer> chosenPerGroup = new HashMap<>();
         List<String> names = new ArrayList<>();
@@ -144,9 +175,29 @@ public class FoodOrderService {
                         "Option selection does not satisfy the dish rules");
             }
         }, item.dishId());
-        long unit = (long) dish[1] + delta;
+        String policy = item.policy();
+        List<String> substitutes = List.of();
+        if ("CHOSEN".equals(policy)) {
+            if (item.substitutes().isEmpty()) {
+                throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "FOOD_SUBSTITUTION_INVALID",
+                        "Choose at least one acceptable replacement");
+            }
+            for (UUID sub : item.substitutes()) {
+                Integer ok = db.queryForObject("""
+                        select count(*) from marketplace.food_dishes
+                        where id = ? and restaurant_id = ? and unit = ? and id <> ?
+                        """, Integer.class, sub, restaurantId, unit, item.dishId());
+                if (ok == null || ok == 0) {
+                    throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "FOOD_SUBSTITUTION_INVALID",
+                            "A replacement must be another product of the same store and unit");
+                }
+            }
+            substitutes = item.substitutes().stream().map(UUID::toString).toList();
+        }
+        long unitPrice = (long) dish[1] + delta;
         return new QuoteLine(item.dishId().toString(), (String) dish[0], String.join(", ", names),
-                item.options().stream().map(UUID::toString).toList(), unit, item.quantity(), unit * item.quantity());
+                item.options().stream().map(UUID::toString).toList(), unit, unitPrice, quantity,
+                lineTotal(unit, unitPrice, quantity), policy, substitutes);
     }
 
     // ---- orders ----------------------------------------------------------------------------------
@@ -190,6 +241,16 @@ public class FoodOrderService {
                 .stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY,
                         "ADDRESS_NOT_FOUND", "Choose one of your saved delivery addresses"));
         Quote quote = quote(request.restaurantId(), request.items());
+        // Reserve stock atomically per line; a concurrent order that took the last units makes this one fail cleanly.
+        for (QuoteLine line : quote.lines()) {
+            int reserved = db.update("""
+                    update marketplace.food_dishes set stock_qty = stock_qty - ?
+                    where id = ? and (stock_qty is null or stock_qty >= ?)
+                    """, line.quantity(), UUID.fromString(line.dishId()), line.quantity());
+            if (reserved == 0) {
+                throw new ApiException(HttpStatus.CONFLICT, "FOOD_STOCK_INSUFFICIENT", "Not enough in stock");
+            }
+        }
         String comment = request.comment() == null || request.comment().isBlank() ? null : request.comment().strip();
         UUID orderId = db.queryForObject("""
                 insert into transactions.food_orders (user_id, restaurant_id, restaurant_name, payment_method, payment_status,
@@ -197,13 +258,18 @@ public class FoodOrderService {
                 values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (select vertical from marketplace.food_restaurants where id = ?)) returning id
                 """, UUID.class, user, request.restaurantId(), quote.restaurantName(), payment,
                 "TEST_CARD".equals(payment) ? "TEST_PAID" : "PAY_ON_RECEIPT", quote.subtotalMinor(),
-                quote.deliveryFeeMinor(), quote.totalMinor(), address[0], address[1], comment, idempotencyKey, request.restaurantId());
+                quote.deliveryFeeMinor(), quote.totalMinor(), address[0], address[1], comment, idempotencyKey,
+                request.restaurantId());
+        int lineNo = 0;
         for (QuoteLine line : quote.lines()) {
             db.update("""
                     insert into transactions.food_order_items (order_id, dish_id, dish_name, options_text, option_ids,
-                        unit_price_minor, quantity, line_total_minor) values (?, ?, ?, ?, ?::uuid[], ?, ?, ?)
+                        unit_price_minor, quantity, line_total_minor, unit, substitution, substitute_dish_ids, line_no)
+                    values (?, ?, ?, ?, ?::uuid[], ?, ?, ?, ?, ?, ?::uuid[], ?)
                     """, orderId, UUID.fromString(line.dishId()), line.name(), line.optionsText(),
-                    "{" + String.join(",", line.optionIds()) + "}", line.unitPriceMinor(), line.quantity(), line.lineTotalMinor());
+                    "{" + String.join(",", line.optionIds()) + "}", line.unitPriceMinor(), line.quantity(),
+                    line.lineTotalMinor(), line.unit(), line.substitution(),
+                    "{" + String.join(",", line.substituteDishIds()) + "}", lineNo++);
         }
         db.update("insert into transactions.food_order_events (order_id, status) values (?, 'PLACED')", orderId);
         return new Placed(views(List.of(orderId), user).get(0), true);
@@ -240,7 +306,16 @@ public class FoodOrderService {
                     updated_at = now(), version = version + 1 where id = ?
                 """, orderId);
         db.update("insert into transactions.food_order_events (order_id, status) values (?, 'CANCELLED')", orderId);
+        restoreStock(orderId);
         return views(List.of(orderId), user).get(0);
+    }
+
+    private void restoreStock(UUID orderId) {
+        db.update("""
+                update marketplace.food_dishes d set stock_qty = d.stock_qty + i.quantity
+                from transactions.food_order_items i
+                where i.order_id = ? and i.dish_id = d.id and d.stock_qty is not null and i.fulfillment_status <> 'REMOVED'
+                """, orderId);
     }
 
     /** Items of a past order that can still be ordered; the client puts them in the cart and requests a fresh quote. */
@@ -252,29 +327,38 @@ public class FoodOrderService {
         List<RepeatItem> items = new ArrayList<>();
         List<String> skipped = new ArrayList<>();
         db.query("""
-                select i.dish_id, i.dish_name, i.quantity, i.option_ids, d.available
+                select i.dish_id, i.dish_name, i.quantity, i.option_ids, d.available, i.unit, i.substitution, i.substitute_dish_ids
                 from transactions.food_order_items i join marketplace.food_dishes d on d.id = i.dish_id
-                where i.order_id = ? order by i.id
+                where i.order_id = ? order by i.line_no, i.id
                 """, rs -> {
                     UUID dishId = rs.getObject("dish_id", UUID.class);
-                    List<UUID> options = new ArrayList<>();
-                    for (Object o : (Object[]) rs.getArray("option_ids").getArray()) { options.add((UUID) o); }
+                    List<UUID> options = uuids(rs.getArray("option_ids"));
+                    List<UUID> subs = uuids(rs.getArray("substitute_dish_ids"));
+                    String policy = rs.getString("substitution");
+                    int quantity = rs.getInt("quantity");
                     boolean ok = rs.getBoolean("available");
                     if (ok) {
                         try {
-                            priceLine((UUID) order[0], new CartItem(dishId, 1, options));
+                            priceLine((UUID) order[0], new CartItem(dishId, quantity, options, policy, subs));
                         } catch (ApiException invalid) {
                             ok = false;
                         }
                     }
                     if (ok) {
-                        items.add(new RepeatItem(dishId.toString(), rs.getString("dish_name"), rs.getInt("quantity"),
-                                options.stream().map(UUID::toString).toList()));
+                        items.add(new RepeatItem(dishId.toString(), rs.getString("dish_name"), quantity,
+                                options.stream().map(UUID::toString).toList(), rs.getString("unit"), policy,
+                                subs.stream().map(UUID::toString).toList()));
                     } else {
                         skipped.add(rs.getString("dish_name"));
                     }
                 }, orderId);
         return new RepeatResult(order[0].toString(), (String) order[1], items, skipped);
+    }
+
+    private static List<UUID> uuids(java.sql.Array array) throws java.sql.SQLException {
+        List<UUID> list = new ArrayList<>();
+        for (Object o : (Object[]) array.getArray()) { list.add((UUID) o); }
+        return list;
     }
 
     // ---- DEV mock fulfillment --------------------------------------------------------------------
@@ -306,6 +390,94 @@ public class FoodOrderService {
             db.update("update transactions.food_orders set status = ?, updated_at = now(), version = version + 1 where id = ?",
                     FLOW.get(target), orderId);
         }
+        // The store collects the order when it starts preparing: unavailable products are replaced or removed.
+        if (current < FLOW.indexOf("PREPARING") && target >= FLOW.indexOf("PREPARING")) {
+            resolveLines(orderId, ((OffsetDateTime) row[2]).plusSeconds(after[FLOW.indexOf("PREPARING")]));
+        }
+    }
+
+    /**
+     * Applies the customer's substitution choices to products that are no longer available. Never replaces without
+     * consent (policy NONE removes the line). A replacement is never charged above the original price per unit.
+     */
+    private void resolveLines(UUID orderId, OffsetDateTime at) {
+        record Line(UUID id, UUID dishId, UUID sectionId, boolean available, String unit, long unitPrice, int quantity,
+                long lineTotal, String policy, List<UUID> chosen) {}
+        List<Line> lines = new ArrayList<>();
+        db.query("""
+                select i.id, i.dish_id, d.section_id, d.available, i.unit, i.unit_price_minor, i.quantity, i.line_total_minor,
+                       i.substitution, i.substitute_dish_ids
+                from transactions.food_order_items i join marketplace.food_dishes d on d.id = i.dish_id
+                where i.order_id = ? and i.fulfillment_status = 'PENDING' order by i.id
+                """, rs -> {
+                    lines.add(new Line(rs.getObject(1, UUID.class), rs.getObject(2, UUID.class), rs.getObject(3, UUID.class),
+                            rs.getBoolean(4), rs.getString(5), rs.getLong(6), rs.getInt(7), rs.getLong(8), rs.getString(9),
+                            uuids(rs.getArray(10))));
+                }, orderId);
+        boolean changed = false;
+        boolean anyKept = false;
+        long finalSubtotal = 0;
+        for (Line l : lines) {
+            if (l.available()) {
+                db.update("update transactions.food_order_items set fulfillment_status = 'OK', final_unit_price_minor = ?, "
+                        + "final_line_total_minor = ? where id = ?", l.unitPrice(), l.lineTotal(), l.id());
+                finalSubtotal += l.lineTotal();
+                anyKept = true;
+                continue;
+            }
+            changed = true;
+            Object[] replacement = null;
+            if (!"NONE".equals(l.policy())) {
+                List<Object[]> candidates = new ArrayList<>();
+                if ("CHOSEN".equals(l.policy())) {
+                    for (UUID id : l.chosen()) {
+                        candidates.addAll(db.query("""
+                                select id, name, price_minor from marketplace.food_dishes
+                                where id = ? and available and unit = ? and (stock_qty is null or stock_qty >= ?)
+                                """, (rs, n) -> new Object[] {rs.getObject(1, UUID.class), rs.getString(2), rs.getLong(3)},
+                                id, l.unit(), l.quantity()));
+                    }
+                } else {
+                    candidates.addAll(db.query("""
+                            select id, name, price_minor from marketplace.food_dishes
+                            where section_id = ? and id <> ? and available and unit = ? and (stock_qty is null or stock_qty >= ?)
+                            order by price_minor, name limit 1
+                            """, (rs, n) -> new Object[] {rs.getObject(1, UUID.class), rs.getString(2), rs.getLong(3)},
+                            l.sectionId(), l.dishId(), l.unit(), l.quantity()));
+                }
+                replacement = candidates.stream().findFirst().orElse(null);
+            }
+            if (replacement == null) {
+                db.update("update transactions.food_order_items set fulfillment_status = 'REMOVED', final_unit_price_minor = 0, "
+                        + "final_line_total_minor = 0 where id = ?", l.id());
+            } else {
+                long unit = Math.min(l.unitPrice(), (long) replacement[2]);
+                long total = lineTotal(l.unit(), unit, l.quantity());
+                db.update("""
+                        update transactions.food_order_items set fulfillment_status = 'SUBSTITUTED', replaced_by_dish_id = ?,
+                            replaced_by_name = ?, final_unit_price_minor = ?, final_line_total_minor = ? where id = ?
+                        """, replacement[0], replacement[1], unit, total, l.id());
+                db.update("""
+                        update marketplace.food_dishes set stock_qty = stock_qty - ? where id = ? and stock_qty is not null
+                        """, l.quantity(), replacement[0]);
+                finalSubtotal += total;
+                anyKept = true;
+            }
+        }
+        if (lines.isEmpty()) { return; }
+        if (!anyKept) {
+            db.update("""
+                    update transactions.food_orders set status = 'CANCELLED', payment_status = 'VOIDED', has_changes = true,
+                        final_total_minor = 0, updated_at = now(), version = version + 1 where id = ?
+                    """, orderId);
+            db.update("insert into transactions.food_order_events (order_id, status, occurred_at) values (?, 'CANCELLED', ?)",
+                    orderId, at);
+            return;
+        }
+        db.update("""
+                update transactions.food_orders set has_changes = ?, final_total_minor = ? + delivery_fee_minor,
+                    updated_at = now() where id = ?
+                """, changed, finalSubtotal, orderId);
     }
 
     // ---- views -----------------------------------------------------------------------------------
@@ -323,12 +495,16 @@ public class FoodOrderService {
         UUID[] array = ids.toArray(UUID[]::new);
         Map<UUID, List<OrderLine>> items = new HashMap<>();
         db.query("""
-                select order_id, dish_id, dish_name, options_text, unit_price_minor, quantity, line_total_minor
-                from transactions.food_order_items where order_id = any (?) order by id
+                select order_id, dish_id, dish_name, options_text, unit, unit_price_minor, quantity, line_total_minor,
+                       substitution, fulfillment_status, replaced_by_name, final_line_total_minor
+                from transactions.food_order_items where order_id = any (?) order by line_no, id
                 """, rs -> {
                     items.computeIfAbsent(rs.getObject("order_id", UUID.class), k -> new ArrayList<>()).add(new OrderLine(
                             rs.getString("dish_id"), rs.getString("dish_name"), rs.getString("options_text"),
-                            rs.getLong("unit_price_minor"), rs.getInt("quantity"), rs.getLong("line_total_minor")));
+                            rs.getString("unit"), rs.getLong("unit_price_minor"), rs.getInt("quantity"),
+                            rs.getLong("line_total_minor"), rs.getString("substitution"),
+                            rs.getString("fulfillment_status"), rs.getString("replaced_by_name"),
+                            rs.getObject("final_line_total_minor", Long.class)));
                 }, (Object) array);
         Map<UUID, List<TimelineEntry>> timeline = new HashMap<>();
         db.query("select order_id, status, occurred_at from transactions.food_order_events where order_id = any (?) order by id",
@@ -339,7 +515,8 @@ public class FoodOrderService {
         Map<UUID, OrderView> byId = new LinkedHashMap<>();
         db.query("""
                 select id, restaurant_id, restaurant_name, status, payment_method, payment_status, currency,
-                       subtotal_minor, delivery_fee_minor, total_minor, address_label, address_text, comment, placed_at, vertical
+                       subtotal_minor, delivery_fee_minor, total_minor, address_label, address_text, comment, placed_at, vertical,
+                       final_total_minor, has_changes
                 from transactions.food_orders where user_id = ? and id = any (?)
                 """, rs -> {
                     UUID id = rs.getObject("id", UUID.class);
@@ -349,7 +526,8 @@ public class FoodOrderService {
                             rs.getLong("total_minor"), rs.getString("address_label"), rs.getString("address_text"),
                             rs.getString("comment"), rs.getObject("placed_at", OffsetDateTime.class),
                             items.getOrDefault(id, List.of()), timeline.getOrDefault(id, List.of()),
-                            "PLACED".equals(rs.getString("status")), true, rs.getString("vertical")));
+                            "PLACED".equals(rs.getString("status")), true, rs.getString("vertical"),
+                            rs.getObject("final_total_minor", Long.class), rs.getBoolean("has_changes")));
                 }, user, array);
         return ids.stream().map(byId::get).filter(java.util.Objects::nonNull).toList();
     }

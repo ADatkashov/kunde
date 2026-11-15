@@ -35,4 +35,17 @@ Real payments (D-03/D-04 production model), real restaurant/partner order handli
 
 Grocery reuses the Food catalog, server-side cart pricing, idempotent orders, mock payment, simulated fulfillment and history instead of a second stack. Flyway V16 adds `vertical` (`FOOD` default, `GROCERY`) to `marketplace.food_restaurants` and `transactions.food_orders`: a store is a restaurant row, a product is a dish row (options optional, e.g. fat content). API: `GET /food/restaurants?vertical=GROCERY`, `GET /food/search?q=&vertical=GROCERY`; the default vertical stays `FOOD`, an unknown one is `400 VERTICAL_INVALID`. Orders carry `vertical`. Seed `food/grocery-demo-catalog.json`: 4 invented stores, 45 products in KZT (one deliberately out of stock). The app opens it from the Home category «Продукты» (only when the server enables the marketplace); the Orders tab lists food and grocery orders together.
 
-Not included: weights/units, substitutions, stock levels, barcodes, real store integrations, age-restricted goods rules, photos (emoji tiles), per-store delivery slots.
+### Grocery completion (Flyway V17)
+
+- **Weighed goods:** dish `unit` is `PIECE` or `KG`. For `KG` the price is per kg and quantities are **grams** in 100 g steps from 100 g to 5 kg (`FOOD_QUANTITY_INVALID` otherwise); line total = `round(price * grams / 1000)`, enforced by a DB check as well as the server. The app shows `1,5 кг` / `/ кг` prices and steps by 100 g.
+- **Stock:** `stock_qty` (pieces or grams, NULL = not tracked). The quote refuses more than the stock (`FOOD_STOCK_INSUFFICIENT`); placing an order reserves stock with a conditional update (a race for the last units fails cleanly with 409); cancellation returns it. The catalog exposes `maxQuantity`/`stockQty`, the app shows «Осталось N» and caps the stepper.
+- **Substitutions (customer consent only):** per line `NONE` (default), `ANY_SIMILAR` or `CHOSEN` (up to 5 products of the same store and unit; `GET /food/dishes/{id}/alternatives` lists candidates). When the simulated store starts preparing, a product that is no longer available is replaced only if the customer allowed it, otherwise the line is removed; a replacement is never charged above the original unit price. Order lines carry `fulfillmentStatus` (`OK`/`SUBSTITUTED`/`REMOVED`), `replacedByName`, `finalLineTotalMinor`; the order carries `hasChanges` and `finalTotalMinor`; an order whose every line is removed is cancelled with the payment voided. The app shows replaced/removed lines and «Итого с учётом изменений».
+- **Photos:** `image_url` (HTTPS only, nullable) exists on stores and products and the app renders it with an emoji-tile fallback. **No photos are bundled or seeded**: licensed photo assets must be supplied by the owner; until then tiles are illustrations.
+- **Catalog UX:** restaurant/store filters (open now, cuisine, sort by delivery time/fee), «В наличии» filter inside a menu, skeleton loading.
+- Seed sync: existing synthetic DEV rows get units/initial stock (and the old `"..., 1 кг"` names are normalized) without touching prices or availability.
+
+Not included: barcodes, age-restricted goods rules, per-store delivery slots, real store integrations, partial refunds beyond the mock payment status, KK/EN texts for Food screens (Russian only), real photos.
+
+## Manual verification status
+
+Owner report (2026-11-15): the Release APK from run 43734913344 (`58cf20a`, Food + Grocery MVP) was installed on a real Samsung phone, checked and "everything works". That is the only manual confirmation; no detailed scenario list, TalkBack or other devices were reported. V17 features (weighed goods, stock, substitutions, filters) are **not yet** manually verified.

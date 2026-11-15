@@ -287,4 +287,130 @@ class FoodApiIntegrationTest {
         send("POST", "/api/v1/food/cart/quote", token, order(store, dishId("market-alatau", "Масло подсолнечное 1 л"), "", 5, address, "TEST_CARD"), null)
                 .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("FOOD_ITEM_UNAVAILABLE"));
     }
+
+    private String line(String dish, int quantity, String policy, String substitutes) {
+        return "{\"dishId\":\"" + dish + "\",\"quantity\":" + quantity + ",\"optionIds\":[],\"substitution\":\"" + policy
+                + "\",\"substituteDishIds\":[" + substitutes + "]}";
+    }
+
+    private String cart(String store, String address, String payment, String... lines) {
+        return "{\"restaurantId\":\"" + store + "\",\"items\":[" + String.join(",", lines) + "],\"addressId\":\"" + address
+                + "\",\"paymentMethod\":\"" + payment + "\"}";
+    }
+
+    private int stock(String store, String name) {
+        return db.queryForObject("select d.stock_qty from marketplace.food_dishes d join marketplace.food_restaurants r on r.id = d.restaurant_id "
+                + "where r.slug = ? and d.name = ?", Integer.class, store, name);
+    }
+
+    @Test
+    void weighedGoodsArePricedPerKilogramInGramsAndStockIsReservedAndReturned() throws Exception {
+        String token = login("+77000000201");
+        String address = address(token);
+        String farm = restaurantId("fermer-svezhest");
+        String beef = dishId("fermer-svezhest", "Говядина вырезка");
+        String catalog = body(send("GET", "/api/v1/food/restaurants/" + farm, null, null, null).andExpect(status().isOk()));
+        List<?> beefDish = JsonPath.read(catalog, "$.sections[*].dishes[?(@.name=='Говядина вырезка')]");
+        assertThat(((java.util.Map<?, ?>) beefDish.get(0)).get("unit")).isEqualTo("KG");
+        assertThat(((java.util.Map<?, ?>) beefDish.get(0)).get("maxQuantity")).isEqualTo(3000);
+
+        // 1.5 kg at 5990 KZT/kg = 8985 KZT.
+        String quote = body(send("POST", "/api/v1/food/cart/quote", token, cart(farm, address, "TEST_CARD", line(beef, 1500, "NONE", "")), null)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.lines[0].unit").value("KG")));
+        assertThat((Integer) JsonPath.read(quote, "$.subtotalMinor")).isEqualTo(898_500);
+        for (int bad : new int[] {50, 150, 6000}) {
+            send("POST", "/api/v1/food/cart/quote", token, cart(farm, address, "TEST_CARD", line(beef, bad, "NONE", "")), null)
+                    .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("FOOD_QUANTITY_INVALID"));
+        }
+        send("POST", "/api/v1/food/cart/quote", token, cart(farm, address, "TEST_CARD", line(beef, 3100, "NONE", "")), null)
+                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("FOOD_STOCK_INSUFFICIENT"));
+
+        String created = body(send("POST", "/api/v1/food/orders", token, cart(farm, address, "TEST_CARD", line(beef, 2000, "NONE", "")),
+                "order-key-0000000030").andExpect(status().isCreated()));
+        assertThat((Integer) JsonPath.read(created, "$.items[0].lineTotalMinor")).isEqualTo(1_198_000);
+        assertThat(stock("fermer-svezhest", "Говядина вырезка")).isEqualTo(1000);
+        send("POST", "/api/v1/food/cart/quote", token, cart(farm, address, "TEST_CARD", line(beef, 1100, "NONE", "")), null)
+                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("FOOD_STOCK_INSUFFICIENT"));
+        send("POST", "/api/v1/food/orders/" + JsonPath.read(created, "$.id") + "/cancel", token, null, null).andExpect(status().isOk());
+        assertThat(stock("fermer-svezhest", "Говядина вырезка")).isEqualTo(3000);
+    }
+
+    @Test
+    void pieceStockLimitsTheCartAndTheLastUnitsCannotBeOrderedTwice() throws Exception {
+        String token = login("+77000000201");
+        String address = address(token);
+        String store = restaurantId("market-alatau");
+        String cheese = dishId("market-alatau", "Сыр Гауда 200 г");
+        send("POST", "/api/v1/food/cart/quote", token, cart(store, address, "TEST_CARD", line(cheese, 5, "NONE", "")), null)
+                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("FOOD_STOCK_INSUFFICIENT"));
+        send("POST", "/api/v1/food/orders", token, cart(store, address, "TEST_CARD", line(cheese, 4, "NONE", "")),
+                "order-key-0000000031").andExpect(status().isCreated());
+        assertThat(stock("market-alatau", "Сыр Гауда 200 г")).isZero();
+        send("POST", "/api/v1/food/orders", token, cart(store, address, "TEST_CARD", line(cheese, 1, "NONE", "")),
+                "order-key-0000000032").andExpect(status().isUnprocessableEntity());
+    }
+
+    @Test
+    void substitutionNeedsConsentAndOnlyAcceptsSameStoreAndUnit() throws Exception {
+        String token = login("+77000000201");
+        String address = address(token);
+        String store = restaurantId("market-alatau");
+        String kefir = dishId("market-alatau", "Кефир 0,9 л");
+        String milk = dishId("market-alatau", "Молоко 1 л");
+        String alternatives = body(send("GET", "/api/v1/food/dishes/" + kefir + "/alternatives", null, null, null).andExpect(status().isOk()));
+        assertThat((List<?>) JsonPath.read(alternatives, "$[?(@.id=='" + kefir + "')]")).isEmpty();
+        assertThat((List<?>) JsonPath.read(alternatives, "$[?(@.name=='Молоко 1 л')]")).hasSize(1);
+        assertThat((List<?>) JsonPath.read(alternatives, "$[?(@.name=='Масло подсолнечное 1 л')]")).isEmpty(); // unavailable
+
+        send("POST", "/api/v1/food/cart/quote", token, cart(store, address, "TEST_CARD", line(kefir, 8, "CHOSEN", "")), null)
+                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("FOOD_SUBSTITUTION_INVALID"));
+        String foreign = dishId("burger-tau", "Классик");
+        send("POST", "/api/v1/food/cart/quote", token, cart(store, address, "TEST_CARD", line(kefir, 8, "CHOSEN", "\"" + foreign + "\"")), null)
+                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("FOOD_SUBSTITUTION_INVALID"));
+        send("POST", "/api/v1/food/cart/quote", token, cart(store, address, "TEST_CARD", line(kefir, 8, "SWAP", "")), null)
+                .andExpect(status().isBadRequest());
+        send("POST", "/api/v1/food/cart/quote", token, cart(store, address, "TEST_CARD", line(kefir, 8, "CHOSEN", "\"" + milk + "\"")), null)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.lines[0].substitution").value("CHOSEN"));
+    }
+
+    @Test
+    void unavailableProductsAreReplacedOnlyWithConsentAndRemovedOtherwise() throws Exception {
+        String token = login("+77000000201");
+        String address = address(token);
+        String store = restaurantId("market-alatau");
+        String kefir = dishId("market-alatau", "Кефир 0,9 л");
+        String milk = dishId("market-alatau", "Молоко 1 л");
+        String bread = dishId("market-alatau", "Хлеб белый");
+        // Kefir x8 with the customer's chosen replacement, plus bread x20 that stays available.
+        String chosen = body(send("POST", "/api/v1/food/orders", token, cart(store, address, "TEST_CARD",
+                line(kefir, 8, "CHOSEN", "\"" + milk + "\""), line(bread, 20, "NONE", "")), "order-key-0000000033")
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.hasChanges").value(false)));
+        String chosenId = JsonPath.read(chosen, "$.id");
+        String declined = body(send("POST", "/api/v1/food/orders", token, cart(store, address, "CASH_ON_DELIVERY",
+                line(kefir, 8, "NONE", ""), line(bread, 20, "NONE", "")), "order-key-0000000034").andExpect(status().isCreated()));
+        String declinedId = JsonPath.read(declined, "$.id");
+
+        db.update("update marketplace.food_dishes set available = false where id = ?::uuid", kefir);
+        db.update("update transactions.food_orders set placed_at = now() - interval '60 seconds' where id in (?::uuid, ?::uuid)", chosenId, declinedId);
+
+        // Replacement was agreed: milk costs more per unit (620 vs 540), so the customer is charged the original price.
+        String replaced = body(send("GET", "/api/v1/food/orders/" + chosenId, token, null, null).andExpect(status().isOk())
+                .andExpect(jsonPath("$.hasChanges").value(true)).andExpect(jsonPath("$.status").value("PREPARING")));
+        assertThat((String) JsonPath.read(replaced, "$.items[0].fulfillmentStatus")).isEqualTo("SUBSTITUTED");
+        assertThat((String) JsonPath.read(replaced, "$.items[0].replacedByName")).isEqualTo("Молоко 1 л");
+        assertThat((Integer) JsonPath.read(replaced, "$.items[0].finalLineTotalMinor")).isEqualTo(8 * 54_000);
+        assertThat((String) JsonPath.read(replaced, "$.items[1].fulfillmentStatus")).isEqualTo("OK");
+        assertThat((Integer) JsonPath.read(replaced, "$.finalTotalMinor")).isEqualTo((Integer) JsonPath.read(replaced, "$.totalMinor"));
+
+        // No consent: the line is removed, never swapped, and the total shrinks.
+        String removed = body(send("GET", "/api/v1/food/orders/" + declinedId, token, null, null).andExpect(status().isOk()));
+        assertThat((String) JsonPath.read(removed, "$.items[0].fulfillmentStatus")).isEqualTo("REMOVED");
+        assertThat((String) JsonPath.read(removed, "$.items[0].replacedByName")).isNull();
+        assertThat((Boolean) JsonPath.read(removed, "$.hasChanges")).isTrue();
+        assertThat((Integer) JsonPath.read(removed, "$.finalTotalMinor")).isEqualTo(520_000 + 60_000);
+
+        // A product that is unavailable now cannot be ordered at all.
+        send("POST", "/api/v1/food/orders", token, cart(store, address, "TEST_CARD", line(kefir, 8, "NONE", "")), "order-key-0000000035")
+                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("FOOD_ITEM_UNAVAILABLE"));
+    }
 }

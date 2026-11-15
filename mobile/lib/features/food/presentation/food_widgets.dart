@@ -4,36 +4,104 @@ import '../data/food_models.dart';
 import '../food_services.dart';
 import 'cart_screen.dart';
 
-/// Rounded tile with a large emoji on a soft tone: the DEV "photo" of dishes and restaurants.
+/// Rounded tile for dishes and restaurants. Shows [imageUrl] when the catalog has a photo (HTTPS only), otherwise
+/// a tone gradient with a large emoji, so a missing or failing image never breaks the layout.
 class EmojiTile extends StatelessWidget {
   const EmojiTile(
       {required this.emoji,
       required this.tone,
       this.size = 64,
       this.radius = 16,
+      this.imageUrl,
       super.key});
 
   final String emoji;
   final String tone;
   final double size;
   final double radius;
+  final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
     final colors = toneColors(tone);
-    return ExcludeSemantics(
-      child: Container(
-        width: size,
-        height: size,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: colors.background,
-          borderRadius: BorderRadius.circular(radius),
+    final fallback = Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.white.withValues(alpha: 0.85), colors.background],
         ),
-        child: Text(emoji, style: TextStyle(fontSize: size * 0.5)),
+        borderRadius: BorderRadius.circular(radius),
       ),
+      child: Text(emoji, style: TextStyle(fontSize: size * 0.5)),
+    );
+    final url = imageUrl;
+    return ExcludeSemantics(
+      child: url != null && url.startsWith('https://')
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(radius),
+              child: Image.network(url,
+                  width: size,
+                  height: size,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => fallback,
+                  loadingBuilder: (context, child, progress) =>
+                      progress == null ? child : fallback),
+            )
+          : fallback,
     );
   }
+}
+
+/// Grey shimmer-free placeholder blocks shown while lists load (skeleton loading).
+class SkeletonBox extends StatelessWidget {
+  const SkeletonBox(
+      {this.height = 16, this.width, this.radius = 12, super.key});
+
+  final double height;
+  final double? width;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        height: height,
+        width: width,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(radius),
+        ),
+      );
+}
+
+/// Skeleton cards for restaurant / store lists.
+class RestaurantListSkeleton extends StatelessWidget {
+  const RestaurantListSkeleton({this.count = 4, super.key});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        label: 'Загрузка',
+        child: ListView.separated(
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+          itemCount: count,
+          separatorBuilder: (_, __) => const SizedBox(height: 14),
+          itemBuilder: (_, __) => const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SkeletonBox(height: 104, radius: 20),
+              SizedBox(height: 10),
+              SkeletonBox(height: 18, width: 180),
+              SizedBox(height: 8),
+              SkeletonBox(height: 14, width: 120),
+            ],
+          ),
+        ),
+      );
 }
 
 class DemoBadge extends StatelessWidget {

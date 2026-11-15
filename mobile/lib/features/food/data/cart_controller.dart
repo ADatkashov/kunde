@@ -4,6 +4,8 @@ import 'food_models.dart';
 
 /// One cart line: a dish with a fixed option selection. Prices here are only a preview; the server
 /// recomputes everything in `cart/quote` and at checkout.
+///
+/// [quantity] is pieces, or grams for weighed goods ([unit] `KG`, step 100 g).
 class CartLine {
   CartLine({
     required this.dishId,
@@ -14,6 +16,10 @@ class CartLine {
     required this.optionsText,
     required this.unitPriceMinor,
     required this.quantity,
+    this.unit = 'PIECE',
+    this.maxQuantity = 20,
+    this.substitution = 'NONE',
+    this.substituteDishIds = const [],
   });
 
   final String dishId;
@@ -24,16 +30,32 @@ class CartLine {
   final String optionsText;
   final int unitPriceMinor;
   int quantity;
+  final String unit;
 
-  int get totalMinor => unitPriceMinor * quantity;
+  /// Per-line limit (stock-aware) known when the line was added.
+  final int maxQuantity;
 
-  String get key => '$dishId|${(List.of(optionIds)..sort()).join(',')}';
+  /// `NONE` (never replace), `ANY_SIMILAR` or `CHOSEN` (only [substituteDishIds]).
+  final String substitution;
+  final List<String> substituteDishIds;
 
-  Map<String, dynamic> toRequest() =>
-      {'dishId': dishId, 'quantity': quantity, 'optionIds': optionIds};
+  bool get weighed => unit == 'KG';
+  int get step => weighed ? 100 : 1;
+  int get totalMinor => lineTotalMinor(unit, unitPriceMinor, quantity);
+
+  String get key =>
+      '$dishId|${(List.of(optionIds)..sort()).join(',')}|$substitution|${(List.of(substituteDishIds)..sort()).join(',')}';
+
+  Map<String, dynamic> toRequest() => {
+        'dishId': dishId,
+        'quantity': quantity,
+        'optionIds': optionIds,
+        'substitution': substitution,
+        'substituteDishIds': substituteDishIds,
+      };
 }
 
-/// The in-app cart. A cart holds dishes of exactly one restaurant.
+/// The in-app cart. A cart holds products of exactly one restaurant or store.
 class CartController extends ChangeNotifier {
   static const maxLineQuantity = 20;
 
@@ -43,7 +65,10 @@ class CartController extends ChangeNotifier {
   Restaurant? get restaurant => _restaurant;
   List<CartLine> get lines => List.unmodifiable(_lines);
   bool get isEmpty => _lines.isEmpty;
-  int get itemCount => _lines.fold(0, (sum, line) => sum + line.quantity);
+
+  /// Badge count: one per piece, one per weighed line.
+  int get itemCount =>
+      _lines.fold(0, (sum, line) => sum + (line.weighed ? 1 : line.quantity));
   int get previewSubtotalMinor =>
       _lines.fold(0, (sum, line) => sum + line.totalMinor);
 
@@ -60,20 +85,21 @@ class CartController extends ChangeNotifier {
     _restaurant = restaurant;
     final existing = _lines.where((l) => l.key == line.key).firstOrNull;
     if (existing != null) {
-      existing.quantity =
-          (existing.quantity + line.quantity).clamp(1, maxLineQuantity);
+      existing.quantity = (existing.quantity + line.quantity)
+          .clamp(existing.step, existing.maxQuantity);
     } else {
       _lines.add(line);
     }
     notifyListeners();
   }
 
+  /// Sets a line quantity (pieces or grams); zero or less removes it, more than the limit is capped.
   void setQuantity(CartLine line, int quantity) {
     if (quantity <= 0) {
       _lines.remove(line);
       if (_lines.isEmpty) _restaurant = null;
     } else {
-      line.quantity = quantity.clamp(1, maxLineQuantity);
+      line.quantity = quantity.clamp(line.step, line.maxQuantity);
     }
     notifyListeners();
   }

@@ -62,7 +62,8 @@
        "emoji": "🧀",
        "tone": "amber",
        "available": true,
-       "groups": []
+       "groups": [],
+       "stock": 4
       },
       {
        "name": "Яйца С1 (10 шт)",
@@ -71,7 +72,8 @@
        "emoji": "🥚",
        "tone": "amber",
        "available": true,
-       "groups": []
+       "groups": [],
+       "stock": 6
       },
       {
        "name": "Сливочное масло 180 г",
@@ -88,49 +90,59 @@
      "name": "Овощи и фрукты",
      "dishes": [
       {
-       "name": "Яблоки, 1 кг",
-       "description": "Сезонные",
+       "name": "Яблоки",
+       "description": "Сезонные. Цена за 1 кг",
        "price": 89000,
        "emoji": "🍎",
        "tone": "red",
        "available": true,
-       "groups": []
+       "groups": [],
+       "unit": "KG",
+       "legacyName": "Яблоки, 1 кг"
       },
       {
-       "name": "Бананы, 1 кг",
-       "description": "Спелые",
+       "name": "Бананы",
+       "description": "Спелые. Цена за 1 кг",
        "price": 110000,
        "emoji": "🍌",
        "tone": "amber",
        "available": true,
-       "groups": []
+       "groups": [],
+       "unit": "KG",
+       "legacyName": "Бананы, 1 кг"
       },
       {
-       "name": "Картофель, 1 кг",
-       "description": "Мытый",
+       "name": "Картофель",
+       "description": "Мытый. Цена за 1 кг",
        "price": 32000,
        "emoji": "🥔",
        "tone": "amber",
        "available": true,
-       "groups": []
+       "groups": [],
+       "unit": "KG",
+       "legacyName": "Картофель, 1 кг"
       },
       {
-       "name": "Помидоры, 1 кг",
-       "description": "Тепличные",
+       "name": "Помидоры",
+       "description": "Тепличные. Цена за 1 кг",
        "price": 129000,
        "emoji": "🍅",
        "tone": "red",
        "available": true,
-       "groups": []
+       "groups": [],
+       "unit": "KG",
+       "legacyName": "Помидоры, 1 кг"
       },
       {
-       "name": "Огурцы, 1 кг",
-       "description": "Тепличные",
+       "name": "Огурцы",
+       "description": "Тепличные. Цена за 1 кг",
        "price": 105000,
        "emoji": "🥒",
        "tone": "green",
        "available": true,
-       "groups": []
+       "groups": [],
+       "unit": "KG",
+       "legacyName": "Огурцы, 1 кг"
       }
      ]
     },
@@ -371,22 +383,27 @@
      "name": "Мясо и птица",
      "dishes": [
       {
-       "name": "Курица охлаждённая, 1 кг",
-       "description": "Тушка",
+       "name": "Курица охлаждённая",
+       "description": "Тушка. Цена за 1 кг",
        "price": 219000,
        "emoji": "🍗",
        "tone": "red",
        "available": true,
-       "groups": []
+       "groups": [],
+       "unit": "KG",
+       "legacyName": "Курица охлаждённая, 1 кг"
       },
       {
-       "name": "Говядина вырезка, 1 кг",
-       "description": "Охлаждённая",
+       "name": "Говядина вырезка",
+       "description": "Охлаждённая. Цена за 1 кг",
        "price": 599000,
        "emoji": "🥩",
        "tone": "red",
        "available": true,
-       "groups": []
+       "groups": [],
+       "unit": "KG",
+       "stock": 3000,
+       "legacyName": "Говядина вырезка, 1 кг"
       },
       {
        "name": "Фарш говяжий, 500 г",
@@ -403,22 +420,26 @@
      "name": "Овощи и зелень",
      "dishes": [
       {
-       "name": "Морковь, 1 кг",
-       "description": "Фермерская",
+       "name": "Морковь",
+       "description": "Фермерская. Цена за 1 кг",
        "price": 42000,
        "emoji": "🥕",
        "tone": "orange",
        "available": true,
-       "groups": []
+       "groups": [],
+       "unit": "KG",
+       "legacyName": "Морковь, 1 кг"
       },
       {
-       "name": "Лук репчатый, 1 кг",
-       "description": "Сушёный",
+       "name": "Лук репчатый",
+       "description": "Сушёный. Цена за 1 кг",
        "price": 30000,
        "emoji": "🧅",
        "tone": "amber",
        "available": true,
-       "groups": []
+       "groups": [],
+       "unit": "KG",
+       "legacyName": "Лук репчатый, 1 кг"
       },
       {
        "name": "Зелень (укроп, петрушка)",
@@ -430,13 +451,15 @@
        "groups": []
       },
       {
-       "name": "Тыква, 1 кг",
-       "description": "Мускатная",
+       "name": "Тыква",
+       "description": "Мускатная. Цена за 1 кг",
        "price": 65000,
        "emoji": "🎃",
        "tone": "orange",
        "available": true,
-       "groups": []
+       "groups": [],
+       "unit": "KG",
+       "legacyName": "Тыква, 1 кг"
       }
      ]
     },
@@ -468,7 +491,8 @@
        "emoji": "🍯",
        "tone": "amber",
        "available": true,
-       "groups": []
+       "groups": [],
+       "stock": 2
       }
      ]
     }

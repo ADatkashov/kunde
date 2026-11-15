@@ -29,14 +29,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class FoodCatalogController {
     public record RestaurantSummary(String id, String slug, String name, String cuisine, String description,
             String emoji, String tone, long deliveryFeeMinor, long minOrderMinor, int etaMinMinutes,
-            int etaMaxMinutes, boolean open, boolean synthetic, String vertical) {}
+            int etaMaxMinutes, boolean open, boolean synthetic, String vertical, String imageUrl) {}
 
     public record Option(String id, String name, long priceDeltaMinor) {}
 
     public record OptionGroup(String id, String name, int minSelect, int maxSelect, List<Option> options) {}
 
+    /** unit PIECE or KG (price per kg, quantities in grams); maxQuantity is the per-line limit incl. stock. */
     public record Dish(String id, String name, String description, long priceMinor, String emoji, String tone,
-            boolean available, List<OptionGroup> optionGroups) {}
+            boolean available, List<OptionGroup> optionGroups, String unit, int maxQuantity, Integer stockQty,
+            String imageUrl) {}
 
     public record Section(String id, String name, List<Dish> dishes) {}
 
@@ -53,7 +55,7 @@ public class FoodCatalogController {
 
     static final String RESTAURANT_SELECT = """
             select id, slug, name, cuisine, description, emoji, tone, delivery_fee_minor, min_order_minor,
-                   eta_min_minutes, eta_max_minutes, is_open, is_synthetic, vertical
+                   eta_min_minutes, eta_max_minutes, is_open, is_synthetic, vertical, image_url
             from marketplace.food_restaurants
             """;
 
@@ -62,7 +64,7 @@ public class FoodCatalogController {
                 rs.getString("cuisine"), rs.getString("description"), rs.getString("emoji"), rs.getString("tone"),
                 rs.getLong("delivery_fee_minor"), rs.getLong("min_order_minor"), rs.getInt("eta_min_minutes"),
                 rs.getInt("eta_max_minutes"), rs.getBoolean("is_open"), rs.getBoolean("is_synthetic"),
-                rs.getString("vertical"));
+                rs.getString("vertical"), rs.getString("image_url"));
     }
 
     private static String vertical(String value) {
@@ -118,14 +120,19 @@ public class FoodCatalogController {
 
         Map<UUID, List<Dish>> dishesBySection = new LinkedHashMap<>();
         jdbc.query("""
-                select id, section_id, name, description, price_minor, emoji, tone, available
+                select id, section_id, name, description, price_minor, emoji, tone, available, unit, stock_qty, image_url
                 from marketplace.food_dishes where restaurant_id = ? order by sort_order, name, id
                 """, rs -> {
                     UUID dishId = rs.getObject("id", UUID.class);
+                    String unit = rs.getString("unit");
+                    Integer stock = rs.getObject("stock_qty", Integer.class);
+                    int limit = "KG".equals(unit) ? 5000 : 20;
+                    int maxQuantity = stock == null ? limit : Math.min(limit, stock);
                     dishesBySection.computeIfAbsent(rs.getObject("section_id", UUID.class), k -> new ArrayList<>())
                             .add(new Dish(dishId.toString(), rs.getString("name"), rs.getString("description"),
                                     rs.getLong("price_minor"), rs.getString("emoji"), rs.getString("tone"),
-                                    rs.getBoolean("available"), groupsByDish.getOrDefault(dishId, List.of())));
+                                    rs.getBoolean("available"), groupsByDish.getOrDefault(dishId, List.of()), unit,
+                                    maxQuantity, stock, rs.getString("image_url")));
                 }, restaurantId);
 
         List<Section> sections = jdbc.query("""
@@ -135,6 +142,23 @@ public class FoodCatalogController {
                     return new Section(id.toString(), rs.getString("name"), dishesBySection.getOrDefault(id, List.of()));
                 }, restaurantId).stream().filter(section -> !section.dishes().isEmpty()).toList();
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(new RestaurantDetail(restaurant, sections));
+    }
+
+    /** Acceptable replacements for a product: same store and unit, available, other than the product itself. */
+    @GetMapping("/dishes/{dishId}/alternatives")
+    public ResponseEntity<List<DishHit>> alternatives(@PathVariable UUID dishId) {
+        List<DishHit> list = jdbc.query("""
+                select d.id, d.name, d.description, d.price_minor, d.emoji, d.tone, d.available,
+                       r.id as restaurant_id, r.name as restaurant_name
+                from marketplace.food_dishes d
+                join marketplace.food_restaurants r on r.id = d.restaurant_id
+                join marketplace.food_dishes o on o.id = ? and o.restaurant_id = d.restaurant_id
+                where d.id <> o.id and d.available and d.unit = o.unit and (d.stock_qty is null or d.stock_qty > 0)
+                order by (d.section_id = o.section_id) desc, abs(d.price_minor - o.price_minor), d.name limit 8
+                """, (rs, row) -> new DishHit(rs.getString("id"), rs.getString("name"), rs.getString("description"),
+                rs.getLong("price_minor"), rs.getString("emoji"), rs.getString("tone"), rs.getBoolean("available"),
+                rs.getString("restaurant_id"), rs.getString("restaurant_name")), dishId);
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(list);
     }
 
     /** Case-insensitive substring search over restaurant names/cuisine and dish names/descriptions; LIKE wildcards are literal. */

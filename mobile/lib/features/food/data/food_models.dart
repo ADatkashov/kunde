@@ -20,6 +20,30 @@ String formatTenge(int minor) {
   return '${negative ? '-' : ''}$buffer$fractionText ₸';
 }
 
+/// Quantity text: pieces as `3 шт`, weighed goods (grams) as `500 г` / `1,5 кг`.
+String formatQuantity(String unit, int quantity) {
+  if (unit != 'KG') return '$quantity шт';
+  if (quantity < 1000) return '$quantity г';
+  final kg = quantity / 1000;
+  final text = kg == kg.roundToDouble()
+      ? kg.toStringAsFixed(0)
+      : kg
+          .toStringAsFixed(2)
+          .replaceFirst(RegExp(r'0+$'), '')
+          .replaceAll('.', ',');
+  return '$text кг';
+}
+
+/// Price suffix: `за кг` for weighed goods.
+String unitPriceLabel(String unit, int priceMinor) =>
+    unit == 'KG' ? '${formatTenge(priceMinor)} / кг' : formatTenge(priceMinor);
+
+/// Line total in tiyn: pieces multiply, weighed goods price per kg x grams, rounded like the server.
+int lineTotalMinor(String unit, int unitPriceMinor, int quantity) =>
+    unit == 'KG'
+        ? (unitPriceMinor * quantity + 500) ~/ 1000
+        : unitPriceMinor * quantity;
+
 /// Soft background / foreground pair for the emoji "photo" tiles (no licensed photos are bundled).
 ({Color background, Color foreground}) toneColors(String tone) =>
     switch (tone) {
@@ -60,10 +84,12 @@ class Restaurant {
     required this.open,
     required this.synthetic,
     this.vertical = 'FOOD',
+    this.imageUrl,
   });
 
   final String id;
   final String name;
+  final String? imageUrl;
 
   /// `FOOD` (restaurants) or `GROCERY` (stores); stores reuse the same catalog, cart and order model.
   final String vertical;
@@ -94,6 +120,7 @@ class Restaurant {
         open: json['open'] as bool? ?? false,
         synthetic: json['synthetic'] as bool? ?? false,
         vertical: json['vertical'] as String? ?? 'FOOD',
+        imageUrl: json['imageUrl'] as String?,
       );
 }
 
@@ -151,8 +178,20 @@ class Dish {
     required this.tone,
     required this.available,
     required this.optionGroups,
+    this.unit = 'PIECE',
+    this.maxQuantity = 20,
+    this.stockQty,
+    this.imageUrl,
   });
 
+  /// `PIECE` or `KG` (price per kg, quantities in grams).
+  final String unit;
+
+  /// Per-line limit including stock (pieces or grams).
+  final int maxQuantity;
+  final int? stockQty;
+  final String? imageUrl;
+  bool get weighed => unit == 'KG';
   final String id;
   final String name;
   final String description;
@@ -173,6 +212,10 @@ class Dish {
         optionGroups: (json['optionGroups'] as List<dynamic>? ?? const [])
             .map((e) => OptionGroup.fromJson(e as Map<String, dynamic>))
             .toList(growable: false),
+        unit: json['unit'] as String? ?? 'PIECE',
+        maxQuantity: (json['maxQuantity'] as num?)?.toInt() ?? 20,
+        stockQty: (json['stockQty'] as num?)?.toInt(),
+        imageUrl: json['imageUrl'] as String?,
       );
 }
 
@@ -268,8 +311,10 @@ class QuoteLine {
     required this.unitPriceMinor,
     required this.quantity,
     required this.lineTotalMinor,
+    this.unit = 'PIECE',
   });
 
+  final String unit;
   final String dishId;
   final String name;
   final String optionsText;
@@ -284,6 +329,7 @@ class QuoteLine {
         unitPriceMinor: (json['unitPriceMinor'] as num).toInt(),
         quantity: (json['quantity'] as num).toInt(),
         lineTotalMinor: (json['lineTotalMinor'] as num).toInt(),
+        unit: json['unit'] as String? ?? 'PIECE',
       );
 }
 
@@ -333,8 +379,20 @@ class OrderLine {
     required this.optionsText,
     required this.quantity,
     required this.lineTotalMinor,
+    this.unit = 'PIECE',
+    this.fulfillmentStatus = 'PENDING',
+    this.replacedByName,
+    this.finalLineTotalMinor,
+    this.substitution = 'NONE',
   });
 
+  final String unit;
+
+  /// `PENDING` until the store collects the order, then `OK`, `SUBSTITUTED` or `REMOVED`.
+  final String fulfillmentStatus;
+  final String? replacedByName;
+  final int? finalLineTotalMinor;
+  final String substitution;
   final String name;
   final String optionsText;
   final int quantity;
@@ -345,6 +403,11 @@ class OrderLine {
         optionsText: json['optionsText'] as String? ?? '',
         quantity: (json['quantity'] as num).toInt(),
         lineTotalMinor: (json['lineTotalMinor'] as num).toInt(),
+        unit: json['unit'] as String? ?? 'PIECE',
+        fulfillmentStatus: json['fulfillmentStatus'] as String? ?? 'PENDING',
+        replacedByName: json['replacedByName'] as String?,
+        finalLineTotalMinor: (json['finalLineTotalMinor'] as num?)?.toInt(),
+        substitution: json['substitution'] as String? ?? 'NONE',
       );
 }
 
@@ -386,8 +449,13 @@ class FoodOrder {
     required this.timeline,
     required this.cancellable,
     this.vertical = 'FOOD',
+    this.finalTotalMinor,
+    this.hasChanges = false,
   });
 
+  /// Total after the store replaced or removed unavailable products; null until collected.
+  final int? finalTotalMinor;
+  final bool hasChanges;
   final String vertical;
   final String id;
   final String restaurantId;
@@ -437,6 +505,8 @@ class FoodOrder {
             .toList(growable: false),
         cancellable: json['cancellable'] as bool? ?? false,
         vertical: json['vertical'] as String? ?? 'FOOD',
+        finalTotalMinor: (json['finalTotalMinor'] as num?)?.toInt(),
+        hasChanges: json['hasChanges'] as bool? ?? false,
       );
 }
 
@@ -446,12 +516,18 @@ class RepeatItem {
     required this.name,
     required this.quantity,
     required this.optionIds,
+    this.unit = 'PIECE',
+    this.substitution = 'NONE',
+    this.substituteDishIds = const [],
   });
 
   final String dishId;
   final String name;
   final int quantity;
   final List<String> optionIds;
+  final String unit;
+  final String substitution;
+  final List<String> substituteDishIds;
 }
 
 class RepeatResult {
@@ -477,6 +553,11 @@ class RepeatResult {
                   name: e['name'] as String,
                   quantity: (e['quantity'] as num).toInt(),
                   optionIds: (e['optionIds'] as List<dynamic>).cast<String>(),
+                  unit: e['unit'] as String? ?? 'PIECE',
+                  substitution: e['substitution'] as String? ?? 'NONE',
+                  substituteDishIds:
+                      (e['substituteDishIds'] as List<dynamic>? ?? const [])
+                          .cast<String>(),
                 ))
             .toList(growable: false),
         skipped: (json['skipped'] as List<dynamic>).cast<String>(),
