@@ -63,3 +63,7 @@ Backend: `PhoneNumberTest`, `PhoneAuthGuardTest`, `DevOtpProductionStartupTest` 
 ## Production gates (open)
 
 Independent security review; approved OTP channel and price (D-11); privacy/residency approval for stored phones and OTP processors (TASK-007, D-08); asymmetric signing or managed key rotation; distributed rate limiting and edge protection (current limits are per instance / per number); account recovery and phone-number-change policy; SIM-swap risk acceptance; deployment check proving DEV OTP is off in production.
+
+## Role scopes (ADR-018, V12)
+
+The access token `scope` is derived on the server at every issue and refresh: always `kunde.consumer`; plus `kunde.partner` while the user has an ACTIVE `marketplace.partner_staff` row; plus `kunde.admin` while an unrevoked `identity.admin_grants` row exists. Public login, onboarding and profile calls cannot add scopes; admin grants are inserted out of band only. Revocation takes effect at the next refresh; partner/admin endpoints (not yet implemented) must additionally re-check membership/grants per request. Tests: `RoleScopeIntegrationTest`.
