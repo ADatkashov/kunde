@@ -30,11 +30,17 @@ public class PartnerService {
 
     public record PartnerView(UUID id, String displayName, Status verificationStatus, long version) { }
 
+    /** A partner the caller belongs to, with the caller's own role. */
+    public record MyPartnerView(UUID id, String displayName, Status verificationStatus, long version, Role role) { }
+
     public record StaffView(UUID userId, Role role, String status) { }
 
     private static final RowMapper<PartnerView> PARTNER = (rs, i) -> new PartnerView(
             rs.getObject("id", UUID.class), rs.getString("display_name"),
             Status.valueOf(rs.getString("verification_status")), rs.getLong("version"));
+
+    /** Abuse guard for the open application endpoint (ADR-018): every consumer may apply, but only a few times. */
+    static final int MAX_APPLICATIONS_PER_USER = 5;
 
     private final JdbcTemplate db;
 
@@ -49,6 +55,11 @@ public class PartnerService {
         String name = displayName == null ? "" : displayName.strip();
         if (name.isEmpty() || name.length() > 120) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_PARTNER_NAME", "Name must be 1-120 characters");
+        }
+        Integer applications = db.queryForObject(
+                "SELECT count(*) FROM marketplace.partners WHERE created_by_user_id = ?", Integer.class, applicantUserId);
+        if (applications != null && applications >= MAX_APPLICATIONS_PER_USER) {
+            throw new ApiException(HttpStatus.CONFLICT, "PARTNER_APPLICATION_LIMIT", "Too many partner applications");
         }
         UUID id = db.queryForObject("""
                 INSERT INTO marketplace.partners (display_name, created_by_user_id) VALUES (?, ?) RETURNING id
@@ -67,6 +78,45 @@ public class PartnerService {
     @Transactional(readOnly = true)
     public PartnerView get(UUID actorUserId, UUID partnerId) {
         requireRole(partnerId, actorUserId, Role.OWNER, Role.MANAGER, Role.OPERATOR);
+        return load(partnerId);
+    }
+
+    /** Partners the caller is active staff of; the server resolves them from membership, never from client input. */
+    @Transactional(readOnly = true)
+    public List<MyPartnerView> listMine(UUID actorUserId) {
+        return db.query("""
+                SELECT p.id, p.display_name, p.verification_status, p.version, s.role
+                FROM marketplace.partner_staff s
+                JOIN marketplace.partners p ON p.id = s.partner_id
+                JOIN identity.users u ON u.id = s.user_id
+                WHERE s.user_id = ? AND s.status = 'ACTIVE' AND u.status = 'ACTIVE'
+                ORDER BY p.created_at, p.id""",
+                (rs, i) -> new MyPartnerView(rs.getObject("id", UUID.class), rs.getString("display_name"),
+                        Status.valueOf(rs.getString("verification_status")), rs.getLong("version"),
+                        Role.valueOf(rs.getString("role"))), actorUserId);
+    }
+
+    /** Profile edit (display name) is an Owner/Manager capability; optimistic version, audited. */
+    @Transactional
+    public PartnerView updateProfile(UUID actorUserId, UUID partnerId, String displayName, long expectedVersion) {
+        requireRole(partnerId, actorUserId, Role.OWNER, Role.MANAGER);
+        String name = displayName == null ? "" : displayName.strip();
+        if (name.isEmpty() || name.length() > 120) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_PARTNER_NAME", "Name must be 1-120 characters");
+        }
+        lockPartner(partnerId);
+        var current = load(partnerId);
+        if (current.version() != expectedVersion) {
+            throw new ApiException(HttpStatus.CONFLICT, "VERSION_CONFLICT", "Partner changed; refresh and retry");
+        }
+        if (current.displayName().equals(name)) {
+            return current;
+        }
+        db.update("UPDATE marketplace.partners SET display_name = ?, version = version + 1, updated_at = now() WHERE id = ?",
+                name, partnerId);
+        db.update("""
+                INSERT INTO marketplace.partner_profile_events (partner_id, actor_user_id, event_type, old_value, new_value)
+                VALUES (?, ?, 'RENAMED', ?, ?)""", partnerId, actorUserId, current.displayName(), name);
         return load(partnerId);
     }
 
