@@ -1,6 +1,14 @@
 # KUNDE project state
 
-## Current verified main snapshot — 2026-11-13
+## Audit 2026-11-15 (main `86a6c31`, PR #89)
+
+- **GitHub:** all four automatic workflows (Backend, Flutter, Security, CI configuration) green on `86a6c31`; PR #84–#89 merged, no open PRs, #79 closed unmerged. Security CI `containers` job failed on three earlier main pushes (`a9cb8e0`, `ddc8ae4`, `254587b`) at step "Resolve immutable linux-amd64 manifests" (registry resolution, not a finding) and passed on later runs. CodeRabbit left only summary comments on #84–#89 (no inline threads found). **Not verifiable by the agent (API 403 through the proxy):** branch protection/required checks, Environments (`dev` reviewers), Secrets/Variables metadata, secret scanning; Dependabot alerts are disabled for the repository.
+- **Backend:** `mvn clean verify` on PostgreSQL 16 locally — 223 tests, 0 failures (Flyway V1–V14).
+- **DEV (live check):** Render `kunde-backend` was replaced on 2026-11-14 and now lives at `https://kunde-backend-ty81.onrender.com` (old `-5wwg` host returns `no-server`; workflow default and docs were stale and are fixed). Verified on it: liveness/readiness 200, `GET /categories` `[]`, `/me` 401 unauthenticated, phone OTP request 202, DEV login with a synthetic allowlisted number issues tokens and `/me` 200, wrong code 401. **DEV runs the PR #80 build (autoDeploy off):** `/partner/*` and `/admin/*` return 404 until it is redeployed from `main` (needs owner approval: Flyway V10–V14 run on the Neon DEV database).
+- **Linear:** ADA-69 (TASK-003) returned Done → In Progress (backlog is `partially_verified`); TASK-017 set to `in_progress` in the backlog to match Linear ADA-83; stale notes on TASK-005/015/016 amended. No duplicates; all 56 TASK IDs present.
+- **Not verified:** Android release APK was last built 2026-11-14 (run 43632612582) before ADR-018; a new run with `partner-features=true` needs the redeployed backend and was not started. No device run of the partner screens.
+
+## Verified main snapshot — 2026-11-13 (history; superseded by the audit above)
 
 - **DEV deployed (2026-11-14, owner-approved applies, synthetic data only):** Terraform (`infrastructure/terraform`, PRs #71–#75) manages Render Free `kunde-backend` (Frankfurt, https://kunde-backend-5wwg.onrender.com) and Neon Free `kunde-dev` (`aws-eu-central-1`); state in HCP Terraform workspace `kunde-dev`; GitHub Actions `terraform-dev.yml` (validate, plan, cost gate `check_terraform_plan.py`, manual apply). Verified on the live service: `readiness`/`liveness` 200, protected endpoint 503 (fail-closed), OpenAPI 200, `GET /api/v1/categories` 200 `[]`, Flyway V1–V8 over TLS (`verify-full` + `DefaultJavaSSLFactory`). Known limits: Render provider 1.9.1 cannot update free services in place (issue #80) — changes need `replace_render`; free hours are shared with the owner's 6 other Render services and Neon Free has 100 CU-hours/month (cost not confirmed as $0); cold start ~1 min; Required reviewers on the `dev` Environment are **not** configured (apply ran without a pause). Production hosting/residency still blocked (TASK-051/D-08); TASK-052 stays not_started (no prod staged deploy/rollback); ADR-017 Proposed. Docs: [docs/infrastructure](docs/infrastructure/README.md).
 
@@ -38,7 +46,7 @@
   Search/Orders/Profile show honest empty states without their capability; PRD-1.0 §navigation still says five (owner to update); no bell/profile
   icons (no backend); no photo assets (Material icons). Category grid is 5 columns from 360 px with muted "Скоро" tiles. `flutter analyze` clean, 113 `flutter test` pass locally; no device/TalkBack check.
 
-- Latest verified merge: `ab001ac18ec7dd98986aa77d67fb36f3970ed693` (PR #41).
+- Merge reference at the time of this entry: `ab001ac18ec7dd98986aa77d67fb36f3970ed693` (PR #41); current main is in the audit section above.
 - PRs #29–#37 (merged after #28), all with required CI green:
   #29 state/backlog sync; #30 TASK-055 domain schema ownership tests; #31 TASK-047
   correlation/log/Actuator tests; #32 TASK-053 secret-marker gate tests; #33 TASK-013

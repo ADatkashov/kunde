@@ -4,7 +4,7 @@ on:
     inputs:
       api-base-url:
         description: 'API base URL baked into the APK'
-        default: 'https://kunde-backend-5wwg.onrender.com/api/v1/'
+        default: 'https://kunde-backend-ty81.onrender.com/api/v1/'
       dev-otp-hint:
         description: 'Show the DEV test code (123456) hint on the OTP screen. DEV builds only; never for a store release.'
         type: boolean
@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
-      API_BASE_URL: ${{ inputs.api-base-url || 'https://kunde-backend-5wwg.onrender.com/api/v1/' }}
+      API_BASE_URL: ${{ inputs.api-base-url || 'https://kunde-backend-ty81.onrender.com/api/v1/' }}
       DEV_OTP_HINT: ${{ inputs.dev-otp-hint && 'true' || 'false' }}
       PARTNER_FEATURES: ${{ inputs.partner-features && 'true' || 'false' }}
       KUNDE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
