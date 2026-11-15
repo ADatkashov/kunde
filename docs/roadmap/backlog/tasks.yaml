@@ -500,8 +500,8 @@
     "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
     "release": "REL-2",
     "user_story_id": "US-028",
-    "implementation_status": "not_started",
-    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
+    "implementation_status": "in_progress",
+    "implementation_note": "DEV pilot only (2026-11-15, PR #96): barbershop slots, idempotent booking, database exclusion against double booking, free cancellation before the start, DEV-mock confirmation. Missing: venue acceptance, reschedule/no-show, provider schedule tooling, other services, device verification; see docs/product/booking-mvp.md."
   },
   {
     "id": "TASK-025",
