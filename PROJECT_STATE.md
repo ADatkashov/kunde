@@ -1,5 +1,9 @@
 # KUNDE project state
 
+## DEV deploy permission (owner, 2026-11-15)
+
+- Owner gave a standing permission to deploy `main` to the existing DEV backend and set DEV pilot flags without asking each time; scope and exclusions (no PROD, no service/DB replacement, no `terraform apply`, no secrets, no real payments) are recorded in [AGENTS.md](AGENTS.md). Booking (V18) was deployed to DEV under this permission: deploy `dep-dbt2t4u7bikc73css3g0` of `420b595` with `BOOKING_ENABLED`/`BOOKING_SEED_DEMO`. **Verified on DEV (2026-11-15):** `/capabilities` reports `bookingEnabled=true`; `scripts/dev/booking_smoke.py` against `kunde-backend-ty81` passed (V18 incl. `btree_gist` applied on Neon; 4 venues; booking, idempotent replay, slot disappears, overlapping booking refused with 409, restore after session refresh, cancel, slot freed) and `scripts/dev/food_smoke.py` still passes (Food + Grocery unaffected). Release APK from run 43767173233 (`420b595`, sha256 `a6b401a5b476a2353bf18de12ec9246f93e96a964af2812ed00feb6b32143555`) was delivered to the owner; **not yet verified on a phone** (Booking scenario: Home → Услуги → barbershop → service → master → slot → book → restart → Orders → Записи → cancel).
+
 ## KUNDE Booking MVP — barbershops (2026-11-15, owner-approved category B)
 
 - Owner approved booking as the next category, first service barbershops (cleaning/other services later). Implemented for DEV: Flyway V18 (`btree_gist` exclusion constraint prevents overlapping bookings of one master), slots API, idempotent booking, free cancellation before the start, 4 synthetic barbershops (9 masters), DEV-mock confirmation (labelled), Flutter «Услуги» → barbershop → service → master → slot → confirm, bookings history in Orders → «Записи». Details/limits: [docs/product/booking-mvp.md](docs/product/booking-mvp.md).
