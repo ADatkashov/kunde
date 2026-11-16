@@ -35,6 +35,19 @@ ORDER_TRANSITION_INVALID` / `BOOKING_TRANSITION_INVALID`; missing reason → `40
 Customer side: `GET /food/orders/{id}` now returns `simulated=false`, `fulfillment`, `cancelledBy`, `cancelReason`, timeline `actor`/`reason`;
 bookings return `PENDING` (cancellable by the customer) and `cancelledBy`/`cancelReason`. The app polls order/pending-booking status.
 
+## Response window and alerts (D-05)
+
+A new partner-managed order must be answered within `PARTNER_RESPONSE_TIMEOUT_SECONDS` (default 300 s). The partner API returns `respondBy` and `reminderAt`
+(2 minutes after placing); the hub shows «Ответить до HH:mm» and turns it into a reminder. After the window the **system cancels** the order
+(`cancelled_by = SYSTEM`, `cancel_reason = PARTNER_TIMEOUT`, payment voided, stock returned, SYSTEM event in history); it is applied lazily on every partner
+read/transition and customer read (a late accept gets `409`). In the open app, a newly arrived order/booking request plays the system alert, a haptic tap and a banner
+(first load is silent). No background push (no provider, D-11) and no scheduler: an order nobody reads stays `PLACED` in the table until the next read.
+
+## Who sees the partner section
+
+`PARTNER_FEATURES_ENABLED` builds show it only to partner staff; «Стать партнёром» appears to other users only when the build also sets `PARTNER_APPLY_ENABLED`
+(workflow input `partner-apply`, default off).
+
 ## DEV pilot seed
 
 `PARTNER_OPS_SEED_DEMO=true` (dev/local/test only; `PartnerOpsDemoSeeder`) creates two synthetic APPROVED partners owned by the allowlisted DEV numbers
@@ -50,7 +63,6 @@ refresh. Backend: `PartnerOperationsApiIntegrationTest` (15 tests) + existing su
 
 ## Limits
 
-No push/SMS notifications (partner list polls every 10 s, customer screens every 4–5 s), no courier/payment/provider, no partner-side price/menu editing
+No background push/SMS (partner list polls every 10 s, customer screens every 4–5 s), no courier/payment/provider, no partner-side price/menu editing
 beyond the existing offering API, no break/exception-day editor, no blocked-time slots, no multi-restaurant order merging, UI strings RU/KK/EN best effort
-(KK to be reviewed). The customer app still shows «Стать партнёром» to every signed-in user when `PARTNER_FEATURES_ENABLED` is on (existing onboarding;
-operations are hidden from non-staff).
+(KK to be reviewed).

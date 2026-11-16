@@ -23,6 +23,7 @@ class AuthScreen extends StatefulWidget {
       required this.onLocale,
       this.devOtpHint = false,
       this.partnerEnabled = false,
+      this.partnerApplyEnabled = true,
       this.food,
       this.booking,
       super.key});
@@ -33,6 +34,7 @@ class AuthScreen extends StatefulWidget {
 
   /// Partner onboarding and offerings (ADR-018); off unless the build enables it.
   final bool partnerEnabled;
+  final bool partnerApplyEnabled;
 
   /// KUNDE Food (restaurants, cart, orders); shown when the server enables the marketplace.
   final FoodServices? food;
@@ -422,7 +424,9 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                 SupportPanel(auth: widget.auth),
                 if (widget.partnerEnabled) ...[
                   const SizedBox(height: 24),
-                  PartnerPanel(auth: widget.auth),
+                  PartnerPanel(
+                      auth: widget.auth,
+                      allowApply: widget.partnerApplyEnabled),
                 ],
               ] else
                 Form(

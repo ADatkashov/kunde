@@ -13,6 +13,10 @@ on:
         description: 'Include the partner section (apply, offerings) in the Profile tab. DEV pilot builds for partners only; off by default.'
         type: boolean
         default: false
+      partner-apply:
+        description: 'Also show «Become a partner» to users who are not partner staff. Off by default: ordinary customers then see no partner section.'
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -23,6 +27,7 @@ jobs:
       API_BASE_URL: ${{ inputs.api-base-url || 'https://kunde-backend-ty81.onrender.com/api/v1/' }}
       DEV_OTP_HINT: ${{ inputs.dev-otp-hint && 'true' || 'false' }}
       PARTNER_FEATURES: ${{ inputs.partner-features && 'true' || 'false' }}
+      PARTNER_APPLY: ${{ inputs.partner-apply && 'true' || 'false' }}
       KUNDE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       KUNDE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       KUNDE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
@@ -69,7 +74,8 @@ jobs:
             --dart-define=API_TIMEOUT_SECONDS=90 \
             --dart-define=PHONE_AUTH_ENABLED=true \
             --dart-define=DEV_OTP_HINT="$DEV_OTP_HINT" \
-            --dart-define=PARTNER_FEATURES_ENABLED="$PARTNER_FEATURES"
+            --dart-define=PARTNER_FEATURES_ENABLED="$PARTNER_FEATURES" \
+            --dart-define=PARTNER_APPLY_ENABLED="$PARTNER_APPLY"
           mkdir -p ../dist
           cp build/app/outputs/flutter-apk/app-release.apk ../dist/KUNDE-dev-release.apk
           rm -f "$RUNNER_TEMP/release.jks"

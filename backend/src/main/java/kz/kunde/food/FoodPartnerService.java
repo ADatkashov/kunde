@@ -31,7 +31,8 @@ public class FoodPartnerService {
             "PREPARING", List.of("ON_THE_WAY", "CANCELLED"),
             "ON_THE_WAY", List.of("DELIVERED"));
 
-    public record PartnerOrder(OrderView order, String customerRef, List<String> allowedNext) {}
+    public record PartnerOrder(OrderView order, String customerRef, List<String> allowedNext, OffsetDateTime respondBy,
+            OffsetDateTime reminderAt) {}
 
     public record RestaurantView(String id, String name, String vertical, boolean open, boolean synthetic) {}
 
@@ -51,9 +52,10 @@ public class FoodPartnerService {
     // ---- orders --------------------------------------------------------------------------------
 
     /** {@code scope}: "active" (default, needs action or in progress) or "history" (delivered/cancelled). */
-    @Transactional(readOnly = true)
+    @Transactional
     public List<PartnerOrder> list(UUID actor, UUID partnerId, String scope, int limit, int offset) {
         partners.requireProcessing(actor, partnerId);
+        orders.expireUnanswered(partnerId);
         boolean history = "history".equals(scope);
         List<UUID> ids = db.queryForList("""
                 select id from transactions.food_orders where partner_id = ? and (status in ('PLACED','ACCEPTED','PREPARING','ON_THE_WAY')) <> ?
@@ -62,10 +64,11 @@ public class FoodPartnerService {
         return wrap(ids);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public PartnerOrder get(UUID actor, UUID partnerId, UUID orderId) {
         partners.requireProcessing(actor, partnerId);
         requireOwnedOrder(partnerId, orderId);
+        orders.expireUnanswered(partnerId);
         return wrap(List.of(orderId)).get(0);
     }
 
@@ -76,6 +79,7 @@ public class FoodPartnerService {
     @Transactional
     public PartnerOrder transition(UUID actor, UUID partnerId, UUID orderId, String to, String reason) {
         partners.requireProcessing(actor, partnerId);
+        orders.expireUnanswered(partnerId);
         String status = db.query("select status from transactions.food_orders where id = ? and partner_id = ? for update",
                 (rs, n) -> rs.getString(1), orderId, partnerId).stream().findFirst()
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND", "Order not found"));
@@ -207,7 +211,12 @@ public class FoodPartnerService {
                 customers.put(rs.getObject(1, UUID.class), rs.getString(2).substring(0, 8));
             }, (Object) ids.toArray(UUID[]::new));
         }
-        return orders.views(ids, null).stream().map(o -> new PartnerOrder(o, customers.get(UUID.fromString(o.id())),
-                NEXT.getOrDefault(o.status(), List.of()))).toList();
+        int window = orders.partnerResponseSeconds;
+        return orders.views(ids, null).stream().map(o -> {
+            boolean waiting = "PLACED".equals(o.status());
+            return new PartnerOrder(o, customers.get(UUID.fromString(o.id())), NEXT.getOrDefault(o.status(), List.of()),
+                    waiting ? o.placedAt().plusSeconds(window) : null,
+                    waiting ? o.placedAt().plusSeconds(window * 2L / 5) : null);
+        }).toList();
     }
 }

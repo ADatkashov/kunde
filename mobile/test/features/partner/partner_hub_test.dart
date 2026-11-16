@@ -42,6 +42,8 @@ http.Response _json(Object body, [int status = 200]) =>
 Map<String, dynamic> _order(String status, List<String> next) => {
       'customerRef': 'abcd1234',
       'allowedNext': next,
+      'respondBy': null,
+      'reminderAt': null,
       'order': {
         'id': _orderId,
         'restaurantName': 'Кухня партнёра',
@@ -322,5 +324,29 @@ void main() {
     expect(patched, [
       {'available': false}
     ]);
+  });
+
+  testWidgets('a newly arrived order raises an alert; the first load is silent',
+      (tester) async {
+    var arrived = false;
+    final auth = _auth((request) async {
+      if (request.url.path.endsWith('/food/orders')) {
+        final order = _order('PLACED', ['ACCEPTED', 'CANCELLED']);
+        order['respondBy'] =
+            DateTime.now().add(const Duration(minutes: 5)).toIso8601String();
+        order['reminderAt'] =
+            DateTime.now().add(const Duration(minutes: 2)).toIso8601String();
+        return _json(arrived ? [order] : []);
+      }
+      return _json([]);
+    });
+    await auth.login();
+    await _show(tester, auth, language: 'en');
+    expect(find.text('New order!'), findsNothing);
+    arrived = true;
+    await tester.pump(const Duration(seconds: 11));
+    await tester.pumpAndSettle();
+    expect(find.text('New order!'), findsOneWidget);
+    expect(find.textContaining('Reply by'), findsOneWidget);
   });
 }

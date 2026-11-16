@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/localization/kunde_formats.dart';
 import '../booking/data/booking_models.dart';
@@ -189,6 +190,13 @@ Widget _statusChip(BuildContext context, String label, Color color) => Chip(
       side: BorderSide.none,
     );
 
+/// Plays the system alert and haptic tap and shows a banner: the partner is working in the open app (no push provider yet).
+void _alertNew(BuildContext context, String text) {
+  SystemSound.play(SystemSoundType.alert);
+  HapticFeedback.heavyImpact();
+  _toast(context, text);
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // Orders
 // ---------------------------------------------------------------------------------------------------------------------
@@ -225,6 +233,8 @@ class _FoodOrdersTabState extends State<_FoodOrdersTab> with _Polling {
   String _scope = 'active';
   List<Map<String, dynamic>> _orders = const [];
   String? _busyId;
+  Set<String>?
+      _seenNew; // null until the first load, so opening the tab is silent
 
   @override
   void initState() {
@@ -237,6 +247,19 @@ class _FoodOrdersTabState extends State<_FoodOrdersTab> with _Polling {
     try {
       final orders = await widget.api.foodOrders(_scope);
       if (!mounted) return;
+      if (_scope == 'active') {
+        final fresh = {
+          for (final entry in orders)
+            if ((entry['order'] as Map)['status'] == 'PLACED')
+              (entry['order'] as Map)['id'] as String
+        };
+        final seen = _seenNew;
+        _seenNew = {...?seen, ...fresh};
+        if (seen != null && fresh.any((id) => !seen.contains(id))) {
+          _alertNew(context,
+              _t(context, 'Новый заказ!', 'Жаңа тапсырыс!', 'New order!'));
+        }
+      }
       setState(() {
         _orders = orders;
         loading = false;
@@ -395,8 +418,9 @@ class _OrderCard extends StatelessWidget {
             Text('«${order['comment']}»', style: theme.textTheme.bodySmall),
           if (order['cancelReason'] != null)
             Text(
-                '${_t(context, 'Причина', 'Себебі', 'Reason')}: ${order['cancelReason']}',
+                '${_t(context, 'Причина', 'Себебі', 'Reason')}: ${order['cancelReason'] == 'PARTNER_TIMEOUT' ? _t(context, 'не ответили вовремя', 'уақытында жауап берілмеді', 'not answered in time') : order['cancelReason']}',
                 style: theme.textTheme.bodySmall),
+          if (entry['respondBy'] != null) _RespondBy(entry: entry),
           ExpansionTile(
             tilePadding: EdgeInsets.zero,
             title: Text(
@@ -464,6 +488,7 @@ class _BookingsTabState extends State<_BookingsTab> with _Polling {
   String _scope = 'requests';
   List<Map<String, dynamic>> _bookings = const [];
   String? _busyId;
+  Set<String>? _seenNew;
 
   @override
   void initState() {
@@ -476,6 +501,17 @@ class _BookingsTabState extends State<_BookingsTab> with _Polling {
     try {
       final bookings = await widget.api.bookings(_scope);
       if (!mounted) return;
+      if (_scope == 'requests') {
+        final fresh = {for (final b in bookings) b['id'] as String};
+        final seen = _seenNew;
+        _seenNew = {...?seen, ...fresh};
+        if (seen != null && fresh.any((id) => !seen.contains(id))) {
+          _alertNew(
+              context,
+              _t(context, 'Новая запись!', 'Жаңа жазылу!',
+                  'New booking request!'));
+        }
+      }
       setState(() {
         _bookings = bookings;
         loading = false;
@@ -1110,4 +1146,24 @@ class _HoursDialogState extends State<_HoursDialog> {
               child: Text(_t(context, 'Сохранить', 'Сақтау', 'Save'))),
         ],
       );
+}
+
+/// «Reply by HH:mm» for a new order; turns into a reminder once the reminder time (D-05: 2 minutes) has passed.
+class _RespondBy extends StatelessWidget {
+  const _RespondBy({required this.entry});
+  final Map<String, dynamic> entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final by = DateTime.parse(entry['respondBy'] as String).toLocal();
+    final reminder = DateTime.parse(entry['reminderAt'] as String).toLocal();
+    final late = !DateTime.now().isBefore(reminder);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Text(
+          '${late ? '⏰ ' : ''}${_t(context, 'Ответить до', 'Жауап беру мерзімі', 'Reply by')} ${formatClock(by)}',
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: late ? Theme.of(context).colorScheme.error : null)),
+    );
+  }
 }

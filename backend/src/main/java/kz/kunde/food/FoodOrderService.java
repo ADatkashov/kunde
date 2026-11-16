@@ -83,6 +83,10 @@ public class FoodOrderService {
     private final JdbcTemplate db;
     private final FoodProperties props;
 
+    /** D-05: a partner has this long to answer a new order; afterwards the system cancels it (free for the customer). */
+    @org.springframework.beans.factory.annotation.Value("${app.partner-ops.response-timeout-seconds:300}")
+    int partnerResponseSeconds = 300;
+
     public FoodOrderService(JdbcTemplate db, FoodProperties props) {
         this.db = db;
         this.props = props;
@@ -368,6 +372,16 @@ public class FoodOrderService {
         return list;
     }
 
+    /** Cancels this partner's orders that waited longer than the response window (called before partner reads/moves). */
+    void expireUnanswered(UUID partnerId) {
+        for (UUID id : db.queryForList("""
+                select id from transactions.food_orders
+                where partner_id = ? and status = 'PLACED' and placed_at <= now() - make_interval(secs => ?)
+                """, UUID.class, partnerId, partnerResponseSeconds)) {
+            advance(id);
+        }
+    }
+
     // ---- DEV mock fulfillment --------------------------------------------------------------------
 
     /** Moves a non-terminal order forward according to elapsed time since placement (explicit DEV simulation). */
@@ -377,7 +391,22 @@ public class FoodOrderService {
                 from transactions.food_orders where id = ? for update
                 """, (rs, n) -> new Object[] {rs.getString(1), rs.getLong(2), rs.getObject(3, OffsetDateTime.class), rs.getString(4)}, orderId)
                 .stream().findFirst().orElse(null);
-        if (row == null || TERMINAL.contains((String) row[0]) || "PARTNER".equals(row[3])) {
+        if (row == null || TERMINAL.contains((String) row[0])) {
+            return;
+        }
+        if ("PARTNER".equals(row[3])) {
+            // Only the partner moves these orders; the one thing the system does is the unanswered-order timeout (D-05).
+            if ("PLACED".equals(row[0]) && (long) row[1] >= partnerResponseSeconds) {
+                db.update("""
+                        update transactions.food_orders set status = 'CANCELLED', payment_status = 'VOIDED', cancelled_by = 'SYSTEM',
+                            cancel_reason = 'PARTNER_TIMEOUT', updated_at = now(), version = version + 1 where id = ?
+                        """, orderId);
+                db.update("""
+                        insert into transactions.food_order_events (order_id, status, actor_type, reason, occurred_at)
+                        values (?, 'CANCELLED', 'SYSTEM', 'PARTNER_TIMEOUT', ?)
+                        """, orderId, ((OffsetDateTime) row[2]).plusSeconds(partnerResponseSeconds));
+                restoreStock(orderId);
+            }
             return;
         }
         var sim = props.simulation();
