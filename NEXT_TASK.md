@@ -6,7 +6,13 @@ After the category-architecture PR is merged and DEV is redeployed (`BOOKING_SEE
 
 # Next task — verify the premium Flutter Release APK on Samsung
 
-Premium UI is implemented on `feature/kunde-premium-ui`; local analyze/format and 177 tests pass. Complete PR CI, merge only when green, then build with the existing `android-release.yml` against `kunde-backend-ty81` (preserve partner features). On the phone check light default even with dark system settings, city/search/category navigation, Food/Grocery → cart → checkout → order → restart/history, Services → booking/cancel, profile/language/logout, 200% text and TalkBack. Evidence and limitations: [premium-ui-redesign](docs/design/premium-ui-redesign.md). Record CI/build/phone results separately in PROJECT_STATE; do not infer device success from widget/golden tests.
+---
+
+# Next task — owner check of the signed premium APK on Samsung
+
+The premium redesign is merged (#98, #99); **178 tests and main CI are green**. Signed ARM64 Release APK: [run 43770508122](https://github.com/ADatkashov/kunde/actions/runs/43770508122), artifact `KUNDE-dev-release` (id `14184357296`, expires 2026-11-29), code `59295d0`. Signature and contents passed workflow verification; downloaded SHA-256 and bundled licenses were checked. DEV API/partner features preserved.
+
+Owner: install over the previous Release APK and check light default with dark system settings, city/search/categories, Food/Grocery → cart → checkout → order → restart/history, Services → booking/cancel, profile/language/logout, 200% text and TalkBack. Record observed results in PROJECT_STATE. No device success is implied by widget/golden/CI tests. Details: [premium UI evidence](docs/design/premium-ui-redesign.md).
 
 ---
 
