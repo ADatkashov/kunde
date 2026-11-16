@@ -11,7 +11,7 @@ PRD 1.0 defines four interfaces: Consumer, Partner, Driver/Provider and Admin, p
 
 ## Decision
 
-**One KUNDE platform, one canonical human identity, multiple role-specific experiences.** One consumer app and one account remain core product principles. The platform does **not** require all actors to use one APK. Retain the current Flutter partner hub; consider a partner web workspace and separate Driver/Provider mobile experience when real operational needs justify them. Internal Admin should be a dedicated protected web experience. Keep shared backend domain contracts; no rewrite, no immediate new application or microservices.
+**One KUNDE platform, one canonical human identity, exactly four separate applications/interfaces as the target architecture.** Owner confirmed this explicit decision on 2026-11-17. They share one KUNDE Backend and domain contracts, not four independent backend stacks. The four target apps are KUNDE Consumer (Flutter Android/iOS), KUNDE Partner (separate Flutter Android/iOS; web extension optional), KUNDE Provider (separate Flutter Android/iOS for drivers, couriers and field-service providers), and KUNDE Admin (separate protected web application). The existing embedded Flutter partner hub remains operational only as a migration-stage implementation until the standalone Partner app reaches parity; avoid breaking it. Separate app builds, packages, entry points and release pipelines are target deliverables subject to roadmap sequencing, security and CI gates. Do not create speculative microservices.
 
 ### Participant model
 
@@ -28,11 +28,11 @@ PRD 1.0 defines four interfaces: Consumer, Partner, Driver/Provider and Admin, p
 | Experience | Audience | Delivery approach | Current status |
 |---|---|---|---|
 | KUNDE Consumer | customers and families | Flutter Android/iOS | DEV MVP |
-| KUNDE Partner | owners/managers/operators | existing Flutter partner hub; web later if justified | DEV MVP |
-| KUNDE Driver / Provider | taxi drivers, couriers, field service workers | specialized mobile experience(s) sharing contracts | planned |
-| KUNDE Admin / Support | platform personnel | separate protected web workspace | partial APIs; full UI planned |
+| KUNDE Partner | owners/managers/operators | **separate Flutter Android/iOS application**; optional web extension | partner functionality currently embedded in Consumer DEV APK; standalone app not yet built |
+| KUNDE Provider | taxi drivers, couriers, field service workers | **one separate Flutter Android/iOS application** with role-specific workflows | planned |
+| KUNDE Admin | platform administrators and support | **one separate protected web application** with scoped access | partial APIs; full UI planned |
 
-Do not equate a driver with a partner organization: independent providers, contracted fleets and partner employees have distinct membership, verification, payouts and responsibility models. Do not presume one provider app is appropriate for all service types; decide when use cases are validated.
+Do not equate a driver with a partner organization: independent providers, contracted fleets and partner employees have distinct membership, verification, payouts and responsibility models. The agreed target is one Provider application with internally separated taxi, courier and field-service workflows; validate operational and regulatory requirements before enabling each workflow.
 
 ### Domain boundaries
 
@@ -50,7 +50,7 @@ Pros: unified customer journey, shared identity, reusable business modules, inde
 
 1. Record owner phone verification of Partner Operations in project state.
 2. Inventory current identity, partner membership and authorization against this ADR; document actual vs planned without changing working code.
-3. Complete notification reliability and RU/KK/EN coverage across Consumer/Partner; preserve existing gates.
+3. Plan a staged extraction of the embedded Partner UI into its own Flutter application without disrupting current DEV client/partner flows; document shared package boundaries, distinct app identifiers, role-aware authentication and independent release pipelines. Complete notification reliability and RU/KK/EN coverage across Consumer/Partner; preserve existing gates.
 4. Design and validate provider/fulfillment jobs before courier/driver UI or taxi launch.
 5. Defer real payments, regulated mobility, new infrastructure and production rollout pending explicit approvals.
 
