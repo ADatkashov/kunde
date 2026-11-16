@@ -1,3 +1,9 @@
+# Next task — owner phone check of Partner Operations on two devices
+
+Install `KUNDE-dev-release` of [run 43927055620](https://github.com/ADatkashov/kunde/actions/runs/43927055620). Customer `+7 700 000 00 01`, partner `+7 700 000 00 02` (code `123456`, second phone or after logout). Customer: Home → Food → «Кухня партнёра (демо)» → order; Services → Beauty → «Барбершоп партнёра (демо)» → book. Partner: Profile → «Партнёрам» → «Заказы, записи и доступность»: accept/prepare/deliver or reject with reason; confirm/reject the booking; availability tab. Customer sees each status (orders poll 4 s, pending booking 5 s); restart the app: history stays. Record results in PROJECT_STATE. Check: `python3 scripts/dev/partner_ops_smoke.py https://kunde-backend-ty81.onrender.com +77000000001` prints `SMOKE OK`.
+
+---
+
 # Next task — owner phone check of Beauty/Barbershop and Home/Cleaning APK
 
 After the category-architecture PR is merged and DEV is redeployed (`BOOKING_SEED_DEMO` seeds the cleaning company; V19 applies), run `scripts/dev/booking_smoke.py https://kunde-backend-ty81.onrender.com +77000000001` (must print `SMOKE OK`) and `food_smoke.py`, then install the signed APK from `android-release.yml`. Phone check: Home → Красота → Барбершопы → book → Orders → Записи → cancel; Home → Дом и быт → Уборка → type, address, area, price, time → request → restart → history → cancel; Food and Grocery still work; RU/KK/EN. Record results in PROJECT_STATE; do not start taxi, medicine or payments. Independent follow-ups: translate Food/Grocery/Partner screens to KK/EN, repeat booking, more Beauty/Home services only after owner scope confirmation.
