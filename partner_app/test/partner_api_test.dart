@@ -38,6 +38,25 @@ void main() {
     api.close();
   });
 
+  test('order transition uses POST JSON with partner scope', () async {
+    final api = PartnerApi(
+      baseUri: Uri.parse('https://example.test/api/v1/'),
+      accessToken: () async => 'test-token',
+      client: MockClient((request) async {
+        expect(request.method, 'POST');
+        expect(request.url.path,
+            '/api/v1/partner/partners/p1/food/orders/o1/status');
+        expect(jsonDecode(request.body),
+            {'status': 'CANCELLED', 'reason': 'Out of stock'});
+        return http.Response('{"status":"CANCELLED"}', 200);
+      }),
+    );
+    final result = await PartnerOperations(api, 'p1')
+        .updateOrder('o1', 'CANCELLED', reason: 'Out of stock');
+    expect(result['status'], 'CANCELLED');
+    api.close();
+  });
+
   test('server denies other partner and client preserves error', () async {
     final api = PartnerApi(
       baseUri: Uri.parse('https://example.test/api/v1/'),
