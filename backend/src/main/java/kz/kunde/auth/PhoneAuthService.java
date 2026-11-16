@@ -84,7 +84,18 @@ public class PhoneAuthService {
         return new OtpChallenge(props.otpTtlSeconds(), props.otpCooldownSeconds());
     }
 
+    /**
+     * DEV pilot only: skip the request throttling for the allowlisted synthetic numbers (their code is fixed and public, nothing is
+     * delivered, so the limits protect nothing there and only block testing). Never applies to any other number; DEV OTP itself is
+     * refused at startup outside dev/local/test (PhoneAuthGuard).
+     */
+    @org.springframework.beans.factory.annotation.Value("${app.auth.phone.dev-otp.skip-throttle:false}")
+    boolean devSkipThrottle = false;
+
     private boolean throttled(String phone) {
+        if (devSkipThrottle && props.devOtp().enabled() && props.devOtp().allowedPhones().contains(phone)) {
+            return false;
+        }
         Integer cooling = db.queryForObject("""
                 SELECT count(*) FROM identity.otp_challenges
                 WHERE phone_e164 = ? AND created_at > now() - make_interval(secs => ?)
