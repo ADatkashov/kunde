@@ -19,13 +19,11 @@ class KundePartnerApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF087F5B)),
           useMaterial3: true,
         ),
-        localizationsDelegates: GlobalMaterialLocalizations.delegates.isEmpty
-            ? const <LocalizationsDelegate<dynamic>>[]
-            : <LocalizationsDelegate<dynamic>>[
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         supportedLocales: const [Locale('ru'), Locale('kk'), Locale('en')],
         home: const PartnerFoundationScreen(),
       );
