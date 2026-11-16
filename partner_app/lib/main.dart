@@ -79,6 +79,7 @@ class _PartnerLoginScreenState extends State<PartnerLoginScreen> {
       defaultValue: 'https://kunde-backend-ty81.onrender.com/api/v1/',
     )),
   );
+  bool handedOff = false;
   bool requested = false;
   bool busy = false;
   String? error;
@@ -92,7 +93,8 @@ class _PartnerLoginScreenState extends State<PartnerLoginScreen> {
 
   @override
   void dispose() {
-    phone.dispose(); code.dispose(); partnerId.dispose(); session.dispose();
+    phone.dispose(); code.dispose(); partnerId.dispose();
+    if (!handedOff) session.dispose();
     super.dispose();
   }
 
@@ -137,6 +139,7 @@ class _PartnerLoginScreenState extends State<PartnerLoginScreen> {
               rethrow;
             }
             if (!mounted) { api.close(); return; }
+            handedOff = true;
             Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
               builder: (_) => PartnerDashboard(
                 session: session, api: api, operations: ops)));
@@ -178,6 +181,7 @@ class _PartnerDashboardState extends State<PartnerDashboard> {
         try { await widget.session.logout(); }
         catch (_) { /* local session is cleared even if server is unavailable */ }
         widget.api.close();
+        widget.session.dispose();
         if (context.mounted) Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute<void>(builder: (_) => const PartnerLoginScreen()),
           (_) => false);
