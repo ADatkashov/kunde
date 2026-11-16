@@ -76,7 +76,7 @@ class _PartnerLoginScreenState extends State<PartnerLoginScreen> {
   final session = PartnerSession(
     apiBase: Uri.parse(const String.fromEnvironment(
       'API_BASE_URL',
-      defaultValue: 'https://kunde-backend-ty81.onrender.com/api/v1/',
+      defaultValue: '',
     )),
   );
   bool handedOff = false;
@@ -118,6 +118,9 @@ class _PartnerLoginScreenState extends State<PartnerLoginScreen> {
         const SizedBox(height: 16),
         FilledButton(
           onPressed: busy ? null : () => execute(() async {
+            if (session.apiBase.scheme != 'https' || session.apiBase.host.isEmpty) {
+              throw const PartnerAuthException('INVALID_API_BASE');
+            }
             if (!requested) {
               await session.requestOtp(phone.text.trim());
               if (mounted) setState(() => requested = true);
