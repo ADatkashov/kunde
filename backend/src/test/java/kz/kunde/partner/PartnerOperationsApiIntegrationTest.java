@@ -207,8 +207,8 @@ class PartnerOperationsApiIntegrationTest {
     @Test
     void orderAppearsForPartnerAndCustomerSeesEachStatusWithHistory() throws Exception {
         String order = placeOrder(customer, dishId("Плов с говядиной"), 2, "key-order-flow-0001");
-        // A partner-managed order is not advanced by the DEV simulator, however long it waits.
-        db.update("update transactions.food_orders set placed_at = now() - interval '2 hours' where id = ?::uuid", order);
+        // A partner-managed order is not advanced by the DEV simulator, however long it waits inside the response window.
+        db.update("update transactions.food_orders set placed_at = now() - interval '4 minutes' where id = ?::uuid", order);
         send("GET", "/api/v1/food/orders/" + order, customer, null, null).andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("PLACED")).andExpect(jsonPath("$.simulated").value(false))
                 .andExpect(jsonPath("$.cancellable").value(true));
@@ -218,6 +218,8 @@ class PartnerOperationsApiIntegrationTest {
         assertThat((String) JsonPath.read(inbox, "$[0].order.id")).isEqualTo(order);
         assertThat((List<String>) JsonPath.read(inbox, "$[0].allowedNext")).containsExactly("ACCEPTED", "CANCELLED");
         assertThat((String) JsonPath.read(inbox, "$[0].customerRef")).hasSize(8);
+        assertThat((String) JsonPath.read(inbox, "$[0].respondBy")).isNotBlank();
+        assertThat((String) JsonPath.read(inbox, "$[0].reminderAt")).isNotBlank();
 
         setStatus(ownerToken, order, "ACCEPTED", null).andExpect(status().isOk()).andExpect(jsonPath("$.order.status").value("ACCEPTED"));
         int afterAccept = events(order);
@@ -268,6 +270,27 @@ class PartnerOperationsApiIntegrationTest {
                 .andExpect(jsonPath("$.paymentStatus").value("VOIDED")).andExpect(jsonPath("$.cancelReason").value("нет продуктов"))
                 .andExpect(jsonPath("$.timeline[1].reason").value("нет продуктов"));
         setStatus(ownerToken, order, "ACCEPTED", null).andExpect(status().isConflict());
+    }
+
+    @Test
+    void unansweredOrderIsCancelledBySystemAfterTheResponseWindow() throws Exception {
+        UUID dishId = UUID.fromString(dishId("Лагман"));
+        db.update("update marketplace.food_dishes set stock_qty = 5 where id = ?", dishId);
+        String order = placeOrder(customer, dishId.toString(), 2, "key-order-timeout-01");
+        db.update("update transactions.food_orders set placed_at = now() - interval '6 minutes' where id = ?::uuid", order);
+        // The partner's late accept is refused: the system already cancelled and voided the order.
+        setStatus(ownerToken, order, "ACCEPTED", null).andExpect(status().isConflict());
+        send("GET", "/api/v1/food/orders/" + order, customer, null, null).andExpect(jsonPath("$.status").value("CANCELLED"))
+                .andExpect(jsonPath("$.cancelledBy").value("SYSTEM")).andExpect(jsonPath("$.cancelReason").value("PARTNER_TIMEOUT"))
+                .andExpect(jsonPath("$.paymentStatus").value("VOIDED"));
+        assertThat(db.queryForObject("select stock_qty from marketplace.food_dishes where id = ?", Integer.class, dishId)).isEqualTo(5);
+        assertThat(db.queryForObject("select count(*) from transactions.food_order_events where order_id = ?::uuid and actor_type = 'SYSTEM'",
+                Integer.class, order)).isEqualTo(1);
+        // Listing alone also applies the timeout, so the partner's inbox never shows an expired order as new.
+        String second = placeOrder(customer, dishId("Самса с мясом"), 2, "key-order-timeout-02");
+        db.update("update transactions.food_orders set placed_at = now() - interval '10 minutes' where id = ?::uuid", second);
+        assertThat((List<?>) JsonPath.read(body(send("GET", foodBase() + "/orders", ownerToken, null, null)), "$")).isEmpty();
+        assertThat(db.queryForObject("select status from transactions.food_orders where id = ?::uuid", String.class, second)).isEqualTo("CANCELLED");
     }
 
     @Test

@@ -67,6 +67,7 @@ app:
   # Partner Operations DEV pilot: loads two synthetic partners and links them to demo assets; dev/local/test only.
   partner-ops:
     seed-demo: ${PARTNER_OPS_SEED_DEMO:false}
+    response-timeout-seconds: ${PARTNER_RESPONSE_TIMEOUT_SECONDS:300}
   identity:
     consumer-enabled: ${CONSUMER_IDENTITY_ENABLED:false}
   security:

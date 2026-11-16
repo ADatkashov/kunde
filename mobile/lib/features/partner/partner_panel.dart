@@ -51,8 +51,11 @@ void _toast(BuildContext context, String text) =>
 /// Shown only when the build has PARTNER_FEATURES_ENABLED; nothing is public
 /// until KUNDE approves the partner, and no demo partners exist.
 class PartnerPanel extends StatefulWidget {
-  const PartnerPanel({required this.auth, super.key});
+  const PartnerPanel({required this.auth, this.allowApply = true, super.key});
   final AuthRepository auth;
+
+  /// Without it, users who are not partner staff see nothing of the partner section.
+  final bool allowApply;
 
   @override
   State<PartnerPanel> createState() => _PartnerPanelState();
@@ -105,85 +108,95 @@ class _PartnerPanelState extends State<PartnerPanel> {
   }
 
   @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(_t(context, 'Партнёрам', 'Серіктестерге', 'For partners'),
-              style: Theme.of(context).textTheme.titleLarge),
-          FutureBuilder<List<Map<String, dynamic>>>(
-            future: _partners,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState != ConnectionState.done) {
-                return const LinearProgressIndicator();
-              }
-              if (snapshot.hasError) {
-                return TextButton(
-                  onPressed: () => setState(_reload),
-                  child: Text(_t(context, 'Ошибка загрузки — повторить',
-                      'Жүктеу қатесі — қайталау', 'Loading failed — retry')),
-                );
-              }
-              final partners = snapshot.data ?? const [];
-              return Column(
+  Widget build(BuildContext context) =>
+      FutureBuilder<List<Map<String, dynamic>>>(
+        future: _partners,
+        builder: (context, snapshot) {
+          final title = Text(
+              _t(context, 'Партнёрам', 'Серіктестерге', 'For partners'),
+              style: Theme.of(context).textTheme.titleLarge);
+          if (snapshot.connectionState != ConnectionState.done) {
+            return widget.allowApply
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [title, const LinearProgressIndicator()])
+                : const SizedBox.shrink();
+          }
+          if (snapshot.hasError) {
+            return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (partners.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Text(_t(
+                  title,
+                  TextButton(
+                    onPressed: () => setState(_reload),
+                    child: Text(_t(context, 'Ошибка загрузки — повторить',
+                        'Жүктеу қатесі — қайталау', 'Loading failed — retry')),
+                  ),
+                ]);
+          }
+          final partners = snapshot.data ?? const [];
+          if (partners.isEmpty && !widget.allowApply) {
+            return const SizedBox.shrink();
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              title,
+              if (partners.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(_t(
+                      context,
+                      'Подайте заявку, чтобы управлять своими предложениями. '
+                          'Они появятся в каталоге только после проверки KUNDE.',
+                      'Өз ұсыныстарыңызды басқару үшін өтініш беріңіз. '
+                          'Олар KUNDE тексергеннен кейін ғана каталогта көрінеді.',
+                      'Apply to manage your offerings. They appear in the '
+                          'catalog only after KUNDE reviews them.')),
+                ),
+              for (final partner in partners)
+                ListTile(
+                  key: ValueKey(partner['id']),
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(partner['displayName'] as String),
+                  subtitle: Text(
+                      '${_statusLabel(context, partner['verificationStatus'] as String)}'
+                      ' · ${_roleLabel(context, partner['role'] as String)}'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => PartnerOfferingsPage(
+                          auth: widget.auth, partner: partner))),
+                ),
+              for (final partner in partners)
+                if (partner['verificationStatus'] == 'APPROVED')
+                  Align(
+                    key: ValueKey('hub-${partner['id']}'),
+                    alignment: Alignment.centerLeft,
+                    child: FilledButton.icon(
+                      icon: const Icon(Icons.receipt_long_outlined),
+                      label: Text(_t(
                           context,
-                          'Подайте заявку, чтобы управлять своими предложениями. '
-                              'Они появятся в каталоге только после проверки KUNDE.',
-                          'Өз ұсыныстарыңызды басқару үшін өтініш беріңіз. '
-                              'Олар KUNDE тексергеннен кейін ғана каталогта көрінеді.',
-                          'Apply to manage your offerings. They appear in the '
-                              'catalog only after KUNDE reviews them.')),
+                          'Заказы, записи и доступность',
+                          'Тапсырыстар, жазылулар және қолжетімділік',
+                          'Orders, bookings and availability')),
+                      onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                              builder: (_) => PartnerHubPage(
+                                  auth: widget.auth, partner: partner))),
                     ),
-                  for (final partner in partners)
-                    ListTile(
-                      key: ValueKey(partner['id']),
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(partner['displayName'] as String),
-                      subtitle: Text(
-                          '${_statusLabel(context, partner['verificationStatus'] as String)}'
-                          ' · ${_roleLabel(context, partner['role'] as String)}'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => PartnerOfferingsPage(
-                              auth: widget.auth, partner: partner))),
-                    ),
-                  for (final partner in partners)
-                    if (partner['verificationStatus'] == 'APPROVED')
-                      Align(
-                        key: ValueKey('hub-${partner['id']}'),
-                        alignment: Alignment.centerLeft,
-                        child: FilledButton.icon(
-                          icon: const Icon(Icons.receipt_long_outlined),
-                          label: Text(_t(
-                              context,
-                              'Заказы, записи и доступность',
-                              'Тапсырыстар, жазылулар және қолжетімділік',
-                              'Orders, bookings and availability')),
-                          onPressed: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                  builder: (_) => PartnerHubPage(
-                                      auth: widget.auth, partner: partner))),
-                        ),
-                      ),
-                  if (partners.isEmpty)
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: FilledButton(
-                        onPressed: _busy ? null : _apply,
-                        child: Text(_t(context, 'Стать партнёром',
-                            'Серіктес болу', 'Become a partner')),
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
-        ],
+                  ),
+              if (partners.isEmpty && widget.allowApply)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: FilledButton(
+                    onPressed: _busy ? null : _apply,
+                    child: Text(_t(context, 'Стать партнёром', 'Серіктес болу',
+                        'Become a partner')),
+                  ),
+                ),
+            ],
+          );
+        },
       );
 }
 

@@ -71,6 +71,7 @@ void main() {
     identityPocEnabled: const bool.fromEnvironment('IDENTITY_POC_ENABLED'),
     devOtpHint: const bool.fromEnvironment('DEV_OTP_HINT'),
     partnerEnabled: const bool.fromEnvironment('PARTNER_FEATURES_ENABLED'),
+    partnerApplyEnabled: const bool.fromEnvironment('PARTNER_APPLY_ENABLED'),
   ));
 }
 
@@ -81,6 +82,7 @@ class KundeApp extends StatefulWidget {
       this.identityPocEnabled = false,
       this.devOtpHint = false,
       this.partnerEnabled = false,
+      this.partnerApplyEnabled = true,
       this.food,
       this.booking,
       super.key});
@@ -94,6 +96,9 @@ class KundeApp extends StatefulWidget {
 
   /// Partner screens (ADR-018); off by default and in every consumer build.
   final bool partnerEnabled;
+
+  /// Show «Become a partner» to users who are not partner staff (PARTNER_APPLY_ENABLED; off in production main).
+  final bool partnerApplyEnabled;
   final FoodServices? food;
   final BookingServices? booking;
 
@@ -120,6 +125,7 @@ class _KundeAppState extends State<KundeApp> {
                 api: widget.api,
                 devOtpHint: widget.devOtpHint,
                 partnerEnabled: widget.partnerEnabled,
+                partnerApplyEnabled: widget.partnerApplyEnabled,
                 food: widget.food,
                 booking: widget.booking,
                 onLocale: (locale) => setState(() => _locale = locale))

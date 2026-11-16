@@ -314,9 +314,11 @@ class _StatusTimeline extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         child: ListTile(
           leading: const Icon(Icons.cancel_outlined),
-          title: Text(order.cancelledBy == 'PARTNER'
-              ? 'Заказ отклонён заведением'
-              : 'Заказ отменён'),
+          title: Text(order.cancelReason == 'PARTNER_TIMEOUT'
+              ? 'Заведение не ответило вовремя'
+              : order.cancelledBy == 'PARTNER'
+                  ? 'Заказ отклонён заведением'
+                  : 'Заказ отменён'),
           subtitle: Text(
               order.cancelReason != null && order.cancelledBy == 'PARTNER'
                   ? 'Причина: ${order.cancelReason}\nПлатёж аннулирован.'

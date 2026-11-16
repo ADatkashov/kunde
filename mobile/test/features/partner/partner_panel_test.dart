@@ -204,6 +204,26 @@ void main() {
   });
 
   group('PartnerPanel', () {
+    testWidgets('a non-partner sees nothing when applying is disabled',
+        (tester) async {
+      final (auth, _) = _auth((request) async => http.Response('{}', 403));
+      await auth.login();
+      await _show(tester, PartnerPanel(auth: auth, allowApply: false));
+      expect(find.text('For partners'), findsNothing);
+      expect(find.text('Become a partner'), findsNothing);
+    });
+
+    testWidgets('partner staff still see the section when applying is disabled',
+        (tester) async {
+      final (auth, _) =
+          _auth((request) async => _json([_partner(status: 'APPROVED')]));
+      await auth.login();
+      await _show(tester, PartnerPanel(auth: auth, allowApply: false));
+      expect(find.text('For partners'), findsOneWidget);
+      expect(find.text('Synthetic Cafe'), findsOneWidget);
+      expect(find.text('Become a partner'), findsNothing);
+    });
+
     testWidgets('applying refreshes the token and then lists the partner',
         (tester) async {
       late _Gateway gateway;
