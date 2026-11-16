@@ -1,5 +1,11 @@
 # KUNDE project state
 
+## Category architecture + Home services (cleaning) — 2026-11-15
+
+- Owner decision: user categories follow life needs (Food, Groceries, Rides, Delivery, Home services, Beauty, Health, Auto, Leisure); «Все сервисы» is a catalog. Booking remains one internal mechanism. Implemented on a branch from main `59295d0`: Home tile «Красота» → Барбершопы, «Дом и быт» → Уборка (type, address, area, demo price estimate, free slot, request, history, free cancel before start); Flyway V19 (cleaning pricing by area, booking category/address/area; old bookings stay `BARBER`); RU/KK/EN strings. Details/limits: [booking-mvp](docs/product/booking-mvp.md#category-architecture-and-home-services--cleaning-owner-decision-2026-11-15-dev).
+- Verified locally: backend `mvn verify` on PostgreSQL 16 — 245 tests, 0 failures (incl. 2 new cleaning/compat tests); real-HTTP `scripts/dev/booking_smoke.py` (barbershop + cleaning: book, replay, overlap 409, validation 400, restore after session refresh, cancel) and `food_smoke.py` against a local jar — OK; Flutter 3.47.9 `analyze --fatal-infos` clean, format clean, 183 tests pass (goldens of Home updated: «Красота» tile replaces «Услуги»). **Not verified here:** PR CI, DEV deploy, signed APK, phone.
+
+## Premium Flutter UI — 2026-11-15
 ## Premium Flutter UI — signed release verified, 2026-11-15
 
 - Premium redesign merged as [PR #98](https://github.com/ADatkashov/kunde/pull/98), font-license packaging fix as [PR #99](https://github.com/ADatkashov/kunde/pull/99). White/emerald default, original K/Almaty header, bundled 3D categories, AI «Скоро», Food photo banner, unified Food/Grocery/cart/checkout/history/profile, five tabs Home/Search/Orders/Services/Profile. Backend/business flows unchanged; sources/licenses in `mobile/assets/README.md`.

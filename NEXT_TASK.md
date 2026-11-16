@@ -1,3 +1,13 @@
+# Next task — owner phone check of Beauty/Barbershop and Home/Cleaning APK
+
+After the category-architecture PR is merged and DEV is redeployed (`BOOKING_SEED_DEMO` seeds the cleaning company; V19 applies), run `scripts/dev/booking_smoke.py https://kunde-backend-ty81.onrender.com +77000000001` (must print `SMOKE OK`) and `food_smoke.py`, then install the signed APK from `android-release.yml`. Phone check: Home → Красота → Барбершопы → book → Orders → Записи → cancel; Home → Дом и быт → Уборка → type, address, area, price, time → request → restart → history → cancel; Food and Grocery still work; RU/KK/EN. Record results in PROJECT_STATE; do not start taxi, medicine or payments. Independent follow-ups: translate Food/Grocery/Partner screens to KK/EN, repeat booking, more Beauty/Home services only after owner scope confirmation.
+
+---
+
+# Next task — verify the premium Flutter Release APK on Samsung
+
+---
+
 # Next task — owner check of the signed premium APK on Samsung
 
 The premium redesign is merged (#98, #99); **178 tests and main CI are green**. Signed ARM64 Release APK: [run 43770508122](https://github.com/ADatkashov/kunde/actions/runs/43770508122), artifact `KUNDE-dev-release` (id `14184357296`, expires 2026-11-29), code `59295d0`. Signature and contents passed workflow verification; downloaded SHA-256 and bundled licenses were checked. DEV API/partner features preserved.

@@ -5,6 +5,7 @@ import '../../food/presentation/food_widgets.dart';
 import '../booking_services.dart';
 import '../data/booking_api.dart';
 import '../data/booking_models.dart';
+import 'booking_strings.dart';
 import 'venue_screen.dart';
 
 /// Barbershop list with loading skeleton, error retry and empty state.
@@ -18,7 +19,8 @@ class VenueListScreen extends StatefulWidget {
 }
 
 class _VenueListScreenState extends State<VenueListScreen> {
-  late Future<List<BookingVenue>> _venues = widget.services.api.venues();
+  late Future<List<BookingVenue>> _venues =
+      widget.services.api.venues(category: 'BARBER');
 
   Future<void> _refresh() async {
     final next = widget.services.api.venues();
@@ -31,52 +33,57 @@ class _VenueListScreenState extends State<VenueListScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Барбершопы')),
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 640),
-            child: FutureBuilder<List<BookingVenue>>(
-              future: _venues,
-              builder: (context, state) {
-                if (state.connectionState != ConnectionState.done) {
-                  return const RestaurantListSkeleton();
-                }
-                if (state.hasError) {
-                  final error = state.error;
-                  return FoodStateMessage(
-                      icon: Icons.cloud_off_outlined,
-                      title: 'Не удалось загрузить барбершопы',
-                      body: error is BookingException ? error.message : null,
-                      onAction: _refresh);
-                }
-                final list = state.data!;
-                if (list.isEmpty) {
-                  return const FoodStateMessage(
-                      icon: Icons.storefront_outlined,
-                      title: 'Пока нет барбершопов',
-                      body: 'Заведения появятся здесь, когда будут добавлены.');
-                }
-                return RefreshIndicator(
-                  onRefresh: _refresh,
-                  child: ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                    itemCount: list.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 14),
-                    itemBuilder: (context, i) => _VenueCard(
-                      venue: list[i],
-                      onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                              builder: (_) => VenueScreen(
-                                  services: widget.services, venue: list[i]))),
-                    ),
+  Widget build(BuildContext context) {
+    final s = bkL10n(context);
+    return Scaffold(
+      appBar: AppBar(title: Text(s.bkBarbers)),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: FutureBuilder<List<BookingVenue>>(
+            future: _venues,
+            builder: (context, state) {
+              if (state.connectionState != ConnectionState.done) {
+                return const RestaurantListSkeleton();
+              }
+              if (state.hasError) {
+                final error = state.error;
+                return FoodStateMessage(
+                    icon: Icons.cloud_off_outlined,
+                    title: s.bkBarbersLoadError,
+                    body: error is BookingException
+                        ? s.bkError(error.failure)
+                        : null,
+                    onAction: _refresh);
+              }
+              final list = state.data!;
+              if (list.isEmpty) {
+                return FoodStateMessage(
+                    icon: Icons.storefront_outlined,
+                    title: s.bkNoBarbers,
+                    body: s.bkNoVenuesBody);
+              }
+              return RefreshIndicator(
+                onRefresh: _refresh,
+                child: ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  itemCount: list.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 14),
+                  itemBuilder: (context, i) => _VenueCard(
+                    venue: list[i],
+                    onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                            builder: (_) => VenueScreen(
+                                services: widget.services, venue: list[i]))),
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
         ),
-      );
+      ),
+    );
+  }
 }
 
 class _VenueCard extends StatelessWidget {
@@ -127,7 +134,7 @@ class _VenueCard extends StatelessWidget {
                           decoration: BoxDecoration(
                               color: Colors.black87,
                               borderRadius: BorderRadius.circular(999)),
-                          child: const Text('Закрыто',
+                          child: Text(bkL10n(context).bkClosed,
                               style:
                                   TextStyle(color: Colors.white, fontSize: 12)),
                         )),
@@ -145,7 +152,9 @@ class _VenueCard extends StatelessWidget {
                               color: theme.colorScheme.onSurfaceVariant)),
                       const SizedBox(height: 8),
                       if (venue.fromPriceMinor != null)
-                        Text('Услуги от ${formatTenge(venue.fromPriceMinor!)}',
+                        Text(
+                            bkL10n(context).bkServicesFrom(
+                                formatTenge(venue.fromPriceMinor!)),
                             style: theme.textTheme.titleSmall),
                     ]),
               ),

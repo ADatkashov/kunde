@@ -29,7 +29,7 @@ public class BookingCatalogController {
             String emoji, String tone, String imageUrl, boolean open, boolean synthetic, Long fromPriceMinor) {}
 
     public record ServiceItem(String id, String name, String description, int durationMinutes, long priceMinor,
-            boolean available) {}
+            boolean available, long pricePerSqmMinor, Integer minAreaSqm, Integer maxAreaSqm) {}
 
     public record Master(String id, String name, String bio, String emoji, String tone, List<String> serviceIds) {}
 
@@ -46,7 +46,7 @@ public class BookingCatalogController {
     private static final String VENUE_SELECT = """
             select v.id, v.slug, v.category, v.name, v.description, v.address_text, v.emoji, v.tone, v.image_url,
                    v.is_open, v.is_synthetic,
-                   (select min(s.price_minor) from marketplace.booking_services s where s.venue_id = v.id and s.available) as from_price
+                   (select min(s.price_minor + s.price_per_sqm_minor * coalesce(s.min_area_sqm, 0)) from marketplace.booking_services s where s.venue_id = v.id and s.available) as from_price
             from marketplace.booking_venues v
             """;
 
@@ -73,10 +73,12 @@ public class BookingCatalogController {
                 .stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "VENUE_NOT_FOUND",
                         "Venue is not available"));
         List<ServiceItem> services = jdbc.query("""
-                select id, name, description, duration_minutes, price_minor, available
+                select id, name, description, duration_minutes, price_minor, available, price_per_sqm_minor, min_area_sqm, max_area_sqm
                 from marketplace.booking_services where venue_id = ? order by sort_order, name
                 """, (rs, row) -> new ServiceItem(rs.getString("id"), rs.getString("name"), rs.getString("description"),
-                rs.getInt("duration_minutes"), rs.getLong("price_minor"), rs.getBoolean("available")), venueId);
+                rs.getInt("duration_minutes"), rs.getLong("price_minor"), rs.getBoolean("available"),
+                rs.getLong("price_per_sqm_minor"), rs.getObject("min_area_sqm", Integer.class),
+                rs.getObject("max_area_sqm", Integer.class)), venueId);
         Map<UUID, List<String>> serviceIds = new LinkedHashMap<>();
         jdbc.query("""
                 select ms.master_id, ms.service_id from marketplace.booking_master_services ms

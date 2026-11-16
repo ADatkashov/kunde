@@ -40,22 +40,27 @@ public class BookingSlots {
 
     public BookingSlots(JdbcTemplate db) { this.db = db; }
 
-    public record Service(UUID id, String name, int durationMinutes, long priceMinor) {}
+    public record Service(UUID id, String name, int durationMinutes, long priceMinor, long pricePerSqmMinor, Integer minAreaSqm,
+            Integer maxAreaSqm) {
+        public boolean areaBased() { return pricePerSqmMinor > 0; }
+    }
 
-    public record Venue(UUID id, String name, String address, ZoneId zone) {}
+    public record Venue(UUID id, String category, String name, String address, ZoneId zone) {}
 
     public Venue venue(UUID venueId) {
-        return db.query("select id, name, address_text, timezone from marketplace.booking_venues where id = ? and is_open",
-                (rs, row) -> new Venue(rs.getObject(1, UUID.class), rs.getString(2), rs.getString(3), ZoneId.of(rs.getString(4))),
+        return db.query("select id, category, name, address_text, timezone from marketplace.booking_venues where id = ? and is_open",
+                (rs, row) -> new Venue(rs.getObject(1, UUID.class), rs.getString(2), rs.getString(3), rs.getString(4),
+                        ZoneId.of(rs.getString(5))),
                 venueId).stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "VENUE_NOT_FOUND",
                 "Venue is not available"));
     }
 
     public Service service(UUID venueId, UUID serviceId) {
         return db.query("""
-                select id, name, duration_minutes, price_minor from marketplace.booking_services
-                where id = ? and venue_id = ? and available
-                """, (rs, row) -> new Service(rs.getObject(1, UUID.class), rs.getString(2), rs.getInt(3), rs.getLong(4)),
+                select id, name, duration_minutes, price_minor, price_per_sqm_minor, min_area_sqm, max_area_sqm
+                from marketplace.booking_services where id = ? and venue_id = ? and available
+                """, (rs, row) -> new Service(rs.getObject(1, UUID.class), rs.getString(2), rs.getInt(3), rs.getLong(4),
+                        rs.getLong(5), rs.getObject(6, Integer.class), rs.getObject(7, Integer.class)),
                 serviceId, venueId).stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND,
                 "SERVICE_NOT_FOUND", "Service is not available"));
     }

@@ -1,5 +1,5 @@
 import '../../booking/booking_services.dart';
-import '../../booking/presentation/services_home_screen.dart';
+import '../../booking/presentation/category_screens.dart';
 import '../../food/food_services.dart';
 import '../../food/presentation/food_home_screen.dart';
 import 'package:flutter/material.dart';
@@ -133,10 +133,11 @@ class _HomeScreenState extends State<HomeScreen> {
         ServiceCategory(
             icon: Icons.home_rounded,
             label: s.catHome,
-            color: const Color(0xFF176B52)),
+            color: const Color(0xFF176B52),
+            enabled: bookingEnabled && widget.booking != null),
         ServiceCategory(
             icon: Icons.content_cut_rounded,
-            label: s.catServices,
+            label: s.catBeauty,
             color: const Color(0xFFB83280),
             enabled: bookingEnabled && widget.booking != null),
         ServiceCategory(
@@ -163,11 +164,17 @@ class _HomeScreenState extends State<HomeScreen> {
     final s = KundeLocalizations.of(context);
     if (c.isAll) {
       _showAll(all);
-    } else if (c.label == s.catServices &&
+    } else if (c.label == s.catBeauty &&
         bookingEnabled &&
         widget.booking != null) {
       Navigator.of(context).push(MaterialPageRoute<void>(
-          builder: (_) => ServicesHomeScreen(services: widget.booking!)));
+          builder: (_) => BeautyCategoryScreen(services: widget.booking!)));
+    } else if (c.label == s.catHome &&
+        bookingEnabled &&
+        widget.booking != null) {
+      Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) =>
+              HomeServicesCategoryScreen(services: widget.booking!)));
     } else if (c.label == s.catGroceries &&
         foodEnabled &&
         widget.food != null) {

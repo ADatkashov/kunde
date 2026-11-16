@@ -7,6 +7,8 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import kz.kunde.platform.ApiException;
@@ -29,12 +31,13 @@ public class BookingService {
     private static final int MAX_UPCOMING = 5;
 
     public record BookRequest(@NotNull UUID venueId, @NotNull UUID serviceId, @NotNull UUID masterId,
-            @NotNull OffsetDateTime startsAt, @Size(max = 300) String comment) {}
+            @NotNull OffsetDateTime startsAt, @Size(max = 300) String comment,
+            @Size(max = 300) String addressText, @Min(1) @Max(1000) Integer areaSqm) {}
 
     public record BookingView(String id, String venueId, String venueName, String venueAddress, String serviceName,
             int durationMinutes, String masterId, String masterName, OffsetDateTime startsAt, OffsetDateTime endsAt,
             long priceMinor, String currency, String status, String confirmation, String comment, boolean cancellable,
-            OffsetDateTime createdAt, OffsetDateTime cancelledAt) {}
+            OffsetDateTime createdAt, OffsetDateTime cancelledAt, String category, String addressText, Integer areaSqm) {}
 
     public record Booked(BookingView booking, boolean created) {}
 
@@ -67,6 +70,26 @@ public class BookingService {
         }
         var venue = slots.venue(request.venueId());
         var service = slots.service(request.venueId(), request.serviceId());
+        boolean home = "CLEANING".equals(venue.category());
+        String address = request.addressText() == null || request.addressText().isBlank() ? null : request.addressText().strip();
+        Integer area = request.areaSqm();
+        if (home) {
+            if (address == null || address.length() < 5) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "ADDRESS_REQUIRED", "Enter the address where the service is needed");
+            }
+            if (service.areaBased()) {
+                if (area == null || area < service.minAreaSqm() || area > service.maxAreaSqm()) {
+                    throw new ApiException(HttpStatus.BAD_REQUEST, "AREA_INVALID",
+                            "Area must be between " + service.minAreaSqm() + " and " + service.maxAreaSqm() + " m2");
+                }
+            } else if (area != null) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "AREA_NOT_APPLICABLE", "This service is not priced by area");
+            }
+        } else if (address != null || area != null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "DETAILS_NOT_APPLICABLE", "Address and area apply to home services only");
+        }
+        // The price is always computed here; the app only previews it.
+        long price = service.priceMinor() + service.pricePerSqmMinor() * (area == null ? 0 : area);
         // Only a start time the slot list offers for this master can be booked (hours, break, grid, lead time, horizon).
         var date = start.atZone(venue.zone()).toLocalDate();
         boolean offered = slots.freeSlots(request.venueId(), request.serviceId(), request.masterId(), date).stream()
@@ -93,11 +116,12 @@ public class BookingService {
         try {
             UUID id = db.queryForObject("""
                     insert into transactions.bookings (user_id, venue_id, service_id, master_id, venue_name, venue_address,
-                        service_name, master_name, duration_minutes, starts_at, ends_at, price_minor, comment, idempotency_key)
-                    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning id
+                        service_name, master_name, duration_minutes, starts_at, ends_at, price_minor, comment, idempotency_key,
+                        category, address_text, area_sqm)
+                    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning id
                     """, UUID.class, user, venue.id(), service.id(), request.masterId(), venue.name(), venue.address(),
                     service.name(), master, service.durationMinutes(), Timestamp.from(start), Timestamp.from(end),
-                    service.priceMinor(), comment, idempotencyKey);
+                    price, comment, idempotencyKey, venue.category(), address, area);
             return new Booked(view(user, id), true);
         } catch (DataIntegrityViolationException conflict) {
             if (conflict.getMostSpecificCause() instanceof SQLException sql && "23P01".equals(sql.getSQLState())) {
@@ -155,7 +179,7 @@ public class BookingService {
         return db.query("""
                 select id, venue_id, venue_name, venue_address, service_name, duration_minutes, master_id, master_name,
                        starts_at, ends_at, price_minor, currency, status, confirmation, comment,
-                       (status = 'CONFIRMED' and starts_at > now()) as cancellable, created_at, cancelled_at
+                       (status = 'CONFIRMED' and starts_at > now()) as cancellable, created_at, cancelled_at, category, address_text, area_sqm
                 from transactions.bookings where user_id = ? and (?::uuid is null or id = ?::uuid)
                 order by starts_at desc, id limit ? offset ?
                 """, (rs, row) -> new BookingView(rs.getString("id"), rs.getString("venue_id"), rs.getString("venue_name"),
@@ -163,7 +187,8 @@ public class BookingService {
                 rs.getString("master_id"), rs.getString("master_name"), rs.getObject("starts_at", OffsetDateTime.class),
                 rs.getObject("ends_at", OffsetDateTime.class), rs.getLong("price_minor"), rs.getString("currency"),
                 rs.getString("status"), rs.getString("confirmation"), rs.getString("comment"), rs.getBoolean("cancellable"),
-                rs.getObject("created_at", OffsetDateTime.class), rs.getObject("cancelled_at", OffsetDateTime.class)),
+                rs.getObject("created_at", OffsetDateTime.class), rs.getObject("cancelled_at", OffsetDateTime.class),
+                rs.getString("category"), rs.getString("address_text"), rs.getObject("area_sqm", Integer.class)),
                 user, id, id, limit, offset);
     }
 }

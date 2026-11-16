@@ -55,6 +55,7 @@ class BookingVenue {
     required this.tone,
     required this.open,
     required this.synthetic,
+    this.category = 'BARBER',
     this.fromPriceMinor,
     this.imageUrl,
   });
@@ -67,6 +68,7 @@ class BookingVenue {
   final String tone;
   final bool open;
   final bool synthetic;
+  final String category;
   final int? fromPriceMinor;
   final String? imageUrl;
 
@@ -79,6 +81,7 @@ class BookingVenue {
         tone: json['tone'] as String? ?? 'blue',
         open: json['open'] as bool? ?? false,
         synthetic: json['synthetic'] as bool? ?? false,
+        category: json['category'] as String? ?? 'BARBER',
         fromPriceMinor: (json['fromPriceMinor'] as num?)?.toInt(),
         imageUrl: json['imageUrl'] as String?,
       );
@@ -92,6 +95,9 @@ class BookableService {
     required this.durationMinutes,
     required this.priceMinor,
     required this.available,
+    this.pricePerSqmMinor = 0,
+    this.minAreaSqm,
+    this.maxAreaSqm,
   });
 
   final String id;
@@ -101,6 +107,22 @@ class BookableService {
   final int priceMinor;
   final bool available;
 
+  /// Area-based pricing (home services): `priceMinor` + `pricePerSqmMinor` x area, area within [minAreaSqm, maxAreaSqm].
+  final int pricePerSqmMinor;
+  final int? minAreaSqm;
+  final int? maxAreaSqm;
+
+  bool get areaBased => pricePerSqmMinor > 0 && minAreaSqm != null;
+
+  /// Same formula as the server (which is the authority); `null` when the area is missing or out of range.
+  int? priceFor(int? areaSqm) {
+    if (!areaBased) return priceMinor;
+    if (areaSqm == null || areaSqm < minAreaSqm! || areaSqm > maxAreaSqm!) {
+      return null;
+    }
+    return priceMinor + pricePerSqmMinor * areaSqm;
+  }
+
   factory BookableService.fromJson(Map<String, dynamic> json) =>
       BookableService(
         id: json['id'] as String,
@@ -109,6 +131,9 @@ class BookableService {
         durationMinutes: (json['durationMinutes'] as num).toInt(),
         priceMinor: (json['priceMinor'] as num).toInt(),
         available: json['available'] as bool? ?? false,
+        pricePerSqmMinor: (json['pricePerSqmMinor'] as num?)?.toInt() ?? 0,
+        minAreaSqm: (json['minAreaSqm'] as num?)?.toInt(),
+        maxAreaSqm: (json['maxAreaSqm'] as num?)?.toInt(),
       );
 }
 
@@ -206,6 +231,9 @@ class BookingRecord {
     required this.status,
     required this.comment,
     required this.cancellable,
+    this.category = 'BARBER',
+    this.addressText,
+    this.areaSqm,
   });
 
   final String id;
@@ -222,6 +250,13 @@ class BookingRecord {
   final String? comment;
   final bool cancellable;
 
+  /// `BARBER` (Beauty) or `CLEANING` (Home services); older records default to `BARBER`.
+  final String category;
+  final String? addressText;
+  final int? areaSqm;
+
+  bool get isCleaning => category == 'CLEANING';
+
   factory BookingRecord.fromJson(Map<String, dynamic> json) => BookingRecord(
         id: json['id'] as String,
         venueName: json['venueName'] as String,
@@ -236,5 +271,8 @@ class BookingRecord {
         status: json['status'] as String,
         comment: json['comment'] as String?,
         cancellable: json['cancellable'] as bool? ?? false,
+        category: json['category'] as String? ?? 'BARBER',
+        addressText: json['addressText'] as String?,
+        areaSqm: (json['areaSqm'] as num?)?.toInt(),
       );
 }

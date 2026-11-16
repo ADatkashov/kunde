@@ -15,6 +15,8 @@ enum BookingFailure {
   tooMany,
   notCancellable,
   notFound,
+  addressRequired,
+  areaInvalid,
   other
 }
 
@@ -23,6 +25,7 @@ class BookingException implements Exception {
 
   final BookingFailure failure;
 
+  /// Russian default text; screens use `KundeLocalizations.bkError(failure)` for the user's language.
   String get message => switch (failure) {
         BookingFailure.offline =>
           'Нет связи с сервером. Проверьте интернет и попробуйте снова.',
@@ -35,6 +38,9 @@ class BookingException implements Exception {
         BookingFailure.notCancellable =>
           'Запись уже нельзя отменить: услуга началась или запись отменена.',
         BookingFailure.notFound => 'Не найдено.',
+        BookingFailure.addressRequired => 'Укажите адрес, где нужна услуга.',
+        BookingFailure.areaInvalid =>
+          'Площадь вне допустимого диапазона для этой услуги.',
         BookingFailure.other =>
           'Не удалось выполнить действие. Попробуйте позже.',
       };
@@ -84,6 +90,8 @@ class BookingApi {
         'BOOKING_OVERLAPS_YOURS' => BookingFailure.overlaps,
         'TOO_MANY_UPCOMING_BOOKINGS' => BookingFailure.tooMany,
         'BOOKING_NOT_CANCELLABLE' => BookingFailure.notCancellable,
+        'ADDRESS_REQUIRED' => BookingFailure.addressRequired,
+        'AREA_INVALID' || 'AREA_NOT_APPLICABLE' => BookingFailure.areaInvalid,
         'BOOKING_NOT_FOUND' ||
         'VENUE_NOT_FOUND' ||
         'SERVICE_NOT_FOUND' ||
@@ -107,8 +115,9 @@ class BookingApi {
         return jsonDecode(utf8.decode(response.bodyBytes));
       });
 
-  Future<List<BookingVenue>> venues() async =>
-      ((await _public('booking/venues', {'category': 'BARBER'}))
+  /// [category] is `BARBER` (Beauty → barbershops) or `CLEANING` (Home services → cleaning).
+  Future<List<BookingVenue>> venues({String category = 'BARBER'}) async =>
+      ((await _public('booking/venues', {'category': category}))
               as List<dynamic>)
           .map((e) => BookingVenue.fromJson(e as Map<String, dynamic>))
           .toList(growable: false);
@@ -142,6 +151,8 @@ class BookingApi {
     required String masterId,
     required String startsAtIso,
     String? comment,
+    String? addressText,
+    int? areaSqm,
     required String idempotencyKey,
   }) =>
       _guard(() async {
@@ -153,6 +164,9 @@ class BookingApi {
           'startsAt': startsAtIso,
           if (comment != null && comment.trim().isNotEmpty)
             'comment': comment.trim(),
+          if (addressText != null && addressText.trim().isNotEmpty)
+            'addressText': addressText.trim(),
+          if (areaSqm != null) 'areaSqm': areaSqm,
         }, expected: const {
           200,
           201

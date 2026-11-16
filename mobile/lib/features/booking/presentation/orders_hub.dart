@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'booking_strings.dart';
+
 import '../../food/food_services.dart';
 import '../../food/presentation/orders_tab.dart';
 import '../booking_services.dart';
@@ -26,15 +28,15 @@ class _OrdersHubTabState extends State<OrdersHubTab> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: SegmentedButton<int>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                     value: 0,
-                    label: Text('Заказы'),
-                    icon: Icon(Icons.receipt_long_outlined)),
+                    label: Text(bkL10n(context).bkSegmentOrders),
+                    icon: const Icon(Icons.receipt_long_outlined)),
                 ButtonSegment(
                     value: 1,
-                    label: Text('Записи'),
-                    icon: Icon(Icons.event_available_outlined)),
+                    label: Text(bkL10n(context).bkSegmentBookings),
+                    icon: const Icon(Icons.event_available_outlined)),
               ],
               selected: {_segment},
               onSelectionChanged: (s) => setState(() => _segment = s.first),

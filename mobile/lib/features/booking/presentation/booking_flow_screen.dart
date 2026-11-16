@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'booking_strings.dart';
+
 import '../../food/data/food_models.dart' show toneColors;
 import '../../food/presentation/food_widgets.dart';
 import '../booking_services.dart';
@@ -98,7 +100,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
       }
       setState(() {
         _busy = false;
-        _error = error.message;
+        _error = bkL10n(context).bkError(error.failure);
         if (error.failure == BookingFailure.slotTaken) _loadSlots();
       });
     }
@@ -107,9 +109,10 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final s = bkL10n(context);
     final service = widget.service;
     return Scaffold(
-      appBar: AppBar(title: const Text('Запись')),
+      appBar: AppBar(title: Text(s.bkBookingTitle)),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 640),
@@ -119,14 +122,14 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                 Text(widget.detail.venue.name,
                     style: theme.textTheme.titleMedium),
                 Text(
-                    '${service.name} · ${formatDuration(service.durationMinutes)} · ${formatTenge(service.priceMinor)}',
+                    '${s.bkCatalogName(service.name)} · ${formatDuration(service.durationMinutes)} · ${formatTenge(service.priceMinor)}',
                     style: theme.textTheme.titleLarge),
                 const SizedBox(height: 20),
-                Text('Мастер', style: theme.textTheme.titleMedium),
+                Text(s.bkMaster, style: theme.textTheme.titleMedium),
                 const SizedBox(height: 8),
                 Wrap(spacing: 8, runSpacing: 8, children: [
                   ChoiceChip(
-                    label: const Text('Любой мастер'),
+                    label: Text(s.bkAnyMaster),
                     selected: _masterId == null,
                     onSelected: _busy
                         ? null
@@ -149,7 +152,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                     ),
                 ]),
                 const SizedBox(height: 20),
-                Text('Дата', style: theme.textTheme.titleMedium),
+                Text(s.bkDate, style: theme.textTheme.titleMedium),
                 const SizedBox(height: 8),
                 SizedBox(
                   height: 64,
@@ -184,7 +187,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                Text('Время · ${formatDay(_date)}',
+                Text('${s.bkTime} · ${formatDay(_date)}',
                     style: theme.textTheme.titleMedium),
                 const SizedBox(height: 8),
                 FutureBuilder<List<BookingSlot>>(
@@ -202,19 +205,18 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(error is BookingException
-                                ? error.message
-                                : 'Не удалось загрузить время.'),
+                                ? s.bkError(error.failure)
+                                : s.bkSlotsError),
                             TextButton(
                                 onPressed: () => setState(_loadSlots),
-                                child: const Text('Повторить')),
+                                child: Text(s.bkRetry)),
                           ]);
                     }
                     final slots = state.data!;
                     if (slots.isEmpty) {
-                      return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                        child: Text(
-                            'На эту дату нет свободного времени. Выберите другой день или мастера.'),
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Text(s.bkNoSlots),
                       );
                     }
                     return Wrap(spacing: 8, runSpacing: 8, children: [
@@ -239,17 +241,17 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                       child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Ваша запись',
+                            Text(s.bkYourBooking,
                                 style: theme.textTheme.titleMedium),
                             const SizedBox(height: 6),
                             Text(
                                 '${formatDay(_slot!.start)}, ${formatClock(_slot!.start)}',
                                 style: theme.textTheme.titleLarge),
-                            Text('Мастер: ${_slot!.masterName}'),
+                            Text(s.bkMasterLine(_slot!.masterName)),
                             Text(
-                                '${service.name} · ${formatDuration(service.durationMinutes)}'),
-                            Text(
-                                'Стоимость: ${formatTenge(service.priceMinor)} (оплата на месте)'),
+                                '${s.bkCatalogName(service.name)} · ${formatDuration(service.durationMinutes)}'),
+                            Text(s
+                                .bkCostOnSite(formatTenge(service.priceMinor))),
                           ]),
                     ),
                   ),
@@ -258,10 +260,10 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                     controller: _comment,
                     enabled: !_busy,
                     maxLength: 300,
-                    decoration: const InputDecoration(
-                        labelText: 'Комментарий (необязательно)',
-                        hintText: 'Например: фейд, 3 мм',
-                        border: OutlineInputBorder()),
+                    decoration: InputDecoration(
+                        labelText: s.bkCommentLabel,
+                        hintText: s.bkCommentHint,
+                        border: const OutlineInputBorder()),
                   ),
                 ],
                 if (_error != null)
@@ -281,12 +283,11 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                           height: 22,
                           child: CircularProgressIndicator(strokeWidth: 2.5))
                       : Text(_slot == null
-                          ? 'Выберите время'
-                          : 'Записаться · ${formatTenge(service.priceMinor)}'),
+                          ? s.bkPickTime
+                          : s.bkConfirmBook(formatTenge(service.priceMinor))),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                    'DEV-режим: запись подтверждается автоматически, мастер уведомление не получает. Бесплатная отмена до начала услуги.',
+                Text(s.bkFormDevNote,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodySmall
                         ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
