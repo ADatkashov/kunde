@@ -78,7 +78,16 @@ public class FoodPartnerController {
     ResponseEntity<DishView> dish(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
             @PathVariable UUID restaurantId, @PathVariable UUID dishId, @Valid @RequestBody DishRequest request) {
         return ok(service.updateDish(user(principal), partnerId, restaurantId, dishId, request.available(),
-                request.stockQty(), Boolean.TRUE.equals(request.clearStock())));
+                request.stockQty(), Boolean.TRUE.equals(request.clearStock()), request.name(), request.description(),
+                request.priceMinor()));
+    }
+
+    @PostMapping("/restaurants/{restaurantId}/dishes")
+    ResponseEntity<DishView> createDish(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
+            @PathVariable UUID restaurantId, @Valid @RequestBody CreateDishRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).body(service.createDish(
+                user(principal), partnerId, restaurantId, request.sectionId(), request.name(), request.description(),
+                request.priceMinor()));
     }
 
     private static UUID user(Jwt principal) {
@@ -95,5 +104,9 @@ public class FoodPartnerController {
 
     public record OpenRequest(@NotNull Boolean open) {}
 
-    public record DishRequest(Boolean available, @Min(0) @Max(100000) Integer stockQty, Boolean clearStock) {}
+    public record DishRequest(Boolean available, @Min(0) @Max(100000) Integer stockQty, Boolean clearStock,
+            @Size(max = 160) String name, @Size(max = 500) String description, @Min(0) @Max(100000000) Long priceMinor) {}
+
+    public record CreateDishRequest(@NotNull UUID sectionId, @NotBlank @Size(max = 160) String name,
+            @Size(max = 500) String description, @NotNull @Min(0) @Max(100000000) Long priceMinor) {}
 }

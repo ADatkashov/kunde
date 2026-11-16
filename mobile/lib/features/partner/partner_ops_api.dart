@@ -50,14 +50,41 @@ class PartnerOpsApi {
   Future<List<Map<String, dynamic>>> dishes(String restaurantId) =>
       _list('food/restaurants/${_uuid(restaurantId)}/dishes');
 
+  /// Availability/stock are open to every staff role; [name], [description] and [priceMinor] need Owner/Manager.
   Future<Map<String, dynamic>> updateDish(String restaurantId, String dishId,
-          {bool? available, int? stockQty, bool clearStock = false}) =>
+          {bool? available,
+          int? stockQty,
+          bool clearStock = false,
+          String? name,
+          String? description,
+          int? priceMinor}) =>
       _send('PATCH',
           'food/restaurants/${_uuid(restaurantId)}/dishes/${_uuid(dishId)}', {
         if (available != null) 'available': available,
         if (stockQty != null) 'stockQty': stockQty,
         if (clearStock) 'clearStock': true,
+        if (name != null) 'name': name,
+        if (description != null) 'description': description,
+        if (priceMinor != null) 'priceMinor': priceMinor,
       });
+
+  Future<Map<String, dynamic>> createDish(String restaurantId,
+          {required String sectionId,
+          required String name,
+          String? description,
+          required int priceMinor}) async =>
+      (await auth.authorizedJson(
+          'POST', '$_base/food/restaurants/${_uuid(restaurantId)}/dishes',
+          body: {
+            'sectionId': _uuid(sectionId),
+            'name': name,
+            if (description != null && description.isNotEmpty)
+              'description': description,
+            'priceMinor': priceMinor,
+          },
+          expected: {
+            201
+          })) as Map<String, dynamic>;
 
   // ---- Bookings ----
 

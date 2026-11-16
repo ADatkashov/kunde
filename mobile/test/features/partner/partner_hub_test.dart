@@ -349,4 +349,72 @@ void main() {
     expect(find.text('New order!'), findsOneWidget);
     expect(find.textContaining('Reply by'), findsOneWidget);
   });
+
+  testWidgets(
+      'a manager edits a dish price in KZT; operators get no edit control',
+      (tester) async {
+    final patched = <Map<String, dynamic>>[];
+    AuthRepository build() => _auth((request) async {
+          final path = request.url.path;
+          if (request.method == 'PATCH') {
+            patched.add(jsonDecode(request.body) as Map<String, dynamic>);
+            return _json(<String, dynamic>{});
+          }
+          if (path.endsWith('/food/restaurants')) {
+            return _json([
+              {
+                'id': _bookingId,
+                'name': 'Кухня',
+                'vertical': 'FOOD',
+                'open': true,
+                'synthetic': true
+              }
+            ]);
+          }
+          if (path.endsWith('/dishes')) {
+            return _json([
+              {
+                'id': _orderId,
+                'name': 'Плов',
+                'section': 'Основное',
+                'sectionId': _partnerId,
+                'description': '',
+                'priceMinor': 390000,
+                'available': true,
+                'stockQty': null,
+                'unit': 'PIECE'
+              }
+            ]);
+          }
+          return _json([]);
+        });
+    var auth = build();
+    await auth.login();
+    await _show(tester, auth, language: 'en');
+    await tester.tap(find.text('Availability'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Кухня'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.edit_outlined));
+    await tester.pumpAndSettle();
+    expect(find.text('3900'), findsOneWidget);
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Price, KZT'), '4 500,50');
+    await tester.pump();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(patched, [
+      {'name': 'Плов', 'description': '', 'priceMinor': 450050}
+    ]);
+
+    auth = build();
+    await auth.login();
+    await _show(tester, auth, role: 'OPERATOR', language: 'en');
+    await tester.tap(find.text('Availability'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Кухня'));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.edit_outlined), findsNothing);
+    expect(find.text('Add a dish'), findsNothing);
+  });
 }
