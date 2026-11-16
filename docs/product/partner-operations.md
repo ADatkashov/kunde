@@ -21,7 +21,7 @@ no real payments, providers or notifications; production readiness stays gated.
 | Area | Endpoint | Notes |
 |---|---|---|
 | Food | `GET food/orders?scope=active\|history`, `GET food/orders/{id}`, `POST food/orders/{id}/status {status, reason?}` | State machine PLACED→ACCEPTED→PREPARING→ON_THE_WAY→DELIVERED; reject (CANCELLED) from PLACED/ACCEPTED/PREPARING needs a 3–300 char reason; response lists `allowedNext` |
-| Food catalog | `GET/PATCH food/restaurants[/{id}]` (open), `GET/PATCH food/restaurants/{id}/dishes[/{id}]` (available, stockQty, clearStock) | Names/prices stay with the offering flow |
+| Food catalog | `GET/PATCH food/restaurants[/{id}]` (open), `GET/PATCH food/restaurants/{id}/dishes[/{id}]` (available, stockQty, clearStock; **name, description, priceMinor — Owner/Manager only**), `POST food/restaurants/{id}/dishes` (add a dish to an existing section, Owner/Manager) | Price 0–1 000 000 KZT, name 2–160, unique per restaurant, max 300 dishes; a price change applies to new carts only (placed orders keep their price); every change is audited in `partner_catalog_events` |
 | Booking | `GET booking/bookings?scope=requests\|upcoming\|history`, `POST booking/bookings/{id}/action {CONFIRM\|REJECT\|CANCEL\|COMPLETE, reason?}` | REJECT (PENDING) and CANCEL (upcoming CONFIRMED) need a reason; COMPLETE after the start |
 | Availability | `GET/PATCH booking/venues[/{id}]`, `…/services/{id}` (available), `…/masters/{id}` (active), `PUT …/masters/{id}/hours` | Hours change refused `409 SCHEDULE_CONFLICT` if a PENDING/CONFIRMED booking would no longer fit |
 
@@ -63,6 +63,5 @@ refresh. Backend: `PartnerOperationsApiIntegrationTest` (15 tests) + existing su
 
 ## Limits
 
-No background push/SMS (partner list polls every 10 s, customer screens every 4–5 s), no courier/payment/provider, no partner-side price/menu editing
-beyond the existing offering API, no break/exception-day editor, no blocked-time slots, no multi-restaurant order merging, UI strings RU/KK/EN best effort
+No background push/SMS (partner list polls every 10 s, customer screens every 4–5 s), no courier/payment/provider, no dish deletion/option-group/photo editing (set a dish unavailable instead), no break/exception-day editor, no blocked-time slots, no multi-restaurant order merging, UI strings RU/KK/EN best effort
 (KK to be reviewed).

@@ -37,7 +37,7 @@ public class FoodPartnerService {
     public record RestaurantView(String id, String name, String vertical, boolean open, boolean synthetic) {}
 
     public record DishView(String id, String name, String section, long priceMinor, boolean available, Integer stockQty,
-            String unit) {}
+            String unit, String sectionId, String description) {}
 
     private final JdbcTemplate db;
     private final FoodOrderService orders;
@@ -145,29 +145,51 @@ public class FoodPartnerService {
         partners.requireProcessing(actor, partnerId);
         requireOwnedRestaurant(partnerId, restaurantId);
         return db.query("""
-                select d.id, d.name, s.name, d.price_minor, d.available, d.stock_qty, d.unit
+                select d.id, d.name, s.name, d.price_minor, d.available, d.stock_qty, d.unit, s.id, d.description
                 from marketplace.food_dishes d join marketplace.food_menu_sections s on s.id = d.section_id
                 where d.restaurant_id = ? order by s.sort_order, d.sort_order, d.name
                 """, (rs, n) -> new DishView(rs.getString(1), rs.getString(2), rs.getString(3), rs.getLong(4),
-                rs.getBoolean(5), rs.getObject(6, Integer.class), rs.getString(7)), restaurantId);
+                rs.getBoolean(5), rs.getObject(6, Integer.class), rs.getString(7), rs.getString(8), rs.getString(9)), restaurantId);
     }
 
     /** Availability and the stock counter only; names and prices stay with the existing offering flow. */
     @Transactional
     public DishView updateDish(UUID actor, UUID partnerId, UUID restaurantId, UUID dishId, Boolean available,
-            Integer stockQty, boolean clearStock) {
-        partners.requireProcessing(actor, partnerId);
+            Integer stockQty, boolean clearStock, String name, String description, Long priceMinor) {
+        boolean content = name != null || description != null || priceMinor != null;
+        // Menu content (name, description, price) is a manager decision; availability and stock stay open to operators.
+        if (content) {
+            partners.requireProcessing(actor, partnerId, Role.OWNER, Role.MANAGER);
+        } else {
+            partners.requireProcessing(actor, partnerId);
+        }
         requireOwnedRestaurant(partnerId, restaurantId);
+        String cleanName = name == null ? null : validName(name);
+        String cleanDescription = description == null ? null : validDescription(description);
+        if (priceMinor != null) { validPrice(priceMinor); }
         if (stockQty != null && (clearStock || stockQty < 0 || stockQty > 100000)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "STOCK_INVALID", "Stock must be 0-100000, or cleared");
         }
         var row = db.query("""
-                select available, stock_qty from marketplace.food_dishes where id = ? and restaurant_id = ? for update
-                """, (rs, n) -> new Object[] {rs.getBoolean(1), rs.getObject(2, Integer.class)}, dishId, restaurantId)
+                select available, stock_qty, name, description, price_minor from marketplace.food_dishes where id = ? and restaurant_id = ? for update
+                """, (rs, n) -> new Object[] {rs.getBoolean(1), rs.getObject(2, Integer.class), rs.getString(3), rs.getString(4), rs.getLong(5)},
+                dishId, restaurantId)
                 .stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "DISH_NOT_FOUND", "Dish not found"));
         if (available != null && available != (boolean) row[0]) {
             db.update("update marketplace.food_dishes set available = ? where id = ?", available, dishId);
             audit(partnerId, actor, "DISH", dishId, "available", String.valueOf(row[0]), String.valueOf(available));
+        }
+        if (cleanName != null && !cleanName.equals(row[2])) {
+            db.update("update marketplace.food_dishes set name = ? where id = ?", cleanName, dishId);
+            audit(partnerId, actor, "DISH", dishId, "name", (String) row[2], cleanName);
+        }
+        if (cleanDescription != null && !cleanDescription.equals(row[3])) {
+            db.update("update marketplace.food_dishes set description = ? where id = ?", cleanDescription, dishId);
+            audit(partnerId, actor, "DISH", dishId, "description", abbreviate((String) row[3]), abbreviate(cleanDescription));
+        }
+        if (priceMinor != null && priceMinor != (long) row[4]) {
+            db.update("update marketplace.food_dishes set price_minor = ? where id = ?", priceMinor, dishId);
+            audit(partnerId, actor, "DISH", dishId, "price", String.valueOf(row[4]), String.valueOf(priceMinor));
         }
         if (stockQty != null || clearStock) {
             Integer target = clearStock ? null : stockQty;
@@ -178,6 +200,66 @@ public class FoodPartnerService {
         }
         return dishes(actor, partnerId, restaurantId).stream().filter(d -> d.id().equals(dishId.toString())).findFirst().orElseThrow();
     }
+
+    /** Adds a dish to an existing section of the partner's own restaurant; it starts available and untracked. */
+    @Transactional
+    public DishView createDish(UUID actor, UUID partnerId, UUID restaurantId, UUID sectionId, String name, String description,
+            long priceMinor) {
+        partners.requireProcessing(actor, partnerId, Role.OWNER, Role.MANAGER);
+        requireOwnedRestaurant(partnerId, restaurantId);
+        String cleanName = validName(name);
+        String cleanDescription = description == null ? "" : validDescription(description);
+        validPrice(priceMinor);
+        Integer section = db.queryForObject("select count(*) from marketplace.food_menu_sections where id = ? and restaurant_id = ?",
+                Integer.class, sectionId, restaurantId);
+        if (section == null || section == 0) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "SECTION_NOT_FOUND", "Menu section not found");
+        }
+        Integer dupes = db.queryForObject("select count(*) from marketplace.food_dishes where restaurant_id = ? and lower(name) = lower(?)",
+                Integer.class, restaurantId, cleanName);
+        if (dupes != null && dupes > 0) {
+            throw new ApiException(HttpStatus.CONFLICT, "DISH_NAME_TAKEN", "A dish with this name already exists");
+        }
+        Integer count = db.queryForObject("select count(*) from marketplace.food_dishes where restaurant_id = ?", Integer.class, restaurantId);
+        if (count != null && count >= MAX_DISHES) {
+            throw new ApiException(HttpStatus.CONFLICT, "MENU_FULL", "The menu has too many dishes");
+        }
+        UUID id = db.queryForObject("""
+                insert into marketplace.food_dishes (restaurant_id, section_id, name, description, price_minor, sort_order)
+                values (?, ?, ?, ?, ?, coalesce((select max(sort_order) + 1 from marketplace.food_dishes where section_id = ?), 0))
+                returning id
+                """, UUID.class, restaurantId, sectionId, cleanName, cleanDescription, priceMinor, sectionId);
+        audit(partnerId, actor, "DISH", id, "created", null, cleanName);
+        return dishes(actor, partnerId, restaurantId).stream().filter(d -> d.id().equals(id.toString())).findFirst().orElseThrow();
+    }
+
+    private static final int MAX_DISHES = 300;
+    /** KZT minor units; 0 up to 1 000 000 KZT. */
+    private static final long MAX_PRICE_MINOR = 100_000_000L;
+
+    private static String validName(String name) {
+        String clean = name.strip();
+        if (clean.length() < 2 || clean.length() > 160) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "NAME_INVALID", "Name must be 2-160 characters");
+        }
+        return clean;
+    }
+
+    private static String validDescription(String description) {
+        String clean = description.strip();
+        if (clean.length() > 500) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "DESCRIPTION_INVALID", "Description must be at most 500 characters");
+        }
+        return clean;
+    }
+
+    private static void validPrice(long priceMinor) {
+        if (priceMinor < 0 || priceMinor > MAX_PRICE_MINOR) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "PRICE_INVALID", "Price must be between 0 and 1 000 000 KZT");
+        }
+    }
+
+    private static String abbreviate(String s) { return s == null ? null : s.length() <= 300 ? s : s.substring(0, 297) + "..."; }
 
     // ---- internals -----------------------------------------------------------------------------
 

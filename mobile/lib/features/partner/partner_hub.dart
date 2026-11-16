@@ -7,6 +7,7 @@ import '../../core/localization/kunde_formats.dart';
 import '../booking/data/booking_models.dart';
 import '../identity/auth_repository.dart';
 import 'partner_ops_api.dart';
+import 'partner_panel.dart' show parseKztToTiyn, invalidPrice;
 
 String _t(BuildContext context, String ru, String kk, String en) {
   final locale = Localizations.localeOf(context).languageCode;
@@ -55,6 +56,15 @@ String _failureText(BuildContext context, Object error) {
       case 'PARTNER_NOT_APPROVED':
         return _t(context, 'Партнёр ещё не одобрен',
             'Серіктес әлі мақұлданбаған', 'The partner is not approved yet');
+      case 'NAME_INVALID':
+        return _t(context, 'Название: от 2 до 160 символов',
+            'Атауы: 2–160 таңба', 'Name must be 2–160 characters');
+      case 'PRICE_INVALID':
+        return _t(context, 'Цена от 0 до 1 000 000 ₸', 'Бағасы 0–1 000 000 ₸',
+            'Price must be 0–1,000,000 KZT');
+      case 'DISH_NAME_TAKEN':
+        return _t(context, 'Блюдо с таким названием уже есть',
+            'Мұндай атаулы тағам бар', 'A dish with this name already exists');
       case 'HOURS_INVALID':
         return _t(
             context,
@@ -829,6 +839,38 @@ class _RestaurantSection extends StatelessWidget {
     });
   }
 
+  Future<void> _editDish(
+      BuildContext context, Map<String, dynamic> dish) async {
+    final draft = await showDialog<_DishDraft>(
+        context: context, builder: (context) => _DishDialog(dish: dish));
+    if (draft == null) return;
+    await guard(() async {
+      await api.updateDish(restaurant['id'] as String, dish['id'] as String,
+          name: draft.name,
+          description: draft.description,
+          priceMinor: draft.priceMinor);
+    });
+  }
+
+  Future<void> _addDish(
+      BuildContext context, List<Map<String, dynamic>> dishes) async {
+    final sections = <String, String>{
+      for (final dish in dishes)
+        dish['sectionId'] as String: dish['section'] as String,
+    };
+    final draft = await showDialog<_DishDraft>(
+        context: context,
+        builder: (context) => _DishDialog(sections: sections));
+    if (draft == null) return;
+    await guard(() async {
+      await api.createDish(restaurant['id'] as String,
+          sectionId: draft.sectionId!,
+          name: draft.name,
+          description: draft.description,
+          priceMinor: draft.priceMinor);
+    });
+  }
+
   @override
   Widget build(BuildContext context) => Card(
         margin: const EdgeInsets.only(bottom: 12),
@@ -874,17 +916,157 @@ class _RestaurantSection extends StatelessWidget {
                         ),
                       ),
                       value: dish['available'] as bool,
+                      secondary: canManage
+                          ? IconButton(
+                              tooltip:
+                                  _t(context, 'Изменить', 'Өзгерту', 'Edit'),
+                              icon: const Icon(Icons.edit_outlined),
+                              onPressed: () => _editDish(context, dish),
+                            )
+                          : null,
                       onChanged: (value) => guard(() async {
                         await api.updateDish(
                             restaurant['id'] as String, dish['id'] as String,
                             available: value);
                       }),
                     ),
+                  if (canManage && dishes.isNotEmpty)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        icon: const Icon(Icons.add),
+                        label: Text(_t(context, 'Добавить блюдо', 'Тағам қосу',
+                            'Add a dish')),
+                        onPressed: () => _addDish(context, dishes),
+                      ),
+                    ),
                 ]);
               },
             ),
           ],
         ),
+      );
+}
+
+class _DishDraft {
+  const _DishDraft(
+      {required this.name,
+      required this.description,
+      required this.priceMinor,
+      this.sectionId});
+  final String name;
+  final String description;
+  final int priceMinor;
+  final String? sectionId;
+}
+
+/// Edit a dish (name, description, price in KZT) or, with [sections], add a new one to a chosen menu section.
+class _DishDialog extends StatefulWidget {
+  const _DishDialog({this.dish, this.sections});
+  final Map<String, dynamic>? dish;
+  final Map<String, String>? sections;
+
+  @override
+  State<_DishDialog> createState() => _DishDialogState();
+}
+
+class _DishDialogState extends State<_DishDialog> {
+  late final _name =
+      TextEditingController(text: widget.dish?['name'] as String? ?? '');
+  late final _description =
+      TextEditingController(text: widget.dish?['description'] as String? ?? '');
+  late final _price = TextEditingController(
+      text: widget.dish == null
+          ? ''
+          : ((widget.dish!['priceMinor'] as num) / 100)
+              .toStringAsFixed(2)
+              .replaceFirst(RegExp(r'\.00$'), ''));
+  String? _section;
+
+  @override
+  void initState() {
+    super.initState();
+    _section = widget.sections?.keys.first;
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _description.dispose();
+    _price.dispose();
+    super.dispose();
+  }
+
+  int? get _priceMinor {
+    final value = parseKztToTiyn(_price.text);
+    return value == null || value == invalidPrice ? null : value;
+  }
+
+  bool get _valid =>
+      _name.text.trim().length >= 2 &&
+      _priceMinor != null &&
+      _priceMinor! <= 100000000;
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: Text(widget.dish == null
+            ? _t(context, 'Новое блюдо', 'Жаңа тағам', 'New dish')
+            : _t(context, 'Блюдо', 'Тағам', 'Dish')),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            if (widget.sections != null && widget.sections!.length > 1)
+              DropdownButtonFormField<String>(
+                initialValue: _section,
+                items: [
+                  for (final entry in widget.sections!.entries)
+                    DropdownMenuItem(
+                        value: entry.key, child: Text(entry.value)),
+                ],
+                onChanged: (value) => setState(() => _section = value),
+                decoration: InputDecoration(
+                    labelText: _t(context, 'Раздел меню', 'Мәзір бөлімі',
+                        'Menu section')),
+              ),
+            TextField(
+              controller: _name,
+              maxLength: 160,
+              onChanged: (_) => setState(() {}),
+              decoration: InputDecoration(
+                  labelText: _t(context, 'Название', 'Атауы', 'Name')),
+            ),
+            TextField(
+              controller: _description,
+              maxLength: 500,
+              decoration: InputDecoration(
+                  labelText:
+                      _t(context, 'Описание', 'Сипаттама', 'Description')),
+            ),
+            TextField(
+              controller: _price,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (_) => setState(() {}),
+              decoration: InputDecoration(
+                  labelText: _t(context, 'Цена, ₸', 'Бағасы, ₸', 'Price, KZT')),
+            ),
+          ]),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(_t(context, 'Отмена', 'Бас тарту', 'Cancel'))),
+          FilledButton(
+              onPressed: _valid
+                  ? () => Navigator.pop(
+                      context,
+                      _DishDraft(
+                          name: _name.text.trim(),
+                          description: _description.text.trim(),
+                          priceMinor: _priceMinor!,
+                          sectionId: _section))
+                  : null,
+              child: Text(_t(context, 'Сохранить', 'Сақтау', 'Save'))),
+        ],
       );
 }
 

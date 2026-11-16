@@ -327,6 +327,67 @@ class PartnerOperationsApiIntegrationTest {
                 .andExpect(jsonPath("$.open").value(false));
     }
 
+    private String operatorToken() throws Exception {
+        String loginBody = loginBody("+77000000402");
+        UUID operatorUser = db.queryForObject("select user_id from identity.phone_identities where phone_e164 = '+77000000402'", UUID.class);
+        UUID owner = db.queryForObject("select user_id from marketplace.partner_staff where partner_id = ?", UUID.class, partnerA);
+        db.update("insert into marketplace.partner_staff (partner_id, user_id, role, granted_by_user_id) values (?, ?, 'OPERATOR', ?)", partnerA, operatorUser, owner);
+        return JsonPath.read(body(send("POST", "/api/v1/auth/token/refresh", null,
+                "{\"refreshToken\":\"" + JsonPath.read(loginBody, "$.refreshToken") + "\"}", null).andExpect(status().isOk())), "$.accessToken");
+    }
+
+    @Test
+    void managersEditMenuContentAndOrdersKeepTheirPrice() throws Exception {
+        String dish = dishId("Плов с говядиной");
+        String order = placeOrder(customer, dish, 1, "key-order-price-0001");   // 390000 at the old price
+        String path = foodBase() + "/restaurants/" + restaurant + "/dishes/" + dish;
+        send("PATCH", path, ownerToken, "{\"name\":\"Плов праздничный\",\"description\":\"С бараниной\",\"priceMinor\":450000}", null)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.name").value("Плов праздничный"))
+                .andExpect(jsonPath("$.priceMinor").value(450000)).andExpect(jsonPath("$.description").value("С бараниной"));
+        // New price applies to new carts; the placed order keeps what the customer agreed to.
+        String quote = body(send("POST", "/api/v1/food/cart/quote", customer, "{\"restaurantId\":\"" + restaurant
+                + "\",\"items\":[{\"dishId\":\"" + dish + "\",\"quantity\":1,\"optionIds\":[]},{\"dishId\":\"" + dishId("Лагман")
+                + "\",\"quantity\":1,\"optionIds\":[]}]}", null).andExpect(status().isOk()));
+        assertThat((Integer) JsonPath.read(quote, "$.subtotalMinor")).isEqualTo(450000 + 360000);
+        send("GET", "/api/v1/food/orders/" + order, customer, null, null).andExpect(jsonPath("$.items[0].unitPriceMinor").value(390000));
+        send("PATCH", path, ownerToken, "{\"priceMinor\":-1}", null).andExpect(status().isBadRequest());
+        send("PATCH", path, ownerToken, "{\"priceMinor\":100000001}", null).andExpect(status().isBadRequest());
+        send("PATCH", path, ownerToken, "{\"name\":\"П\"}", null).andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("NAME_INVALID"));
+        assertThat(db.queryForObject("select count(*) from marketplace.partner_catalog_events where entity_id = ?::uuid and field in ('name','description','price')",
+                Integer.class, dish)).isEqualTo(3);
+
+        // Operators keep working with availability, but cannot change content.
+        String operator = operatorToken();
+        send("PATCH", path, operator, "{\"priceMinor\":1}", null).andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("PARTNER_ROLE_FORBIDDEN"));
+        send("PATCH", path, operator, "{\"available\":false}", null).andExpect(status().isOk());
+        String sectionId = db.queryForObject("select section_id from marketplace.food_dishes where id = ?::uuid", String.class, dish);
+        send("POST", foodBase() + "/restaurants/" + restaurant + "/dishes", operator,
+                "{\"sectionId\":\"" + sectionId + "\",\"name\":\"Новое\",\"priceMinor\":100}", null).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void managersAddDishesToTheirOwnMenuOnly() throws Exception {
+        String sectionId = db.queryForObject("select id from marketplace.food_menu_sections where restaurant_id = ? limit 1", String.class, restaurant);
+        String create = "{\"sectionId\":\"" + sectionId + "\",\"name\":\"Манты\",\"description\":\"5 шт\",\"priceMinor\":250000}";
+        String added = body(send("POST", foodBase() + "/restaurants/" + restaurant + "/dishes", ownerToken, create, null)
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.available").value(true)).andExpect(jsonPath("$.priceMinor").value(250000)));
+        String newId = JsonPath.read(added, "$.id");
+        send("POST", foodBase() + "/restaurants/" + restaurant + "/dishes", ownerToken, create, null).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("DISH_NAME_TAKEN"));
+        // A section of another restaurant is not usable; another partner cannot add anything here.
+        String foreign = db.queryForObject("select s.id from marketplace.food_menu_sections s join marketplace.food_restaurants r on r.id = s.restaurant_id where r.slug = 'pizza-alatau' limit 1", String.class);
+        send("POST", foodBase() + "/restaurants/" + restaurant + "/dishes", ownerToken,
+                "{\"sectionId\":\"" + foreign + "\",\"name\":\"Чужое\",\"priceMinor\":100}", null).andExpect(status().isNotFound());
+        send("POST", foodBase() + "/restaurants/" + restaurant + "/dishes", otherToken, create, null).andExpect(status().isNotFound());
+        send("POST", foodBase() + "/restaurants/" + restaurant + "/dishes", customer, create, null).andExpect(status().isForbidden());
+        // The customer sees and can order the new dish; the audit names the creation.
+        send("POST", "/api/v1/food/cart/quote", customer, "{\"restaurantId\":\"" + restaurant + "\",\"items\":[{\"dishId\":\"" + newId
+                + "\",\"quantity\":1,\"optionIds\":[]},{\"dishId\":\"" + dishId("Лагман") + "\",\"quantity\":1,\"optionIds\":[]}]}", null)
+                .andExpect(status().isOk());
+        assertThat(db.queryForObject("select count(*) from marketplace.partner_catalog_events where entity_id = ?::uuid and field = 'created'",
+                Integer.class, newId)).isEqualTo(1);
+    }
+
     @Test
     void restaurantsWithoutAPartnerKeepTheDevSimulation() throws Exception {
         UUID other = UUID.fromString(db.queryForObject("select id from marketplace.food_restaurants where slug = 'pizza-alatau'", String.class));
