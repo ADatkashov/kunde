@@ -10,11 +10,13 @@ class PartnerApi {
     required this.baseUri,
     required this.accessToken,
     http.Client? client,
+    this.timeout = const Duration(seconds: 20),
   }) : _client = client ?? http.Client();
 
   final Uri baseUri;
   final Future<String?> Function() accessToken;
   final http.Client _client;
+  final Duration timeout;
 
   Uri _url(String path) {
     final prefix = baseUri.path.endsWith('/')
@@ -47,7 +49,9 @@ class PartnerApi {
         if (body != null) 'Content-Type': 'application/json',
       });
     if (body != null) request.body = jsonEncode(body);
-    final response = await http.Response.fromStream(await _client.send(request));
+    final response = await http.Response.fromStream(
+      await _client.send(request).timeout(timeout),
+    ).timeout(timeout);
     final decoded = response.body.isEmpty ? null : jsonDecode(response.body);
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw PartnerApiException(response.statusCode, decoded.toString());
