@@ -56,6 +56,8 @@ app:
       dev-otp:
         enabled: ${AUTH_DEV_OTP_ENABLED:false}
         allowed-phones: ${AUTH_DEV_OTP_ALLOWED_PHONES:}
+        # DEV pilot: no OTP request throttling for the allowlisted synthetic numbers only (see PhoneAuthService).
+        skip-throttle: ${AUTH_DEV_OTP_SKIP_THROTTLE:false}
   # KUNDE Food DEV pilot: mock payment + simulated delivery; forbidden outside dev/local/test (FoodGuard).
   food:
     enabled: ${FOOD_ENABLED:false}
