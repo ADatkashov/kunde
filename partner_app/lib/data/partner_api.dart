@@ -20,7 +20,8 @@ class PartnerApi {
     final prefix = baseUri.path.endsWith('/')
         ? baseUri.path
         : '${baseUri.path}/';
-    return baseUri.replace(path: '$prefix${path.replaceFirst(RegExp(r'^/'), '')}');
+    final relative = Uri.parse(path.replaceFirst(RegExp(r'^/'), ''));
+    return baseUri.replace(path: '$prefix${relative.path}', query: relative.hasQuery ? relative.query : null);
   }
 
   Future<Map<String, dynamic>> get(String path) => _request('GET', path);
