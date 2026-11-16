@@ -1,0 +1,74 @@
+{
+ "restaurants": [
+  {
+   "slug": "partner-kitchen-demo",
+   "name": "Кухня партнёра (демо)",
+   "cuisine": "Домашняя кухня",
+   "description": "Вымышленный ресторан, заказы которого принимает синтетический партнёр KUNDE (DEV).",
+   "emoji": "🥘",
+   "tone": "green",
+   "deliveryFee": 40000,
+   "minOrder": 200000,
+   "etaMin": 30,
+   "etaMax": 45,
+   "open": true,
+   "sections": [
+    {
+     "name": "Основное",
+     "dishes": [
+      {
+       "name": "Плов с говядиной",
+       "description": "Узбекский плов, салат",
+       "price": 390000,
+       "emoji": "🍚",
+       "tone": "orange",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Лагман",
+       "description": "Домашняя лапша, говядина, овощи",
+       "price": 360000,
+       "emoji": "🍜",
+       "tone": "amber",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Самса с мясом",
+       "description": "Свежая из тандыра",
+       "price": 150000,
+       "emoji": "🥟",
+       "tone": "red",
+       "available": true,
+       "groups": []
+      }
+     ]
+    },
+    {
+     "name": "Напитки",
+     "dishes": [
+      {
+       "name": "Чай чёрный",
+       "description": "Чайник 500 мл",
+       "price": 80000,
+       "emoji": "🍵",
+       "tone": "green",
+       "available": true,
+       "groups": []
+      },
+      {
+       "name": "Компот",
+       "description": "Домашний, 0,5 л",
+       "price": 70000,
+       "emoji": "🥤",
+       "tone": "blue",
+       "available": true,
+       "groups": []
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

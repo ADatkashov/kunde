@@ -64,6 +64,9 @@ app:
   booking:
     enabled: ${BOOKING_ENABLED:false}
     seed-demo: ${BOOKING_SEED_DEMO:false}
+  # Partner Operations DEV pilot: loads two synthetic partners and links them to demo assets; dev/local/test only.
+  partner-ops:
+    seed-demo: ${PARTNER_OPS_SEED_DEMO:false}
   identity:
     consumer-enabled: ${CONSUMER_IDENTITY_ENABLED:false}
   security:

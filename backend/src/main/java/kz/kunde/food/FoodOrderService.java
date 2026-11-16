@@ -60,7 +60,7 @@ public class FoodOrderService {
     public record Quote(String restaurantId, String restaurantName, List<QuoteLine> lines, long subtotalMinor,
             long deliveryFeeMinor, long totalMinor, String currency, long minOrderMinor) {}
 
-    public record TimelineEntry(String status, OffsetDateTime at) {}
+    public record TimelineEntry(String status, OffsetDateTime at, String actor, String reason) {}
 
     public record OrderLine(String dishId, String name, String optionsText, String unit, long unitPriceMinor, int quantity,
             long lineTotalMinor, String substitution, String fulfillmentStatus, String replacedByName,
@@ -70,7 +70,8 @@ public class FoodOrderService {
             String paymentMethod, String paymentStatus, String currency, long subtotalMinor, long deliveryFeeMinor,
             long totalMinor, String addressLabel, String addressText, String comment, OffsetDateTime placedAt,
             List<OrderLine> items, List<TimelineEntry> timeline, boolean cancellable, boolean simulated,
-            String vertical, Long finalTotalMinor, boolean hasChanges) {}
+            String vertical, Long finalTotalMinor, boolean hasChanges, String fulfillment, String cancelledBy,
+            String cancelReason) {}
 
     public record RepeatItem(String dishId, String name, int quantity, List<String> optionIds, String unit,
             String substitution, List<String> substituteDishIds) {}
@@ -254,12 +255,16 @@ public class FoodOrderService {
         String comment = request.comment() == null || request.comment().isBlank() ? null : request.comment().strip();
         UUID orderId = db.queryForObject("""
                 insert into transactions.food_orders (user_id, restaurant_id, restaurant_name, payment_method, payment_status,
-                    subtotal_minor, delivery_fee_minor, total_minor, address_label, address_text, comment, idempotency_key, vertical)
-                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (select vertical from marketplace.food_restaurants where id = ?)) returning id
+                    subtotal_minor, delivery_fee_minor, total_minor, address_label, address_text, comment, idempotency_key, vertical,
+                    partner_id, fulfillment_mode)
+                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (select vertical from marketplace.food_restaurants where id = ?),
+                    (select partner_id from marketplace.food_restaurants where id = ?),
+                    case when (select partner_id from marketplace.food_restaurants where id = ?) is null then 'SIMULATED' else 'PARTNER' end)
+                returning id
                 """, UUID.class, user, request.restaurantId(), quote.restaurantName(), payment,
                 "TEST_CARD".equals(payment) ? "TEST_PAID" : "PAY_ON_RECEIPT", quote.subtotalMinor(),
                 quote.deliveryFeeMinor(), quote.totalMinor(), address[0], address[1], comment, idempotencyKey,
-                request.restaurantId());
+                request.restaurantId(), request.restaurantId(), request.restaurantId());
         int lineNo = 0;
         for (QuoteLine line : quote.lines()) {
             db.update("""
@@ -271,7 +276,8 @@ public class FoodOrderService {
                     line.lineTotalMinor(), line.unit(), line.substitution(),
                     "{" + String.join(",", line.substituteDishIds()) + "}", lineNo++);
         }
-        db.update("insert into transactions.food_order_events (order_id, status) values (?, 'PLACED')", orderId);
+        db.update("insert into transactions.food_order_events (order_id, status, actor_type, actor_user_id) values (?, 'PLACED', 'CUSTOMER', ?)",
+                orderId, user);
         return new Placed(views(List.of(orderId), user).get(0), true);
     }
 
@@ -302,15 +308,16 @@ public class FoodOrderService {
                     "The restaurant has already accepted this order");
         }
         db.update("""
-                update transactions.food_orders set status = 'CANCELLED', payment_status = 'VOIDED',
+                update transactions.food_orders set status = 'CANCELLED', payment_status = 'VOIDED', cancelled_by = 'CUSTOMER',
                     updated_at = now(), version = version + 1 where id = ?
                 """, orderId);
-        db.update("insert into transactions.food_order_events (order_id, status) values (?, 'CANCELLED')", orderId);
+        db.update("insert into transactions.food_order_events (order_id, status, actor_type, actor_user_id) values (?, 'CANCELLED', 'CUSTOMER', ?)",
+                orderId, user);
         restoreStock(orderId);
         return views(List.of(orderId), user).get(0);
     }
 
-    private void restoreStock(UUID orderId) {
+    void restoreStock(UUID orderId) {
         db.update("""
                 update marketplace.food_dishes d set stock_qty = d.stock_qty + i.quantity
                 from transactions.food_order_items i
@@ -366,11 +373,11 @@ public class FoodOrderService {
     /** Moves a non-terminal order forward according to elapsed time since placement (explicit DEV simulation). */
     void advance(UUID orderId) {
         var row = db.query("""
-                select status, extract(epoch from (now() - placed_at))::bigint as elapsed, placed_at
+                select status, extract(epoch from (now() - placed_at))::bigint as elapsed, placed_at, fulfillment_mode
                 from transactions.food_orders where id = ? for update
-                """, (rs, n) -> new Object[] {rs.getString(1), rs.getLong(2), rs.getObject(3, OffsetDateTime.class)}, orderId)
+                """, (rs, n) -> new Object[] {rs.getString(1), rs.getLong(2), rs.getObject(3, OffsetDateTime.class), rs.getString(4)}, orderId)
                 .stream().findFirst().orElse(null);
-        if (row == null || TERMINAL.contains((String) row[0])) {
+        if (row == null || TERMINAL.contains((String) row[0]) || "PARTNER".equals(row[3])) {
             return;
         }
         var sim = props.simulation();
@@ -400,7 +407,7 @@ public class FoodOrderService {
      * Applies the customer's substitution choices to products that are no longer available. Never replaces without
      * consent (policy NONE removes the line). A replacement is never charged above the original price per unit.
      */
-    private void resolveLines(UUID orderId, OffsetDateTime at) {
+    void resolveLines(UUID orderId, OffsetDateTime at) {
         record Line(UUID id, UUID dishId, UUID sectionId, boolean available, String unit, long unitPrice, int quantity,
                 long lineTotal, String policy, List<UUID> chosen) {}
         List<Line> lines = new ArrayList<>();
@@ -468,7 +475,7 @@ public class FoodOrderService {
         if (!anyKept) {
             db.update("""
                     update transactions.food_orders set status = 'CANCELLED', payment_status = 'VOIDED', has_changes = true,
-                        final_total_minor = 0, updated_at = now(), version = version + 1 where id = ?
+                        cancelled_by = 'SYSTEM', cancel_reason = 'NO_ITEMS_AVAILABLE', final_total_minor = 0, updated_at = now(), version = version + 1 where id = ?
                     """, orderId);
             db.update("insert into transactions.food_order_events (order_id, status, occurred_at) values (?, 'CANCELLED', ?)",
                     orderId, at);
@@ -490,7 +497,7 @@ public class FoodOrderService {
         }
     }
 
-    private List<OrderView> views(List<UUID> ids, UUID user) {
+    List<OrderView> views(List<UUID> ids, UUID user) {
         if (ids.isEmpty()) { return List.of(); }
         UUID[] array = ids.toArray(UUID[]::new);
         Map<UUID, List<OrderLine>> items = new HashMap<>();
@@ -507,17 +514,18 @@ public class FoodOrderService {
                             rs.getObject("final_line_total_minor", Long.class)));
                 }, (Object) array);
         Map<UUID, List<TimelineEntry>> timeline = new HashMap<>();
-        db.query("select order_id, status, occurred_at from transactions.food_order_events where order_id = any (?) order by id",
+        db.query("select order_id, status, occurred_at, actor_type, reason from transactions.food_order_events where order_id = any (?) order by id",
                 rs -> {
                     timeline.computeIfAbsent(rs.getObject("order_id", UUID.class), k -> new ArrayList<>())
-                            .add(new TimelineEntry(rs.getString("status"), rs.getObject("occurred_at", OffsetDateTime.class)));
+                            .add(new TimelineEntry(rs.getString("status"), rs.getObject("occurred_at", OffsetDateTime.class),
+                                    rs.getString("actor_type"), rs.getString("reason")));
                 }, (Object) array);
         Map<UUID, OrderView> byId = new LinkedHashMap<>();
         db.query("""
                 select id, restaurant_id, restaurant_name, status, payment_method, payment_status, currency,
                        subtotal_minor, delivery_fee_minor, total_minor, address_label, address_text, comment, placed_at, vertical,
-                       final_total_minor, has_changes
-                from transactions.food_orders where user_id = ? and id = any (?)
+                       final_total_minor, has_changes, fulfillment_mode, cancelled_by, cancel_reason
+                from transactions.food_orders where (?::uuid is null or user_id = ?::uuid) and id = any (?)
                 """, rs -> {
                     UUID id = rs.getObject("id", UUID.class);
                     byId.put(id, new OrderView(id.toString(), rs.getString("restaurant_id"), rs.getString("restaurant_name"),
@@ -526,9 +534,10 @@ public class FoodOrderService {
                             rs.getLong("total_minor"), rs.getString("address_label"), rs.getString("address_text"),
                             rs.getString("comment"), rs.getObject("placed_at", OffsetDateTime.class),
                             items.getOrDefault(id, List.of()), timeline.getOrDefault(id, List.of()),
-                            "PLACED".equals(rs.getString("status")), true, rs.getString("vertical"),
-                            rs.getObject("final_total_minor", Long.class), rs.getBoolean("has_changes")));
-                }, user, array);
+                            "PLACED".equals(rs.getString("status")), "SIMULATED".equals(rs.getString("fulfillment_mode")),
+                            rs.getString("vertical"), rs.getObject("final_total_minor", Long.class), rs.getBoolean("has_changes"),
+                            rs.getString("fulfillment_mode"), rs.getString("cancelled_by"), rs.getString("cancel_reason")));
+                }, user, user, array);
         return ids.stream().map(byId::get).filter(java.util.Objects::nonNull).toList();
     }
 }

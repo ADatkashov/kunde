@@ -312,10 +312,15 @@ class _StatusTimeline extends StatelessWidget {
       return Material(
         color: theme.colorScheme.errorContainer,
         borderRadius: BorderRadius.circular(14),
-        child: const ListTile(
-          leading: Icon(Icons.cancel_outlined),
-          title: Text('Заказ отменён'),
-          subtitle: Text('Платёж аннулирован.'),
+        child: ListTile(
+          leading: const Icon(Icons.cancel_outlined),
+          title: Text(order.cancelledBy == 'PARTNER'
+              ? 'Заказ отклонён заведением'
+              : 'Заказ отменён'),
+          subtitle: Text(
+              order.cancelReason != null && order.cancelledBy == 'PARTNER'
+                  ? 'Причина: ${order.cancelReason}\nПлатёж аннулирован.'
+                  : 'Платёж аннулирован.'),
         ),
       );
     }

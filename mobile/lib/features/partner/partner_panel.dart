@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/localization/kunde_formats.dart';
 import '../identity/auth_repository.dart';
+import 'partner_hub.dart';
 
 /// Parses a KZT amount typed by a partner into tiyn (minor units, D-04: one
 /// final price, no fees). Empty input means "no price yet" (null). Returns
@@ -151,6 +152,24 @@ class _PartnerPanelState extends State<PartnerPanel> {
                           builder: (_) => PartnerOfferingsPage(
                               auth: widget.auth, partner: partner))),
                     ),
+                  for (final partner in partners)
+                    if (partner['verificationStatus'] == 'APPROVED')
+                      Align(
+                        key: ValueKey('hub-${partner['id']}'),
+                        alignment: Alignment.centerLeft,
+                        child: FilledButton.icon(
+                          icon: const Icon(Icons.receipt_long_outlined),
+                          label: Text(_t(
+                              context,
+                              'Заказы, записи и доступность',
+                              'Тапсырыстар, жазылулар және қолжетімділік',
+                              'Orders, bookings and availability')),
+                          onPressed: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                  builder: (_) => PartnerHubPage(
+                                      auth: widget.auth, partner: partner))),
+                        ),
+                      ),
                   if (partners.isEmpty)
                     Align(
                       alignment: Alignment.centerLeft,

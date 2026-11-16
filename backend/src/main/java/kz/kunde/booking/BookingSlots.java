@@ -90,7 +90,7 @@ public class BookingSlots {
         Map<UUID, List<Instant[]>> busy = new LinkedHashMap<>();
         db.query("""
                 select master_id, starts_at, ends_at from transactions.bookings
-                where status in ('CONFIRMED', 'COMPLETED') and starts_at < ? and ends_at > ?
+                where status in ('PENDING', 'CONFIRMED', 'COMPLETED') and starts_at < ? and ends_at > ?
                 """, rs -> {
                     busy.computeIfAbsent(rs.getObject(1, UUID.class), k -> new ArrayList<>())
                             .add(new Instant[] {rs.getTimestamp(2).toInstant(), rs.getTimestamp(3).toInstant()});

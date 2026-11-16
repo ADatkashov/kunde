@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'booking_strings.dart';
@@ -29,12 +31,23 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   BookingRecord? _booking;
   String? _error;
   bool _busy = false;
+  Timer? _poll;
 
   @override
   void initState() {
     super.initState();
     _booking = widget.initial;
     _load();
+    // A request waiting for the partner's answer is refreshed until it is decided.
+    _poll = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (_booking?.status == 'PENDING') _load();
+    });
+  }
+
+  @override
+  void dispose() {
+    _poll?.cancel();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -109,7 +122,8 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                     children: [
-                      if (widget.justBooked && b.status == 'CONFIRMED')
+                      if (widget.justBooked &&
+                          (b.status == 'CONFIRMED' || b.status == 'PENDING'))
                         Card(
                           color: theme.colorScheme.primaryContainer,
                           margin: const EdgeInsets.only(bottom: 12),
@@ -209,12 +223,16 @@ class _StatusBanner extends StatelessWidget {
                 : Icons.event_available_rounded),
         title: Text(s.bkStatus(booking.status)),
         subtitle: Text(cancelled
-            ? s.bkStatusCancelledHint
-            : done
-                ? s.bkStatusCompletedHint
-                : booking.isCleaning
-                    ? s.bkStatusConfirmedHome
-                    : s.bkStatusConfirmedHint),
+            ? (booking.cancelReason != null && booking.cancelledBy == 'PARTNER'
+                ? '${s.bkStatusCancelledHint}\n${s.bkCancelReason(booking.cancelReason!)}'
+                : s.bkStatusCancelledHint)
+            : booking.status == 'PENDING'
+                ? s.bkStatusPendingHint
+                : done
+                    ? s.bkStatusCompletedHint
+                    : booking.isCleaning
+                        ? s.bkStatusConfirmedHome
+                        : s.bkStatusConfirmedHint),
       ),
     );
   }
