@@ -174,11 +174,19 @@ extension BookingStrings on KundeLocalizations {
       'Өтінім сақталды және «Тапсырыстар» → «Жазылулар» бөлімінде көрсетіледі.',
       'The request is saved and appears in Orders → Bookings.');
   String bkStatus(String status) => switch (status) {
+        'PENDING' => _t('Ожидает подтверждения', 'Растауды күтуде',
+            'Awaiting confirmation'),
         'CONFIRMED' => _t('Подтверждена', 'Расталды', 'Confirmed'),
         'COMPLETED' => _t('Состоялась', 'Өтті', 'Completed'),
         'CANCELLED' => _t('Отменена', 'Бас тартылды', 'Cancelled'),
         _ => status,
       };
+  String get bkStatusPendingHint => _t(
+      'Заведение подтвердит запись. Время за вами, пока ждём ответ.',
+      'Мекеме жазылуды растайды. Жауап күткенше уақыт сізде.',
+      'The venue will confirm. The time is held for you while we wait.');
+  String bkCancelReason(String reason) =>
+      _t('Причина: $reason', 'Себебі: $reason', 'Reason: $reason');
   String get bkStatusConfirmedHint => _t('Ждём вас в назначенное время.',
       'Белгіленген уақытта күтеміз.', 'See you at the scheduled time.');
   String get bkStatusConfirmedHome => _t(

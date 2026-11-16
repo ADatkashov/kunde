@@ -451,7 +451,13 @@ class FoodOrder {
     this.vertical = 'FOOD',
     this.finalTotalMinor,
     this.hasChanges = false,
+    this.cancelledBy,
+    this.cancelReason,
   });
+
+  /// Who cancelled (`CUSTOMER`, `PARTNER`, `SYSTEM`) and the partner's reason, if any.
+  final String? cancelledBy;
+  final String? cancelReason;
 
   /// Total after the store replaced or removed unavailable products; null until collected.
   final int? finalTotalMinor;
@@ -507,6 +513,8 @@ class FoodOrder {
         vertical: json['vertical'] as String? ?? 'FOOD',
         finalTotalMinor: (json['finalTotalMinor'] as num?)?.toInt(),
         hasChanges: json['hasChanges'] as bool? ?? false,
+        cancelledBy: json['cancelledBy'] as String?,
+        cancelReason: json['cancelReason'] as String?,
       );
 }
 

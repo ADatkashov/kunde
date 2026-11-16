@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
  * No real businesses, prices or partners are represented; no users or personal data are created.
  */
 @Component
+@org.springframework.core.annotation.Order(10)
 @ConditionalOnProperty(name = "app.food.seed-demo", havingValue = "true")
 public class FoodDemoSeeder implements ApplicationRunner {
     private static final Logger log = LoggerFactory.getLogger(FoodDemoSeeder.class);
@@ -30,7 +31,7 @@ public class FoodDemoSeeder implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        for (String file : new String[] {"food/demo-catalog.json", "food/grocery-demo-catalog.json"}) {
+        for (String file : new String[] {"food/demo-catalog.json", "food/grocery-demo-catalog.json", "food/partner-demo-catalog.json"}) {
             try (InputStream in = new ClassPathResource(file).getInputStream()) {
                 int inserted = seed(new ObjectMapper().readTree(in));
                 log.info("Demo seed {}: {} synthetic stores/restaurants inserted", file, inserted);

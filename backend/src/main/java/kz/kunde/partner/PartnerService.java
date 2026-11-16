@@ -269,6 +269,21 @@ public class PartnerService {
         return activeRole(partnerId, userId).isPresent() && eligibleForCatalogGate(partnerId);
     }
 
+    /**
+     * Partner operations gate (orders, bookings, availability): any active staff role of an APPROVED partner.
+     * Strangers and revoked members get 404 (existence is not revealed); an unapproved partner gets 403.
+     */
+    @Transactional(readOnly = true)
+    public void requireProcessing(UUID userId, UUID partnerId, Role... allowed) {
+        Role role = activeRole(partnerId, userId).orElseThrow(PartnerService::notFound);
+        if (allowed.length > 0 && !List.of(allowed).contains(role)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "PARTNER_ROLE_FORBIDDEN", "Role is not allowed to do this");
+        }
+        if (!eligibleForCatalogGate(partnerId)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "PARTNER_NOT_APPROVED", "The partner is not approved");
+        }
+    }
+
     /** Only APPROVED is eligible for later catalog gates; it enables nothing by itself. */
     @Transactional(readOnly = true)
     public boolean eligibleForCatalogGate(UUID partnerId) {

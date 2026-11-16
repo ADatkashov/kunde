@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
  * {@link BookingGuard}). A venue that already exists (by slug) is never touched; no users or bookings are created.
  */
 @Component
+@org.springframework.core.annotation.Order(10)
 @ConditionalOnProperty(name = "app.booking.seed-demo", havingValue = "true")
 public class BookingDemoSeeder implements ApplicationRunner {
     private static final Logger log = LoggerFactory.getLogger(BookingDemoSeeder.class);
@@ -31,8 +32,10 @@ public class BookingDemoSeeder implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        try (InputStream in = new ClassPathResource("booking/demo-venues.json").getInputStream()) {
-            log.info("Booking demo seed: {} synthetic venues inserted", seed(new ObjectMapper().readTree(in)));
+        for (String file : new String[] {"booking/demo-venues.json", "booking/partner-demo-venues.json"}) {
+            try (InputStream in = new ClassPathResource(file).getInputStream()) {
+                log.info("Booking demo seed {}: {} synthetic venues inserted", file, seed(new ObjectMapper().readTree(in)));
+            }
         }
     }
 

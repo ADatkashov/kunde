@@ -210,6 +210,7 @@ class BookingSlot {
 }
 
 String bookingStatusLabel(String status) => switch (status) {
+      'PENDING' => 'Ожидает подтверждения',
       'CONFIRMED' => 'Подтверждена',
       'COMPLETED' => 'Состоялась',
       'CANCELLED' => 'Отменена',
@@ -234,6 +235,8 @@ class BookingRecord {
     this.category = 'BARBER',
     this.addressText,
     this.areaSqm,
+    this.cancelledBy,
+    this.cancelReason,
   });
 
   final String id;
@@ -255,6 +258,10 @@ class BookingRecord {
   final String? addressText;
   final int? areaSqm;
 
+  /// Who cancelled (`CUSTOMER`, `PARTNER`, `SYSTEM`) and the partner's reason, if any.
+  final String? cancelledBy;
+  final String? cancelReason;
+
   bool get isCleaning => category == 'CLEANING';
 
   factory BookingRecord.fromJson(Map<String, dynamic> json) => BookingRecord(
@@ -274,5 +281,7 @@ class BookingRecord {
         category: json['category'] as String? ?? 'BARBER',
         addressText: json['addressText'] as String?,
         areaSqm: (json['areaSqm'] as num?)?.toInt(),
+        cancelledBy: json['cancelledBy'] as String?,
+        cancelReason: json['cancelReason'] as String?,
       );
 }

@@ -1,0 +1,91 @@
+{
+ "venues": [
+  {
+   "slug": "partner-salon-demo",
+   "category": "BARBER",
+   "name": "Барбершоп партнёра (демо)",
+   "description": "Вымышленное заведение: записи подтверждает синтетический партнёр KUNDE (DEV).",
+   "address": "Алматы, ул. Тестовая 1 (тестовый адрес)",
+   "emoji": "💈",
+   "tone": "green",
+   "open": true,
+   "services": [
+    {
+     "name": "Мужская стрижка",
+     "description": "Стрижка и укладка",
+     "duration": 45,
+     "price": 600000
+    },
+    {
+     "name": "Оформление бороды",
+     "description": "Контур и уход",
+     "duration": 30,
+     "price": 400000
+    }
+   ],
+   "masters": [
+    {
+     "name": "Тимур",
+     "bio": "Демо-мастер партнёра",
+     "emoji": "💇",
+     "tone": "amber",
+     "services": [
+      "Мужская стрижка",
+      "Оформление бороды"
+     ],
+     "hours": [
+      {
+       "day": 1,
+       "from": "09:00",
+       "to": "20:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 2,
+       "from": "09:00",
+       "to": "20:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 3,
+       "from": "09:00",
+       "to": "20:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 4,
+       "from": "09:00",
+       "to": "20:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 5,
+       "from": "09:00",
+       "to": "20:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 6,
+       "from": "09:00",
+       "to": "20:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 7,
+       "from": "09:00",
+       "to": "20:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
