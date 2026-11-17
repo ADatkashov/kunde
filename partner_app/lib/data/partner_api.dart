@@ -66,6 +66,9 @@ class PartnerApi {
   Future<Map<String, dynamic>> postMap(
           String path, Map<String, dynamic> body) async =>
       _asMap(await postJson(path, body));
+  Future<Map<String, dynamic>> putMap(
+          String path, Map<String, dynamic> body) async =>
+      _asMap(await putJson(path, body));
   Future<Map<String, dynamic>> patchMap(
           String path, Map<String, dynamic> body) async =>
       _asMap(await patchJson(path, body));

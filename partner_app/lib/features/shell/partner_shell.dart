@@ -98,7 +98,9 @@ class _PartnerShellState extends State<PartnerShell>
             ),
             OrdersScreen(store: _store),
             BookingsScreen(store: _store),
-            BusinessScreen(store: _store),
+            BusinessScreen(
+                store: _store,
+                canManage: widget.controller.partner?.canManage ?? false),
             ProfileScreen(
                 controller: widget.controller, settings: widget.settings),
           ]),

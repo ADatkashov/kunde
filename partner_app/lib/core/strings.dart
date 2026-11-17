@@ -526,6 +526,111 @@ class S {
       '$service — ${bookingStatus(status).toLowerCase()}');
   String get lastUpdated => _t('Обновлено', 'Жаңартылды', 'Updated');
 
+  // ── Business management ─────────────────────────────────────────────
+  String get restaurantsTitle =>
+      _t('Рестораны', 'Мейрамханалар', 'Restaurants');
+  String get venuesTitle =>
+      _t('Услуги и записи', 'Қызметтер мен жазылулар', 'Services & bookings');
+  String get openForOrders =>
+      _t('Принимает заказы', 'Тапсырыс қабылдайды', 'Accepting orders');
+  String get openForBookings =>
+      _t('Принимает записи', 'Жазылу қабылдайды', 'Accepting bookings');
+  String get menuTitle =>
+      _t('Меню и цены', 'Мәзір мен бағалар', 'Menu & prices');
+  String get servicesTitle => _t('Услуги', 'Қызметтер', 'Services');
+  String get mastersTitle => _t('Мастера и сотрудники',
+      'Шеберлер мен қызметкерлер', 'Specialists & staff');
+  String get menuEmpty => _t('В меню пока нет блюд', 'Мәзірде әзірге тағам жоқ',
+      'The menu has no dishes yet');
+  String get servicesEmpty =>
+      _t('Услуг пока нет', 'Қызметтер әзірге жоқ', 'No services yet');
+  String get mastersEmpty =>
+      _t('Мастеров пока нет', 'Шеберлер әзірге жоқ', 'No specialists yet');
+  String get dishAvailable => _t('В наличии', 'Қолжетімді', 'Available');
+  String get dishUnavailable => _t('Нет в наличии', 'Жоқ', 'Unavailable');
+  String stockLeft(int n) => _t('Остаток: $n', 'Қалдық: $n', 'In stock: $n');
+  String get addDish => _t('Добавить блюдо', 'Тағам қосу', 'Add dish');
+  String get editDish => _t('Изменить блюдо', 'Тағамды өзгерту', 'Edit dish');
+  String get dishName => _t('Название', 'Атауы', 'Name');
+  String get dishDescription => _t('Описание (необязательно)',
+      'Сипаттама (міндетті емес)', 'Description (optional)');
+  String get dishPrice => _t('Цена, ₸', 'Бағасы, ₸', 'Price, ₸');
+  String get dishSection => _t('Раздел меню', 'Мәзір бөлімі', 'Menu section');
+  String get dishStock => _t('Остаток (пусто — без ограничения)',
+      'Қалдық (бос — шектеусіз)', 'Stock (empty — unlimited)');
+  String get dishNameInvalid => _t('Название: от 2 до 160 символов',
+      'Атауы: 2–160 таңба', 'Name: 2 to 160 characters');
+  String get dishPriceInvalid => _t('Цена: от 0 до 1 000 000 ₸',
+      'Бағасы: 0–1 000 000 ₸', 'Price: 0 to 1,000,000 ₸');
+  String get dishStockInvalid => _t('Остаток: целое число от 0 до 100 000',
+      'Қалдық: 0–100 000 бүтін сан', 'Stock: a whole number from 0 to 100,000');
+  String get dishSaved => _t('Сохранено', 'Сақталды', 'Saved');
+  String get dishNoSection => _t(
+      'Чтобы добавить блюдо, в меню должен быть хотя бы один раздел.',
+      'Тағам қосу үшін мәзірде кемінде бір бөлім болуы керек.',
+      'A menu section must exist before you can add a dish.');
+  String get ownerOnlyEdit => _t(
+      'Менять цены и названия могут владелец и менеджер.',
+      'Баға мен атауды иесі мен менеджер өзгерте алады.',
+      'Only the owner and managers can change prices and names.');
+  String get scheduleTitle =>
+      _t('График работы', 'Жұмыс кестесі', 'Working hours');
+  String get dayOff => _t('Выходной', 'Демалыс', 'Day off');
+  String get breakLabel => _t('Перерыв', 'Үзіліс', 'Break');
+  String get workingDay => _t('Рабочий день', 'Жұмыс күні', 'Working day');
+  String get fromLabel => _t('С', 'Бастап', 'From');
+  String get toLabel => _t('До', 'Дейін', 'To');
+  String get addBreak => _t('Добавить перерыв', 'Үзіліс қосу', 'Add a break');
+  String get removeBreak =>
+      _t('Убрать перерыв', 'Үзілісті алып тастау', 'Remove break');
+  String get scheduleSaved =>
+      _t('График сохранён', 'Кесте сақталды', 'Schedule saved');
+  String get scheduleInvalid => _t(
+      'Проверьте время: конец позже начала, перерыв внутри дня.',
+      'Уақытты тексеріңіз: аяқталуы басталуынан кейін, үзіліс күн ішінде.',
+      'Check the times: end after start, break inside the day.');
+  String get slotsNote => _t(
+      'Свободные слоты для клиентов формируются автоматически по графику мастера и существующим записям.',
+      'Клиенттерге арналған бос уақыттар шебердің кестесі мен бар жазылулар бойынша автоматты түрде құрылады.',
+      'Free slots for customers are generated automatically from the specialist\'s schedule and existing bookings.');
+  String get editSchedule =>
+      _t('Изменить график', 'Кестені өзгерту', 'Edit schedule');
+  String get active => _t('Работает', 'Жұмыс істейді', 'Active');
+  String get inactive => _t('Не работает', 'Жұмыс істемейді', 'Not working');
+  String get toggleFailed => _t('Не удалось сохранить изменение',
+      'Өзгерісті сақтау мүмкін болмады', 'Could not save the change');
+  String weekday(int day) {
+    const ru = [
+      'Понедельник',
+      'Вторник',
+      'Среда',
+      'Четверг',
+      'Пятница',
+      'Суббота',
+      'Воскресенье'
+    ];
+    const kk = [
+      'Дүйсенбі',
+      'Сейсенбі',
+      'Сәрсенбі',
+      'Бейсенбі',
+      'Жұма',
+      'Сенбі',
+      'Жексенбі'
+    ];
+    const en = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday'
+    ];
+    final i = (day - 1).clamp(0, 6);
+    return _t(ru[i], kk[i], en[i]);
+  }
+
   // ── Misc shared ─────────────────────────────────────────────────────
   String get logout => _t('Выйти', 'Шығу', 'Sign out');
   String get logoutConfirm => _t('Выйти из аккаунта партнёра?',
