@@ -1,7 +1,7 @@
 name: kunde_partner
-description: Standalone KUNDE Partner application (foundation)
+description: KUNDE Partner — app for business owners and staff (DEV)
 publish_to: none
-version: 0.1.0+1
+version: 0.2.0+2
 environment:
   sdk: '>=3.4.0 <4.0.0'
 dependencies:
