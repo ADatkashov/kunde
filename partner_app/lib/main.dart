@@ -183,6 +183,45 @@ class _PartnerDashboardState extends State<PartnerDashboard> {
   }
   void refresh() => setState(() => data = load());
 
+  Future<void> changeBooking(String bookingId, String action) async {
+    final controller = TextEditingController();
+    final reasonRequired = action == 'REJECT';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(action == 'CONFIRM' ? 'Подтвердить запись?' : 'Отклонить запись?'),
+        content: reasonRequired
+            ? TextField(controller: controller, maxLength: 300,
+                decoration: const InputDecoration(labelText: 'Причина отклонения'))
+            : const Text('Клиент получит обновлённый статус записи.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Назад')),
+          FilledButton(onPressed: () {
+            if (!reasonRequired || controller.text.trim().length >= 3) {
+              Navigator.pop(dialogContext, true);
+            }
+          }, child: const Text('Подтвердить')),
+        ],
+      ),
+    );
+    final reason = controller.text.trim();
+    controller.dispose();
+    if (confirmed != true) return;
+    try {
+      await widget.operations.bookingAction(bookingId, action,
+          reason: reasonRequired ? reason : null);
+      if (mounted) refresh();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Не удалось обновить запись. Повторите после обновления.'),
+        ));
+        refresh();
+      }
+    }
+  }
+
   Future<void> changeOrder(String orderId, String status) async {
     String? reason;
     if (status == 'CANCELLED') {
@@ -273,7 +312,8 @@ class _PartnerDashboardState extends State<PartnerDashboard> {
             ])),
           Expanded(child: PartnerRecords(payload: value,
             title: ['Заказ', 'Запись', 'Ресторан'][tab],
-            onOrderAction: tab == 0 ? changeOrder : null)),
+            onOrderAction: tab == 0 ? changeOrder : null,
+            onBookingAction: tab == 1 ? changeBooking : null)),
         ]);
       },
     ),
