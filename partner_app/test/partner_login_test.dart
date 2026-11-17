@@ -8,7 +8,7 @@ void main() {
     await tester.pumpWidget(const KundePartnerApp());
     expect(find.text('Вход для партнёров'), findsOneWidget);
     expect(find.text('Получить код'), findsOneWidget);
-    expect(find.byType(TextField), findsNWidgets(2));
+    expect(find.byType(TextField), findsOneWidget);
     expect(find.text('Заказы'), findsNothing);
   });
 }
