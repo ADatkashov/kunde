@@ -28,6 +28,7 @@ jobs:
         working-directory: partner_app
         run: |
           flutter create --platforms=android --org com.kunde --project-name kunde_partner .
+          rm -f test/widget_test.dart
           flutter pub get
           flutter analyze --fatal-infos
           flutter test
