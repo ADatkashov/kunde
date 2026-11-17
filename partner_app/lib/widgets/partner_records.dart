@@ -21,6 +21,36 @@ class PartnerRecords extends StatelessWidget {
     return const [];
   }
 
+  static String _statusLabel(String status) {
+    switch (status) {
+      case 'PLACED': return 'Новый';
+      case 'ACCEPTED': return 'Принят';
+      case 'PREPARING': return 'Готовится';
+      case 'ON_THE_WAY': return 'В доставке';
+      case 'DELIVERED': return 'Завершён';
+      case 'CANCELLED': return 'Отменён';
+      case 'REQUESTED': return 'Ожидает ответа';
+      case 'CONFIRMED': return 'Подтверждена';
+      case 'REJECTED': return 'Отклонена';
+      case 'COMPLETED': return 'Завершена';
+      default: return status;
+    }
+  }
+
+  static IconData _statusIcon(String status) {
+    switch (status) {
+      case 'PLACED':
+      case 'REQUESTED': return Icons.notifications_active_outlined;
+      case 'ACCEPTED':
+      case 'CONFIRMED': return Icons.check_circle_outline;
+      case 'CANCELLED':
+      case 'REJECTED': return Icons.cancel_outlined;
+      case 'DELIVERED':
+      case 'COMPLETED': return Icons.task_alt;
+      default: return Icons.info_outline;
+    }
+  }
+
   static String _actionLabel(String status) {
     switch (status) {
       case 'ACCEPTED': return 'Принять';
@@ -72,7 +102,8 @@ class PartnerRecords extends StatelessWidget {
                   Expanded(child: Text(name,
                       style: Theme.of(context).textTheme.titleMedium)),
                   const SizedBox(width: 8),
-                  Chip(label: Text(status)),
+                  Chip(avatar: Icon(_statusIcon(status), size: 18),
+                    label: Text(_statusLabel(status))),
                 ]),
                 const SizedBox(height: 6),
                 Text('№ $id', style: Theme.of(context).textTheme.bodySmall),
