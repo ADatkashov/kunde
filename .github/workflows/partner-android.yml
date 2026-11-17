@@ -1,0 +1,54 @@
+name: Partner Android APK (DEV)
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'partner_app/**'
+      - '.github/workflows/partner-android.yml'
+permissions:
+  contents: read
+jobs:
+  partner-android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: '3.47.9'
+          channel: stable
+          cache: true
+      - name: Generate isolated Android platform scaffold
+        working-directory: partner_app
+        run: |
+          flutter create --platforms=android --org com.kunde --project-name kunde_partner .
+          rm -f test/widget_test.dart
+          flutter pub get
+          flutter analyze --fatal-infos
+          flutter test
+      - name: Build Partner DEV debug APK
+        working-directory: partner_app
+        run: |
+          flutter build apk --debug --target-platform android-arm64 \
+            --dart-define=API_BASE_URL=https://kunde-backend-ty81.onrender.com/api/v1/
+      - name: Verify distinct Partner application ID
+        working-directory: partner_app
+        run: |
+          apk=build/app/outputs/flutter-apk/app-debug.apk
+          test -s "$apk"
+          bt="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          "$bt/aapt" dump badging "$apk" > "$RUNNER_TEMP/partner-badging.txt"
+          grep -q "package: name='com.kunde.kunde_partner'" "$RUNNER_TEMP/partner-badging.txt"
+          grep -q "uses-permission: name='android.permission.INTERNET'" "$RUNNER_TEMP/partner-badging.txt"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: KUNDE-Partner-DEV-debug-APK
+          path: partner_app/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 7
+          if-no-files-found: error
