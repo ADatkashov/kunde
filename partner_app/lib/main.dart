@@ -149,6 +149,7 @@ class _PartnerLoginScreenState extends State<PartnerLoginScreen> {
             }
             if (!mounted) { api.close(); return; }
             handedOff = true;
+            if (!context.mounted) { api.close(); return; }
             Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
               builder: (_) => PartnerDashboard(
                 session: session, api: api, operations: ops)));
@@ -288,9 +289,11 @@ class _PartnerDashboardState extends State<PartnerDashboard> {
         catch (_) { /* local session is cleared even if server is unavailable */ }
         widget.api.close();
         widget.session.dispose();
-        if (context.mounted) Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute<void>(builder: (_) => const PartnerLoginScreen()),
-          (_) => false);
+        if (context.mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute<void>(builder: (_) => const PartnerLoginScreen()),
+            (_) => false);
+        }
       }, icon: const Icon(Icons.logout), tooltip: 'Выйти'),
     ]),
     body: FutureBuilder<Map<String, dynamic>>(
