@@ -164,8 +164,9 @@ class OpsStore extends ChangeNotifier {
 
   Future<void> loadMoreBookingHistory() async {
     final current = bookingHistory.data;
-    if (current == null || loadingMoreBookings || !bookingHistoryHasMore)
+    if (current == null || loadingMoreBookings || !bookingHistoryHasMore) {
       return;
+    }
     loadingMoreBookings = true;
     _notify();
     try {

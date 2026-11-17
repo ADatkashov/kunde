@@ -209,8 +209,9 @@ class FakeBackend {
       final rest = path.substring(root.length);
       final scope = r.url.queryParameters['scope'];
       if (r.method == 'GET') {
-        if (rest == 'food/orders')
+        if (rest == 'food/orders') {
           return json(scope == 'history' ? historyOrders : activeOrders);
+        }
         if (rest == 'booking/bookings') {
           return json(switch (scope) {
             'requests' => requests,

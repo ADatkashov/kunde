@@ -33,8 +33,9 @@ class _LoginScreenState extends State<LoginScreen> {
   String get _normalizedPhone {
     final digits = _phone.text.replaceAll(RegExp(r'[^0-9+]'), '');
     if (digits.startsWith('+')) return digits;
-    if (digits.startsWith('8') && digits.length == 11)
+    if (digits.startsWith('8') && digits.length == 11) {
       return '+7${digits.substring(1)}';
+    }
     if (digits.startsWith('7') && digits.length == 11) return '+$digits';
     return digits;
   }

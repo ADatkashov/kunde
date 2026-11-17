@@ -7,6 +7,7 @@ import '../../app/settings.dart';
 import '../../core/strings.dart';
 import '../bookings/bookings_screen.dart';
 import '../business/business_screen.dart';
+import '../dashboard/dashboard_screen.dart';
 import '../orders/orders_screen.dart';
 import '../profile/profile_screen.dart';
 
@@ -27,8 +28,9 @@ class _PartnerShellState extends State<PartnerShell>
   int _tab = 0;
   late final OpsStore _store = widget.controller.store!;
 
-  static const _ordersTab = 0;
-  static const _bookingsTab = 1;
+  static const _ordersTab = 1;
+  static const _bookingsTab = 2;
+  static const _businessTab = 3;
 
   @override
   void initState() {
@@ -85,6 +87,15 @@ class _PartnerShellState extends State<PartnerShell>
             n > 0 ? Badge.count(count: n, child: icon) : icon;
         return Scaffold(
           body: IndexedStack(index: _tab, children: [
+            DashboardScreen(
+              controller: widget.controller,
+              store: _store,
+              onNavigate: (t) => setState(() => _tab = switch (t) {
+                    DashboardTarget.orders => _ordersTab,
+                    DashboardTarget.bookings => _bookingsTab,
+                    DashboardTarget.business => _businessTab,
+                  }),
+            ),
             OrdersScreen(store: _store),
             BookingsScreen(store: _store),
             BusinessScreen(store: _store),
@@ -95,6 +106,13 @@ class _PartnerShellState extends State<PartnerShell>
             selectedIndex: _tab,
             onDestinationSelected: (i) => setState(() => _tab = i),
             destinations: [
+              NavigationDestination(
+                icon: badge(
+                    newOrders + requests, const Icon(Icons.home_outlined)),
+                selectedIcon:
+                    badge(newOrders + requests, const Icon(Icons.home_rounded)),
+                label: s.navHome,
+              ),
               NavigationDestination(
                 icon: badge(newOrders, const Icon(Icons.receipt_long_outlined)),
                 selectedIcon:

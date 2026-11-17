@@ -468,6 +468,64 @@ class S {
       : _t('Новых заявок: $n', 'Жаңа өтінімдер: $n', '$n new booking requests');
   String get open => _t('Открыть', 'Ашу', 'Open');
 
+  // ── Dashboard ───────────────────────────────────────────────────────
+  String greeting(int hour) {
+    if (hour >= 5 && hour < 12) {
+      return _t('Доброе утро', 'Қайырлы таң', 'Good morning');
+    }
+    if (hour >= 12 && hour < 18) {
+      return _t('Добрый день', 'Қайырлы күн', 'Good afternoon');
+    }
+    if (hour >= 18 && hour < 23) {
+      return _t('Добрый вечер', 'Қайырлы кеш', 'Good evening');
+    }
+    return _t('Доброй ночи', 'Қайырлы түн', 'Good night');
+  }
+
+  String get dashAttentionTitle =>
+      _t('Требует внимания', 'Назар аударуды қажет етеді', 'Needs attention');
+  String get dashAllClearTitle => _t('Всё спокойно', 'Бәрі тыныш', 'All clear');
+  String get dashAllClearBody => _t('Новых заказов и заявок нет.',
+      'Жаңа тапсырыс пен өтінім жоқ.', 'No new orders or requests.');
+  String dashNewOrdersLine(int n) =>
+      _t('Новых заказов: $n', 'Жаңа тапсырыстар: $n', 'New orders: $n');
+  String dashRequestsLine(int n) => _t(
+      'Заявок на запись: $n', 'Жазылу өтінімдері: $n', 'Booking requests: $n');
+  String get dashToday => _t('Сегодня', 'Бүгін', 'Today');
+  String get kpiNewOrders =>
+      _t('Новые заказы', 'Жаңа тапсырыстар', 'New orders');
+  String get kpiActiveOrders =>
+      _t('Заказы в работе', 'Орындалудағы тапсырыстар', 'Orders in progress');
+  String get kpiRequests =>
+      _t('Заявки на запись', 'Жазылу өтінімдері', 'Booking requests');
+  String get kpiUpcoming =>
+      _t('Предстоящие записи', 'Алдағы жазылулар', 'Upcoming bookings');
+  String get kpiCompleted =>
+      _t('Завершено сегодня', 'Бүгін аяқталды', 'Completed today');
+  String get kpiRevenue =>
+      _t('Выручка за день', 'Күндік түсім', 'Revenue today');
+  String get kpiRevenueNote => _t('по завершённым заказам',
+      'аяқталған тапсырыстар бойынша', 'from completed orders');
+  String get kpiRevenuePartial => _t(
+      'не менее, загружена часть истории',
+      'кемінде, тарихтың бір бөлігі жүктелген',
+      'at least — part of the history is loaded');
+  String get quickActions =>
+      _t('Быстрые действия', 'Жылдам әрекеттер', 'Quick actions');
+  String get recentEvents =>
+      _t('Последние события', 'Соңғы оқиғалар', 'Recent events');
+  String get noEvents =>
+      _t('Событий пока нет', 'Оқиғалар әзірге жоқ', 'No events yet');
+  String eventOrder(String ref, String status) => _t(
+      'Заказ № $ref — ${orderStatus(status).toLowerCase()}',
+      'Тапсырыс № $ref — ${orderStatus(status).toLowerCase()}',
+      'Order #$ref — ${orderStatus(status).toLowerCase()}');
+  String eventBooking(String service, String status) => _t(
+      '$service — ${bookingStatus(status).toLowerCase()}',
+      '$service — ${bookingStatus(status).toLowerCase()}',
+      '$service — ${bookingStatus(status).toLowerCase()}');
+  String get lastUpdated => _t('Обновлено', 'Жаңартылды', 'Updated');
+
   // ── Misc shared ─────────────────────────────────────────────────────
   String get logout => _t('Выйти', 'Шығу', 'Sign out');
   String get logoutConfirm => _t('Выйти из аккаунта партнёра?',
