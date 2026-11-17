@@ -78,7 +78,6 @@ class PartnerLoginScreen extends StatefulWidget {
 class _PartnerLoginScreenState extends State<PartnerLoginScreen> {
   final phone = TextEditingController();
   final code = TextEditingController();
-  final partnerId = TextEditingController();
   final session = PartnerSession(
     apiBase: Uri.parse(const String.fromEnvironment(
       'API_BASE_URL',
@@ -93,13 +92,31 @@ class _PartnerLoginScreenState extends State<PartnerLoginScreen> {
   Future<void> execute(Future<void> Function() action) async {
     setState(() { busy = true; error = null; });
     try { await action(); }
-    catch (_) { if (mounted) setState(() => error = 'Не удалось выполнить запрос. Проверьте данные и соединение.'); }
+    catch (e) {
+      if (mounted) {
+        setState(() {
+          if (e is PartnerAuthException) {
+            error = e.code == 'INVALID_API_BASE'
+                ? 'Адрес DEV API не настроен. Требуется новая APK.'
+                : 'Ошибка авторизации: ${e.code}.';
+          } else if (e is PartnerApiException) {
+            error = e.statusCode == 403
+                ? 'Нет доступа к кабинету партнёра для этого номера.'
+                : 'Ошибка сервера партнёров (HTTP ${e.statusCode}).';
+          } else if (e is FormatException) {
+            error = 'Некорректные данные сервера: ${e.message}';
+          } else {
+            error = 'Не удалось подключиться к DEV серверу. Проверьте интернет.';
+          }
+        });
+      }
+    }
     finally { if (mounted) setState(() => busy = false); }
   }
 
   @override
   void dispose() {
-    phone.dispose(); code.dispose(); partnerId.dispose();
+    phone.dispose(); code.dispose();
     if (!handedOff) session.dispose();
     super.dispose();
   }
@@ -118,8 +135,6 @@ class _PartnerLoginScreenState extends State<PartnerLoginScreen> {
           decoration: const InputDecoration(labelText: 'Телефон (+7...)')),
         if (requested) TextField(controller: code, keyboardType: TextInputType.number,
           decoration: const InputDecoration(labelText: 'Код подтверждения')),
-        TextField(controller: partnerId,
-          decoration: const InputDecoration(labelText: 'ID партнёра (DEV)')),
         if (error != null) Text(error!, style: const TextStyle(color: Colors.red)),
         const SizedBox(height: 16),
         FilledButton(
@@ -132,13 +147,43 @@ class _PartnerLoginScreenState extends State<PartnerLoginScreen> {
               if (mounted) setState(() => requested = true);
               return;
             }
-            if (partnerId.text.trim().isEmpty) {
-              throw const FormatException('Partner ID required');
-            }
             await session.verifyOtp(phone.text.trim(), code.text.trim());
             final api = PartnerApi(
               baseUri: session.apiBase, accessToken: session.accessToken);
-            final ops = PartnerOperations(api, partnerId.text.trim());
+            late final PartnerOperations ops;
+            try {
+              final memberships = await api.myPartners();
+              final approved = memberships.where((p) =>
+                  p['verificationStatus'] == 'APPROVED' &&
+                  p['id'] is String && (p['id'] as String).isNotEmpty).toList();
+              if (approved.isEmpty) {
+                throw const FormatException('Нет одобренных партнёров для этого номера');
+              }
+              Map<String, dynamic>? selected;
+              if (approved.length == 1) {
+                selected = approved.first;
+              } else {
+                selected = await showDialog<Map<String, dynamic>>(
+                  context: context,
+                  builder: (dialogContext) => SimpleDialog(
+                    title: const Text('Выберите партнёра'),
+                    children: [
+                      for (final partner in approved)
+                        SimpleDialogOption(
+                          onPressed: () => Navigator.pop(dialogContext, partner),
+                          child: Text(partner['name']?.toString() ?? 'Партнёр'),
+                        ),
+                    ],
+                  ),
+                );
+              }
+              if (selected == null) { api.close(); return; }
+              ops = PartnerOperations(api, selected['id'] as String);
+            } catch (_) {
+              api.close();
+              await session.logout();
+              rethrow;
+            }
             try {
               // Server verifies APPROVED membership and denies unauthorized users.
               await ops.activeOrders();
