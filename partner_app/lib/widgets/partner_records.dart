@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 /// Lists are extracted only from known collection keys; unknown shapes get
 /// a safe informational state rather than a misleading count.
 class PartnerRecords extends StatelessWidget {
-  const PartnerRecords({required this.payload, required this.title, super.key});
+  const PartnerRecords({required this.payload, required this.title, this.onOrderAction, super.key});
 
   final Map<String, dynamic> payload;
   final String title;
+  final Future<void> Function(String orderId, String status)? onOrderAction;
 
   static List<Map<String, dynamic>> records(Map<String, dynamic> payload) {
     for (final key in ['items', 'orders', 'bookings', 'restaurants', 'data']) {
@@ -17,6 +18,17 @@ class PartnerRecords extends StatelessWidget {
       }
     }
     return const [];
+  }
+
+  static String _actionLabel(String status) {
+    switch (status) {
+      case 'ACCEPTED': return 'Принять';
+      case 'PREPARING': return 'Готовится';
+      case 'ON_THE_WAY': return 'Передать в доставку';
+      case 'DELIVERED': return 'Завершить';
+      case 'CANCELLED': return 'Отклонить';
+      default: return status;
+    }
   }
 
   @override
@@ -63,6 +75,18 @@ class PartnerRecords extends StatelessWidget {
                 ]),
                 const SizedBox(height: 6),
                 Text('№ $id', style: Theme.of(context).textTheme.bodySmall),
+                if (onOrderAction != null &&
+                    item['allowedNext'] is List &&
+                    item['id'] != null) ...[
+                  const SizedBox(height: 12),
+                  Wrap(spacing: 8, runSpacing: 8, children: [
+                    for (final next in (item['allowedNext'] as List).whereType<String>())
+                      OutlinedButton(
+                        onPressed: () async => onOrderAction!(id, next),
+                        child: Text(_actionLabel(next)),
+                      ),
+                  ]),
+                ],
               ],
             ),
           ),
