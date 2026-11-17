@@ -4,11 +4,12 @@ import 'package:flutter/material.dart';
 /// Lists are extracted only from known collection keys; unknown shapes get
 /// a safe informational state rather than a misleading count.
 class PartnerRecords extends StatelessWidget {
-  const PartnerRecords({required this.payload, required this.title, this.onOrderAction, super.key});
+  const PartnerRecords({required this.payload, required this.title, this.onOrderAction, this.onBookingAction, super.key});
 
   final Map<String, dynamic> payload;
   final String title;
   final Future<void> Function(String orderId, String status)? onOrderAction;
+  final Future<void> Function(String bookingId, String action)? onBookingAction;
 
   static List<Map<String, dynamic>> records(Map<String, dynamic> payload) {
     for (final key in ['items', 'orders', 'bookings', 'restaurants', 'data']) {
@@ -75,6 +76,20 @@ class PartnerRecords extends StatelessWidget {
                 ]),
                 const SizedBox(height: 6),
                 Text('№ $id', style: Theme.of(context).textTheme.bodySmall),
+                if (onBookingAction != null && item['id'] != null &&
+                    item['status'] == 'REQUESTED') ...[
+                  const SizedBox(height: 12),
+                  Wrap(spacing: 8, children: [
+                    FilledButton(
+                      onPressed: () => onBookingAction!(id, 'CONFIRM'),
+                      child: const Text('Подтвердить'),
+                    ),
+                    OutlinedButton(
+                      onPressed: () => onBookingAction!(id, 'REJECT'),
+                      child: const Text('Отклонить'),
+                    ),
+                  ]),
+                ],
                 if (onOrderAction != null &&
                     item['allowedNext'] is List &&
                     item['id'] != null) ...[
