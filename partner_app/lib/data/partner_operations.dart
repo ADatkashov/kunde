@@ -1,6 +1,9 @@
+import 'models.dart';
 import 'partner_api.dart';
 
-/// Existing server contracts; no new backend routes are introduced.
+/// Existing server contracts only; no new backend routes are introduced.
+/// All state transitions are decided by the backend (`allowedNext`,
+/// `allowedActions`); this class never invents one.
 class PartnerOperations {
   const PartnerOperations(this.api, this.partnerId);
   final PartnerApi api;
@@ -8,36 +11,49 @@ class PartnerOperations {
 
   String get _root => 'partner/partners/${Uri.encodeComponent(partnerId)}';
 
-  Future<Map<String, dynamic>> activeOrders() =>
-      api.get('$_root/food/orders?scope=active');
-  Future<Map<String, dynamic>> orderHistory() =>
-      api.get('$_root/food/orders?scope=history');
-  Future<Map<String, dynamic>> updateOrder(
-    String orderId,
-    String status, {
-    String? reason,
-  }) =>
-      api.post('$_root/food/orders/${Uri.encodeComponent(orderId)}/status', {
-        'status': status,
-        if (reason != null) 'reason': reason,
-      });
+  // ── Food orders ───────────────────────────────────────────────────
+  Future<List<PartnerOrder>> orders(
+      {required bool history, int limit = 30, int offset = 0}) async {
+    final scope = history ? 'history' : 'active';
+    final rows = await api
+        .getList('$_root/food/orders?scope=$scope&limit=$limit&offset=$offset');
+    return rows.map(PartnerOrder.fromJson).toList();
+  }
 
-  Future<Map<String, dynamic>> bookingRequests() =>
-      api.get('$_root/booking/bookings?scope=requests');
-  Future<Map<String, dynamic>> upcomingBookings() =>
-      api.get('$_root/booking/bookings?scope=upcoming');
-  Future<Map<String, dynamic>> bookingAction(
-    String bookingId,
-    String action, {
-    String? reason,
-  }) =>
-      api.post('$_root/booking/bookings/${Uri.encodeComponent(bookingId)}/action', {
-        'action': action,
-        if (reason != null) 'reason': reason,
-      });
+  Future<PartnerOrder> updateOrder(String orderId, String status,
+      {String? reason}) async {
+    final json = await api
+        .postMap('$_root/food/orders/${Uri.encodeComponent(orderId)}/status', {
+      'status': status,
+      if (reason != null) 'reason': reason,
+    });
+    return PartnerOrder.fromJson(json);
+  }
 
-  Future<Map<String, dynamic>> restaurants() =>
-      api.get('$_root/food/restaurants');
-  Future<Map<String, dynamic>> venues() =>
-      api.get('$_root/booking/venues');
+  // ── Bookings ──────────────────────────────────────────────────────
+  Future<List<PartnerBooking>> bookings(
+      {required String scope, int limit = 30, int offset = 0}) async {
+    final rows = await api.getList(
+        '$_root/booking/bookings?scope=$scope&limit=$limit&offset=$offset');
+    return rows.map(PartnerBooking.fromJson).toList();
+  }
+
+  Future<PartnerBooking> bookingAction(String bookingId, String action,
+      {String? reason}) async {
+    final json = await api.postMap(
+        '$_root/booking/bookings/${Uri.encodeComponent(bookingId)}/action', {
+      'action': action,
+      if (reason != null) 'reason': reason,
+    });
+    return PartnerBooking.fromJson(json);
+  }
+
+  // ── Catalog ───────────────────────────────────────────────────────
+  Future<List<Restaurant>> restaurants() async =>
+      (await api.getList('$_root/food/restaurants'))
+          .map(Restaurant.fromJson)
+          .toList();
+
+  Future<List<Venue>> venues() async =>
+      (await api.getList('$_root/booking/venues')).map(Venue.fromJson).toList();
 }

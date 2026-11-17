@@ -1,0 +1,544 @@
+import 'package:flutter/widgets.dart';
+
+/// All user-visible text of KUNDE Partner (RU / KK / EN). Widgets never carry
+/// literal strings; each getter lists the three translations side by side so a
+/// missing translation is impossible to miss in review.
+class S {
+  const S(this.locale);
+  final Locale locale;
+
+  static const supported = [Locale('ru'), Locale('kk'), Locale('en')];
+  static const delegate = _SDelegate();
+
+  static S of(BuildContext context) =>
+      Localizations.of<S>(context, S) ?? const S(Locale('ru'));
+
+  String _t(String ru, String kk, String en) {
+    switch (locale.languageCode) {
+      case 'kk':
+        return kk;
+      case 'en':
+        return en;
+      default:
+        return ru;
+    }
+  }
+
+  // ── App & navigation ────────────────────────────────────────────────
+  String get appName => 'KUNDE Partner';
+  String get navHome => _t('Главная', 'Басты бет', 'Home');
+  String get navOrders => _t('Заказы', 'Тапсырыстар', 'Orders');
+  String get navBookings => _t('Записи', 'Жазылулар', 'Bookings');
+  String get navBusiness => _t('Заведение', 'Мекеме', 'Business');
+  String get navProfile => _t('Профиль', 'Профиль', 'Profile');
+
+  // ── Common ──────────────────────────────────────────────────────────
+  String get retry => _t('Повторить', 'Қайталау', 'Retry');
+  String get refresh => _t('Обновить', 'Жаңарту', 'Refresh');
+  String get back => _t('Назад', 'Артқа', 'Back');
+  String get cancel => _t('Отмена', 'Бас тарту', 'Cancel');
+  String get confirm => _t('Подтвердить', 'Растау', 'Confirm');
+  String get save => _t('Сохранить', 'Сақтау', 'Save');
+  String get close => _t('Закрыть', 'Жабу', 'Close');
+  String get loadMore => _t('Показать ещё', 'Тағы көрсету', 'Show more');
+  String get all => _t('Все', 'Барлығы', 'All');
+  String get today => _t('Сегодня', 'Бүгін', 'Today');
+  String get tomorrow => _t('Завтра', 'Ертең', 'Tomorrow');
+  String get thisWeek => _t('Неделя', 'Апта', 'This week');
+  String get currencyKzt => '₸';
+  String get dash => '—';
+
+  // ── Login ───────────────────────────────────────────────────────────
+  String get loginTitle =>
+      _t('Вход для партнёров', 'Серіктестерге кіру', 'Partner sign-in');
+  String get loginSubtitle => _t(
+      'Управляйте заказами и записями вашего заведения',
+      'Мекемеңіздің тапсырыстары мен жазылуларын басқарыңыз',
+      'Manage orders and bookings of your business');
+  String get phoneLabel =>
+      _t('Номер телефона', 'Телефон нөмірі', 'Phone number');
+  String get phoneHint => '+7 700 000 00 00';
+  String get codeLabel =>
+      _t('Код подтверждения', 'Растау коды', 'Verification code');
+  String codeSentTo(String phone) => _t('Код отправлен на $phone',
+      'Код $phone нөміріне жіберілді', 'Code sent to $phone');
+  String get getCode => _t('Получить код', 'Код алу', 'Get code');
+  String get signIn => _t('Войти', 'Кіру', 'Sign in');
+  String get changeNumber =>
+      _t('Изменить номер', 'Нөмірді өзгерту', 'Change number');
+  String get pleaseWait => _t('Подождите…', 'Күте тұрыңыз…', 'Please wait…');
+  String get devCodeHint => _t(
+      'Тестовая сборка: код для демо-номеров — 123456',
+      'Сынақ құрастыру: демо нөмірлер коды — 123456',
+      'Test build: demo numbers use code 123456');
+  String get invalidPhone => _t('Введите номер в формате +7…',
+      'Нөмірді +7… форматында енгізіңіз', 'Enter the number as +7…');
+  String get invalidCode => _t('Введите код из сообщения',
+      'Хабарламадағы кодты енгізіңіз', 'Enter the code from the message');
+  String get wrongCode => _t('Неверный или просроченный код',
+      'Код қате немесе мерзімі өткен', 'The code is wrong or has expired');
+  String get tooManyAttempts => _t(
+      'Слишком много попыток. Подождите немного и повторите.',
+      'Тым көп әрекет. Біраз күтіп, қайталаңыз.',
+      'Too many attempts. Please wait a moment and try again.');
+
+  // ── Partner choice / access ─────────────────────────────────────────
+  String get choosePartnerTitle =>
+      _t('Выберите заведение', 'Мекемені таңдаңыз', 'Choose a business');
+  String get choosePartnerSubtitle => _t(
+      'За вашим номером закреплено несколько заведений.',
+      'Нөміріңізге бірнеше мекеме тіркелген.',
+      'Several businesses are linked to your number.');
+  String get switchPartner =>
+      _t('Сменить заведение', 'Мекемені ауыстыру', 'Switch business');
+  String get noPartnerTitle =>
+      _t('Нет доступа к кабинету', 'Кабинетке қолжетім жоқ', 'No access');
+  String get noPartnerBody => _t(
+      'За этим номером нет одобренного заведения. Обратитесь к владельцу или в поддержку KUNDE.',
+      'Бұл нөмірде мақұлданған мекеме жоқ. Иесіне немесе KUNDE қолдауына хабарласыңыз.',
+      'No approved business is linked to this number. Contact the owner or KUNDE support.');
+  String get accessRevokedTitle =>
+      _t('Доступ закрыт', 'Қолжетім жабылды', 'Access removed');
+  String get accessRevokedBody => _t(
+      'Ваш доступ к этому заведению отозван. Войдите снова или выберите другое заведение.',
+      'Бұл мекемеге қолжетімділігіңіз алынды. Қайта кіріңіз немесе басқа мекеме таңдаңыз.',
+      'Your access to this business was removed. Sign in again or choose another business.');
+  String get sessionExpired => _t(
+      'Сессия истекла. Войдите снова.',
+      'Сессия аяқталды. Қайта кіріңіз.',
+      'Your session expired. Sign in again.');
+  String get apiNotConfigured => _t(
+      'Адрес сервера не настроен. Установите актуальную сборку.',
+      'Сервер мекенжайы бапталмаған. Жаңа нұсқаны орнатыңыз.',
+      'Server address is not configured. Install an up-to-date build.');
+
+  // ── Roles ───────────────────────────────────────────────────────────
+  String role(String code) {
+    switch (code) {
+      case 'OWNER':
+        return _t('Владелец', 'Иесі', 'Owner');
+      case 'MANAGER':
+        return _t('Менеджер', 'Менеджер', 'Manager');
+      case 'OPERATOR':
+        return _t('Оператор', 'Оператор', 'Operator');
+      default:
+        return dash;
+    }
+  }
+
+  // ── Errors ──────────────────────────────────────────────────────────
+  String get errNetworkTitle =>
+      _t('Нет соединения', 'Байланыс жоқ', 'No connection');
+  String get errNetworkBody => _t(
+      'Проверьте интернет и повторите. Данные обновятся автоматически, когда связь вернётся.',
+      'Интернетті тексеріп, қайталаңыз. Байланыс қайта қосылғанда деректер жаңарады.',
+      'Check your internet and try again. Data will refresh when the connection returns.');
+  String get errTimeout => _t(
+      'Сервер отвечает слишком долго. Повторите позже.',
+      'Сервер ұзақ жауап береді. Кейінірек қайталаңыз.',
+      'The server is slow to respond. Try again later.');
+  String get errServer => _t(
+      'Сервис временно недоступен. Повторите позже.',
+      'Қызмет уақытша қолжетімсіз. Кейінірек қайталаңыз.',
+      'The service is temporarily unavailable. Try again later.');
+  String get errForbidden => _t(
+      'Для этого действия недостаточно прав.',
+      'Бұл әрекет үшін құқық жеткіліксіз.',
+      'You do not have permission for this action.');
+  String get errNotFound => _t('Запись не найдена. Обновите список.',
+      'Жазба табылмады. Тізімді жаңартыңыз.', 'Not found. Refresh the list.');
+  String get errConflict => _t(
+      'Статус уже изменился. Список обновлён — проверьте и повторите.',
+      'Мәртебе өзгерген. Тізім жаңартылды — тексеріп, қайталаңыз.',
+      'The status has already changed. The list was refreshed — check and retry.');
+  String get errValidation => _t('Проверьте введённые данные.',
+      'Енгізілген деректерді тексеріңіз.', 'Check the entered data.');
+  String get errScheduleConflict => _t(
+      'Есть записи клиентов в это время — изменить график нельзя.',
+      'Осы уақытта клиент жазылулары бар — кестені өзгертуге болмайды.',
+      'Customer bookings exist at that time — the schedule cannot change.');
+  String get errUnknown => _t(
+      'Не удалось выполнить действие. Повторите.',
+      'Әрекетті орындау мүмкін болмады. Қайталаңыз.',
+      'The action failed. Please try again.');
+  String get errLoad => _t('Не удалось загрузить данные',
+      'Деректерді жүктеу мүмкін болмады', 'Could not load data');
+  String get offlineBanner => _t(
+      'Нет соединения. Показаны последние данные.',
+      'Байланыс жоқ. Соңғы деректер көрсетілген.',
+      'Offline. Showing the latest data.');
+
+  // ── Order statuses ──────────────────────────────────────────────────
+  String orderStatus(String code) {
+    switch (code) {
+      case 'PLACED':
+        return _t('Новый', 'Жаңа', 'New');
+      case 'ACCEPTED':
+        return _t('Принят', 'Қабылданды', 'Accepted');
+      case 'PREPARING':
+        return _t('Готовится', 'Дайындалуда', 'Preparing');
+      case 'ON_THE_WAY':
+        return _t('В доставке', 'Жеткізілуде', 'On the way');
+      case 'DELIVERED':
+        return _t('Завершён', 'Аяқталды', 'Completed');
+      case 'CANCELLED':
+        return _t('Отменён', 'Бас тартылды', 'Cancelled');
+      default:
+        return dash;
+    }
+  }
+
+  String bookingStatus(String code) {
+    switch (code) {
+      case 'PENDING':
+      case 'REQUESTED':
+        return _t('Ждёт ответа', 'Жауап күтеді', 'Awaiting reply');
+      case 'CONFIRMED':
+        return _t('Подтверждена', 'Расталды', 'Confirmed');
+      case 'COMPLETED':
+        return _t('Завершена', 'Аяқталды', 'Completed');
+      case 'CANCELLED':
+      case 'REJECTED':
+        return _t('Отменена', 'Бас тартылды', 'Cancelled');
+      default:
+        return dash;
+    }
+  }
+
+  /// Button label for moving an order to [status].
+  String orderAction(String status) {
+    switch (status) {
+      case 'ACCEPTED':
+        return _t('Принять заказ', 'Тапсырысты қабылдау', 'Accept order');
+      case 'PREPARING':
+        return _t('Начать готовить', 'Дайындауды бастау', 'Start preparing');
+      case 'ON_THE_WAY':
+        return _t(
+            'Передать в доставку', 'Жеткізуге беру', 'Hand over to delivery');
+      case 'DELIVERED':
+        return _t('Завершить заказ', 'Тапсырысты аяқтау', 'Complete order');
+      case 'CANCELLED':
+        return _t('Отклонить', 'Бас тарту', 'Reject');
+      default:
+        return dash;
+    }
+  }
+
+  String orderActionConfirm(String status) {
+    switch (status) {
+      case 'ACCEPTED':
+        return _t('Принять этот заказ?', 'Осы тапсырысты қабылдайсыз ба?',
+            'Accept this order?');
+      case 'PREPARING':
+        return _t('Начать приготовление?', 'Дайындауды бастайсыз ба?',
+            'Start preparing?');
+      case 'ON_THE_WAY':
+        return _t('Заказ передан курьеру?', 'Тапсырыс курьерге берілді ме?',
+            'Handed over to the courier?');
+      case 'DELIVERED':
+        return _t('Заказ получен клиентом?', 'Тапсырыс клиентке жетті ме?',
+            'Did the customer receive the order?');
+      default:
+        return confirm;
+    }
+  }
+
+  String get orderConfirmedToast => _t('Статус заказа обновлён',
+      'Тапсырыс мәртебесі жаңартылды', 'Order status updated');
+  String get cancelOrderTitle =>
+      _t('Отклонить заказ', 'Тапсырыстан бас тарту', 'Reject order');
+  String get cancelReasonLabel => _t('Причина (3–300 символов)',
+      'Себебі (3–300 таңба)', 'Reason (3–300 characters)');
+  String get reasonQuick1 =>
+      _t('Блюдо закончилось', 'Тағам таусылды', 'Item is out of stock');
+  String get reasonQuick2 =>
+      _t('Кухня закрыта', 'Асхана жабық', 'Kitchen is closed');
+  String get reasonQuick3 =>
+      _t('Слишком много заказов', 'Тапсырыс тым көп', 'Too many orders');
+
+  // ── Bookings ────────────────────────────────────────────────────────
+  String bookingAction(String code) {
+    switch (code) {
+      case 'CONFIRM':
+        return _t('Подтвердить', 'Растау', 'Confirm');
+      case 'REJECT':
+        return _t('Отклонить', 'Бас тарту', 'Reject');
+      case 'CANCEL':
+        return _t('Отменить запись', 'Жазылудан бас тарту', 'Cancel booking');
+      case 'COMPLETE':
+        return _t('Услуга оказана', 'Қызмет көрсетілді', 'Service done');
+      default:
+        return dash;
+    }
+  }
+
+  String bookingActionConfirm(String code) {
+    switch (code) {
+      case 'CONFIRM':
+        return _t(
+            'Подтвердить запись? Клиент увидит новый статус.',
+            'Жазылуды растайсыз ба? Клиент жаңа мәртебені көреді.',
+            'Confirm the booking? The customer will see the new status.');
+      case 'COMPLETE':
+        return _t(
+            'Отметить услугу как оказанную?',
+            'Қызмет көрсетілді деп белгілейсіз бе?',
+            'Mark the service as done?');
+      default:
+        return confirm;
+    }
+  }
+
+  String get rejectBookingTitle =>
+      _t('Отклонить заявку', 'Өтінімнен бас тарту', 'Reject request');
+  String get cancelBookingTitle =>
+      _t('Отменить запись', 'Жазылудан бас тарту', 'Cancel booking');
+  String get bookingToast =>
+      _t('Запись обновлена', 'Жазылу жаңартылды', 'Booking updated');
+
+  // ── Orders screen ───────────────────────────────────────────────────
+  String get tabNew => _t('Новые', 'Жаңа', 'New');
+  String get tabInProgress => _t('В работе', 'Орындалуда', 'In progress');
+  String get tabCompleted => _t('Завершённые', 'Аяқталған', 'Completed');
+  String get tabRequests => _t('Заявки', 'Өтінімдер', 'Requests');
+  String get tabUpcoming => _t('Предстоящие', 'Алдағы', 'Upcoming');
+  String get tabHistory => _t('История', 'Тарих', 'History');
+  String get ordersEmptyNewTitle =>
+      _t('Новых заказов нет', 'Жаңа тапсырыс жоқ', 'No new orders');
+  String get ordersEmptyNewBody => _t(
+      'Когда клиент оформит заказ, он появится здесь со звуковым сигналом.',
+      'Клиент тапсырыс бергенде, ол осында дыбыспен көрсетіледі.',
+      'When a customer places an order it appears here with a sound alert.');
+  String get ordersEmptyProgressTitle => _t('Нет заказов в работе',
+      'Орындалуда тапсырыс жоқ', 'No orders in progress');
+  String get ordersEmptyProgressBody => _t(
+      'Принятые заказы будут показаны здесь до завершения.',
+      'Қабылданған тапсырыстар аяқталғанша осында көрсетіледі.',
+      'Accepted orders stay here until they are completed.');
+  String get ordersEmptyDoneTitle => _t('Завершённых заказов пока нет',
+      'Аяқталған тапсырыс әзірге жоқ', 'No completed orders yet');
+  String get ordersEmptyDoneBody => _t(
+      'Выполненные и отклонённые заказы сохраняются в истории.',
+      'Орындалған және қабылданбаған тапсырыстар тарихта сақталады.',
+      'Completed and rejected orders are kept in the history.');
+  String orderNumber(String ref) =>
+      _t('Заказ № $ref', 'Тапсырыс № $ref', 'Order #$ref');
+  String itemsCount(int n) => _t('$n поз.', '$n зат', '$n items');
+  String get orderItems =>
+      _t('Состав заказа', 'Тапсырыс құрамы', 'Order items');
+  String get subtotal => _t('Блюда', 'Тағамдар', 'Items');
+  String get delivery => _t('Доставка', 'Жеткізу', 'Delivery');
+  String get total => _t('Итого', 'Барлығы', 'Total');
+  String get orderAddress =>
+      _t('Адрес доставки', 'Жеткізу мекенжайы', 'Delivery address');
+  String get orderComment =>
+      _t('Комментарий клиента', 'Клиент пікірі', 'Customer comment');
+  String get orderPayment => _t('Оплата', 'Төлем', 'Payment');
+  String get orderPlacedAt => _t('Поступил', 'Түсті', 'Placed');
+  String get orderDetails => _t('Заказ', 'Тапсырыс', 'Order');
+  String get history =>
+      _t('История статусов', 'Мәртебелер тарихы', 'Status history');
+  String get cancelReasonTitle =>
+      _t('Причина отмены', 'Бас тарту себебі', 'Cancellation reason');
+  String get noItemsInfo => _t('Состав заказа недоступен',
+      'Тапсырыс құрамы қолжетімсіз', 'Order items are unavailable');
+  String paymentMethod(String? code) {
+    switch (code) {
+      case 'CASH_ON_DELIVERY':
+        return _t(
+            'Оплата при получении', 'Алған кезде төлеу', 'Pay on receipt');
+      case 'TEST_CARD':
+        return _t('Тестовая карта (демо)', 'Сынақ картасы (демо)',
+            'Test card (demo)');
+      default:
+        return dash;
+    }
+  }
+
+  String actorName(String? code) {
+    switch (code) {
+      case 'CUSTOMER':
+        return _t('Клиент', 'Клиент', 'Customer');
+      case 'PARTNER':
+        return _t('Заведение', 'Мекеме', 'Business');
+      case 'SYSTEM':
+        return _t('Система', 'Жүйе', 'System');
+      default:
+        return dash;
+    }
+  }
+
+  /// Cancellation reasons written by the system are shown in plain language.
+  String reasonText(String reason) =>
+      reason == 'PARTNER_TIMEOUT' ? timeoutReason : reason;
+  String get timeoutReason => _t('Заведение не ответило вовремя',
+      'Мекеме уақытында жауап бермеді', 'The business did not respond in time');
+
+  String replyBy(String time) =>
+      _t('Ответить до $time', '$time дейін жауап беріңіз', 'Reply by $time');
+  String minutesLeftText(int m) =>
+      _t('осталось $m мин', '$m мин қалды', '$m min left');
+  String get replyOverdue =>
+      _t('Время ответа истекло', 'Жауап уақыты өтті', 'Reply time is over');
+  String agoMinutes(int m) => m < 1
+      ? _t('только что', 'дәл қазір', 'just now')
+      : _t('$m мин назад', '$m мин бұрын', '$m min ago');
+  String get orderBusy => _t('Выполняется…', 'Орындалуда…', 'Working…');
+
+  // ── Bookings screen ─────────────────────────────────────────────────
+  String get bookingsEmptyRequestsTitle =>
+      _t('Новых заявок нет', 'Жаңа өтінім жоқ', 'No new requests');
+  String get bookingsEmptyRequestsBody => _t(
+      'Заявки клиентов на запись появятся здесь.',
+      'Клиенттердің жазылу өтінімдері осында көрсетіледі.',
+      'Customer booking requests appear here.');
+  String get bookingsEmptyUpcomingTitle => _t(
+      'Предстоящих записей нет', 'Алдағы жазылу жоқ', 'No upcoming bookings');
+  String get bookingsEmptyUpcomingBody => _t(
+      'Подтверждённые записи будут показаны здесь.',
+      'Расталған жазылулар осында көрсетіледі.',
+      'Confirmed bookings are shown here.');
+  String get bookingsEmptyHistoryTitle =>
+      _t('История пуста', 'Тарих бос', 'History is empty');
+  String get bookingsEmptyHistoryBody => _t(
+      'Завершённые и отменённые записи сохраняются здесь.',
+      'Аяқталған және бас тартылған жазылулар осында сақталады.',
+      'Completed and cancelled bookings are kept here.');
+  String get bookingsFilterEmptyTitle => _t('Нет записей по фильтру',
+      'Сүзгі бойынша жазба жоқ', 'No bookings match the filter');
+  String get bookingsFilterEmptyBody => _t('Измените дату или статус.',
+      'Күнді немесе мәртебені өзгертіңіз.', 'Change the date or status.');
+  String get filterDate => _t('Дата', 'Күні', 'Date');
+  String get filterStatus => _t('Статус', 'Мәртебе', 'Status');
+  String get bookingService => _t('Услуга', 'Қызмет', 'Service');
+  String get bookingMaster => _t('Мастер', 'Шебер', 'Specialist');
+  String get bookingPlace => _t('Заведение', 'Мекеме', 'Venue');
+  String get bookingWhen =>
+      _t('Дата и время', 'Күні мен уақыты', 'Date and time');
+  String get bookingAddress =>
+      _t('Адрес визита', 'Келу мекенжайы', 'Visit address');
+  String get bookingComment =>
+      _t('Комментарий клиента', 'Клиент пікірі', 'Customer comment');
+  String get bookingPrice => _t('Стоимость', 'Құны', 'Price');
+  String get durationLabel => _t('Длительность', 'Ұзақтығы', 'Duration');
+  String get bookingDetails => _t('Запись', 'Жазылу', 'Booking');
+  String minutesShort(int m) => _t('$m мин', '$m мин', '$m min');
+  String get bookingCancelReasonTitle => _t('Причина', 'Себебі', 'Reason');
+  String get requestedAt =>
+      _t('Заявка создана', 'Өтінім жасалды', 'Request created');
+
+  // ── Profile & settings ──────────────────────────────────────────────
+  String get profileTitle => _t('Профиль', 'Профиль', 'Profile');
+  String get yourRole => _t('Ваша роль', 'Сіздің рөліңіз', 'Your role');
+  String get language => _t('Язык', 'Тіл', 'Language');
+  String get languageAuto =>
+      _t('Как в телефоне', 'Телефондағыдай', 'Same as phone');
+  String get theme => _t('Тема', 'Тақырып', 'Theme');
+  String get themeSystem => _t('Системная', 'Жүйелік', 'System');
+  String get themeLight => _t('Светлая', 'Жарық', 'Light');
+  String get themeDark => _t('Тёмная', 'Қараңғы', 'Dark');
+  String get about => _t('О приложении', 'Қолданба туралы', 'About');
+  String get devBuildNote => _t(
+      'Тестовая сборка DEV: данные синтетические, платежей нет.',
+      'DEV сынақ құрастыруы: деректер жасанды, төлемдер жоқ.',
+      'DEV test build: data is synthetic, no payments.');
+  String get notificationsNote => _t(
+      'Оповещения о новых заказах работают, пока приложение открыто. Push в фоне пока недоступны.',
+      'Жаңа тапсырыстар туралы хабарлама қолданба ашық кезде жұмыс істейді. Фондық push әзірге жоқ.',
+      'New-order alerts work while the app is open. Background push is not available yet.');
+  String get notifications => _t('Оповещения', 'Хабарламалар', 'Notifications');
+
+  // ── Business ────────────────────────────────────────────────────────
+  String get businessEmptyTitle =>
+      _t('Каталог пока пуст', 'Каталог әзірге бос', 'Catalog is empty');
+  String get businessEmptyBody => _t(
+      'К вашему заведению ещё не подключены меню или услуги.',
+      'Мекемеңізге әлі мәзір не қызметтер қосылмаған.',
+      'No menu or services are linked to your business yet.');
+  String get openNow => _t('Открыто', 'Ашық', 'Open');
+  String get closedNow => _t('Закрыто', 'Жабық', 'Closed');
+
+  // ── Alerts ──────────────────────────────────────────────────────────
+  String alertNewOrders(int n) => n == 1
+      ? _t('Новый заказ', 'Жаңа тапсырыс', 'New order')
+      : _t('Новых заказов: $n', 'Жаңа тапсырыстар: $n', '$n new orders');
+  String alertNewBookings(int n) => n == 1
+      ? _t('Новая заявка на запись', 'Жазылуға жаңа өтінім',
+          'New booking request')
+      : _t('Новых заявок: $n', 'Жаңа өтінімдер: $n', '$n new booking requests');
+  String get open => _t('Открыть', 'Ашу', 'Open');
+
+  // ── Dashboard ───────────────────────────────────────────────────────
+  String greeting(int hour) {
+    if (hour >= 5 && hour < 12) {
+      return _t('Доброе утро', 'Қайырлы таң', 'Good morning');
+    }
+    if (hour >= 12 && hour < 18) {
+      return _t('Добрый день', 'Қайырлы күн', 'Good afternoon');
+    }
+    if (hour >= 18 && hour < 23) {
+      return _t('Добрый вечер', 'Қайырлы кеш', 'Good evening');
+    }
+    return _t('Доброй ночи', 'Қайырлы түн', 'Good night');
+  }
+
+  String get dashAttentionTitle =>
+      _t('Требует внимания', 'Назар аударуды қажет етеді', 'Needs attention');
+  String get dashAllClearTitle => _t('Всё спокойно', 'Бәрі тыныш', 'All clear');
+  String get dashAllClearBody => _t('Новых заказов и заявок нет.',
+      'Жаңа тапсырыс пен өтінім жоқ.', 'No new orders or requests.');
+  String dashNewOrdersLine(int n) =>
+      _t('Новых заказов: $n', 'Жаңа тапсырыстар: $n', 'New orders: $n');
+  String dashRequestsLine(int n) => _t(
+      'Заявок на запись: $n', 'Жазылу өтінімдері: $n', 'Booking requests: $n');
+  String get dashToday => _t('Сегодня', 'Бүгін', 'Today');
+  String get kpiNewOrders =>
+      _t('Новые заказы', 'Жаңа тапсырыстар', 'New orders');
+  String get kpiActiveOrders =>
+      _t('Заказы в работе', 'Орындалудағы тапсырыстар', 'Orders in progress');
+  String get kpiRequests =>
+      _t('Заявки на запись', 'Жазылу өтінімдері', 'Booking requests');
+  String get kpiUpcoming =>
+      _t('Предстоящие записи', 'Алдағы жазылулар', 'Upcoming bookings');
+  String get kpiCompleted =>
+      _t('Завершено сегодня', 'Бүгін аяқталды', 'Completed today');
+  String get kpiRevenue =>
+      _t('Выручка за день', 'Күндік түсім', 'Revenue today');
+  String get kpiRevenueNote => _t('по завершённым заказам',
+      'аяқталған тапсырыстар бойынша', 'from completed orders');
+  String get kpiRevenuePartial => _t(
+      'не менее, загружена часть истории',
+      'кемінде, тарихтың бір бөлігі жүктелген',
+      'at least — part of the history is loaded');
+  String get quickActions =>
+      _t('Быстрые действия', 'Жылдам әрекеттер', 'Quick actions');
+  String get recentEvents =>
+      _t('Последние события', 'Соңғы оқиғалар', 'Recent events');
+  String get noEvents =>
+      _t('Событий пока нет', 'Оқиғалар әзірге жоқ', 'No events yet');
+  String eventOrder(String ref, String status) => _t(
+      'Заказ № $ref — ${orderStatus(status).toLowerCase()}',
+      'Тапсырыс № $ref — ${orderStatus(status).toLowerCase()}',
+      'Order #$ref — ${orderStatus(status).toLowerCase()}');
+  String eventBooking(String service, String status) => _t(
+      '$service — ${bookingStatus(status).toLowerCase()}',
+      '$service — ${bookingStatus(status).toLowerCase()}',
+      '$service — ${bookingStatus(status).toLowerCase()}');
+  String get lastUpdated => _t('Обновлено', 'Жаңартылды', 'Updated');
+
+  // ── Misc shared ─────────────────────────────────────────────────────
+  String get logout => _t('Выйти', 'Шығу', 'Sign out');
+  String get logoutConfirm => _t('Выйти из аккаунта партнёра?',
+      'Серіктес аккаунтынан шығасыз ба?', 'Sign out of the partner account?');
+}
+
+class _SDelegate extends LocalizationsDelegate<S> {
+  const _SDelegate();
+  @override
+  bool isSupported(Locale locale) =>
+      S.supported.any((l) => l.languageCode == locale.languageCode);
+  @override
+  Future<S> load(Locale locale) async => S(locale);
+  @override
+  bool shouldReload(covariant LocalizationsDelegate<S> old) => false;
+}
