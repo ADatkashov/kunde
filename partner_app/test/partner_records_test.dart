@@ -13,7 +13,7 @@ void main() {
       }),
     )));
     expect(find.text('Клиент'), findsOneWidget);
-    expect(find.text('PLACED'), findsOneWidget);
+    expect(find.text('Новый'), findsOneWidget);
     expect(find.text('№ order-42'), findsOneWidget);
   });
 
