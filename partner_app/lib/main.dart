@@ -163,7 +163,7 @@ class _PartnerLoginScreenState extends State<PartnerLoginScreen> {
               if (approved.length == 1) {
                 selected = approved.first;
               } else {
-                if (!mounted) { api.close(); return; }
+                if (!context.mounted) { api.close(); return; }
                 selected = await showDialog<Map<String, dynamic>>(
                   context: context,
                   builder: (dialogContext) => SimpleDialog(
