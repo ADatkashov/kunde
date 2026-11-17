@@ -27,6 +27,30 @@ class PartnerApi {
   }
 
   Future<Map<String, dynamic>> get(String path) => _request('GET', path);
+
+  /// The partner membership endpoint returns a top-level JSON array.
+  Future<List<Map<String, dynamic>>> myPartners() async {
+    final token = await accessToken();
+    if (token == null || token.isEmpty) {
+      throw const PartnerApiException(401, 'AUTH_REQUIRED');
+    }
+    final response = await _client.get(
+      _url('partner/partners'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+        'Cache-Control': 'no-store',
+      },
+    ).timeout(timeout);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw PartnerApiException(response.statusCode, 'PARTNER_DISCOVERY_FAILED');
+    }
+    final decoded = jsonDecode(response.body);
+    if (decoded is! List || decoded.any((item) => item is! Map<String, dynamic>)) {
+      throw const FormatException('Expected partner membership list');
+    }
+    return decoded.cast<Map<String, dynamic>>();
+  }
   Future<Map<String, dynamic>> post(String path, Map<String, dynamic> body) =>
       _request('POST', path, body: body);
   Future<Map<String, dynamic>> patch(String path, Map<String, dynamic> body) =>
