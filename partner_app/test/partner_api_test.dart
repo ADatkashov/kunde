@@ -70,4 +70,21 @@ void main() {
     );
     api.close();
   });
+  test('partner order list accepts top-level JSON array', () async {
+    final api = PartnerApi(
+      baseUri: Uri.parse('https://example.test/api/v1/'),
+      accessToken: () async => 'test-token',
+      client: MockClient((request) async {
+        expect(request.url.path, '/api/v1/partner/partners/demo/food/orders');
+        return http.Response(
+          '[{"order":{"id":"order-1","status":"PLACED"},"allowedNext":["ACCEPTED"]}]',
+          200,
+        );
+      }),
+    );
+    final result = await api.get('partner/partners/demo/food/orders?scope=active');
+    expect((result['items'] as List).length, 1);
+    api.close();
+  });
+
 }

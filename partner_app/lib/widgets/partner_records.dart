@@ -15,7 +15,18 @@ class PartnerRecords extends StatelessWidget {
     for (final key in ['items', 'orders', 'bookings', 'restaurants', 'data']) {
       final value = payload[key];
       if (value is List) {
-        return value.whereType<Map<String, dynamic>>().toList();
+        return value.whereType<Map<String, dynamic>>().map((entry) {
+          // Food inbox entries contain an 'order' object and allowedNext
+          // at the entry level, rather than a flat order record.
+          final order = entry['order'];
+          if (order is Map<String, dynamic>) {
+            return <String, dynamic>{
+              ...order,
+              'allowedNext': entry['allowedNext'],
+            };
+          }
+          return entry;
+        }).toList();
       }
     }
     return const [];
@@ -29,7 +40,8 @@ class PartnerRecords extends StatelessWidget {
       case 'ON_THE_WAY': return 'В доставке';
       case 'DELIVERED': return 'Завершён';
       case 'CANCELLED': return 'Отменён';
-      case 'REQUESTED': return 'Ожидает ответа';
+      case 'REQUESTED':
+      case 'PENDING': return 'Ожидает ответа';
       case 'CONFIRMED': return 'Подтверждена';
       case 'REJECTED': return 'Отклонена';
       case 'COMPLETED': return 'Завершена';
@@ -40,7 +52,8 @@ class PartnerRecords extends StatelessWidget {
   static IconData _statusIcon(String status) {
     switch (status) {
       case 'PLACED':
-      case 'REQUESTED': return Icons.notifications_active_outlined;
+      case 'REQUESTED':
+      case 'PENDING': return Icons.notifications_active_outlined;
       case 'ACCEPTED':
       case 'CONFIRMED': return Icons.check_circle_outline;
       case 'CANCELLED':
@@ -108,7 +121,7 @@ class PartnerRecords extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text('№ $id', style: Theme.of(context).textTheme.bodySmall),
                 if (onBookingAction != null && item['id'] != null &&
-                    item['status'] == 'REQUESTED') ...[
+                    (item['status'] == 'REQUESTED' || item['status'] == 'PENDING')) ...[
                   const SizedBox(height: 12),
                   Wrap(spacing: 8, children: [
                     FilledButton(
