@@ -1,3 +1,9 @@
+# Next task — owner phone check of KUNDE Partner 2.0 (signed DEV APK)
+
+Run Actions → *Partner Android Release APK (DEV)* (needs the existing `ANDROID_*` secrets), download artifact `KUNDE-Partner-dev-release`, check `.sha256`; uninstall the earlier debug Partner APK first (different signature). Phone `+7 700 000 00 02` / code `123456`: Home → Orders (accept/prepare/hand over/complete, reject with reason) → Bookings (confirm/reject/cancel/complete, filters) → Business (open switch, price edit, add dish, schedule) → restart (session restored) → Profile (RU/KK/EN, theme, logout). Customer side `+7 700 000 00 01` creates orders/bookings. Record results in PROJECT_STATE. Engineering next: backend stats endpoint + push plan approval (D-11), staff management, KK review, TalkBack pass. No PROD, payments or push providers.
+
+---
+
 # Next task — staff management for partners, then phone check of the response timeout
 
 Install the APK of [run 43940248100](https://github.com/ADatkashov/kunde/actions/runs/43940248100) (`8eac9db`). Owner check: partner `+7 700 000 00 02` gets a sound/banner for a new order and sees «Ответить до»; an order left unanswered for 5 minutes is cancelled and the customer sees «Заведение не ответило вовремя»; menu edit (✎) and «Добавить блюдо». Engineering next: staff management in the app (invite, roles, revoke; backend `PartnerService` already has grant/revoke), KK review of partner strings. Do not start payments, push providers or PROD (documented gates).
