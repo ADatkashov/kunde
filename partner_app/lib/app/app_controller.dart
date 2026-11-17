@@ -36,6 +36,7 @@ class AppController extends ChangeNotifier {
     http.Client? client,
     this.pollInterval = const Duration(seconds: 20),
     this.retryDelay = const Duration(milliseconds: 600),
+    this.timeout = const Duration(seconds: 30),
   }) : _client = client {
     session.onExpired = _onSessionExpired;
   }
@@ -44,6 +45,7 @@ class AppController extends ChangeNotifier {
   final http.Client? _client;
   final Duration? pollInterval;
   final Duration retryDelay;
+  final Duration timeout;
 
   AppPhase _phase = AppPhase.booting;
   List<PartnerMembership> _partners = const [];
@@ -72,6 +74,7 @@ class AppController extends ChangeNotifier {
         forceRefresh: () => session.accessToken(force: true),
         client: _client,
         retryDelay: retryDelay,
+        timeout: timeout,
       );
 
   /// Restores a stored session after an app restart.

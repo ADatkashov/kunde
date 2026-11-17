@@ -135,6 +135,7 @@ class FakeBackend {
 
   final List<String> calls = [];
   final List<Map<String, String>> headers = [];
+  final List<(String, Map<String, dynamic>)> bodies = [];
   late List<Map<String, dynamic>> partners;
   List<Map<String, dynamic>> activeOrders = [orderEntry()];
   List<Map<String, dynamic>> historyOrders = [];
@@ -159,6 +160,66 @@ class FakeBackend {
     },
   ];
 
+  List<Map<String, dynamic>> dishes = [
+    {
+      'id': 'dish-1',
+      'name': 'Лагман',
+      'section': 'Горячее',
+      'sectionId': 'sec-1',
+      'priceMinor': 120000,
+      'available': true,
+      'stockQty': null,
+      'unit': 'шт',
+      'description': 'Домашний'
+    },
+    {
+      'id': 'dish-2',
+      'name': 'Чай',
+      'section': 'Напитки',
+      'sectionId': 'sec-2',
+      'priceMinor': 30000,
+      'available': true,
+      'stockQty': 5,
+      'unit': 'шт',
+      'description': null
+    },
+  ];
+  List<Map<String, dynamic>> services = [
+    {
+      'id': 'svc-1',
+      'name': 'Стрижка',
+      'durationMinutes': 45,
+      'priceMinor': 500000,
+      'available': true
+    },
+  ];
+  List<Map<String, dynamic>> masters = [
+    {
+      'id': 'm1',
+      'name': 'Алия',
+      'active': true,
+      'hours': [
+        {
+          'day': 1,
+          'from': '10:00',
+          'to': '19:00',
+          'breakFrom': '13:00',
+          'breakTo': '14:00'
+        },
+        {
+          'day': 2,
+          'from': '10:00',
+          'to': '19:00',
+          'breakFrom': null,
+          'breakTo': null
+        },
+      ],
+    },
+  ];
+
+  /// Role the fake enforces on management endpoints (Owner/Manager only).
+  bool operatorRole = false;
+
   /// Overrides: key `"METHOD path"` (path without base, with query).
   final Map<String, FutureOr<http.Response> Function(http.Request)> overrides =
       {};
@@ -181,6 +242,13 @@ class FakeBackend {
     final key = '${r.method} $path${r.url.hasQuery ? '?${r.url.query}' : ''}';
     calls.add(key);
     headers.add(r.headers);
+    if (r.body.isNotEmpty) {
+      try {
+        bodies.add((key, jsonDecode(r.body) as Map<String, dynamic>));
+      } on FormatException {
+        // not JSON
+      }
+    }
     final override = overrides[key] ?? overrides['${r.method} $path'];
     if (override != null) return await override(r);
     if (path == 'auth/token/refresh') {
@@ -222,6 +290,8 @@ class FakeBackend {
         if (rest == 'food/restaurants') return json(restaurants);
         if (rest == 'booking/venues') return json(venues);
       }
+      final managed = _manage(r, rest);
+      if (managed != null) return managed;
       final order = RegExp(r'food/orders/([^/]+)/status').firstMatch(rest);
       if (order != null && r.method == 'POST') {
         final body = jsonDecode(r.body) as Map<String, dynamic>;
@@ -247,6 +317,109 @@ class FakeBackend {
       }
     }
     return error(404, 'NOT_FOUND');
+  }
+
+  http.Response? _manage(http.Request r, String rest) {
+    Map<String, dynamic> body() => jsonDecode(r.body) as Map<String, dynamic>;
+    final forbidden = error(403, 'PARTNER_ROLE_FORBIDDEN');
+    if (r.method == 'GET') {
+      if (RegExp(r'^food/restaurants/[^/]+/dishes$').hasMatch(rest)) {
+        return json(dishes);
+      }
+      if (RegExp(r'^booking/venues/[^/]+/services$').hasMatch(rest)) {
+        return json(services);
+      }
+      if (RegExp(r'^booking/venues/[^/]+/masters$').hasMatch(rest)) {
+        return json(masters);
+      }
+      return null;
+    }
+    var m = RegExp(r'^food/restaurants/([^/]+)$').firstMatch(rest);
+    if (m != null && r.method == 'PATCH') {
+      if (operatorRole) return forbidden;
+      restaurants = [
+        for (final x in restaurants)
+          x['id'] == m.group(1) ? {...x, 'open': body()['open']} : x
+      ];
+      return json(restaurants.firstWhere((x) => x['id'] == m!.group(1)));
+    }
+    m = RegExp(r'^food/restaurants/([^/]+)/dishes/([^/]+)$').firstMatch(rest);
+    if (m != null && r.method == 'PATCH') {
+      final b = body();
+      if (operatorRole &&
+          (b.containsKey('name') ||
+              b.containsKey('priceMinor') ||
+              b.containsKey('description'))) {
+        return forbidden;
+      }
+      dishes = [
+        for (final d in dishes)
+          d['id'] == m.group(2)
+              ? {
+                  ...d,
+                  if (b.containsKey('available')) 'available': b['available'],
+                  if (b.containsKey('name')) 'name': b['name'],
+                  if (b.containsKey('priceMinor'))
+                    'priceMinor': b['priceMinor'],
+                  if (b.containsKey('stockQty')) 'stockQty': b['stockQty'],
+                  if (b['clearStock'] == true) 'stockQty': null,
+                }
+              : d,
+      ];
+      return json(dishes.firstWhere((d) => d['id'] == m!.group(2)));
+    }
+    m = RegExp(r'^food/restaurants/([^/]+)/dishes$').firstMatch(rest);
+    if (m != null && r.method == 'POST') {
+      if (operatorRole) return forbidden;
+      final b = body();
+      final created = {
+        'id': 'dish-new',
+        'name': b['name'],
+        'section': 'Горячее',
+        'sectionId': b['sectionId'],
+        'priceMinor': b['priceMinor'],
+        'available': true,
+        'stockQty': null
+      };
+      dishes = [...dishes, created];
+      return json(created, 201);
+    }
+    m = RegExp(r'^booking/venues/([^/]+)$').firstMatch(rest);
+    if (m != null && r.method == 'PATCH') {
+      if (operatorRole) return forbidden;
+      venues = [
+        for (final x in venues)
+          x['id'] == m.group(1) ? {...x, 'open': body()['open']} : x
+      ];
+      return json(venues.firstWhere((x) => x['id'] == m!.group(1)));
+    }
+    m = RegExp(r'^booking/venues/([^/]+)/services/([^/]+)$').firstMatch(rest);
+    if (m != null && r.method == 'PATCH') {
+      services = [
+        for (final x in services)
+          x['id'] == m.group(2) ? {...x, 'available': body()['available']} : x
+      ];
+      return json(services.firstWhere((x) => x['id'] == m!.group(2)));
+    }
+    m = RegExp(r'^booking/venues/([^/]+)/masters/([^/]+)$').firstMatch(rest);
+    if (m != null && r.method == 'PATCH') {
+      masters = [
+        for (final x in masters)
+          x['id'] == m.group(2) ? {...x, 'active': body()['active']} : x
+      ];
+      return json(masters.firstWhere((x) => x['id'] == m!.group(2)));
+    }
+    m = RegExp(r'^booking/venues/([^/]+)/masters/([^/]+)/hours$')
+        .firstMatch(rest);
+    if (m != null && r.method == 'PUT') {
+      if (operatorRole) return forbidden;
+      masters = [
+        for (final x in masters)
+          x['id'] == m.group(2) ? {...x, 'hours': body()['hours']} : x
+      ];
+      return json(masters.firstWhere((x) => x['id'] == m!.group(2)));
+    }
+    return null;
   }
 
   MockClient get client => MockClient(_handle);

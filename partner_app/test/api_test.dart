@@ -133,6 +133,21 @@ void main() {
     );
   });
 
+  test('a timeout is not retried (slow server, not an unreachable one)',
+      () async {
+    var calls = 0;
+    final client = MockClient((_) {
+      calls++;
+      return Completer<http.Response>().future;
+    });
+    await expectLater(
+      api(client).getMap('x'),
+      throwsA(isA<PartnerApiException>()
+          .having((e) => e.kind, 'kind', ApiErrorKind.timeout)),
+    );
+    expect(calls, 1);
+  });
+
   test('missing token fails before any request is sent', () async {
     var calls = 0;
     final a = PartnerApi(

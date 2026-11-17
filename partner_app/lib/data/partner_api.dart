@@ -12,7 +12,7 @@ export 'errors.dart' show PartnerApiException, ApiErrorKind;
 ///
 /// * Never embeds a token: [accessToken] comes from the session.
 /// * A 401 triggers exactly one token refresh and one replay of the request.
-/// * Only idempotent GETs are retried on connectivity problems; POST/PATCH/PUT
+/// * Only idempotent GETs are retried on connectivity problems (not on timeouts); POST/PATCH/PUT
 ///   are sent once so a user action is never duplicated.
 class PartnerApi {
   PartnerApi({
@@ -66,6 +66,9 @@ class PartnerApi {
   Future<Map<String, dynamic>> postMap(
           String path, Map<String, dynamic> body) async =>
       _asMap(await postJson(path, body));
+  Future<Map<String, dynamic>> putMap(
+          String path, Map<String, dynamic> body) async =>
+      _asMap(await putJson(path, body));
   Future<Map<String, dynamic>> patchMap(
           String path, Map<String, dynamic> body) async =>
       _asMap(await patchJson(path, body));
@@ -85,8 +88,9 @@ class PartnerApi {
         return await _once(method, path, body: body);
       } on PartnerApiException catch (e) {
         last = e;
+        // A timeout is not retried: the server is slow, not unreachable, and
+        // a repeat would only add load. Cold-start answers (502/503/504) are.
         final transient = e.kind == ApiErrorKind.network ||
-            e.kind == ApiErrorKind.timeout ||
             e.statusCode == 502 ||
             e.statusCode == 503 ||
             e.statusCode == 504;

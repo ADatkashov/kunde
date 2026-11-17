@@ -310,16 +310,35 @@ class VenueService {
 }
 
 class WorkingHours {
-  const WorkingHours({required this.day, required this.from, required this.to});
+  const WorkingHours({
+    required this.day,
+    required this.from,
+    required this.to,
+    this.breakFrom,
+    this.breakTo,
+  });
   factory WorkingHours.fromJson(Map<String, dynamic> j) => WorkingHours(
-      day: _int(j['day']),
-      from: _str(j['from']) ?? '',
-      to: _str(j['to']) ?? '');
+        day: _int(j['day']),
+        from: _str(j['from']) ?? '',
+        to: _str(j['to']) ?? '',
+        breakFrom: _str(j['breakFrom']),
+        breakTo: _str(j['breakTo']),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'day': day,
+        'from': from,
+        'to': to,
+        if (breakFrom != null) 'breakFrom': breakFrom,
+        if (breakTo != null) 'breakTo': breakTo,
+      };
 
   /// ISO weekday 1 (Mon) … 7 (Sun).
   final int day;
   final String from;
   final String to;
+  final String? breakFrom;
+  final String? breakTo;
 }
 
 class Master {
