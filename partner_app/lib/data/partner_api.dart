@@ -81,7 +81,13 @@ class PartnerApi {
       throw PartnerApiException(response.statusCode, decoded.toString());
     }
     if (decoded is Map<String, dynamic>) return decoded;
-    throw const FormatException('Expected JSON object from Partner API');
+    // Partner collection endpoints return top-level JSON arrays.
+    // Normalize for existing list widgets without changing write responses.
+    if (method == 'GET' && decoded is List &&
+        decoded.every((item) => item is Map<String, dynamic>)) {
+      return {'items': decoded.cast<Map<String, dynamic>>()};
+    }
+    throw const FormatException('Unexpected Partner API response structure');
   }
 
   void close() => _client.close();
