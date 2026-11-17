@@ -1,9 +1,9 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'auth/partner_session.dart';
 import 'data/partner_api.dart';
 import 'data/partner_operations.dart';
+import 'widgets/partner_records.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +21,12 @@ class KundePartnerApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF087F5B)),
+          scaffoldBackgroundColor: const Color(0xFFF5F7F6),
+          cardTheme: const CardThemeData(elevation: 0, margin: EdgeInsets.zero),
+          inputDecorationTheme: InputDecorationTheme(
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
           useMaterial3: true,
         ),
         localizationsDelegates: const [
@@ -200,12 +206,15 @@ class _PartnerDashboardState extends State<PartnerDashboard> {
           return Center(child: Text('Не удалось загрузить данные: ${snapshot.error is PartnerApiException ? (snapshot.error as PartnerApiException).statusCode : 'ошибка сети'}'));
         }
         final value = snapshot.data ?? {};
-        return ListView(padding: const EdgeInsets.all(16), children: [
-          Text(['Заказы', 'Записи', 'Рестораны'][tab],
-              style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 16),
-          // Read-only first iteration: do not assume a server response shape.
-          Text(const JsonEncoder.withIndent('  ').convert(value)),
+        return Column(children: [
+          Padding(padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+            child: Row(children: [
+              Expanded(child: Text(['Заказы', 'Записи', 'Каталог'][tab],
+                style: Theme.of(context).textTheme.headlineSmall)),
+              const Icon(Icons.verified_user_outlined),
+            ])),
+          Expanded(child: PartnerRecords(payload: value,
+            title: ['Заказ', 'Запись', 'Ресторан'][tab])),
         ]);
       },
     ),
