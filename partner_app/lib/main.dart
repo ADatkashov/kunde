@@ -182,6 +182,64 @@ class _PartnerDashboardState extends State<PartnerDashboard> {
     }
   }
   void refresh() => setState(() => data = load());
+
+  Future<void> changeOrder(String orderId, String status) async {
+    String? reason;
+    if (status == 'CANCELLED') {
+      final controller = TextEditingController();
+      reason = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Причина отмены'),
+          content: TextField(
+            controller: controller,
+            maxLength: 300,
+            decoration: const InputDecoration(
+              labelText: 'Укажите причину (3–300 символов)',
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Назад')),
+            FilledButton(onPressed: () {
+              final value = controller.text.trim();
+              if (value.length >= 3 && value.length <= 300) {
+                Navigator.pop(dialogContext, value);
+              }
+            }, child: const Text('Подтвердить')),
+          ],
+        ),
+      );
+      controller.dispose();
+      if (reason == null) return;
+    } else {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Подтвердить действие?'),
+          content: Text('Новый статус заказа: $status'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Назад')),
+            FilledButton(onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Подтвердить')),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
+    try {
+      await widget.operations.updateOrder(orderId, status, reason: reason);
+      if (mounted) refresh();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Не удалось обновить заказ. Обновите список и повторите.'),
+        ));
+        refresh();
+      }
+    }
+  }
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('KUNDE Partner'), actions: [
@@ -214,7 +272,8 @@ class _PartnerDashboardState extends State<PartnerDashboard> {
               const Icon(Icons.verified_user_outlined),
             ])),
           Expanded(child: PartnerRecords(payload: value,
-            title: ['Заказ', 'Запись', 'Ресторан'][tab])),
+            title: ['Заказ', 'Запись', 'Ресторан'][tab],
+            onOrderAction: tab == 0 ? changeOrder : null)),
         ]);
       },
     ),
