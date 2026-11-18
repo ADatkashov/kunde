@@ -42,6 +42,100 @@ paths:
                   marketplaceEnabled: { type: boolean, example: false }
                   oidcIssuerConfigured: { type: boolean, example: false }
                   aiEnabled: { type: boolean, example: false }
+  /rides/address-search:
+    post:
+      operationId: searchRideAddresses
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query, language]
+              properties:
+                query: { type: string, minLength: 2, maxLength: 160 }
+                language: { $ref: '#/components/schemas/RideLanguage' }
+      responses:
+        '200':
+          description: Matching addresses returned by the routing adapter.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/RidePlace' }
+        '400': { description: Invalid query or language }
+        '401': { description: Authentication required }
+        '403': { description: Consumer access denied }
+        '404': { description: Rides unavailable }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { description: Routing adapter unavailable }
+  /rides/reverse-geocode:
+    post:
+      operationId: reverseGeocodeRidePoint
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [coordinates, language]
+              properties:
+                coordinates: { $ref: '#/components/schemas/RidePoint' }
+                language: { $ref: '#/components/schemas/RideLanguage' }
+      responses:
+        '200':
+          description: Address returned by the routing adapter.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RidePlace' }
+        '400': { description: Invalid coordinates or language }
+        '401': { description: Authentication required }
+        '403': { description: Consumer access denied }
+        '404': { description: Rides unavailable or address not found }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { description: Routing adapter unavailable }
+  /rides/route-preview:
+    post:
+      operationId: previewRideRoute
+      description: Road route for an authenticated consumer. Requires internal Rides and Consumer flags and a configured routing adapter.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pickup, destination]
+              properties:
+                pickup: { $ref: '#/components/schemas/RidePoint' }
+                destination: { $ref: '#/components/schemas/RidePoint' }
+      responses:
+        '200':
+          description: Road route returned by the configured adapter. Response is not cached.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [distanceMeters, durationSeconds, geometry]
+                properties:
+                  distanceMeters: { type: integer, minimum: 1 }
+                  durationSeconds: { type: integer, minimum: 1 }
+                  geometry:
+                    type: array
+                    minItems: 2
+                    items: { $ref: '#/components/schemas/RidePoint' }
+        '400': { description: Invalid request coordinates }
+        '401': { description: Authentication required }
+        '403': { description: Consumer access denied }
+        '404': { description: Rides unavailable }
+        '422': { description: No road route found }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { description: Routing adapter unavailable }
   /categories:
     get:
       operationId: listAvailableCategories
@@ -328,6 +422,11 @@ paths:
         '200':
           description: Cancelled; free until the appointment starts.
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   responses:
     RequestBodyTooLarge:
       description: API request body exceeds the configured byte limit (65536 bytes by default). Applies to declared and streamed bodies before parsing or controller execution.
@@ -351,6 +450,21 @@ components:
           schema:
             $ref: '#/components/schemas/ApiError'
   schemas:
+    RideLanguage:
+      type: string
+      enum: [ru, kk, en]
+    RidePlace:
+      type: object
+      required: [address, point]
+      properties:
+        address: { type: string }
+        point: { $ref: '#/components/schemas/RidePoint' }
+    RidePoint:
+      type: object
+      required: [latitude, longitude]
+      properties:
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
     ApiError:
       type: object
       required: [timestamp, status, code, message, path, correlationId]

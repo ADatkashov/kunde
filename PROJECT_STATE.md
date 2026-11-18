@@ -1,5 +1,9 @@
 # KUNDE project state
 
+## Rides & Transport 1.0 — backend foundation
+
+- Правила переходов, расчёт тарифа KZT, ранжирование водителей и защищённый контракт дорожного маршрута. Флаги выключены по умолчанию; адаптер карт, персистентность поездок и приложения Rides ещё отсутствуют. [Аудит и план интеграции](docs/product/rides-transport.md).
+
 ## KUNDE Premium UI 2.1
 
 - [PR #128](https://github.com/ADatkashov/kunde/pull/128) updates the five Consumer tabs: Home, Catalog, KUNDE AI, Orders and Profile. The booking catalog remains available from Home and Catalog. Restaurant data, order history, profile, addresses and repeat order use existing APIs.

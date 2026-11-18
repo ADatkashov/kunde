@@ -1,3 +1,9 @@
+# Следующий этап Rides — транзакционное ядро
+
+Связать quote, поездку и назначение с PostgreSQL/Flyway. Приёмка: повторный ключ возвращает исходную поездку, два конкурентных принятия не резервируют водителя дважды, отключение нового заказа допускает безопасное завершение активного. [Контекст и зависимости](docs/product/rides-transport.md).
+
+---
+
 # Next task — owner phone check of KUNDE Partner 2.0 (signed DEV APK)
 
 Run Actions → *Partner Android Release APK (DEV)* (needs the existing `ANDROID_*` secrets), download artifact `KUNDE-Partner-dev-release`, check `.sha256`; uninstall the earlier debug Partner APK first (different signature). Phone `+7 700 000 00 02` / code `123456`: Home → Orders (accept/prepare/hand over/complete, reject with reason) → Bookings (confirm/reject/cancel/complete, filters) → Business (open switch, price edit, add dish, schedule) → restart (session restored) → Profile (RU/KK/EN, theme, logout). Customer side `+7 700 000 00 01` creates orders/bookings. Record results in PROJECT_STATE. Engineering next: backend stats endpoint + push plan approval (D-11), staff management, KK review, TalkBack pass. No PROD, payments or push providers.
