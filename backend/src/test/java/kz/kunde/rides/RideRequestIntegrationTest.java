@@ -65,6 +65,23 @@ class RideRequestIntegrationTest {
     }
 
     @Test
+    void rejectsAQuoteThatExpiredAfterTheTransactionStarted() {
+        UUID customer = user();
+        assertThatExceptionOfType(ApiException.class).isThrownBy(() ->
+                new TransactionTemplate(transactions).executeWithoutResult(status -> {
+                    UUID quote = db.queryForObject("""
+                            insert into transactions.ride_fare_quotes (user_id, ride_class, tariff_version, estimate_kzt,
+                                distance_meters, duration_seconds, pickup_latitude, pickup_longitude,
+                                destination_latitude, destination_longitude, expires_at)
+                            values (?, 'ECONOMY', 'test', 800.00, 3000, 360, 43.24, 76.92, 43.25, 76.94,
+                                now() + interval '20 milliseconds') returning id
+                            """, UUID.class, customer);
+                    db.execute("select pg_sleep(0.05)");
+                    rides.create(customer, quote, "expired-in-tx-0001");
+                })).satisfies(error -> assertThat(error.code()).isEqualTo("RIDE_QUOTE_UNAVAILABLE"));
+    }
+
+    @Test
     void disablingCreationPreservesRetryAndCancellation() {
         UUID customer = user();
         UUID quote = quote(customer, false);

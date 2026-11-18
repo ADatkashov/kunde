@@ -59,7 +59,7 @@ public class RideRequestService {
         UUID rideId = db.query("""
                 insert into transactions.rides (user_id, quote_id, request_key, status)
                 select user_id, id, ?, 'REQUESTED' from transactions.ride_fare_quotes
-                where user_id = ? and id = ? and expires_at > current_timestamp
+                where user_id = ? and id = ? and expires_at > statement_timestamp()
                 on conflict (quote_id) do nothing returning id
                 """, (rs, row) -> rs.getObject("id", UUID.class), requestKey, customer, quoteId)
                 .stream().findFirst().orElseThrow(() -> conflict("RIDE_QUOTE_UNAVAILABLE", "Ride quote is unavailable"));
