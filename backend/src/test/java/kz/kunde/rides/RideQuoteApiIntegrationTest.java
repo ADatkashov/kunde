@@ -13,10 +13,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
@@ -29,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
         "app.auth.phone.enabled=true",
         "app.auth.phone.secret=synthetic-rides-only-for-integration-tests",
         "app.rides.enabled=true",
+        "app.rides.synthetic-routing-enabled=true",
         "app.rides.consumer-enabled=true",
         "app.rides.executor-enabled=true",
         "app.rides.dispatch-enabled=true",
@@ -40,7 +38,6 @@ import org.springframework.transaction.annotation.Transactional;
         "app.rides.pricing.tariffs.economy.fixed-fee-kzt=0"
 })
 @AutoConfigureMockMvc
-@Import(RideQuoteApiIntegrationTest.Fixture.class)
 @Transactional
 class RideQuoteApiIntegrationTest {
     private static final String QUOTE = """
@@ -59,6 +56,7 @@ class RideQuoteApiIntegrationTest {
                 .andExpect(header().string("Cache-Control", "no-store"))
                 .andExpect(jsonPath("$.estimateKzt").value(500))
                 .andExpect(jsonPath("$.tariffVersion").value("test-v1"))
+                .andExpect(jsonPath("$.synthetic").value(true))
                 .andReturn().getResponse().getContentAsString();
         String quoteId = JsonPath.read(response, "$.id");
         String requestKey = UUID.randomUUID().toString();
@@ -183,11 +181,4 @@ class RideQuoteApiIntegrationTest {
                 .claim("typ", "Bearer").claim("azp", "kunde-consumer").claim("scope", "kunde.consumer"));
     }
 
-    @TestConfiguration
-    static class Fixture {
-        @Bean
-        RideRouting testRouting() {
-            return new FixtureRideRouting();
-        }
-    }
 }

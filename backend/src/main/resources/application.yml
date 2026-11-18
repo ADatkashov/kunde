@@ -77,6 +77,7 @@ app:
     partner-enabled: ${RIDES_PARTNER_ENABLED:false}
     dispatch-enabled: ${RIDES_DISPATCH_ENABLED:false}
     payments-enabled: ${RIDES_PAYMENTS_ENABLED:false}
+    synthetic-routing-enabled: ${RIDES_SYNTHETIC_ROUTING_ENABLED:false}
   identity:
     consumer-enabled: ${CONSUMER_IDENTITY_ENABLED:false}
   security:

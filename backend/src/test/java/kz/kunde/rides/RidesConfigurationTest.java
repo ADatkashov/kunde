@@ -8,6 +8,15 @@ import org.springframework.mock.env.MockEnvironment;
 
 class RidesConfigurationTest {
     @Test
+    void rejectsSyntheticRoutingOutsideExplicitInternalRides() {
+        var environment = new MockEnvironment();
+        var disabled = new RidesFlags(false, false, false, false, false, false, true);
+        var enabled = new RidesFlags(true, true, false, false, false, false, true);
+        assertThatIllegalStateException().isThrownBy(() -> new RidesConfiguration(disabled, environment));
+        assertThatIllegalStateException().isThrownBy(() -> new RidesConfiguration(enabled, environment));
+    }
+
+    @Test
     void blocksProdAndConflictingProductionProfile() {
         var flags = new RidesFlags(true, true, false, false, false, false);
         assertThatIllegalStateException().isThrownBy(() -> new RidesConfiguration(flags, new MockEnvironment()));

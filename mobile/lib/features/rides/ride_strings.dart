@@ -15,6 +15,7 @@ class RideStrings {
   String get rides => t('Поездки', 'Сапарлар', 'Rides');
   String get pickup => t('Откуда', 'Қайдан', 'Pickup');
   String get destination => t('Куда', 'Қайда', 'Destination');
+  String get synthetic => t('Тестовый маршрут', 'Сынақ бағыты', 'Test route');
   String get history => t('История', 'Тарих', 'History');
   String get search => t('Найти адрес', 'Мекенжайды іздеу', 'Find address');
   String get quote => t('Узнать стоимость', 'Бағасын білу', 'Get fare');

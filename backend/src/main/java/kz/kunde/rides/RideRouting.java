@@ -23,7 +23,11 @@ public interface RideRouting {
 
     record Place(String address, Point point) {}
 
-    record Route(int distanceMeters, int durationSeconds, List<Point> geometry) {
+    record Route(int distanceMeters, int durationSeconds, List<Point> geometry, boolean synthetic) {
+        public Route(int distanceMeters, int durationSeconds, List<Point> geometry) {
+            this(distanceMeters, durationSeconds, geometry, false);
+        }
+
         public Route {
             geometry = List.copyOf(geometry);
             if (distanceMeters <= 0 || durationSeconds <= 0 || geometry.size() < 2) {

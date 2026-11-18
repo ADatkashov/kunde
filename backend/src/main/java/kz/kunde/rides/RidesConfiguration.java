@@ -1,6 +1,8 @@
 package kz.kunde.rides;
 
 import java.util.Set;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -15,6 +17,9 @@ public class RidesConfiguration {
         if (flags.paymentsEnabled()) {
             throw new IllegalStateException("Rides payments require an approved integration");
         }
+        if (flags.syntheticRoutingEnabled() && !flags.enabled()) {
+            throw new IllegalStateException("Synthetic routing requires explicitly enabled internal Rides");
+        }
         if (!flags.enabled()) {
             return;
         }
@@ -25,5 +30,11 @@ public class RidesConfiguration {
         if (!environment.getProperty("app.identity.consumer-enabled", Boolean.class, false)) {
             throw new IllegalStateException("Rides requires canonical consumer identity");
         }
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "app.rides.synthetic-routing-enabled", havingValue = "true")
+    RideRouting syntheticRideRouting() {
+        return new SyntheticRideRouting();
     }
 }
