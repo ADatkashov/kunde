@@ -259,8 +259,9 @@ class _AddressPickerState extends State<_AddressPicker> {
                     );
                   }
                   final addresses = snapshot.data ?? const <RideAddress>[];
-                  if (addresses.isEmpty)
+                  if (addresses.isEmpty) {
                     return Center(child: Text(s.noAddresses));
+                  }
                   return ListView(
                     children: [
                       for (final address in addresses)
@@ -339,8 +340,9 @@ class _RideHistoryState extends State<_RideHistory> {
                                 _RideDetails(api: widget.api, trip: trip),
                           ),
                         );
-                        if (mounted)
+                        if (mounted) {
                           setState(() => _history = widget.api.history());
+                        }
                       },
                     ),
                   ),
