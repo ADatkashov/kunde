@@ -52,7 +52,7 @@ public class FoodOrderService {
     public record QuoteRequest(@NotNull UUID restaurantId, @NotEmpty @Size(max = 30) List<@Valid @NotNull CartItem> items) {}
 
     public record OrderRequest(@NotNull UUID restaurantId, @NotEmpty @Size(max = 30) List<@Valid @NotNull CartItem> items,
-            @NotNull UUID addressId, @NotNull String paymentMethod, @Size(max = 300) String comment) {}
+            @NotNull UUID addressId, @NotNull String paymentMethod, @Size(max = 300) String comment, Long expectedTotalMinor) {}
 
     public record QuoteLine(String dishId, String name, String optionsText, List<String> optionIds, String unit,
             long unitPriceMinor, int quantity, long lineTotalMinor, String substitution, List<String> substituteDishIds) {}
@@ -214,7 +214,7 @@ public class FoodOrderService {
                     "Idempotency-Key must be 16-64 characters: letters, digits, '-' or '_'");
         }
         String payment = request.paymentMethod();
-        if (!"TEST_CARD".equals(payment) && !"CASH_ON_DELIVERY".equals(payment)) {
+        if (!"TEST_CARD".equals(payment) && !"CASH_ON_DELIVERY".equals(payment) && !"DEV_NO_PAYMENT".equals(payment)) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "PAYMENT_METHOD_UNSUPPORTED",
                     "Only the DEV test card and cash on delivery are available");
         }
@@ -245,7 +245,21 @@ public class FoodOrderService {
                 """, (rs, row) -> new String[] {rs.getString(1), rs.getString(2)}, request.addressId(), user)
                 .stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY,
                         "ADDRESS_NOT_FOUND", "Choose one of your saved delivery addresses"));
+        var store = db.query("select r.vertical, r.partner_id, p.verification_status from marketplace.food_restaurants r left join marketplace.partners p on p.id = r.partner_id where r.id = ? for share of r",
+                (rs, row) -> new Object[] {rs.getString(1), rs.getObject(2, UUID.class), rs.getString(3)}, request.restaurantId())
+                .stream().findFirst();
+        boolean flowers = store.isPresent() && "FLOWERS_GIFTS".equals(store.get()[0]);
+        if (flowers && (!"DEV_NO_PAYMENT".equals(payment) || store.get()[1] == null || !"APPROVED".equals(store.get()[2]))) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "FLOWERS_ORDER_UNAVAILABLE",
+                    "Flowers orders require a partner and DEV no-payment checkout");
+        }
+        if (!flowers && "DEV_NO_PAYMENT".equals(payment)) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "PAYMENT_METHOD_UNSUPPORTED", "Payment method unsupported");
+        }
         Quote quote = quote(request.restaurantId(), request.items());
+        if (flowers && (request.expectedTotalMinor() == null || request.expectedTotalMinor() != quote.totalMinor())) {
+            throw new ApiException(HttpStatus.CONFLICT, "FOOD_PRICE_CHANGED", "The total changed; refresh the cart");
+        }
         // Reserve stock atomically per line; a concurrent order that took the last units makes this one fail cleanly.
         for (QuoteLine line : quote.lines()) {
             int reserved = db.update("""
@@ -266,7 +280,8 @@ public class FoodOrderService {
                     case when (select partner_id from marketplace.food_restaurants where id = ?) is null then 'SIMULATED' else 'PARTNER' end)
                 returning id
                 """, UUID.class, user, request.restaurantId(), quote.restaurantName(), payment,
-                "TEST_CARD".equals(payment) ? "TEST_PAID" : "PAY_ON_RECEIPT", quote.subtotalMinor(),
+                "DEV_NO_PAYMENT".equals(payment) ? "NO_PAYMENT" :
+                        ("TEST_CARD".equals(payment) ? "TEST_PAID" : "PAY_ON_RECEIPT"), quote.subtotalMinor(),
                 quote.deliveryFeeMinor(), quote.totalMinor(), address[0], address[1], comment, idempotencyKey,
                 request.restaurantId(), request.restaurantId(), request.restaurantId());
         int lineNo = 0;
@@ -312,7 +327,7 @@ public class FoodOrderService {
                     "The restaurant has already accepted this order");
         }
         db.update("""
-                update transactions.food_orders set status = 'CANCELLED', payment_status = 'VOIDED', cancelled_by = 'CUSTOMER',
+                update transactions.food_orders set status = 'CANCELLED', payment_status = case when payment_method = 'DEV_NO_PAYMENT' then 'NO_PAYMENT' else 'VOIDED' end, cancelled_by = 'CUSTOMER',
                     updated_at = now(), version = version + 1 where id = ?
                 """, orderId);
         db.update("insert into transactions.food_order_events (order_id, status, actor_type, actor_user_id) values (?, 'CANCELLED', 'CUSTOMER', ?)",
@@ -398,7 +413,7 @@ public class FoodOrderService {
             // Only the partner moves these orders; the one thing the system does is the unanswered-order timeout (D-05).
             if ("PLACED".equals(row[0]) && (long) row[1] >= partnerResponseSeconds) {
                 db.update("""
-                        update transactions.food_orders set status = 'CANCELLED', payment_status = 'VOIDED', cancelled_by = 'SYSTEM',
+                        update transactions.food_orders set status = 'CANCELLED', payment_status = case when payment_method = 'DEV_NO_PAYMENT' then 'NO_PAYMENT' else 'VOIDED' end, cancelled_by = 'SYSTEM',
                             cancel_reason = 'PARTNER_TIMEOUT', updated_at = now(), version = version + 1 where id = ?
                         """, orderId);
                 db.update("""
@@ -503,7 +518,7 @@ public class FoodOrderService {
         if (lines.isEmpty()) { return; }
         if (!anyKept) {
             db.update("""
-                    update transactions.food_orders set status = 'CANCELLED', payment_status = 'VOIDED', has_changes = true,
+                    update transactions.food_orders set status = 'CANCELLED', payment_status = case when payment_method = 'DEV_NO_PAYMENT' then 'NO_PAYMENT' else 'VOIDED' end, has_changes = true,
                         cancelled_by = 'SYSTEM', cancel_reason = 'NO_ITEMS_AVAILABLE', final_total_minor = 0, updated_at = now(), version = version + 1 where id = ?
                     """, orderId);
             db.update("insert into transactions.food_order_events (order_id, status, occurred_at) values (?, 'CANCELLED', ?)",

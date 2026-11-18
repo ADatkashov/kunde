@@ -31,7 +31,7 @@ public class FoodDemoSeeder implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        for (String file : new String[] {"food/demo-catalog.json", "food/grocery-demo-catalog.json", "food/partner-demo-catalog.json"}) {
+        for (String file : new String[] {"food/demo-catalog.json", "food/grocery-demo-catalog.json", "food/partner-demo-catalog.json", "food/flowers-demo-catalog.json"}) {
             try (InputStream in = new ClassPathResource(file).getInputStream()) {
                 int inserted = seed(new ObjectMapper().readTree(in));
                 log.info("Demo seed {}: {} synthetic stores/restaurants inserted", file, inserted);
@@ -78,13 +78,14 @@ public class FoodDemoSeeder implements ApplicationRunner {
             order++;
             UUID id = db.query("""
                     insert into marketplace.food_restaurants (slug, name, cuisine, description, emoji, tone,
-                        delivery_fee_minor, min_order_minor, eta_min_minutes, eta_max_minutes, is_open, is_synthetic, sort_order, vertical)
-                    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, true, ?, ?) on conflict (slug) do nothing returning id
+                        delivery_fee_minor, min_order_minor, eta_min_minutes, eta_max_minutes, is_open, is_synthetic, sort_order, vertical, image_url)
+                    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, true, ?, ?, ?) on conflict (slug) do nothing returning id
                     """, rs -> rs.next() ? rs.getObject(1, UUID.class) : null, r.get("slug").asText(),
                     r.get("name").asText(), r.get("cuisine").asText(), r.get("description").asText(), r.get("emoji").asText(),
                     r.get("tone").asText(), r.get("deliveryFee").asLong(), r.get("minOrder").asLong(),
                     r.get("etaMin").asInt(), r.get("etaMax").asInt(), r.get("open").asBoolean(), order,
-                    r.has("vertical") ? r.get("vertical").asText() : "FOOD");
+                    r.has("vertical") ? r.get("vertical").asText() : "FOOD",
+                    r.has("imageUrl") ? r.get("imageUrl").asText() : null);
             if (id == null) {
                 syncDishAttributes(r);
                 continue;
@@ -99,12 +100,12 @@ public class FoodDemoSeeder implements ApplicationRunner {
                 for (JsonNode d : s.get("dishes")) {
                     UUID dishId = db.queryForObject("""
                             insert into marketplace.food_dishes (restaurant_id, section_id, name, description, price_minor,
-                                emoji, tone, available, sort_order, unit, stock_qty)
-                            values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning id
+                                emoji, tone, available, sort_order, unit, stock_qty, image_url)
+                            values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning id
                             """, UUID.class, id, sectionId, d.get("name").asText(), d.get("description").asText(),
                             d.get("price").asLong(), d.get("emoji").asText(), d.get("tone").asText(),
                             d.get("available").asBoolean(), dishOrder++, d.has("unit") ? d.get("unit").asText() : "PIECE",
-                            d.has("stock") ? d.get("stock").asInt() : null);
+                            d.has("stock") ? d.get("stock").asInt() : null, d.has("imageUrl") ? d.get("imageUrl").asText() : null);
                     int groupOrder = 0;
                     for (JsonNode g : d.get("groups")) {
                         UUID groupId = db.queryForObject("""

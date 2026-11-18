@@ -51,6 +51,7 @@ public class PartnerOpsDemoSeeder implements ApplicationRunner {
         UUID first = partner(PARTNER_PHONE, "Демо-партнёр KUNDE (синтетика)");
         partner(OTHER_PHONE, "Демо-партнёр Б (синтетика)");
         db.update("update marketplace.food_restaurants set partner_id = ? where slug = 'partner-kitchen-demo' and partner_id is null", first);
+        db.update("update marketplace.food_restaurants set partner_id = ? where slug = 'partner-flowers-demo' and is_synthetic and partner_id is null", first);
         db.update("update marketplace.booking_venues set partner_id = ? where slug = 'partner-salon-demo' and partner_id is null", first);
         return first;
     }

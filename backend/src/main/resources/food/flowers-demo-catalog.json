@@ -1,0 +1,94 @@
+{
+  "restaurants": [
+    {
+      "slug": "partner-flowers-demo",
+      "name": "Цветы и подарки (демо)",
+      "cuisine": "Цветы и подарки",
+      "description": "Вымышленный магазин для DEV",
+      "emoji": "💐",
+      "tone": "red",
+      "deliveryFee": 0,
+      "minOrder": 0,
+      "etaMin": 30,
+      "etaMax": 60,
+      "open": true,
+      "vertical": "FLOWERS_GIFTS",
+      "sections": [
+        {
+          "name": "Цветы",
+          "dishes": [
+            {
+              "name": "Розы",
+              "description": "Синтетический товар для тестирования DEV",
+              "price": 990000,
+              "emoji": "🌹",
+              "tone": "red",
+              "available": true,
+              "stock": 20,
+              "groups": [],
+              "imageUrl": "https://images.unsplash.com/photo-1490750967868-88aa4486c946"
+            },
+            {
+              "name": "Тюльпаны",
+              "description": "Синтетический товар для тестирования DEV",
+              "price": 700000,
+              "emoji": "🌷",
+              "tone": "red",
+              "available": true,
+              "stock": 20,
+              "groups": [],
+              "imageUrl": "https://images.unsplash.com/photo-1490750967868-88aa4486c946"
+            }
+          ]
+        },
+        {
+          "name": "Букеты",
+          "dishes": [
+            {
+              "name": "Весенний букет",
+              "description": "Синтетический товар для тестирования DEV",
+              "price": 1250000,
+              "emoji": "💐",
+              "tone": "red",
+              "available": true,
+              "stock": 20,
+              "groups": [],
+              "imageUrl": "https://images.unsplash.com/photo-1490750967868-88aa4486c946"
+            }
+          ]
+        },
+        {
+          "name": "Подарки",
+          "dishes": [
+            {
+              "name": "Открытка",
+              "description": "Синтетический товар для тестирования DEV",
+              "price": 100000,
+              "emoji": "💌",
+              "tone": "red",
+              "available": true,
+              "stock": 20,
+              "groups": []
+            }
+          ]
+        },
+        {
+          "name": "Наборы",
+          "dishes": [
+            {
+              "name": "Подарочный набор",
+              "description": "Синтетический товар для тестирования DEV",
+              "price": 1450000,
+              "emoji": "🎁",
+              "tone": "red",
+              "available": true,
+              "stock": 20,
+              "groups": []
+            }
+          ]
+        }
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1490750967868-88aa4486c946"
+    }
+  ]
+}

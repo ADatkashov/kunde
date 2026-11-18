@@ -18,6 +18,7 @@ enum FoodFailure {
   stock,
   quantity,
   substitution,
+  priceChanged,
   addressMissing,
   tooManyOrders,
   notCancellable,
@@ -47,6 +48,8 @@ class FoodException implements Exception {
           'Недопустимое количество. Проверьте вес или число штук.',
         FoodFailure.substitution =>
           'Выбор замены устарел. Откройте товар и выберите замену заново.',
+        FoodFailure.priceChanged =>
+          'Цена изменилась. Вернитесь в корзину и проверьте сумму.',
         FoodFailure.addressMissing => 'Выберите адрес доставки.',
         FoodFailure.tooManyOrders =>
           'Слишком много активных заказов. Дождитесь доставки.',
@@ -55,6 +58,72 @@ class FoodException implements Exception {
         FoodFailure.notFound => 'Не найдено.',
         FoodFailure.other => 'Не удалось выполнить действие. Попробуйте позже.',
       };
+
+  /// Localized messages for the Flowers DEV checkout.
+  String messageFor(String language) {
+    if (language == 'ru') return message;
+    final translations = <FoodFailure, (String, String)>{
+      FoodFailure.offline: (
+        'Интернет байланысы жоқ. Қайталап көріңіз.',
+        'No connection. Check your internet and try again.'
+      ),
+      FoodFailure.sessionExpired: (
+        'Сеанс аяқталды. Қайта кіріңіз.',
+        'Your session expired. Sign in again.'
+      ),
+      FoodFailure.minOrder: (
+        'Тапсырыс сомасы ең аз мөлшерден төмен.',
+        'The order is below the minimum amount.'
+      ),
+      FoodFailure.closed: (
+        'Дүкен қазір жабық.',
+        'The shop is currently closed.'
+      ),
+      FoodFailure.itemUnavailable: (
+        'Тауар қолжетімсіз. Себетті жаңартыңыз.',
+        'An item is unavailable. Refresh your cart.'
+      ),
+      FoodFailure.optionsInvalid: (
+        'Таңдалған нұсқалар ескірді. Тауарды қайта қосыңыз.',
+        'Options changed. Add the item again.'
+      ),
+      FoodFailure.stock: (
+        'Қор жеткіліксіз. Санын азайтыңыз.',
+        'Not enough stock. Reduce the quantity.'
+      ),
+      FoodFailure.quantity: (
+        'Тауар саны дұрыс емес.',
+        'The quantity is invalid.'
+      ),
+      FoodFailure.substitution: (
+        'Ауыстыру таңдауы ескірді.',
+        'The replacement selection is out of date.'
+      ),
+      FoodFailure.priceChanged: (
+        'Баға өзгерді. Себетке оралып, соманы тексеріңіз.',
+        'The price changed. Return to the cart and check the total.'
+      ),
+      FoodFailure.addressMissing: (
+        'Жеткізу мекенжайын таңдаңыз.',
+        'Select a delivery address.'
+      ),
+      FoodFailure.tooManyOrders: (
+        'Белсенді тапсырыс тым көп.',
+        'There are too many active orders.'
+      ),
+      FoodFailure.notCancellable: (
+        'Тапсырыстан бас тарту мүмкін емес.',
+        'This order can no longer be cancelled.'
+      ),
+      FoodFailure.notFound: ('Табылмады.', 'Not found.'),
+      FoodFailure.other: (
+        'Әрекет орындалмады. Кейінірек қайталаңыз.',
+        'Could not complete the action. Try again later.'
+      ),
+    };
+    final translated = translations[failure]!;
+    return language == 'kk' ? translated.$1 : translated.$2;
+  }
 }
 
 class CheckoutRequest {
@@ -64,6 +133,7 @@ class CheckoutRequest {
     required this.addressId,
     required this.paymentMethod,
     this.comment,
+    this.expectedTotalMinor,
   });
 
   final String restaurantId;
@@ -73,6 +143,7 @@ class CheckoutRequest {
   /// `TEST_CARD` (DEV mock, no card data) or `CASH_ON_DELIVERY`.
   final String paymentMethod;
   final String? comment;
+  final int? expectedTotalMinor;
 }
 
 /// KUNDE Food client: public catalog over plain HTTP, cart/orders through the authenticated repository.
@@ -121,6 +192,7 @@ class FoodApi {
         'FOOD_OPTIONS_INVALID' => FoodFailure.optionsInvalid,
         'FOOD_STOCK_INSUFFICIENT' => FoodFailure.stock,
         'FOOD_QUANTITY_INVALID' => FoodFailure.quantity,
+        'FOOD_PRICE_CHANGED' => FoodFailure.priceChanged,
         'FOOD_SUBSTITUTION_INVALID' => FoodFailure.substitution,
         'ADDRESS_NOT_FOUND' => FoodFailure.addressMissing,
         'TOO_MANY_ACTIVE_ORDERS' => FoodFailure.tooManyOrders,
@@ -182,6 +254,8 @@ class FoodApi {
           'items': request.items,
           'addressId': request.addressId,
           'paymentMethod': request.paymentMethod,
+          if (request.expectedTotalMinor != null)
+            'expectedTotalMinor': request.expectedTotalMinor,
           if (request.comment != null && request.comment!.trim().isNotEmpty)
             'comment': request.comment!.trim(),
         }, expected: const {

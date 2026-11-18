@@ -30,6 +30,8 @@ extension HomeStrings on KundeLocalizations {
   String get catFood => _t('Еда', 'Тамақ', 'Food');
   String get catServices => _t('Услуги', 'Қызметтер', 'Services');
   String get catGroceries => _t('Продукты', 'Азық-түлік', 'Groceries');
+  String get catFlowers =>
+      _t('Цветы и подарки', 'Гүлдер мен сыйлықтар', 'Flowers & gifts');
   String get catRides => _t('Поездки', 'Сапарлар', 'Rides');
   String get catDelivery => _t('Доставка', 'Жеткізу', 'Delivery');
   String get catHome => _t('Дом и быт', 'Үй және тұрмыс', 'Home services');

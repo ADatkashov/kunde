@@ -19,3 +19,7 @@ existing behavior and local fallback.
   Source: https://github.com/notofonts/noto-fonts/tree/main/hinted/ttf/NotoSans
   License retained in `fonts/LICENSE.txt`. Bundled Regular/Medium/Bold/ExtraBold/Black
   ensure Cyrillic, Kazakh and tenge glyphs render consistently offline.
+
+- DEV Flowers catalog: illustrative flower photo `photo-1490750967868-88aa4486c946`,
+  https://images.unsplash.com/photo-1490750967868-88aa4486c946,
+  https://unsplash.com/license; synthetic items and prices do not represent an actual offer.

@@ -68,8 +68,8 @@ public class FoodCatalogController {
     }
 
     private static String vertical(String value) {
-        if (!"FOOD".equals(value) && !"GROCERY".equals(value)) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "VERTICAL_INVALID", "vertical must be FOOD or GROCERY");
+        if (!"FOOD".equals(value) && !"GROCERY".equals(value) && !"FLOWERS_GIFTS".equals(value)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "VERTICAL_INVALID", "vertical must be FOOD, GROCERY or FLOWERS_GIFTS");
         }
         return value;
     }

@@ -147,6 +147,7 @@ paths:
       operationId: listFoodRestaurants
       description: KUNDE Food DEV pilot (only when app.food.enabled; absent otherwise). Synthetic demo restaurants.
       parameters:
+        - { name: vertical, in: query, schema: { type: string, enum: [FOOD, GROCERY, FLOWERS_GIFTS], default: FOOD } }
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
         - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
       responses:
@@ -173,6 +174,7 @@ paths:
       operationId: searchFood
       parameters:
         - { name: q, in: query, schema: { type: string, maxLength: 100 } }
+        - { name: vertical, in: query, schema: { type: string, enum: [FOOD, GROCERY, FLOWERS_GIFTS], default: FOOD } }
       responses:
         '200':
           description: Restaurants and dishes matching q (case-insensitive substring). Empty for blank q.
@@ -205,7 +207,12 @@ paths:
               schema: { type: array, items: { type: object } }
     post:
       operationId: placeFoodOrder
-      description: Authenticated. Requires an Idempotency-Key header (16-64 chars). Payment is mocked (TEST_CARD or CASH_ON_DELIVERY); no card data is accepted. Delivery progress is simulated.
+      description: >-
+        Authenticated; requires an Idempotency-Key header (16-64 chars). Food and Grocery retain
+        their DEV payment methods. FLOWERS_GIFTS requires DEV_NO_PAYMENT and expectedTotalMinor
+        from the current quote, plus an approved linked partner. The server recalculates the
+        total and returns FOOD_PRICE_CHANGED (409) if it differs; paymentStatus is NO_PAYMENT.
+        The partner controls order status. No real payment or delivery takes place.
       responses:
         '201':
           description: Order created (status PLACED).
@@ -214,9 +221,9 @@ paths:
         '400':
           description: IDEMPOTENCY_KEY_INVALID or validation failure.
         '409':
-          description: IDEMPOTENCY_KEY_REUSED or TOO_MANY_ACTIVE_ORDERS.
+          description: IDEMPOTENCY_KEY_REUSED, TOO_MANY_ACTIVE_ORDERS or FOOD_PRICE_CHANGED.
         '422':
-          description: PAYMENT_METHOD_UNSUPPORTED, ADDRESS_NOT_FOUND or a quote error.
+          description: PAYMENT_METHOD_UNSUPPORTED, FLOWERS_ORDER_UNAVAILABLE, ADDRESS_NOT_FOUND or a quote error.
   /food/orders/{orderId}:
     get:
       operationId: getFoodOrder
@@ -236,7 +243,7 @@ paths:
         '409':
           description: ORDER_NOT_CANCELLABLE once the restaurant accepted the order (D-06).
         '200':
-          description: Order cancelled and payment voided (only while PLACED).
+          description: Order cancelled (only while PLACED); NO_PAYMENT remains unchanged for DEV_NO_PAYMENT.
   /food/orders/{orderId}/repeat:
     get:
       operationId: repeatFoodOrder

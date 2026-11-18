@@ -418,6 +418,7 @@ class CategoryTile extends StatelessWidget {
                         switch (category.icon) {
                           Icons.ramen_dining_rounded => 'food',
                           Icons.shopping_basket_rounded => 'grocery',
+                          Icons.local_florist_rounded => 'beauty',
                           Icons.local_taxi_rounded => 'rides',
                           Icons.inventory_2_rounded => 'delivery',
                           Icons.home_rounded => 'home',

@@ -28,6 +28,15 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
   final _sectionKeys = <String, GlobalKey>{};
   bool _inStockOnly = false;
 
+  String _tx(String ru, String kk, String en) {
+    if (widget.restaurant.vertical != 'FLOWERS_GIFTS') return ru;
+    return switch (Localizations.localeOf(context).languageCode) {
+      'kk' => kk,
+      'en' => en,
+      _ => ru,
+    };
+  }
+
   @override
   void initState() {
     super.initState();
@@ -47,23 +56,28 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
           dish: dish,
           restaurantOpen: restaurant.open,
           api: widget.services.api,
-          grocery: restaurant.vertical == 'GROCERY'),
+          grocery: restaurant.vertical == 'GROCERY',
+          flowers: restaurant.vertical == 'FLOWERS_GIFTS'),
     );
     if (added == null || !mounted) return;
     if (cart.conflictsWith(restaurant.id)) {
       final replace = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Начать новую корзину?'),
-          content: Text('В корзине блюда из «${cart.restaurant?.name}». '
-              'Заказать можно только из одного ресторана — корзина будет очищена.'),
+          title: Text(_tx('Начать новую корзину?', 'Жаңа себет басталсын ба?',
+              'Start a new cart?')),
+          content: Text(_tx(
+              'В корзине блюда из «${cart.restaurant?.name}». Заказать можно только из одного ресторана — корзина будет очищена.',
+              'Себетте «${cart.restaurant?.name}» тауарлары бар. Бір дүкеннен ғана тапсырыс беруге болады; себет тазаланады.',
+              'Your cart contains items from “${cart.restaurant?.name}”. You can order from one shop at a time; the cart will be cleared.')),
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Отмена')),
+                child: Text(_tx('Отмена', 'Бас тарту', 'Cancel'))),
             FilledButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('Очистить и добавить')),
+                child: Text(_tx(
+                    'Очистить и добавить', 'Тазалап қосу', 'Clear and add'))),
           ],
         ),
       );
@@ -73,7 +87,9 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text('Добавлено: ${added.name}')));
+      ..showSnackBar(SnackBar(
+          content:
+              Text('${_tx('Добавлено', 'Қосылды', 'Added')}: ${added.name}')));
   }
 
   void _scrollTo(String sectionId) {
@@ -122,7 +138,8 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                       hasScrollBody: false,
                       child: FoodStateMessage(
                         icon: Icons.cloud_off_outlined,
-                        title: 'Не удалось загрузить меню',
+                        title: _tx('Не удалось загрузить меню',
+                            'Тауарлар жүктелмеді', 'Could not load products'),
                         body: state.error is FoodException
                             ? (state.error as FoodException).message
                             : null,
@@ -137,8 +154,9 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                       hasScrollBody: false,
                       child: FoodStateMessage(
                           icon: Icons.menu_book_outlined,
-                          title: restaurant.vertical == 'GROCERY'
-                              ? 'Ассортимент пока пуст'
+                          title: restaurant.vertical != 'FOOD'
+                              ? _tx('Ассортимент пока пуст',
+                                  'Әзірге тауарлар жоқ', 'No products yet')
                               : 'Меню пока пустое'),
                     )
                   else ...[
@@ -158,6 +176,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                         itemBuilder: (context, i) => _DishTile(
                           dish: section.dishes[i],
                           enabled: restaurant.open,
+                          flowers: restaurant.vertical == 'FLOWERS_GIFTS',
                           onTap: () => _openDish(restaurant, section.dishes[i]),
                         ),
                       ),
@@ -192,7 +211,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
           Chip(
               avatar: const Icon(Icons.delivery_dining_rounded, size: 18),
               label: Text(r.deliveryFeeMinor == 0
-                  ? 'Доставка бесплатно'
+                  ? _tx('Доставка бесплатно', 'Жеткізу тегін', 'Free delivery')
                   : 'Доставка ${formatTenge(r.deliveryFeeMinor)}')),
           if (r.minOrderMinor > 0)
             Chip(
@@ -207,7 +226,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
               borderRadius: BorderRadius.circular(12),
               child: Padding(
                 padding: const EdgeInsets.all(12),
-                child: Text(r.vertical == 'GROCERY'
+                child: Text(r.vertical != 'FOOD'
                     ? 'Магазин сейчас закрыт — заказ недоступен.'
                     : 'Ресторан сейчас закрыт — заказ недоступен.'),
               ),
@@ -238,7 +257,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
           separatorBuilder: (_, __) => const SizedBox(width: 8),
           itemBuilder: (context, i) => i == 0
               ? FilterChip(
-                  label: const Text('В наличии'),
+                  label: Text(_tx('В наличии', 'Қолда бар', 'In stock')),
                   selected: _inStockOnly,
                   onSelected: (v) => setState(() => _inStockOnly = v))
               : ActionChip(
@@ -250,16 +269,27 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
 
 class _DishTile extends StatelessWidget {
   const _DishTile(
-      {required this.dish, required this.enabled, required this.onTap});
+      {required this.dish,
+      required this.enabled,
+      required this.flowers,
+      required this.onTap});
 
   final Dish dish;
   final bool enabled;
+  final bool flowers;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final canOrder = enabled && dish.available;
+    final unavailable = flowers
+        ? switch (Localizations.localeOf(context).languageCode) {
+            'kk' => 'Қолжетімсіз',
+            'en' => 'Unavailable',
+            _ => 'Нет в наличии',
+          }
+        : 'Нет в наличии';
     return Semantics(
       button: canOrder,
       label:
@@ -288,7 +318,7 @@ class _DishTile extends StatelessWidget {
                       Text(
                           dish.available && dish.maxQuantity > 0
                               ? unitPriceLabel(dish.unit, dish.priceMinor)
-                              : 'Нет в наличии',
+                              : unavailable,
                           style: theme.textTheme.titleSmall
                               ?.copyWith(fontWeight: FontWeight.w700)),
                     ]),
@@ -296,7 +326,11 @@ class _DishTile extends StatelessWidget {
               const SizedBox(width: 12),
               Stack(clipBehavior: Clip.none, children: [
                 EmojiTile(
-                    emoji: dish.emoji, tone: dish.tone, size: 84, radius: 18),
+                    emoji: dish.emoji,
+                    tone: dish.tone,
+                    size: 84,
+                    radius: 18,
+                    imageUrl: dish.imageUrl),
                 if (canOrder)
                   Positioned(
                     right: -4,

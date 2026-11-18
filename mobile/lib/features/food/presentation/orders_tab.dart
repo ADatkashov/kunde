@@ -123,7 +123,9 @@ class _OrderCard extends StatelessWidget {
     return Card(
       margin: EdgeInsets.zero,
       elevation: 2,
-      color: Colors.white,
+      color: order.vertical == 'FLOWERS_GIFTS'
+          ? theme.colorScheme.surface
+          : Colors.white,
       shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
           side: BorderSide(color: theme.colorScheme.outlineVariant)),
@@ -136,7 +138,11 @@ class _OrderCard extends StatelessWidget {
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               KundeIllustration(
-                  order.vertical == 'GROCERY' ? 'grocery' : 'food',
+                  order.vertical == 'FLOWERS_GIFTS'
+                      ? 'beauty'
+                      : order.vertical == 'GROCERY'
+                          ? 'grocery'
+                          : 'food',
                   size: 38),
               const SizedBox(width: 10),
               Expanded(
@@ -147,7 +153,11 @@ class _OrderCard extends StatelessWidget {
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                     color: chipColor, borderRadius: BorderRadius.circular(999)),
-                child: Text(orderStatusLabel(order.status),
+                child: Text(
+                    order.vertical == 'FLOWERS_GIFTS'
+                        ? flowersStatusLabel(order.status,
+                            Localizations.localeOf(context).languageCode)
+                        : orderStatusLabel(order.status),
                     style: const TextStyle(
                         fontSize: 12, fontWeight: FontWeight.w600)),
               ),

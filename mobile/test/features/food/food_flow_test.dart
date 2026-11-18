@@ -15,6 +15,7 @@ import 'package:kunde_mobile/features/food/data/food_api.dart';
 import 'package:kunde_mobile/features/food/data/food_models.dart';
 import 'package:kunde_mobile/features/food/food_services.dart';
 import 'package:kunde_mobile/features/food/presentation/food_home_screen.dart';
+import 'package:kunde_mobile/features/food/presentation/checkout_screen.dart';
 import 'package:kunde_mobile/features/food/presentation/order_screen.dart';
 import 'package:kunde_mobile/features/food/presentation/orders_tab.dart';
 import 'package:kunde_mobile/features/identity/auth_repository.dart';
@@ -102,6 +103,7 @@ class _FakeBackend {
   final keys = <String, String>{};
   bool offline = false;
   bool withClosedRestaurant = false;
+  bool flowersCatalog = false;
   final requestedVerticals = <String?>[];
   int minOrder = 0;
 
@@ -117,6 +119,12 @@ class _FakeBackend {
         : jsonDecode(request.body) as Map<String, dynamic>;
     if (path == 'food/restaurants') {
       requestedVerticals.add(request.url.queryParameters['vertical']);
+      if (request.url.queryParameters['vertical'] == 'FLOWERS_GIFTS' &&
+          flowersCatalog) {
+        return _json([
+          {..._restaurant(), 'vertical': 'FLOWERS_GIFTS'}
+        ]);
+      }
       if (request.url.queryParameters['vertical'] == 'GROCERY') {
         return _json([
           {
@@ -141,7 +149,13 @@ class _FakeBackend {
       ]);
     }
     if (path == 'food/restaurants/$_restaurantId') {
-      return _json({..._menu, 'restaurant': _restaurant(minOrder: minOrder)});
+      return _json({
+        ..._menu,
+        'restaurant': {
+          ..._restaurant(minOrder: minOrder),
+          if (flowersCatalog) 'vertical': 'FLOWERS_GIFTS'
+        }
+      });
     }
     if (path == 'food/search') return _json({'restaurants': [], 'dishes': []});
     if (path == 'me/addresses') {
@@ -169,11 +183,14 @@ class _FakeBackend {
         'id': 'aaaaaaaa-0000-0000-0000-00000000000${orders.length + 1}',
         'restaurantId': _restaurantId,
         'restaurantName': 'Пицца Тест',
+        if (flowersCatalog) 'vertical': 'FLOWERS_GIFTS',
         'status': 'PLACED',
         'paymentMethod': body['paymentMethod'],
-        'paymentStatus': body['paymentMethod'] == 'TEST_CARD'
-            ? 'TEST_PAID'
-            : 'PAY_ON_RECEIPT',
+        'paymentStatus': body['paymentMethod'] == 'DEV_NO_PAYMENT'
+            ? 'NO_PAYMENT'
+            : body['paymentMethod'] == 'TEST_CARD'
+                ? 'TEST_PAID'
+                : 'PAY_ON_RECEIPT',
         'subtotalMinor': quote['subtotalMinor'],
         'deliveryFeeMinor': quote['deliveryFeeMinor'],
         'totalMinor': quote['totalMinor'],
@@ -263,7 +280,8 @@ Future<FoodServices> _services(
 Future<void> _show(WidgetTester tester, Widget home,
     {Size size = const Size(1080, 2200),
     double pixelRatio = 2.75,
-    double textScale = 1}) async {
+    double textScale = 1,
+    Locale? locale}) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = pixelRatio;
   addTearDown(tester.view.reset);
@@ -272,6 +290,9 @@ Future<void> _show(WidgetTester tester, Widget home,
   await tester.pumpWidget(MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: KundeTheme.light,
+      locale: locale,
+      supportedLocales: KundeLocalizations.supportedLocales,
+      localizationsDelegates: KundeLocalizations.localizationsDelegates,
       builder: (context, child) => MediaQuery(
           data: MediaQuery.of(context)
               .copyWith(textScaler: TextScaler.linear(textScale)),
@@ -282,7 +303,7 @@ Future<void> _show(WidgetTester tester, Widget home,
 
 void main() {
   for (final width in [360.0, 390.0, 412.0]) {
-    for (final vertical in ['FOOD', 'GROCERY']) {
+    for (final vertical in ['FOOD', 'GROCERY', 'FLOWERS_GIFTS']) {
       testWidgets('Samsung $width $vertical large text layout', (tester) async {
         await tester.runAsync(loadPremiumFonts);
         final services = await _services(_FakeBackend(), tester);
@@ -295,6 +316,116 @@ void main() {
         expect(tester.takeException(), isNull);
       });
     }
+  }
+
+  for (final entry in {
+    'ru': 'Цветы и подарки',
+    'kk': 'Гүлдер мен сыйлықтар',
+    'en': 'Flowers & gifts',
+  }.entries) {
+    testWidgets('flowers catalog requests its vertical in ${entry.key}',
+        (tester) async {
+      final backend = _FakeBackend();
+      final services = await _services(backend, tester);
+      await _show(
+          tester, FoodHomeScreen(services: services, vertical: 'FLOWERS_GIFTS'),
+          locale: Locale(entry.key));
+      expect(backend.requestedVerticals, contains('FLOWERS_GIFTS'));
+      expect(find.text(entry.value), findsOneWidget);
+    });
+  }
+
+  testWidgets('flowers store to test order and history', (tester) async {
+    final backend = _FakeBackend()..flowersCatalog = true;
+    final services = await _services(backend, tester);
+    await _show(
+        tester, FoodHomeScreen(services: services, vertical: 'FLOWERS_GIFTS'));
+    await tester.tap(find.text('Пицца Тест'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Маргарита'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Add ·'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Cart · 1'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Checkout ·'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.textContaining('Confirm order'), 300,
+        scrollable: find.byType(Scrollable).last);
+    await tester.tap(find.textContaining('Confirm order'));
+    await tester.pumpAndSettle();
+    expect(backend.orders.single['paymentMethod'], 'DEV_NO_PAYMENT');
+    expect(find.text('Test order created'), findsWidgets);
+    await _show(tester, Scaffold(body: FoodOrdersTab(services: services)));
+    expect(find.text('Пицца Тест'), findsOneWidget);
+  });
+
+  testWidgets('flowers checkout submits no payment', (tester) async {
+    final backend = _FakeBackend();
+    final services = await _services(backend, tester);
+    services.cart.add(
+        Restaurant.fromJson({..._restaurant(), 'vertical': 'FLOWERS_GIFTS'}),
+        CartLine(
+            dishId: _dishId,
+            name: 'Маргарита',
+            emoji: '💐',
+            tone: 'red',
+            optionIds: const [_sizeS],
+            optionsText: '',
+            unitPriceMinor: 350000,
+            quantity: 1));
+    final quote = FoodQuote.fromJson(backend._price({
+      'items': [
+        {
+          'dishId': _dishId,
+          'quantity': 1,
+          'optionIds': [_sizeS]
+        }
+      ]
+    })!);
+    await _show(tester, CheckoutScreen(services: services, quote: quote));
+    expect(find.textContaining('No payment or real delivery'), findsWidgets);
+    expect(find.text('Тестовая карта (DEV)'), findsNothing);
+    await tester.ensureVisible(find.textContaining('Confirm order'));
+    await tester.tap(find.textContaining('Confirm order'));
+    await tester.pumpAndSettle();
+    expect(backend.orders.single['paymentMethod'], 'DEV_NO_PAYMENT');
+  });
+
+  for (final entry in {
+    'ru': 'Подтвердить заказ',
+    'kk': 'Тапсырысты растау',
+    'en': 'Confirm order',
+  }.entries) {
+    testWidgets('flowers checkout language ${entry.key}', (tester) async {
+      final backend = _FakeBackend();
+      final services = await _services(backend, tester);
+      services.cart.add(
+          Restaurant.fromJson({..._restaurant(), 'vertical': 'FLOWERS_GIFTS'}),
+          CartLine(
+              dishId: _dishId,
+              name: 'Test',
+              emoji: '💐',
+              tone: 'red',
+              optionIds: const [_sizeS],
+              optionsText: '',
+              unitPriceMinor: 350000,
+              quantity: 1));
+      final quote = FoodQuote.fromJson(backend._price({
+        'items': [
+          {
+            'dishId': _dishId,
+            'quantity': 1,
+            'optionIds': [_sizeS]
+          }
+        ]
+      })!);
+      await _show(tester, CheckoutScreen(services: services, quote: quote),
+          locale: Locale(entry.key));
+      await tester.ensureVisible(find.textContaining(entry.value));
+      expect(find.textContaining(entry.value), findsOneWidget);
+      expect(find.text('Тестовая карта (DEV)'), findsNothing);
+    });
   }
 
   testWidgets('premium golden complete home with nearby merchants',
@@ -374,6 +505,19 @@ void main() {
     backend.orders.single['placedAt'] = '2026-11-15T09:41:00Z';
     await _show(tester, Scaffold(body: FoodOrdersTab(services: services)));
     await premiumGolden(tester, 'premium_history');
+  });
+
+  test('flowers statuses describe synthetic fulfilment', () {
+    expect(flowersStatusLabel('DELIVERED', 'ru'), contains('Тестовая'));
+    expect(flowersStatusLabel('DELIVERED', 'kk'), contains('Сынақ'));
+    expect(flowersStatusLabel('DELIVERED', 'en'), contains('Test'));
+  });
+
+  test('price changes are explained in all checkout languages', () {
+    const error = FoodException(FoodFailure.priceChanged);
+    expect(error.messageFor('ru'), contains('Цена изменилась'));
+    expect(error.messageFor('kk'), contains('Баға өзгерді'));
+    expect(error.messageFor('en'), contains('price changed'));
   });
 
   test('formatTenge groups thousands and hides zero tiyn', () {
@@ -572,6 +716,41 @@ void main() {
     await tester.tap(find.widgetWithText(ChoiceChip, 'Итальянская'));
     await tester.pumpAndSettle();
     expect(find.text('Пицца Тест'), findsOneWidget);
+  });
+
+  testWidgets('cancelled flowers order does not claim a payment was voided',
+      (tester) async {
+    final backend = _FakeBackend();
+    backend.orders.add({
+      'id': 'cccccccc-0000-0000-0000-000000000001',
+      'restaurantId': _restaurantId,
+      'restaurantName': 'Flowers',
+      'status': 'CANCELLED',
+      'paymentMethod': 'DEV_NO_PAYMENT',
+      'paymentStatus': 'NO_PAYMENT',
+      'subtotalMinor': 100,
+      'deliveryFeeMinor': 0,
+      'totalMinor': 100,
+      'vertical': 'FLOWERS_GIFTS',
+      'addressLabel': 'Test',
+      'addressText': 'Test',
+      'comment': null,
+      'placedAt': DateTime.now().toUtc().toIso8601String(),
+      'cancellable': false,
+      'cancelledBy': 'PARTNER',
+      'cancelReason': 'Test',
+      'timeline': <Map<String, dynamic>>[],
+      'items': <Map<String, dynamic>>[],
+    });
+    final services = await _services(backend, tester);
+    await _show(
+        tester,
+        OrderScreen(
+            services: services,
+            orderId: 'cccccccc-0000-0000-0000-000000000001'));
+    expect(find.textContaining('No payment was made.'), findsOneWidget);
+    expect(find.textContaining('Reason: Test'), findsOneWidget);
+    expect(find.textContaining('Платёж аннулирован'), findsNothing);
   });
 
   testWidgets(
