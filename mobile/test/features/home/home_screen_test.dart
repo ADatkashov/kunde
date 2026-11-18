@@ -165,7 +165,7 @@ void main() {
 
   testWidgets('category grid adapts below 360 px and with large text',
       (tester) async {
-    await _pump(tester, _api(), size: const Size(304, 800));
+    await _pump(tester, _api(), size: const Size(320, 800));
     expect(await firstRowTiles(tester), 3);
     await _pump(tester, _api(), size: const Size(320, 3000), textScale: 2);
     expect(await firstRowTiles(tester), 2);

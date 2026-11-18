@@ -298,7 +298,7 @@ class CategoryGrid extends StatelessWidget {
       builder: (context, box) {
         final columns = scale > 1.5
             ? 2
-            : scale > 1.15 || box.maxWidth < 280
+            : scale > 1.15 || box.maxWidth < 300
                 ? 3
                 : 4;
         const gap = 8.0;
@@ -375,7 +375,7 @@ class CategoryTile extends StatelessWidget {
                       category.label,
                       textAlign: TextAlign.center,
                       softWrap: category.label.contains(' '),
-                      maxLines: 2,
+                      maxLines: category.label.contains(' ') ? 2 : 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.labelMedium?.copyWith(
                         fontSize: 11,
