@@ -7,7 +7,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 
 @Configuration
-@EnableConfigurationProperties(RidesFlags.class)
+@EnableConfigurationProperties({RidesFlags.class, RidePricingProperties.class})
 public class RidesConfiguration {
     private static final Set<String> INTERNAL_ENVIRONMENTS = Set.of("dev", "local", "test");
 
