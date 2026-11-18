@@ -102,17 +102,25 @@ class _AssistantScreenState extends State<AssistantScreen> {
                       Container(
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          gradient: kundeHeroGradient,
+                          gradient: const LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xFF1A1741),
+                              Color(0xFF3D2779),
+                              Color(0xFF7047B6)
+                            ],
+                          ),
                           borderRadius: BorderRadius.circular(24),
                         ),
                         child: Column(
                           children: [
-                            const Icon(
-                              Icons.auto_awesome,
-                              color: Colors.white,
-                              size: 40,
-                            ),
-                            const SizedBox(height: 12),
+                            const AiOrb(size: 64),
+                            const SizedBox(height: 16),
+                            if (!connected) ...[
+                              const SoonBadge(onDark: true),
+                              const SizedBox(height: 8),
+                            ],
                             Text(
                               connected
                                   ? s.assistantPrompt

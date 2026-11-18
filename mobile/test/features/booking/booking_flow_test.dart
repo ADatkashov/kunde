@@ -14,6 +14,7 @@ import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
 import 'package:kunde_mobile/features/home/data/kunde_api.dart';
 import 'package:kunde_mobile/features/home/data/platform_snapshot.dart';
 import 'package:kunde_mobile/features/home/presentation/home_screen.dart';
+import 'package:kunde_mobile/features/home/presentation/super_app_widgets.dart';
 import 'package:kunde_mobile/features/identity/auth_repository.dart';
 
 class _Vault implements TokenVault {
@@ -478,16 +479,20 @@ void main() {
         locale: const Locale('ru'),
         home: HomeScreen(api: api, booking: services)));
     await tester.pumpAndSettle();
-    expect(find.text('Услуги'), findsNothing);
+    expect(find.text('Услуги'), findsOneWidget);
+    Finder category(String label) => find.descendant(
+          of: find.byType(CategoryGrid),
+          matching: find.text(label),
+        );
 
-    await tester.tap(find.text('Красота'));
+    await tester.tap(category('Красота'));
     await tester.pumpAndSettle();
     expect(find.text('Барбершопы'), findsOneWidget);
     expect(find.text('Уборка'), findsNothing);
     Navigator.of(tester.element(find.text('Барбершопы'))).pop();
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Дом и быт'));
+    await tester.tap(category('Дом и быт'));
     await tester.pumpAndSettle();
     expect(find.text('Уборка'), findsOneWidget);
     expect(find.text('Барбершопы'), findsNothing);

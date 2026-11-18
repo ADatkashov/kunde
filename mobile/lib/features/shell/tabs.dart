@@ -26,33 +26,87 @@ class KundeNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = KundeLocalizations.of(context);
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final labels = [
+      s.navHome,
+      s.navSearch,
+      s.navOrders,
+      s.navServices,
+      s.navProfile
+    ];
+    final labelStyle = theme.textTheme.labelMedium!.copyWith(letterSpacing: 0);
+    final textScaler =
+        MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3);
+    final availableWidth = (MediaQuery.sizeOf(context).width -
+                MediaQuery.paddingOf(context).horizontal) /
+            labels.length -
+        4;
+    var fontSize = labelStyle.fontSize!;
+    for (final label in labels) {
+      final painter = TextPainter(
+        text: TextSpan(
+            text: label, style: labelStyle.copyWith(fontSize: fontSize)),
+        textDirection: Directionality.of(context),
+        textScaler: textScaler,
+        maxLines: 1,
+      )..layout();
+      if (painter.width > availableWidth) {
+        fontSize *= availableWidth / painter.width;
+      }
+      painter.dispose();
+    }
     return Semantics(
       container: true,
       label: s.navLabel,
-      child: NavigationBar(
-        selectedIndex: selected.index,
-        onDestinationSelected:
-            onSelected == null ? null : (i) => onSelected!(KundeTab.values[i]),
-        destinations: [
-          NavigationDestination(
-              icon: const Icon(Icons.home_outlined),
-              selectedIcon: const Icon(Icons.home_rounded),
-              label: s.navHome),
-          NavigationDestination(
-              icon: const Icon(Icons.search_rounded), label: s.navSearch),
-          NavigationDestination(
-              icon: const Icon(Icons.receipt_long_outlined),
-              selectedIcon: const Icon(Icons.receipt_long_rounded),
-              label: s.navOrders),
-          NavigationDestination(
-              icon: const Icon(Icons.grid_view_outlined),
-              selectedIcon: const Icon(Icons.grid_view_rounded),
-              label: s.navServices),
-          NavigationDestination(
-              icon: const Icon(Icons.person_outline),
-              selectedIcon: const Icon(Icons.person_rounded),
-              label: s.navProfile),
-        ],
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: colors.outlineVariant)),
+          boxShadow: [
+            BoxShadow(
+              color: colors.shadow.withValues(alpha: .09),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: NavigationBar(
+          height: 64,
+          animationDuration: const Duration(milliseconds: 180),
+          indicatorColor: colors.primaryContainer,
+          labelTextStyle: WidgetStateProperty.resolveWith(
+            (states) => labelStyle.copyWith(
+              fontSize: fontSize,
+              color: states.contains(WidgetState.selected)
+                  ? colors.onSurface
+                  : colors.onSurfaceVariant,
+            ),
+          ),
+          selectedIndex: selected.index,
+          onDestinationSelected: onSelected == null
+              ? null
+              : (i) => onSelected!(KundeTab.values[i]),
+          destinations: [
+            NavigationDestination(
+                icon: const Icon(Icons.home_outlined),
+                selectedIcon: const Icon(Icons.home_rounded),
+                label: s.navHome),
+            NavigationDestination(
+                icon: const Icon(Icons.search_rounded), label: s.navSearch),
+            NavigationDestination(
+                icon: const Icon(Icons.receipt_long_outlined),
+                selectedIcon: const Icon(Icons.receipt_long_rounded),
+                label: s.navOrders),
+            NavigationDestination(
+                icon: const Icon(Icons.grid_view_outlined),
+                selectedIcon: const Icon(Icons.grid_view_rounded),
+                label: s.navServices),
+            NavigationDestination(
+                icon: const Icon(Icons.person_outline),
+                selectedIcon: const Icon(Icons.person_rounded),
+                label: s.navProfile),
+          ],
+        ),
       ),
     );
   }

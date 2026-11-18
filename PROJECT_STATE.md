@@ -1,5 +1,10 @@
 # KUNDE project state
 
+## KUNDE Premium UI 2.1
+
+- [PR #127](https://github.com/ADatkashov/kunde/pull/127) recomposes Consumer Home around a compact city/search header, three promos, a responsive service grid and nearby photo cards. Existing tab routes and backend capabilities remain in use. The assistant shows a localized Soon status.
+- The emulator comparison checks 390 and 320 dp, light/dark and RU/KK/EN. See the PR for the latest screenshot artifact, checks and signed DEV delivery status.
+
 ## KUNDE Premium UI 2.0
 
 - Consumer and standalone Partner share the violet/gold Material palette. Both default to light mode; Consumer saves the theme device-side. Consumer home, search entry points, order history/details, and profile use existing routes and server capabilities.

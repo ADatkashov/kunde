@@ -70,7 +70,7 @@ void main() {
     expect(find.text('Пока нет ресторанов'), findsOneWidget);
     expect(find.text('Сервисы пока не запущены'), findsOneWidget);
     expect(find.text('Сервер доступен'), findsOneWidget);
-    expect(find.textContaining('KUNDE AI пока недоступен'), findsWidgets);
+    expect(find.text('KUNDE AI'), findsOneWidget);
     // No invented restaurants, ratings or delivery times.
     expect(find.text('BurgerHouse'), findsNothing);
     expect(find.textContaining('мин'), findsNothing);
@@ -91,13 +91,23 @@ void main() {
   testWidgets('inactive category opens info sheet and offers no order',
       (tester) async {
     await _pump(tester, _api());
-    await tester.tap(find.text('Поездки'));
+    await tester.tap(find.text('Авто'));
     await tester.pumpAndSettle();
     expect(find.text('Скоро в KUNDE'), findsOneWidget);
     expect(find.text('Закрыть'), findsOneWidget);
     await tester.tap(find.text('Закрыть'));
     await tester.pumpAndSettle();
     expect(find.text('Скоро в KUNDE'), findsNothing);
+  });
+
+  testWidgets('secondary categories remain reachable from All services',
+      (tester) async {
+    await _pump(tester, _api());
+    await tester.tap(find.text('Все сервисы'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Поездки'));
+    await tester.pumpAndSettle();
+    expect(find.text('Скоро в KUNDE'), findsOneWidget);
   });
 
   testWidgets('food category opens search only when marketplace is enabled',
@@ -136,7 +146,7 @@ void main() {
 
   Future<int> firstRowTiles(WidgetTester tester) async {
     final tiles = tester.widgetList(find.byType(CategoryTile)).length;
-    expect(tiles, 11);
+    expect(tiles, 8);
     final tops = [
       for (var i = 0; i < tiles; i++)
         tester.getTopLeft(find.byType(CategoryTile).at(i)).dy
@@ -145,20 +155,20 @@ void main() {
   }
 
   for (final locale in ['ru', 'kk', 'en']) {
-    testWidgets('category grid has 5 columns from 360 px ($locale)',
+    testWidgets('category grid has 4 columns from 360 px ($locale)',
         (tester) async {
       await _pump(tester, _api(), locale: locale, size: const Size(360, 800));
-      expect(await firstRowTiles(tester), 5);
+      expect(await firstRowTiles(tester), 4);
       expect(tester.takeException(), isNull);
     });
   }
 
   testWidgets('category grid adapts below 360 px and with large text',
       (tester) async {
-    await _pump(tester, _api(), size: const Size(359, 800));
-    expect(await firstRowTiles(tester), 4);
-    await _pump(tester, _api(), size: const Size(320, 3000), textScale: 2);
+    await _pump(tester, _api(), size: const Size(320, 800));
     expect(await firstRowTiles(tester), 3);
+    await _pump(tester, _api(), size: const Size(320, 3000), textScale: 2);
+    expect(await firstRowTiles(tester), 2);
     expect(tester.takeException(), isNull);
   });
 
@@ -166,11 +176,11 @@ void main() {
       (tester) async {
     await _pump(tester, _api(marketplace: true),
         locale: 'kk', size: const Size(360, 800));
-    // 9 inactive categories carry the localized "Жақында" badge.
+    // 6 inactive categories carry the localized "Жақында" badge.
     expect(
         find.descendant(
             of: find.byType(CategoryGrid), matching: find.text('Жақында')),
-        findsNWidgets(9));
+        findsNWidgets(6));
     final foodTile = find.ancestor(
         of: find.text('Тамақ'), matching: find.byType(CategoryTile));
     expect(tester.getSemantics(foodTile).label, contains('Қолжетімді'));

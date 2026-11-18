@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -69,6 +70,19 @@ void main() {
     await _pump(tester, _api(), locale: 'en');
     for (final label in ['Home', 'Search', 'Orders', 'Services', 'Profile']) {
       expect(inBar(label), findsOneWidget);
+    }
+  });
+
+  testWidgets('Kazakh navigation labels stay on one line at 320 dp',
+      (tester) async {
+    await _pump(tester, _api(),
+        locale: 'kk', size: const Size(320, 640), textScale: 2);
+    for (final label in ['Басты бет', 'Тапсырыстар', 'Қызметтер']) {
+      final paragraph = tester.renderObject<RenderParagraph>(inBar(label));
+      final boxes = paragraph.getBoxesForSelection(
+        TextSelection(baseOffset: 0, extentOffset: label.length),
+      );
+      expect(boxes.map((box) => box.top).toSet(), hasLength(1), reason: label);
     }
   });
 

@@ -1,0 +1,71 @@
+name: Android visual comparison
+on:
+  pull_request:
+    paths:
+      - 'mobile/**'
+      - 'packages/kunde_design/**'
+      - '.github/workflows/android-visual.yml'
+      - 'scripts/ci/capture_android_visual.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: android-visual-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  screenshots:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Enable Android emulator acceleration
+        run: |
+          test -c /dev/kvm
+          sudo setfacl -m "u:$(id -un):rw" /dev/kvm
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: '3.47.9'
+          channel: stable
+          cache: false
+      - name: Build before and after x86_64 debug APKs
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/kunde-before" "$BASE_SHA"
+          mkdir -p "$RUNNER_TEMP/visual-apk" reports/visual
+          build() (
+            cd "$1/mobile"
+            flutter pub get --enforce-lockfile
+            flutter build apk --debug --target-platform android-x64 \
+              --dart-define=API_BASE_URL=https://kunde-backend-ty81.onrender.com/api/v1/ \
+              --dart-define=API_TIMEOUT_SECONDS=90 \
+              --dart-define=PHONE_AUTH_ENABLED=true \
+              --dart-define=DEV_OTP_HINT=true
+            cp build/app/outputs/flutter-apk/app-debug.apk "$RUNNER_TEMP/visual-apk/$2.apk"
+          )
+          build "$RUNNER_TEMP/kunde-before" before
+          build "$GITHUB_WORKSPACE" after
+          (cd mobile/android && bash gradlew --stop)
+          jps -l | awk '$2 == "org.jetbrains.kotlin.daemon.KotlinCompileDaemon" {print $1}' | xargs -r kill
+      - uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -memory 1536 -cores 2
+          script: python3 scripts/ci/capture_android_visual.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: kunde-android-visual
+          path: reports/visual/
+          if-no-files-found: warn
+          retention-days: 14
