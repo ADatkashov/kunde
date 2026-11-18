@@ -1,0 +1,103 @@
+import '../identity/auth_repository.dart';
+
+class ExecutorApi {
+  const ExecutorApi(this.auth);
+
+  final AuthRepository auth;
+
+  Future<ExecutorProfile?> profile() async {
+    try {
+      return ExecutorProfile(await _object('GET', 'profile'));
+    } on IdentityApiError catch (error) {
+      if (error.code == 'DRIVER_NOT_FOUND') return null;
+      rethrow;
+    }
+  }
+
+  Future<void> register(String name) =>
+      _object('POST', 'profile', {'displayName': name});
+
+  Future<void> vehicle(String description, String plate, String rideClass) =>
+      _object('POST', 'vehicle', {
+        'description': description,
+        'plate': plate,
+        'rideClass': rideClass,
+      });
+
+  Future<void> online(bool online) =>
+      _object('PUT', 'availability', {'online': online});
+
+  Future<void> location(double latitude, double longitude) => _command(
+      'PUT', 'location', {'latitude': latitude, 'longitude': longitude});
+
+  Future<void> respond(String offer, bool accepted) =>
+      _command('POST', 'offers/$offer/response', {'accept': accepted});
+
+  Future<void> advance(String trip, String step) =>
+      _command('POST', 'trips/$trip/progress', {'step': step});
+
+  Future<List<ExecutorOffer>> offers() async =>
+      (await _list('offers')).map(ExecutorOffer.new).toList(growable: false);
+
+  Future<List<ExecutorTrip>> trips() async =>
+      (await _list('trips')).map(ExecutorTrip.new).toList(growable: false);
+
+  Future<Map<String, dynamic>> _object(String method, String path,
+          [Map<String, dynamic>? body]) async =>
+      await auth.authorizedJson(method, 'executor/rides/$path', body: body)
+          as Map<String, dynamic>;
+
+  Future<List<Map<String, dynamic>>> _list(String path) async =>
+      (await auth.authorizedJson('GET', 'executor/rides/$path')
+              as List<dynamic>)
+          .cast<Map<String, dynamic>>();
+
+  Future<void> _command(
+      String method, String path, Map<String, dynamic> body) async {
+    await auth.authorizedJson(method, 'executor/rides/$path',
+        body: body, expected: {204});
+  }
+}
+
+class ExecutorProfile {
+  ExecutorProfile(Map<String, dynamic> json)
+      : name = json['displayName'] as String,
+        status = json['status'] as String,
+        online = json['online'] as bool,
+        vehicle = json['vehicle'] as Map<String, dynamic>?;
+
+  final String name;
+  final String status;
+  final bool online;
+  final Map<String, dynamic>? vehicle;
+
+  bool get approved => status == 'APPROVED' && vehicle?['status'] == 'APPROVED';
+}
+
+class ExecutorOffer {
+  ExecutorOffer(Map<String, dynamic> json)
+      : id = json['id'] as String,
+        expiresAt = DateTime.parse(json['expiresAt'] as String);
+
+  final String id;
+  final DateTime expiresAt;
+}
+
+class ExecutorTrip {
+  ExecutorTrip(Map<String, dynamic> json)
+      : id = json['id'] as String,
+        status = json['status'] as String,
+        createdAt = DateTime.parse(json['createdAt'] as String);
+
+  final String id;
+  final String status;
+  final DateTime createdAt;
+
+  String? get nextStep => switch (status) {
+        'DRIVER_ASSIGNED' => 'DEPART',
+        'DRIVER_ARRIVING' => 'ARRIVE',
+        'DRIVER_ARRIVED' => 'START',
+        'IN_PROGRESS' => 'COMPLETE',
+        _ => null,
+      };
+}

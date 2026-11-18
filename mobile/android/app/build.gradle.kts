@@ -15,9 +15,16 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    val executor = providers.environmentVariable("KUNDE_EXECUTOR_BUILD").orNull == "true"
+    if (executor) {
+        sourceSets.getByName("release").manifest.srcFile("src/executor/AndroidManifest.xml")
+        sourceSets.getByName("debug").manifest.srcFile("src/executor/AndroidManifest.xml")
+    }
+
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.kunde_mobile"
+        applicationId = if (executor) "com.kunde.executor" else "com.example.kunde_mobile"
+        manifestPlaceholders["kundeAppLabel"] = if (executor) "KUNDE Executor" else "KUNDE"
         manifestPlaceholders += mapOf("appAuthRedirectScheme" to "com.kunde.mobile")
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.

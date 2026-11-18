@@ -66,6 +66,20 @@ class RideApi {
             as Map<String, dynamic>,
       );
 
+  Future<RideDriverLocation?> driverLocation(String id) async {
+    final result = await auth.authorizedJson(
+      'GET',
+      'rides/$id/location',
+      expected: {200, 204},
+    ) as Map<String, dynamic>?;
+    if (result == null) return null;
+    final point = result['point'] as Map<String, dynamic>;
+    return RideDriverLocation(
+      (point['latitude'] as num).toDouble(),
+      (point['longitude'] as num).toDouble(),
+    );
+  }
+
   Future<RideTrip> cancel(String id) async => RideTrip.fromJson(
         await auth.authorizedJson('POST', 'rides/$id/cancel')
             as Map<String, dynamic>,
@@ -125,4 +139,10 @@ class RideTrip {
       }.contains(status);
 
   bool get active => cancellable || status == 'IN_PROGRESS';
+}
+
+class RideDriverLocation {
+  const RideDriverLocation(this.latitude, this.longitude);
+  final double latitude;
+  final double longitude;
 }
