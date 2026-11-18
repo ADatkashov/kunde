@@ -2,6 +2,7 @@ import 'dart:convert';
 import '../../support/premium_goldens.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -48,6 +49,22 @@ Future<void> _pump(WidgetTester tester, KundeApi api,
 }
 
 void main() {
+  testWidgets('promo brand names stay on one line at 320 dp', (tester) async {
+    await tester.runAsync(loadPremiumFonts);
+    await _pump(tester, _api(), size: const Size(320, 640), locale: 'kk');
+    for (final brand in ['KUNDE AI', 'KUNDE+']) {
+      final label = find.descendant(
+        of: find.byType(HomePromoCard),
+        matching: find.text(brand),
+      );
+      final paragraph = tester.renderObject<RenderParagraph>(label);
+      final boxes = paragraph.getBoxesForSelection(
+        TextSelection(baseOffset: 0, extentOffset: brand.length),
+      );
+      expect(boxes.map((box) => box.top).toSet(), hasLength(1), reason: brand);
+    }
+  });
+
   for (final width in [360.0, 390.0, 412.0]) {
     testWidgets('premium golden home Samsung $width', (tester) async {
       await tester.runAsync(loadPremiumFonts);

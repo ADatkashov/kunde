@@ -328,6 +328,25 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                 void openSoon(String title, [String? body]) =>
                     _showInfo(title, body ?? s.comingSoonBody);
+                final promos = [
+                  HomePromoCard(
+                    promotion: HomePromotion.assistant,
+                    label: s.homeAiTitle,
+                    onTap: widget.onOpenAssistant ?? openAssistant,
+                  ),
+                  HomePromoCard(
+                    promotion: HomePromotion.rewards,
+                    label: s.homeRewards,
+                    onTap: () => openSoon(s.homeRewards),
+                  ),
+                  HomePromoCard(
+                    promotion: HomePromotion.membership,
+                    label: 'KUNDE+',
+                    onTap: () => openSoon('KUNDE+'),
+                  ),
+                ];
+                final stackedPromos =
+                    MediaQuery.textScalerOf(context).scale(1) > 1.5;
                 return ListView(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
                   children: [
@@ -357,36 +376,22 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 16),
                     FadeIn(
-                      child: IntrinsicHeight(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(
-                              child: HomePromoCard(
-                                promotion: HomePromotion.assistant,
-                                label: s.homeAiTitle,
-                                onTap: widget.onOpenAssistant ?? openAssistant,
+                      child: stackedPromos
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              spacing: 8,
+                              children: promos,
+                            )
+                          : IntrinsicHeight(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                spacing: 8,
+                                children: [
+                                  for (final promo in promos)
+                                    Expanded(child: promo),
+                                ],
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: HomePromoCard(
-                                promotion: HomePromotion.rewards,
-                                label: s.homeRewards,
-                                onTap: () => openSoon(s.homeRewards),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: HomePromoCard(
-                                promotion: HomePromotion.membership,
-                                label: 'KUNDE+',
-                                onTap: () => openSoon('KUNDE+'),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                     ),
                     const SizedBox(height: 16),
                     if (failed) ...[

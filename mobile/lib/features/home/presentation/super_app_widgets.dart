@@ -245,6 +245,30 @@ class HomePromoCard extends StatelessWidget {
           const Color(0xFF36220D),
         ),
     };
+    final compact = MediaQuery.sizeOf(context).width < 360 ||
+        MediaQuery.textScalerOf(context).scale(1) > 1.15;
+    final badge = promotion == HomePromotion.assistant
+        ? const AiOrb(size: 27)
+        : Icon(icon, color: foreground, size: 24);
+    final titles = Column(
+      crossAxisAlignment:
+          compact ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          label,
+          textAlign: compact ? TextAlign.center : TextAlign.start,
+          style: TextStyle(
+              color: foreground, fontSize: 12, fontWeight: FontWeight.w800),
+        ),
+        Text(
+          KundeLocalizations.of(context).homeSoon,
+          textAlign: compact ? TextAlign.center : TextAlign.start,
+          style: TextStyle(
+              color: foreground, fontSize: 10, fontWeight: FontWeight.w600),
+        ),
+      ],
+    );
     return Material(
       color: colors.first,
       borderRadius: BorderRadius.circular(16),
@@ -263,34 +287,18 @@ class HomePromoCard extends StatelessWidget {
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.all(8),
-            child: Row(
-              children: [
-                if (promotion == HomePromotion.assistant)
-                  const AiOrb(size: 27)
-                else
-                  Icon(icon, color: foreground, size: 24),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            child: compact
+                ? Column(
                     mainAxisAlignment: MainAxisAlignment.center,
+                    children: [badge, const SizedBox(height: 4), titles],
+                  )
+                : Row(
                     children: [
-                      Text(label,
-                          style: TextStyle(
-                            color: foreground,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                          )),
-                      Text(KundeLocalizations.of(context).homeSoon,
-                          style: TextStyle(
-                              color: foreground,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600)),
+                      badge,
+                      const SizedBox(width: 6),
+                      Expanded(child: titles)
                     ],
                   ),
-                ),
-              ],
-            ),
           ),
         ),
       ),
