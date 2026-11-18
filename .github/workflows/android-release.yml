@@ -1,5 +1,7 @@
 name: Android Release APK (DEV)
 on:
+  push:
+    branches: [build/kunde-premium-ui-2-release]
   workflow_dispatch:
     inputs:
       api-base-url:
