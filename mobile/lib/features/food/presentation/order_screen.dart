@@ -379,11 +379,14 @@ class _StatusTimeline extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         child: ListTile(
           leading: const Icon(Icons.cancel_outlined),
-          title: Text(order.cancelReason == 'PARTNER_TIMEOUT'
-              ? 'Заведение не ответило вовремя'
-              : order.cancelledBy == 'PARTNER'
-                  ? 'Заказ отклонён заведением'
-                  : 'Заказ отменён'),
+          title: Text(order.vertical == 'FLOWERS_GIFTS'
+              ? flowersStatusLabel(
+                  'CANCELLED', Localizations.localeOf(context).languageCode)
+              : order.cancelReason == 'PARTNER_TIMEOUT'
+                  ? 'Заведение не ответило вовремя'
+                  : order.cancelledBy == 'PARTNER'
+                      ? 'Заказ отклонён заведением'
+                      : 'Заказ отменён'),
           subtitle: Text(order.paymentMethod == 'DEV_NO_PAYMENT'
               ? switch (Localizations.localeOf(context).languageCode) {
                   'kk' =>

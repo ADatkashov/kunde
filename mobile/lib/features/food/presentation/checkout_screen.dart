@@ -6,6 +6,16 @@ import '../food_services.dart';
 import 'order_screen.dart';
 import 'food_widgets.dart';
 
+String _flowerText(
+    BuildContext context, bool enabled, String ru, String kk, String en) {
+  if (!enabled) return ru;
+  return switch (Localizations.localeOf(context).languageCode) {
+    'kk' => kk,
+    'en' => en,
+    _ => ru,
+  };
+}
+
 class _AddressPreset {
   const _AddressPreset(this.label, this.text, this.lat, this.lon);
 
@@ -78,7 +88,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           context: context,
           isScrollControlled: true,
           showDragHandle: true,
-          builder: (_) => const _AddAddressSheet(),
+          builder: (_) => _AddAddressSheet(
+              flowers:
+                  widget.services.cart.restaurant?.vertical == 'FLOWERS_GIFTS'),
         );
     if (result == null || !mounted) return;
     try {
@@ -94,15 +106,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       });
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Не удалось сохранить адрес. Попробуйте ещё раз.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(_flowerText(
+              context,
+              widget.services.cart.restaurant?.vertical == 'FLOWERS_GIFTS',
+              'Не удалось сохранить адрес. Попробуйте ещё раз.',
+              'Мекенжай сақталмады. Қайталап көріңіз.',
+              'Could not save the address. Try again.'))));
     }
   }
 
   Future<void> _submit() async {
     final restaurant = widget.services.cart.restaurant;
     if (_addressId == null || restaurant == null) {
-      setState(() => _error = 'Выберите адрес доставки.');
+      setState(() => _error = _flowerText(
+          context,
+          restaurant?.vertical == 'FLOWERS_GIFTS',
+          'Выберите адрес доставки.',
+          'Жеткізу мекенжайын таңдаңыз.',
+          'Select a delivery address.'));
       return;
     }
     setState(() {
@@ -371,7 +393,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 }
 
 class _AddAddressSheet extends StatefulWidget {
-  const _AddAddressSheet();
+  const _AddAddressSheet({this.flowers = false});
+
+  final bool flowers;
 
   @override
   State<_AddAddressSheet> createState() => _AddAddressSheetState();
@@ -396,24 +420,39 @@ class _AddAddressSheetState extends State<_AddAddressSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Другой адрес в Алматы',
+              Text(
+                  _flowerText(context, widget.flowers, 'Другой адрес в Алматы',
+                      'Алматыдағы басқа мекенжай', 'Another address in Almaty'),
                   style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 12),
               TextField(
                   controller: _label,
                   maxLength: 80,
-                  decoration: const InputDecoration(
-                      labelText: 'Название', border: OutlineInputBorder())),
+                  decoration: InputDecoration(
+                      labelText: _flowerText(context, widget.flowers,
+                          'Название', 'Атауы', 'Label'),
+                      border: const OutlineInputBorder())),
               const SizedBox(height: 8),
               TextField(
                   controller: _text,
                   maxLength: 300,
                   maxLines: 2,
-                  decoration: const InputDecoration(
-                      labelText: 'Улица, дом, квартира',
-                      border: OutlineInputBorder())),
+                  decoration: InputDecoration(
+                      labelText: _flowerText(
+                          context,
+                          widget.flowers,
+                          'Улица, дом, квартира',
+                          'Көше, үй, пәтер',
+                          'Street, building, apartment'),
+                      border: const OutlineInputBorder())),
               const SizedBox(height: 4),
-              Text('DEV: координаты адреса ставятся в центр Алматы.',
+              Text(
+                  _flowerText(
+                      context,
+                      widget.flowers,
+                      'DEV: координаты адреса ставятся в центр Алматы.',
+                      'DEV: координаттар Алматы орталығына қойылады.',
+                      'DEV: coordinates are set to central Almaty.'),
                   style: Theme.of(context).textTheme.bodySmall),
               const SizedBox(height: 12),
               FilledButton(
@@ -427,7 +466,8 @@ class _AddAddressSheetState extends State<_AddAddressSheet> {
                       43.238949,
                       76.889709));
                 },
-                child: const Text('Сохранить адрес'),
+                child: Text(_flowerText(context, widget.flowers,
+                    'Сохранить адрес', 'Мекенжайды сақтау', 'Save address')),
               ),
             ]),
       );
