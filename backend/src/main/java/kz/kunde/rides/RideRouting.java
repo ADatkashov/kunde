@@ -5,13 +5,21 @@ import java.util.Locale;
 import java.util.Optional;
 import kz.kunde.rides.RideMatching.Point;
 
-/** Maps provider boundary. Coordinates are WGS 84 and duration and distance come from a road route. */
+/** Maps provider boundary. Coordinates are WGS 84 and duration and distance come from a road route.
+ * Implementations report provider outages with {@link Unavailable}. Empty results denote no match.
+ */
 public interface RideRouting {
     List<Place> geocode(String query, Locale locale);
 
     Optional<Place> reverseGeocode(Point point, Locale locale);
 
     Optional<Route> route(Point pickup, Point destination);
+
+    final class Unavailable extends RuntimeException {
+        public Unavailable(Throwable cause) {
+            super(cause);
+        }
+    }
 
     record Place(String address, Point point) {}
 

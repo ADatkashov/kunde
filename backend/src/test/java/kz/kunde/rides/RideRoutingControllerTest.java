@@ -55,6 +55,29 @@ class RideRoutingControllerTest {
         assertThat(response.getHeaders().getCacheControl()).isEqualTo("no-store");
     }
 
+    @Test
+    void mapsProviderTimeoutToServiceUnavailable() {
+        var adapter = mock(RideRouting.class);
+        when(provider.getIfAvailable()).thenReturn(adapter);
+        when(adapter.route(request.pickup().point(), request.destination().point()))
+                .thenThrow(new RideRouting.Unavailable(new java.util.concurrent.TimeoutException()));
+        var controller = new RideRoutingController(flags(true, true), provider);
+        assertThatExceptionOfType(ApiException.class).isThrownBy(() -> controller.preview(request))
+                .satisfies(error -> {
+                    assertThat(error.status()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+                    assertThat(error.code()).isEqualTo("RIDES_ROUTING_UNAVAILABLE");
+                });
+    }
+
+    @Test
+    void rejectsSingleCharacterAfterTrimming() {
+        var controller = new RideRoutingController(flags(true, true), provider);
+        var search = new RideRoutingController.SearchRequest(" a ", RideRoutingController.Language.en);
+        assertThatExceptionOfType(ApiException.class).isThrownBy(() -> controller.search(search))
+                .satisfies(error -> assertThat(error.status()).isEqualTo(HttpStatus.BAD_REQUEST));
+        verifyNoInteractions(provider);
+    }
+
     private static RidesFlags flags(boolean enabled, boolean consumer) {
         return new RidesFlags(enabled, consumer, false, false, false, false);
     }

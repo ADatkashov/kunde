@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Function;
 import kz.kunde.platform.ApiException;
 import kz.kunde.rides.RideMatching.Point;
 import org.springframework.beans.factory.ObjectProvider;
@@ -37,7 +38,7 @@ public class RideRoutingController {
 
     @PostMapping("/route-preview")
     public ResponseEntity<RideRouting.Route> preview(@Valid @RequestBody RouteRequest request) {
-        var route = availableRouting().route(request.pickup().point(), request.destination().point())
+        var route = withRouting(provider -> provider.route(request.pickup().point(), request.destination().point()))
                 .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "RIDE_ROUTE_NOT_FOUND",
                         "No road route was found for these points"));
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(route);
@@ -45,28 +46,41 @@ public class RideRoutingController {
 
     @PostMapping("/address-search")
     public ResponseEntity<List<RideRouting.Place>> search(@Valid @RequestBody SearchRequest request) {
-        var places = availableRouting().geocode(request.query().strip(), request.language().locale());
+        var query = request.query().strip();
+        if (query.length() < 2) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "RIDE_ADDRESS_QUERY_INVALID",
+                    "Address query must contain at least 2 characters");
+        }
+        var places = withRouting(provider -> provider.geocode(query, request.language().locale()));
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(places);
     }
 
     @PostMapping("/reverse-geocode")
     public ResponseEntity<RideRouting.Place> reverse(@Valid @RequestBody ReverseRequest request) {
-        var place = availableRouting().reverseGeocode(request.coordinates().point(), request.language().locale())
+        var place = withRouting(provider -> provider.reverseGeocode(request.coordinates().point(), request.language().locale()))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "RIDE_ADDRESS_NOT_FOUND",
                         "No address was found for this point"));
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(place);
     }
 
-    private RideRouting availableRouting() {
+    private <T> T withRouting(Function<RideRouting, T> operation) {
         if (!flags.consumerAvailable()) {
             throw new ApiException(HttpStatus.NOT_FOUND, "RIDES_UNAVAILABLE", "Rides is currently unavailable");
         }
         var provider = routing.getIfAvailable();
         if (provider == null) {
-            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "RIDES_ROUTING_UNAVAILABLE",
-                    "Road routing is currently unavailable");
+            throw routingUnavailable();
         }
-        return provider;
+        try {
+            return operation.apply(provider);
+        } catch (RideRouting.Unavailable failure) {
+            throw routingUnavailable();
+        }
+    }
+
+    private static ApiException routingUnavailable() {
+        return new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "RIDES_ROUTING_UNAVAILABLE",
+                "Road routing is currently unavailable");
     }
 
     public enum Language {
