@@ -188,6 +188,15 @@ class _OrderScreenState extends State<OrderScreen> {
 
   List<Widget> _content(BuildContext context, FoodOrder order) {
     final theme = Theme.of(context);
+    String tx(String ru, String kk, String en) {
+      if (order.vertical != 'FLOWERS_GIFTS') return ru;
+      return switch (Localizations.localeOf(context).languageCode) {
+        'kk' => kk,
+        'en' => en,
+        _ => ru,
+      };
+    }
+
     return [
       if (widget.justPlaced && order.status == 'PLACED')
         Card(
@@ -214,11 +223,16 @@ class _OrderScreenState extends State<OrderScreen> {
       if (_error != null)
         Padding(
           padding: const EdgeInsets.only(bottom: 8),
-          child: Text('Нет связи, показаны последние данные.',
+          child: Text(
+              tx(
+                  'Нет связи, показаны последние данные.',
+                  'Байланыс жоқ, соңғы деректер көрсетілді.',
+                  'Offline: showing the most recent data.'),
               style: TextStyle(color: theme.colorScheme.error)),
         ),
       Text(order.restaurantName, style: theme.textTheme.headlineSmall),
-      Text('Оформлен ${formatOrderDate(order.placedAt)}',
+      Text(
+          '${tx('Оформлен', 'Рәсімделген', 'Placed')} ${formatOrderDate(order.placedAt)}',
           style: theme.textTheme.bodyMedium
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
       const SizedBox(height: 16),
@@ -238,7 +252,8 @@ class _OrderScreenState extends State<OrderScreen> {
           style: theme.textTheme.bodySmall
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
       const Divider(height: 32),
-      Text('Состав заказа', style: theme.textTheme.titleLarge),
+      Text(tx('Состав заказа', 'Тапсырыс құрамы', 'Order items'),
+          style: theme.textTheme.titleLarge),
       const SizedBox(height: 8),
       for (final l in order.items) _OrderLineTile(line: l),
       if (order.hasChanges)
@@ -256,19 +271,23 @@ class _OrderScreenState extends State<OrderScreen> {
           ),
         ),
       const Divider(height: 24),
-      _kv('Блюда', formatTenge(order.subtotalMinor)),
+      _kv(tx('Блюда', 'Тауарлар', 'Items'), formatTenge(order.subtotalMinor)),
       _kv(
-          'Доставка',
+          tx('Доставка', 'Жеткізу', 'Delivery'),
           order.deliveryFeeMinor == 0
-              ? 'Бесплатно'
+              ? tx('Бесплатно', 'Тегін', 'Free')
               : formatTenge(order.deliveryFeeMinor)),
       if (order.finalTotalMinor != null &&
           order.finalTotalMinor != order.totalMinor) ...[
-        _kv('Было', formatTenge(order.totalMinor)),
-        _kv('Итого с учётом изменений', formatTenge(order.finalTotalMinor!),
+        _kv(tx('Было', 'Бұрын', 'Original'), formatTenge(order.totalMinor)),
+        _kv(
+            tx('Итого с учётом изменений', 'Өзгерістермен барлығы',
+                'Total after changes'),
+            formatTenge(order.finalTotalMinor!),
             bold: true),
       ] else
-        _kv('Итого', formatTenge(order.totalMinor), bold: true),
+        _kv(tx('Итого', 'Барлығы', 'Total'), formatTenge(order.totalMinor),
+            bold: true),
       const Divider(height: 32),
       ListTile(
           contentPadding: EdgeInsets.zero,
@@ -278,7 +297,7 @@ class _OrderScreenState extends State<OrderScreen> {
       ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.payments_outlined),
-          title: const Text('Оплата'),
+          title: Text(tx('Оплата', 'Төлем', 'Payment')),
           subtitle: Text(order.paymentMethod == 'DEV_NO_PAYMENT'
               ? switch (Localizations.localeOf(context).languageCode) {
                   'kk' => 'Сынақ тапсырыс — төлемсіз',
@@ -290,24 +309,30 @@ class _OrderScreenState extends State<OrderScreen> {
         ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.chat_bubble_outline_rounded),
-            title: const Text('Комментарий'),
+            title: Text(tx('Комментарий', 'Түсініктеме', 'Note')),
             subtitle: Text(order.comment!)),
       const SizedBox(height: 16),
       if (order.cancellable)
         OutlinedButton.icon(
           onPressed: _busy ? null : _cancel,
           icon: const Icon(Icons.close_rounded),
-          label: const Text('Отменить заказ'),
+          label: Text(
+              tx('Отменить заказ', 'Тапсырыстан бас тарту', 'Cancel order')),
         ),
       if (order.terminal) ...[
         FilledButton.icon(
           onPressed: _busy ? null : _repeat,
           icon: const Icon(Icons.replay_rounded),
-          label: const Text('Повторить заказ'),
+          label:
+              Text(tx('Повторить заказ', 'Тапсырысты қайталау', 'Order again')),
         ),
       ],
       if (!order.cancellable && !order.terminal)
-        Text('Ресторан принял заказ — отмена через приложение недоступна.',
+        Text(
+            tx(
+                'Ресторан принял заказ — отмена через приложение недоступна.',
+                'Серіктес тапсырысты қабылдады — қолданба арқылы бас тарту мүмкін емес.',
+                'The partner accepted the order; cancellation in the app is unavailable.'),
             style: theme.textTheme.bodySmall
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
     ];
