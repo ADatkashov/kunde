@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'core/localization/kunde_localizations.dart';
 import 'features/booking/booking_services.dart';
@@ -107,7 +108,40 @@ class KundeApp extends StatefulWidget {
 }
 
 class _KundeAppState extends State<KundeApp> {
+  static const _storage = FlutterSecureStorage();
+  static const _themeKey = 'kunde.consumer.theme.v1';
   Locale? _locale;
+  ThemeMode _theme = ThemeMode.light;
+  bool _themeChanged = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreTheme();
+  }
+
+  Future<void> _restoreTheme() async {
+    try {
+      final saved = await _storage.read(key: _themeKey);
+      if (mounted && !_themeChanged && saved == 'dark') {
+        setState(() => _theme = ThemeMode.dark);
+      }
+    } on Exception {
+      // Keep the default when device preferences cannot be read.
+    }
+  }
+
+  Future<void> _setTheme(ThemeMode mode) async {
+    setState(() {
+      _themeChanged = true;
+      _theme = mode;
+    });
+    try {
+      await _storage.write(key: _themeKey, value: mode.name);
+    } on Exception {
+      // The selection still applies for this session.
+    }
+  }
 
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -115,7 +149,7 @@ class _KundeAppState extends State<KundeApp> {
         debugShowCheckedModeBanner: false,
         theme: KundeTheme.light,
         darkTheme: KundeTheme.dark,
-        themeMode: ThemeMode.light,
+        themeMode: _theme,
         localizationsDelegates: KundeLocalizations.localizationsDelegates,
         supportedLocales: KundeLocalizations.supportedLocales,
         locale: _locale,
@@ -128,6 +162,7 @@ class _KundeAppState extends State<KundeApp> {
                 partnerApplyEnabled: widget.partnerApplyEnabled,
                 food: widget.food,
                 booking: widget.booking,
+                onTheme: _setTheme,
                 onLocale: (locale) => setState(() => _locale = locale))
             : widget.identityPocEnabled
                 ? const IdentityPocScreen()

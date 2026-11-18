@@ -1,5 +1,12 @@
 # KUNDE project state
 
+## KUNDE Premium UI 2.0
+
+- Consumer and standalone Partner share the violet/gold Material palette. Both default to light mode; Consumer saves the theme device-side. Consumer home, search entry points, order history/details, and profile use existing routes and server capabilities.
+- Consumer assistant has a localized unavailable state and a UI adapter seam. The backend still reports AI disabled. Executor has no app/API and Admin verification is API-only.
+- Backend regression checks: Maven verify on PostgreSQL 16.16 passed 265 tests.
+- Acceptance still needs a signed Consumer DEV build and a phone run for navigation, checkout, orders, language/theme and TalkBack.
+
 ## KUNDE Partner 2.0 — standalone app rebuilt, 2026-11-17 (DEV)
 
 - Merged: [#121](https://github.com/ADatkashov/kunde/pull/121) (`724fee0`) design system (Material 3, deep-green, light/dark), RU/KK/EN strings, typed models, hardened API/session (UTF-8, single-flight refresh, session restore, offline-safe), Home dashboard (real data only), orders (tabs, details, server-driven actions, reasons, countdown), bookings (requests/upcoming/history, date/status filters, confirm/reject/cancel/complete), partner choice, roles, foreground alerts. Fixed defects: partner name read from wrong field, order/booking fields not parsed, latin1 decoding of Cyrillic, no session restore, refresh error wiped session, hard-coded booking buttons. PR [#122](https://github.com/ADatkashov/kunde/pull/122): business management (open state, menu/price/stock, add dish, services, specialists, weekly schedule) and signed Release APK workflow `partner-release.yml` (applicationId `com.kunde.kunde_partner`).

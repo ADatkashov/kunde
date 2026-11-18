@@ -2,17 +2,17 @@
 
 ## Product and audience
 Consumer Super App for everyday life in Almaty, then Kazakhstan. Russian,
-Kazakh and English. The owner’s premium redesign brief (2026-11-15) is the
-visual reference: bright white, emerald, illustrated services, generous rounded
-surfaces. Existing Food/Grocery and booking DEV behavior remains authoritative;
+Kazakh and English. The owner’s Premium UI 2.0 brief is the visual reference: violet, gold,
+illustrated services and rounded surfaces. Existing Food/Grocery and booking DEV behavior remains authoritative;
 see docs/product/food-mvp.md and docs/product/booking-mvp.md.
 
 ## Visual direction
-White canvas #FFFFFF, emerald #00875A, forest #004A37, mint #E1F7EB,
-ink #142B23, pale surface #F5F7F6. Light mode is explicit, including when the
-phone uses dark mode. KundeTheme owns Material semantic roles. The snowy Almaty
-silhouette, volume illustrations and dark forest Food photography form the
-signature; surrounding UI stays restrained. AI stays visibly «Скоро».
+Brand violet #7055F5, light canvas #F8F9FC, dark canvas #101426,
+white surface #FFFFFF, accent gold #F2C77D and light ink #172033.
+Consumer starts in light mode and stores the selected theme on the device.
+Violet mountain and assistant surfaces, illustrated categories and Food
+photography anchor the home screen. The assistant has an explicit unavailable
+state while the backend lacks an AI API.
 
 ## Typography and layout
 Bundled Noto Sans (KundeSans) with Cyrillic/Kazakh coverage; 30/24/20 display,
@@ -23,7 +23,8 @@ large text and smaller screens reflow to four/three columns. Content scrolls
 naturally within safe areas. Main target widths: Samsung 360/390/412 dp.
 
 ## Runtime ownership
-mobile/lib/shared/theme/kunde_theme.dart owns tokens; screens consume ThemeData.
+packages/kunde_design owns shared palette tokens. Consumer and Partner adapt
+them through their existing role-specific Material themes.
 KundeArt owns bundled illustration rendering and original mountain artwork;
 HomeHeader/CategoryGrid/FoodBanner/QuickAction own home composition.
 Food widgets own imagery fallback, catalog cards and checkout progress.

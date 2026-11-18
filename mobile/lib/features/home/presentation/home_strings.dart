@@ -10,23 +10,45 @@ extension HomeStrings on KundeLocalizations {
       };
 
   String get homeCity => _t('Алматы', 'Алматы', 'Almaty');
+  String get homeGreeting => _t('Добро пожаловать', 'Қош келдіңіз', 'Welcome');
+  String get assistantPrompt =>
+      _t('Чем помочь?', 'Қалай көмектесемін?', 'How can I help?');
+  String get assistantMessage => _t('Сообщение', 'Хабарлама', 'Message');
+  String get assistantSend => _t('Отправить', 'Жіберу', 'Send');
+  List<String> get assistantSuggestions => [
+        _t('Найти ресторан', 'Мейрамхана табу', 'Find a restaurant'),
+        _t('Найти услугу', 'Қызмет табу', 'Find a service'),
+      ];
+  String get orderDetails => _t('Заказ', 'Тапсырыс', 'Order');
+  String get appearance => _t('Тема', 'Тақырып', 'Appearance');
+  String get lightAppearance => _t('Светлая', 'Ашық', 'Light');
+  String get darkAppearance => _t('Тёмная', 'Күңгірт', 'Dark');
+
   String get homeTagline => _t(
-      'Ваше суперприложение для жизни каждый день',
-      'Күнделікті өмірге арналған суперқосымша',
-      'Your super app for everyday life');
+        'Ваше суперприложение для жизни каждый день',
+        'Күнделікті өмірге арналған суперқосымша',
+        'Your super app for everyday life',
+      );
   String get homeLocationLabel =>
       _t('Город: Алматы', 'Қала: Алматы', 'City: Almaty');
-  String get homeSearchHint => _t('Что хотите сделать сегодня?',
-      'Бүгін не істегіңіз келеді?', 'What do you want to do today?');
+  String get homeSearchHint => _t(
+        'Что хотите сделать сегодня?',
+        'Бүгін не істегіңіз келеді?',
+        'What do you want to do today?',
+      );
   String get homeSoon => _t('Скоро', 'Жақында', 'Soon');
   String get homeAiTitle => 'KUNDE AI';
-  String get homeAiSubtitle => _t('Ваш умный помощник в повседневной жизни',
-      'Күнделікті өмірдегі ақылды көмекшіңіз', 'Your smart everyday assistant');
+  String get homeAiSubtitle => _t(
+        'Ваш умный помощник в повседневной жизни',
+        'Күнделікті өмірдегі ақылды көмекшіңіз',
+        'Your smart everyday assistant',
+      );
   String get homeAiAsk => _t('Спросить', 'Сұрау', 'Ask');
   String get homeAiUnavailable => _t(
-      'KUNDE AI пока недоступен. Он появится после утверждения.',
-      'KUNDE AI әзірге қолжетімсіз. Бекітілгеннен кейін шығады.',
-      'KUNDE AI is not available yet. It will appear once approved.');
+        'KUNDE AI пока недоступен. Он появится после утверждения.',
+        'KUNDE AI әзірге қолжетімсіз. Бекітілгеннен кейін шығады.',
+        'KUNDE AI is not available yet. It will appear once approved.',
+      );
   String get catFood => _t('Еда', 'Тамақ', 'Food');
   String get catServices => _t('Услуги', 'Қызметтер', 'Services');
   String get catGroceries => _t('Продукты', 'Азық-түлік', 'Groceries');
@@ -46,29 +68,37 @@ extension HomeStrings on KundeLocalizations {
   String get comingSoonTitle =>
       _t('Скоро в KUNDE', 'KUNDE-де жақында', 'Coming soon to KUNDE');
   String get comingSoonBody => _t(
-      'Этот сервис ещё не подключён, заказы в нём недоступны. Первым запускается заказ еды в Алматы.',
-      'Бұл қызмет әлі қосылмаған, тапсырыс беру мүмкін емес. Алғашқы болып Алматыда тамақ тапсырысы іске қосылады.',
-      'This service is not connected yet and orders are unavailable. Food ordering in Almaty launches first.');
+        'Этот сервис ещё не подключён, заказы в нём недоступны. Первым запускается заказ еды в Алматы.',
+        'Бұл қызмет әлі қосылмаған, тапсырыс беру мүмкін емес. Алғашқы болып Алматыда тамақ тапсырысы іске қосылады.',
+        'This service is not connected yet and orders are unavailable. Food ordering in Almaty launches first.',
+      );
   String get foodPreparingBody => _t(
-      'Заказ еды в Алматы готовится к запуску. Рестораны появятся здесь после подключения.',
-      'Алматыда тамақ тапсырысы іске қосуға дайындалуда. Мейрамханалар қосылғаннан кейін осында шығады.',
-      'Food ordering in Almaty is being prepared. Restaurants will appear here once connected.');
+        'Заказ еды в Алматы готовится к запуску. Рестораны появятся здесь после подключения.',
+        'Алматыда тамақ тапсырысы іске қосуға дайындалуда. Мейрамханалар қосылғаннан кейін осында шығады.',
+        'Food ordering in Almaty is being prepared. Restaurants will appear here once connected.',
+      );
   String get searchUnavailable => _t(
-      'Поиск заработает, когда сервисы будут запущены.',
-      'Қызметтер іске қосылғанда іздеу жұмыс істейді.',
-      'Search will work once services are launched.');
+        'Поиск заработает, когда сервисы будут запущены.',
+        'Қызметтер іске қосылғанда іздеу жұмыс істейді.',
+        'Search will work once services are launched.',
+      );
   String get bannerBadge =>
       _t('Старт в Алматы', 'Алматыда бастау', 'Starting in Almaty');
-  String get bannerTitle => _t('Заказ еды в KUNDE', 'KUNDE-де тамақ тапсырысы',
-      'Food ordering in KUNDE');
+  String get bannerTitle => _t(
+        'Заказ еды в KUNDE',
+        'KUNDE-де тамақ тапсырысы',
+        'Food ordering in KUNDE',
+      );
   String get bannerBody => _t(
-      'Рестораны Алматы в одном приложении. Запуск готовится.',
-      'Алматы мейрамханалары бір қосымшада. Іске қосу дайындалуда.',
-      'Almaty restaurants in one app. Launch in preparation.');
+        'Рестораны Алматы в одном приложении. Запуск готовится.',
+        'Алматы мейрамханалары бір қосымшада. Іске қосу дайындалуда.',
+        'Almaty restaurants in one app. Launch in preparation.',
+      );
   String get bannerBodyLive => _t(
-      'Рестораны Алматы в одном приложении. Демо-режим: тестовые рестораны, оплата и доставка имитируются.',
-      'Алматы мейрамханалары бір қосымшада. Демо режим: сынақ мейрамханалары, төлем мен жеткізу имитацияланады.',
-      'Almaty restaurants in one app. Demo mode: test restaurants, mock payment and simulated delivery.');
+        'Рестораны Алматы в одном приложении. Демо-режим: тестовые рестораны, оплата и доставка имитируются.',
+        'Алматы мейрамханалары бір қосымшада. Демо режим: сынақ мейрамханалары, төлем мен жеткізу имитацияланады.',
+        'Almaty restaurants in one app. Demo mode: test restaurants, mock payment and simulated delivery.',
+      );
   String get bannerCtaLive => _t('Заказать', 'Тапсырыс беру', 'Order');
   String get bannerCta => _t('Найти', 'Іздеу', 'Search');
   String get quickOrders => _t('Мои заказы', 'Тапсырыстарым', 'My orders');
@@ -77,10 +107,14 @@ extension HomeStrings on KundeLocalizations {
   String get quickPay => 'KUNDE Pay';
   String get nearbyTitle => _t('Рядом с вами', 'Жаныңызда', 'Near you');
   String get nearbyEmptyTitle => _t(
-      'Пока нет ресторанов', 'Әзірге мейрамханалар жоқ', 'No restaurants yet');
+        'Пока нет ресторанов',
+        'Әзірге мейрамханалар жоқ',
+        'No restaurants yet',
+      );
   String get nearbyEmptyBody => _t(
-      'Партнёры в Алматы ещё не подключены. Мы покажем их здесь, когда они будут опубликованы.',
-      'Алматыдағы серіктестер әлі қосылмаған. Жарияланғанда осында көрсетеміз.',
-      'Partners in Almaty are not connected yet. We will show them here once published.');
+        'Партнёры в Алматы ещё не подключены. Мы покажем их здесь, когда они будут опубликованы.',
+        'Алматыдағы серіктестер әлі қосылмаған. Жарияланғанда осында көрсетеміз.',
+        'Partners in Almaty are not connected yet. We will show them here once published.',
+      );
   String get close => _t('Закрыть', 'Жабу', 'Close');
 }

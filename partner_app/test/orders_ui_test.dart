@@ -176,7 +176,9 @@ void main() {
       return b.json([orderEntry()]);
     };
     final h = Harness(backend: b);
-    await pumpReady(tester, h);
+    await pumpReady(tester, h, tab: null);
+    await tester.tap(find.descendant(
+        of: find.byType(NavigationBar), matching: find.text('Заказы')));
     await settle(tester, ms: 200);
     expect(find.text('Нет соединения'), findsWidgets);
     expect(find.textContaining('SocketException'), findsNothing);

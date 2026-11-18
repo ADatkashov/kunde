@@ -77,6 +77,17 @@ void main() {
     expect(find.text('Еда и покупки'), findsNothing);
   });
 
+  testWidgets('opens the unavailable assistant and returns by Back',
+      (tester) async {
+    await _pump(tester, _api());
+    await tester.tap(find.text('KUNDE AI'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(find.byType(TextField)).enabled, isFalse);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byType(HomeScreen), findsOneWidget);
+  });
+
   testWidgets('inactive category opens info sheet and offers no order',
       (tester) async {
     await _pump(tester, _api());

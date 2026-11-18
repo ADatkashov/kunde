@@ -1,7 +1,9 @@
+import '../../assistant/assistant_screen.dart';
 import '../../booking/booking_services.dart';
 import '../../booking/presentation/category_screens.dart';
 import '../../food/food_services.dart';
 import '../../food/presentation/food_home_screen.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/localization/kunde_localizations.dart';
@@ -11,17 +13,16 @@ import 'catalog_search_panel.dart';
 import 'home_strings.dart';
 import 'super_app_widgets.dart';
 
-/// KUNDE Super App home. Only Food Ordering (Almaty) is an approved first
-/// category; every other category is shown as "soon" and cannot start an
-/// order. Live data comes only from the API; no demo restaurants or prices.
+/// KUNDE home. The platform snapshot controls the available catalog routes.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen(
-      {required this.api,
-      this.onOpenSearch,
-      this.onOpenOrders,
-      this.food,
-      this.booking,
-      super.key});
+  const HomeScreen({
+    required this.api,
+    this.onOpenSearch,
+    this.onOpenOrders,
+    this.food,
+    this.booking,
+    super.key,
+  });
 
   final KundeApi api;
 
@@ -74,8 +75,9 @@ class _HomeScreenState extends State<HomeScreen> {
               Align(
                 alignment: Alignment.centerRight,
                 child: FilledButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text(s.close)),
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(s.close),
+                ),
               ),
             ],
           ),
@@ -84,114 +86,158 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _openFood() => Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => FoodHomeScreen(services: widget.food!)));
+  void _openFood() => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => FoodHomeScreen(services: widget.food!),
+        ),
+      );
 
   void _openSearch() {
-    if (widget.food != null) {
-      _openFood();
-      return;
-    }
     if (widget.onOpenSearch != null) {
       widget.onOpenSearch!();
       return;
     }
-    Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => Scaffold(
-        appBar: AppBar(title: Text(KundeLocalizations.of(context).searchLabel)),
-        body: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [CatalogSearchPanel(api: widget.api)],
+    if (widget.food != null) {
+      _openFood();
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => Scaffold(
+          appBar: AppBar(
+            title: Text(KundeLocalizations.of(context).searchLabel),
+          ),
+          body: SafeArea(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [CatalogSearchPanel(api: widget.api)],
+            ),
           ),
         ),
       ),
-    ));
+    );
   }
 
   List<ServiceCategory> _categories(
-          KundeLocalizations s, bool foodEnabled, bool bookingEnabled) =>
+    KundeLocalizations s,
+    bool foodEnabled,
+    bool bookingEnabled,
+  ) =>
       [
         ServiceCategory(
-            icon: Icons.ramen_dining_rounded,
-            label: s.catFood,
-            color: const Color(0xFFC66A22),
-            enabled: foodEnabled),
+          icon: Icons.ramen_dining_rounded,
+          label: s.catFood,
+          color: const Color(0xFFC66A22),
+          enabled: foodEnabled,
+        ),
         ServiceCategory(
-            icon: Icons.shopping_basket_rounded,
-            label: s.catGroceries,
-            color: const Color(0xFF2E8174),
-            enabled: foodEnabled && widget.food != null),
+          icon: Icons.shopping_basket_rounded,
+          label: s.catGroceries,
+          color: const Color(0xFF2E8174),
+          enabled: foodEnabled && widget.food != null,
+        ),
         ServiceCategory(
-            icon: Icons.local_florist_rounded,
-            label: s.catFlowers,
-            color: const Color(0xFFB83280),
-            enabled: foodEnabled && widget.food != null),
+          icon: Icons.local_florist_rounded,
+          label: s.catFlowers,
+          color: const Color(0xFFB83280),
+          enabled: foodEnabled && widget.food != null,
+        ),
         ServiceCategory(
-            icon: Icons.local_taxi_rounded,
-            label: s.catRides,
-            color: const Color(0xFFB7791F)),
+          icon: Icons.local_taxi_rounded,
+          label: s.catRides,
+          color: const Color(0xFFB7791F),
+        ),
         ServiceCategory(
-            icon: Icons.inventory_2_rounded,
-            label: s.catDelivery,
-            color: const Color(0xFFA0522D)),
+          icon: Icons.inventory_2_rounded,
+          label: s.catDelivery,
+          color: const Color(0xFFA0522D),
+        ),
         ServiceCategory(
-            icon: Icons.home_rounded,
-            label: s.catHome,
-            color: const Color(0xFF176B52),
-            enabled: bookingEnabled && widget.booking != null),
+          icon: Icons.home_rounded,
+          label: s.catHome,
+          color: const Color(0xFF176B52),
+          enabled: bookingEnabled && widget.booking != null,
+        ),
         ServiceCategory(
-            icon: Icons.content_cut_rounded,
-            label: s.catBeauty,
-            color: const Color(0xFFB83280),
-            enabled: bookingEnabled && widget.booking != null),
+          icon: Icons.content_cut_rounded,
+          label: s.catBeauty,
+          color: const Color(0xFFB83280),
+          enabled: bookingEnabled && widget.booking != null,
+        ),
         ServiceCategory(
-            icon: Icons.favorite_rounded,
-            label: s.catHealth,
-            color: const Color(0xFFB9382D)),
+          icon: Icons.favorite_rounded,
+          label: s.catHealth,
+          color: const Color(0xFFB9382D),
+        ),
         ServiceCategory(
-            icon: Icons.directions_car_rounded,
-            label: s.catAuto,
-            color: const Color(0xFF1769AA)),
+          icon: Icons.directions_car_rounded,
+          label: s.catAuto,
+          color: const Color(0xFF1769AA),
+        ),
         ServiceCategory(
-            icon: Icons.confirmation_number_rounded,
-            label: s.catLeisure,
-            color: const Color(0xFF8A5700)),
+          icon: Icons.confirmation_number_rounded,
+          label: s.catLeisure,
+          color: const Color(0xFF8A5700),
+        ),
         ServiceCategory(
-            icon: Icons.apps_rounded,
-            label: s.catAll,
-            color: const Color(0xFF0B6B5E),
-            isAll: true),
+          icon: Icons.apps_rounded,
+          label: s.catAll,
+          color: const Color(0xFF0B6B5E),
+          isAll: true,
+        ),
       ];
 
-  void _onCategory(ServiceCategory c, List<ServiceCategory> all,
-      bool foodEnabled, bool bookingEnabled) {
+  void _onCategory(
+    ServiceCategory c,
+    List<ServiceCategory> all,
+    bool foodEnabled,
+    bool bookingEnabled,
+  ) {
     final s = KundeLocalizations.of(context);
     if (c.isAll) {
       _showAll(all);
     } else if (c.label == s.catBeauty &&
         bookingEnabled &&
         widget.booking != null) {
-      Navigator.of(context).push(MaterialPageRoute<void>(
-          builder: (_) => BeautyCategoryScreen(services: widget.booking!)));
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => BeautyCategoryScreen(services: widget.booking!),
+        ),
+      );
     } else if (c.label == s.catHome &&
         bookingEnabled &&
         widget.booking != null) {
-      Navigator.of(context).push(MaterialPageRoute<void>(
-          builder: (_) =>
-              HomeServicesCategoryScreen(services: widget.booking!)));
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => HomeServicesCategoryScreen(services: widget.booking!),
+        ),
+      );
     } else if (c.label == s.catGroceries &&
         foodEnabled &&
         widget.food != null) {
-      Navigator.of(context).push(MaterialPageRoute<void>(
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
           builder: (_) =>
-              FoodHomeScreen(services: widget.food!, vertical: 'GROCERY')));
+              FoodHomeScreen(services: widget.food!, vertical: 'GROCERY'),
+        ),
+      );
     } else if (c.label == s.catFlowers && foodEnabled && widget.food != null) {
-      Navigator.of(context).push(MaterialPageRoute<void>(
-          builder: (_) => FoodHomeScreen(
-              services: widget.food!, vertical: 'FLOWERS_GIFTS')));
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) =>
+              FoodHomeScreen(services: widget.food!, vertical: 'FLOWERS_GIFTS'),
+        ),
+      );
     } else if (c.label == s.catFood) {
-      foodEnabled ? _openSearch() : _showInfo(s.catFood, s.foodPreparingBody);
+      if (foodEnabled) {
+        if (widget.food == null) {
+          _openSearch();
+        } else {
+          _openFood();
+        }
+      } else {
+        _showInfo(s.catFood, s.foodPreparingBody);
+      }
     } else {
       _showInfo(s.comingSoonTitle, s.comingSoonBody);
     }
@@ -208,8 +254,10 @@ class _HomeScreenState extends State<HomeScreen> {
           shrinkWrap: true,
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
           children: [
-            Text(s.allServicesTitle,
-                style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              s.allServicesTitle,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 8),
             for (final c in all.where((c) => !c.isAll))
               ListTile(
@@ -241,10 +289,13 @@ class _HomeScreenState extends State<HomeScreen> {
               builder: (context, state) {
                 final loading = state.connectionState != ConnectionState.done;
                 final failed = !loading && (state.hasError || !state.hasData);
-                final snapshot = state.data;
+                final snapshot = loading ? null : state.data;
                 final marketplace = snapshot?.marketplaceEnabled ?? false;
                 final categories = _categories(
-                    s, marketplace, snapshot?.bookingEnabled ?? false);
+                  s,
+                  marketplace,
+                  snapshot?.bookingEnabled ?? false,
+                );
                 void openSoon(String title, [String? body]) =>
                     _showInfo(title, body ?? s.comingSoonBody);
                 return ListView(
@@ -253,12 +304,23 @@ class _HomeScreenState extends State<HomeScreen> {
                     const HomeHeader(),
                     const SizedBox(height: 16),
                     HomeSearchField(
-                        onTap: marketplace
-                            ? _openSearch
-                            : () => openSoon(
-                                s.homeSearchHint, s.searchUnavailable)),
+                      onTap: marketplace ||
+                              (snapshot?.bookingEnabled == true &&
+                                  widget.booking != null)
+                          ? _openSearch
+                          : () =>
+                              openSoon(s.homeSearchHint, s.searchUnavailable),
+                    ),
                     const SizedBox(height: 16),
-                    FadeIn(child: const AiEntryCard()),
+                    FadeIn(
+                      child: AiEntryCard(
+                        onOpen: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const AssistantScreen(),
+                          ),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     if (failed) ...[
                       _OfflineCard(
@@ -271,68 +333,78 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                     FadeIn(
                       delay: 60,
-                      child: CategoryGrid(
-                        categories: categories,
-                        onTap: (c) => _onCategory(c, categories, marketplace,
-                            snapshot?.bookingEnabled ?? false),
-                      ),
+                      child: loading
+                          ? const _CategorySkeleton()
+                          : CategoryGrid(
+                              categories: categories,
+                              onTap: (c) => _onCategory(
+                                c,
+                                categories,
+                                marketplace,
+                                snapshot?.bookingEnabled ?? false,
+                              ),
+                            ),
                     ),
                     const SizedBox(height: 20),
                     FadeIn(
                       delay: 120,
-                      child:
-                          FoodBanner(onOrder: marketplace ? _openSearch : null),
+                      child: FoodBanner(
+                        onOrder: marketplace
+                            ? (widget.food == null ? _openSearch : _openFood)
+                            : null,
+                      ),
                     ),
                     const SizedBox(height: 16),
-                    LayoutBuilder(builder: (context, box) {
-                      final actions = [
-                        (
-                          Icons.inventory_2_outlined,
-                          s.quickOrders,
-                          widget.onOpenOrders
+                    if (widget.onOpenOrders != null)
+                      QuickAction(
+                        icon: Icons.receipt_long_outlined,
+                        label: s.quickOrders,
+                        onTap: widget.onOpenOrders!,
+                      ),
+                    if (snapshot?.bookingEnabled == true &&
+                        widget.booking != null) ...[
+                      const SizedBox(height: 24),
+                      SectionTitle(title: s.catServices),
+                      for (final category in categories.where((c) =>
+                          c.label == s.catBeauty || c.label == s.catHome))
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: QuickAction(
+                            icon: category.icon,
+                            label: category.label,
+                            onTap: () => _onCategory(
+                                category, categories, marketplace, true),
+                          ),
                         ),
-                        (Icons.favorite_border_rounded, s.quickFavorites, null),
-                        (Icons.percent_rounded, s.quickPromo, null),
-                        (
-                          Icons.account_balance_wallet_outlined,
-                          s.quickPay,
-                          null
-                        ),
-                      ];
-                      final columns = box.maxWidth >= 560 ? 4 : 2;
-                      final width =
-                          (box.maxWidth - 8 * (columns - 1)) / columns;
-                      return Wrap(spacing: 8, runSpacing: 8, children: [
-                        for (final a in actions)
-                          SizedBox(
-                              width: width,
-                              child: QuickAction(
-                                  icon: a.$1,
-                                  label: a.$2,
-                                  onTap: a.$3 ??
-                                      () => openSoon(s.comingSoonTitle,
-                                          s.comingSoonBody))),
-                      ]);
-                    }),
+                    ],
                     const SizedBox(height: 24),
                     SectionTitle(title: s.nearbyTitle, trailing: s.homeCity),
                     const SizedBox(height: 12),
-                    if (marketplace && widget.food != null)
+                    if (loading)
+                      const _CategorySkeleton()
+                    else if (marketplace && widget.food != null)
                       FoodNearbySection(services: widget.food!)
-                    else
+                    else if (!failed)
                       EmptyStateCard(
-                          icon: Icons.storefront_outlined,
-                          title: s.nearbyEmptyTitle,
-                          body: s.nearbyEmptyBody),
+                        icon: Icons.storefront_outlined,
+                        title: s.nearbyEmptyTitle,
+                        body: s.nearbyEmptyBody,
+                      ),
                     const SizedBox(height: 24),
                     _PlatformStatus(
-                        loading: loading, snapshot: snapshot, strings: s),
+                      loading: loading,
+                      snapshot: snapshot,
+                      strings: s,
+                    ),
                     const SizedBox(height: 16),
-                    Text('KUNDE',
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                            letterSpacing: 2,
-                            color: theme.colorScheme.onSurfaceVariant)),
+                    Text(
+                      'KUNDE',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        letterSpacing: 2,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ],
                 );
               },
@@ -345,8 +417,11 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _PlatformStatus extends StatelessWidget {
-  const _PlatformStatus(
-      {required this.loading, required this.snapshot, required this.strings});
+  const _PlatformStatus({
+    required this.loading,
+    required this.snapshot,
+    required this.strings,
+  });
 
   final bool loading;
   final PlatformSnapshot? snapshot;
@@ -367,15 +442,18 @@ class _PlatformStatus extends StatelessWidget {
             const SizedBox(height: 8),
             if (loading)
               const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(strokeWidth: 2))
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
             else if (snap == null)
               Text(strings.offline)
             else ...[
-              Text(snap.marketplaceEnabled
-                  ? strings.marketplaceReadyTitle
-                  : strings.servicesUnavailableTitle),
+              Text(
+                snap.marketplaceEnabled
+                    ? strings.marketplaceReadyTitle
+                    : strings.servicesUnavailableTitle,
+              ),
               Text(strings.connected),
               const SizedBox(height: 4),
               _CapabilityLine(
@@ -398,11 +476,12 @@ class _PlatformStatus extends StatelessWidget {
 }
 
 class _OfflineCard extends StatelessWidget {
-  const _OfflineCard(
-      {required this.title,
-      required this.hint,
-      required this.retryLabel,
-      required this.onRetry});
+  const _OfflineCard({
+    required this.title,
+    required this.hint,
+    required this.retryLabel,
+    required this.onRetry,
+  });
 
   final String title;
   final String hint;
@@ -433,8 +512,11 @@ class _OfflineCard extends StatelessWidget {
 }
 
 class _CapabilityLine extends StatelessWidget {
-  const _CapabilityLine(
-      {required this.icon, required this.label, required this.enabled});
+  const _CapabilityLine({
+    required this.icon,
+    required this.label,
+    required this.enabled,
+  });
 
   final IconData icon;
   final String label;
@@ -450,13 +532,18 @@ class _CapabilityLine extends StatelessWidget {
         child: ExcludeSemantics(
           child: Row(
             children: [
-              Icon(enabled ? Icons.check_circle : icon,
-                  size: 20,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+              Icon(
+                enabled ? Icons.check_circle : icon,
+                size: 20,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               const SizedBox(width: 10),
               Expanded(
-                  child: Text(label,
-                      style: Theme.of(context).textTheme.bodyMedium)),
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
               Text(enabled ? s.available : s.notAvailable),
             ],
           ),
@@ -464,4 +551,23 @@ class _CapabilityLine extends StatelessWidget {
       ),
     );
   }
+}
+
+class _CategorySkeleton extends StatelessWidget {
+  const _CategorySkeleton();
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+        child: Row(
+          children: [
+            for (var i = 0; i < 3; i++)
+              Expanded(
+                child: Card(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  child: const SizedBox(height: 92),
+                ),
+              ),
+          ],
+        ),
+      );
 }

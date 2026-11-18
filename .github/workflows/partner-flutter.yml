@@ -2,9 +2,9 @@ name: Partner Flutter CI
 on:
   push:
     branches: [main]
-    paths: ['partner_app/**', '.github/workflows/partner-flutter.yml']
+    paths: ['partner_app/**', 'packages/kunde_design/**', '.github/workflows/partner-flutter.yml']
   pull_request:
-    paths: ['partner_app/**', '.github/workflows/partner-flutter.yml']
+    paths: ['partner_app/**', 'packages/kunde_design/**', '.github/workflows/partner-flutter.yml']
   workflow_dispatch:
 permissions:
   contents: read

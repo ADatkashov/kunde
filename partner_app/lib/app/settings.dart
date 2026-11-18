@@ -15,7 +15,7 @@ class SettingsController extends ChangeNotifier {
 
   /// null = follow the phone (ru when the phone language is unsupported).
   Locale? _locale;
-  ThemeMode _theme = ThemeMode.system;
+  ThemeMode _theme = ThemeMode.light;
 
   Locale? get locale => _locale;
   ThemeMode get themeMode => _theme;
@@ -28,9 +28,9 @@ class SettingsController extends ChangeNotifier {
       }
       final t = await _store.read(_themeKey);
       _theme = switch (t) {
-        'light' => ThemeMode.light,
         'dark' => ThemeMode.dark,
-        _ => ThemeMode.system,
+        'system' => ThemeMode.system,
+        _ => ThemeMode.light,
       };
     } on Object {
       // Unreadable preferences fall back to defaults.

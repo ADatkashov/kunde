@@ -1,18 +1,13 @@
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
+import 'package:kunde_design/kunde_design.dart';
 
 import '../../../core/localization/kunde_localizations.dart';
 import 'home_strings.dart';
 import '../../../shared/theme/kunde_art.dart';
 
-/// Fixed brand greens used on hero surfaces (AI card, banner). White text on
-/// them passes AA in both light and dark themes.
-const kundeHeroGradient = LinearGradient(
-  begin: Alignment.topLeft,
-  end: Alignment.bottomRight,
-  colors: [Color(0xFF004A37), Color(0xFF007A50), Color(0xFF00875A)],
-);
+const kundeHeroGradient = KundePalette.heroGradient;
 
 /// Fades and lifts its child in once; skipped when animations are disabled.
 class FadeIn extends StatelessWidget {
@@ -48,9 +43,10 @@ class KundeMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ExcludeSemantics(
         child: SizedBox(
-            width: size,
-            height: size,
-            child: const CustomPaint(painter: KundeLogoPainter())),
+          width: size,
+          height: size,
+          child: const CustomPaint(painter: KundeLogoPainter()),
+        ),
       );
 }
 
@@ -64,9 +60,7 @@ class HomeHeader extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 16, 12, 18),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFF5FBFF), Color(0xFFE5F4FD)],
-        ),
+        gradient: kundeHeroGradient,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Stack(
@@ -93,16 +87,16 @@ class HomeHeader extends StatelessWidget {
                         fontSize: 25,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -.8,
-                        color: const Color(0xFF004A37),
+                        color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      s.homeTagline,
+                      s.homeGreeting,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        fontSize: 10,
+                        fontSize: 14,
                         height: 1.3,
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: Colors.white,
                       ),
                     ),
                   ],
@@ -110,7 +104,7 @@ class HomeHeader extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Material(
-                color: Colors.white,
+                color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(24),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(24),
@@ -179,7 +173,7 @@ class HomeSearchField extends StatelessWidget {
     return Material(
       color: theme.colorScheme.surface,
       elevation: 3,
-      shadowColor: const Color(0x180E4933),
+      shadowColor: KundePalette.shadow,
       borderRadius: BorderRadius.circular(28),
       child: InkWell(
         borderRadius: BorderRadius.circular(28),
@@ -220,65 +214,68 @@ class HomeSearchField extends StatelessWidget {
   }
 }
 
-/// AI entry. Never simulates a working assistant: the action stays disabled
-/// until the app has a real AI capability to open.
+/// Opens the assistant, including its unavailable state before launch.
 class AiEntryCard extends StatelessWidget {
-  const AiEntryCard({this.onAsk, super.key});
+  const AiEntryCard({required this.onOpen, super.key});
 
-  final VoidCallback? onAsk;
+  final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
     final s = KundeLocalizations.of(context);
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: kundeHeroGradient,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Row(
-        children: [
-          const KundeIllustration('robot', size: 66),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return Material(
+      color: KundePalette.deepViolet,
+      borderRadius: BorderRadius.circular(24),
+      clipBehavior: Clip.antiAlias,
+      child: Ink(
+        decoration: const BoxDecoration(gradient: kundeHeroGradient),
+        child: InkWell(
+          onTap: onOpen,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
               children: [
-                Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 8,
-                  children: [
-                    Text(
-                      s.homeAiTitle,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
+                const CircleAvatar(
+                  radius: 26,
+                  backgroundColor: Colors.white24,
+                  child: Icon(Icons.auto_awesome, color: KundePalette.gold),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        children: [
+                          Text(
+                            s.homeAiTitle,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SoonBadge(onDark: true),
+                        ],
                       ),
-                    ),
-                    if (onAsk == null) SoonBadge(onDark: true),
-                  ],
+                      const SizedBox(height: 2),
+                      Text(
+                        s.homeAiUnavailable,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  onAsk == null ? s.homeAiUnavailable : s.homeAiSubtitle,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                ),
+                const Icon(Icons.chevron_right_rounded, color: Colors.white),
               ],
             ),
           ),
-          if (onAsk != null) ...[
-            const SizedBox(width: 8),
-            FilledButton(
-              onPressed: onAsk,
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF053D36),
-                foregroundColor: Colors.white,
-              ),
-              child: Text(s.homeAiAsk),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }
@@ -485,9 +482,9 @@ class FoodBanner extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    const Color(0xFF003C2D),
-                    const Color(0xFF003C2D).withValues(alpha: .94),
-                    const Color(0xFF003C2D).withValues(alpha: .05),
+                    KundePalette.deepViolet,
+                    KundePalette.deepViolet.withValues(alpha: .94),
+                    KundePalette.deepViolet.withValues(alpha: .05),
                   ],
                   stops: const [0, .6, 1],
                 ),
@@ -509,7 +506,7 @@ class FoodBanner extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFC4F59E),
+                          color: KundePalette.gold,
                           borderRadius: BorderRadius.circular(99),
                         ),
                         child: Text(
@@ -551,9 +548,9 @@ class FoodBanner extends StatelessWidget {
                         iconAlignment: IconAlignment.end,
                         style: FilledButton.styleFrom(
                           backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFF003C2D),
+                          foregroundColor: KundePalette.deepViolet,
                           disabledBackgroundColor: Colors.white70,
-                          disabledForegroundColor: const Color(0xFF003C2D),
+                          disabledForegroundColor: KundePalette.deepViolet,
                           padding: const EdgeInsets.symmetric(horizontal: 14),
                           textStyle: const TextStyle(
                             fontFamily: 'KundeSans',
@@ -593,7 +590,7 @@ class QuickAction extends StatelessWidget {
     return Material(
       color: theme.colorScheme.surface,
       elevation: 3,
-      shadowColor: const Color(0x180E4933),
+      shadowColor: KundePalette.shadow,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -648,7 +645,7 @@ class SectionTitle extends StatelessWidget {
           const SizedBox(width: 8),
           Icon(Icons.location_on, size: 16, color: theme.colorScheme.primary),
           const SizedBox(width: 2),
-          Text(trailing!, style: theme.textTheme.bodySmall),
+          Flexible(child: Text(trailing!, style: theme.textTheme.bodySmall)),
         ],
       ],
     );

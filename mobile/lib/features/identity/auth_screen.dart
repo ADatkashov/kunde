@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../../core/localization/kunde_localizations.dart';
+import '../home/presentation/home_strings.dart';
 import '../booking/booking_services.dart';
 import '../booking/presentation/orders_hub.dart';
 import '../food/food_services.dart';
@@ -21,6 +24,7 @@ class AuthScreen extends StatefulWidget {
       {required this.auth,
       required this.api,
       required this.onLocale,
+      this.onTheme,
       this.devOtpHint = false,
       this.partnerEnabled = false,
       this.partnerApplyEnabled = true,
@@ -30,6 +34,7 @@ class AuthScreen extends StatefulWidget {
   final AuthRepository auth;
   final KundeApi api;
   final ValueChanged<Locale> onLocale;
+  final ValueChanged<ThemeMode>? onTheme;
   final bool devOtpHint;
 
   /// Partner onboarding and offerings (ADR-018); off unless the build enables it.
@@ -260,7 +265,10 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                                   child: Text(s.retry)))
                           : switch (_tab) {
                               KundeTab.profile => _profileView(s),
-                              KundeTab.search => SearchTab(api: widget.api),
+                              KundeTab.search => SearchTab(
+                                  api: widget.api,
+                                  food: widget.food,
+                                  booking: widget.booking),
                               KundeTab.services => ServicesTab(
                                   api: widget.api, booking: widget.booking),
                               KundeTab.orders =>
@@ -400,6 +408,21 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                         subtitle: Text(
                             _profile!['preferredLanguage'] as String? ??
                                 Localizations.localeOf(context).languageCode))),
+                if (widget.onTheme != null)
+                  Card(
+                    child: SwitchListTile(
+                      secondary: const Icon(Icons.palette_outlined),
+                      title: Text(KundeLocalizations.of(context).appearance),
+                      subtitle: Text(
+                        Theme.of(context).brightness == Brightness.dark
+                            ? KundeLocalizations.of(context).darkAppearance
+                            : KundeLocalizations.of(context).lightAppearance,
+                      ),
+                      value: Theme.of(context).brightness == Brightness.dark,
+                      onChanged: (dark) => widget
+                          .onTheme!(dark ? ThemeMode.dark : ThemeMode.light),
+                    ),
+                  ),
                 const SizedBox(height: 24),
                 FilledButton(
                     onPressed: _busy

@@ -601,7 +601,7 @@ void main() {
     // "Restart": a brand-new app state with an empty cart restores the history from the server.
     final restarted = await _services(backend, tester);
     await _show(tester, Scaffold(body: FoodOrdersTab(services: restarted)));
-    expect(find.text('Мои заказы'), findsOneWidget);
+    expect(find.text('My orders'), findsOneWidget);
     expect(find.textContaining('Пицца Тест'), findsOneWidget);
     expect(find.textContaining('2× Маргарита'), findsOneWidget);
   });
@@ -713,8 +713,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Закрытая Пиццерия'), findsNothing);
     expect(find.text('Пицца Тест'), findsOneWidget);
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Итальянская'));
+    final cuisine = find.widgetWithText(ChoiceChip, 'Итальянская');
+    await tester.scrollUntilVisible(cuisine, 100,
+        scrollable: find.byWidgetPredicate((widget) =>
+            widget is Scrollable &&
+            widget.axisDirection == AxisDirection.right));
+    await tester.tap(cuisine);
     await tester.pumpAndSettle();
+    expect(tester.widget<ChoiceChip>(cuisine).selected, isTrue);
     expect(find.text('Пицца Тест'), findsOneWidget);
   });
 
