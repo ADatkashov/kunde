@@ -25,7 +25,8 @@
               "tone": "red",
               "available": true,
               "stock": 20,
-              "groups": []
+              "groups": [],
+              "imageUrl": "https://images.unsplash.com/photo-1490750967868-88aa4486c946"
             },
             {
               "name": "Тюльпаны",
@@ -35,7 +36,8 @@
               "tone": "red",
               "available": true,
               "stock": 20,
-              "groups": []
+              "groups": [],
+              "imageUrl": "https://images.unsplash.com/photo-1490750967868-88aa4486c946"
             }
           ]
         },
@@ -50,7 +52,8 @@
               "tone": "red",
               "available": true,
               "stock": 20,
-              "groups": []
+              "groups": [],
+              "imageUrl": "https://images.unsplash.com/photo-1490750967868-88aa4486c946"
             }
           ]
         },
@@ -84,7 +87,8 @@
             }
           ]
         }
-      ]
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1490750967868-88aa4486c946"
     }
   ]
 }

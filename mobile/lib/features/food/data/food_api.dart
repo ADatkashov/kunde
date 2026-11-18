@@ -18,6 +18,7 @@ enum FoodFailure {
   stock,
   quantity,
   substitution,
+  priceChanged,
   addressMissing,
   tooManyOrders,
   notCancellable,
@@ -47,6 +48,8 @@ class FoodException implements Exception {
           'Недопустимое количество. Проверьте вес или число штук.',
         FoodFailure.substitution =>
           'Выбор замены устарел. Откройте товар и выберите замену заново.',
+        FoodFailure.priceChanged =>
+          'Цена изменилась. Вернитесь в корзину и проверьте сумму.',
         FoodFailure.addressMissing => 'Выберите адрес доставки.',
         FoodFailure.tooManyOrders =>
           'Слишком много активных заказов. Дождитесь доставки.',
@@ -64,6 +67,7 @@ class CheckoutRequest {
     required this.addressId,
     required this.paymentMethod,
     this.comment,
+    this.expectedTotalMinor,
   });
 
   final String restaurantId;
@@ -73,6 +77,7 @@ class CheckoutRequest {
   /// `TEST_CARD` (DEV mock, no card data) or `CASH_ON_DELIVERY`.
   final String paymentMethod;
   final String? comment;
+  final int? expectedTotalMinor;
 }
 
 /// KUNDE Food client: public catalog over plain HTTP, cart/orders through the authenticated repository.
@@ -121,6 +126,7 @@ class FoodApi {
         'FOOD_OPTIONS_INVALID' => FoodFailure.optionsInvalid,
         'FOOD_STOCK_INSUFFICIENT' => FoodFailure.stock,
         'FOOD_QUANTITY_INVALID' => FoodFailure.quantity,
+        'FOOD_PRICE_CHANGED' => FoodFailure.priceChanged,
         'FOOD_SUBSTITUTION_INVALID' => FoodFailure.substitution,
         'ADDRESS_NOT_FOUND' => FoodFailure.addressMissing,
         'TOO_MANY_ACTIVE_ORDERS' => FoodFailure.tooManyOrders,
@@ -182,6 +188,8 @@ class FoodApi {
           'items': request.items,
           'addressId': request.addressId,
           'paymentMethod': request.paymentMethod,
+          if (request.expectedTotalMinor != null)
+            'expectedTotalMinor': request.expectedTotalMinor,
           if (request.comment != null && request.comment!.trim().isNotEmpty)
             'comment': request.comment!.trim(),
         }, expected: const {

@@ -52,7 +52,7 @@ public class FoodOrderService {
     public record QuoteRequest(@NotNull UUID restaurantId, @NotEmpty @Size(max = 30) List<@Valid @NotNull CartItem> items) {}
 
     public record OrderRequest(@NotNull UUID restaurantId, @NotEmpty @Size(max = 30) List<@Valid @NotNull CartItem> items,
-            @NotNull UUID addressId, @NotNull String paymentMethod, @Size(max = 300) String comment) {}
+            @NotNull UUID addressId, @NotNull String paymentMethod, @Size(max = 300) String comment, Long expectedTotalMinor) {}
 
     public record QuoteLine(String dishId, String name, String optionsText, List<String> optionIds, String unit,
             long unitPriceMinor, int quantity, long lineTotalMinor, String substitution, List<String> substituteDishIds) {}
@@ -257,6 +257,9 @@ public class FoodOrderService {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "PAYMENT_METHOD_UNSUPPORTED", "Payment method unsupported");
         }
         Quote quote = quote(request.restaurantId(), request.items());
+        if (flowers && (request.expectedTotalMinor() == null || request.expectedTotalMinor() != quote.totalMinor())) {
+            throw new ApiException(HttpStatus.CONFLICT, "FOOD_PRICE_CHANGED", "The total changed; refresh the cart");
+        }
         // Reserve stock atomically per line; a concurrent order that took the last units makes this one fail cleanly.
         for (QuoteLine line : quote.lines()) {
             int reserved = db.update("""

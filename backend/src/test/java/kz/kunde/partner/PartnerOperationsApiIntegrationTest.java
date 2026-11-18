@@ -210,9 +210,12 @@ class PartnerOperationsApiIntegrationTest {
         String dish = db.queryForObject("select id from marketplace.food_dishes where restaurant_id = ?::uuid and name = 'Розы'", String.class, store);
         String addr = address(customer);
         String prefix = "{\"restaurantId\":\"" + store + "\",\"items\":[{\"dishId\":\"" + dish
-                + "\",\"quantity\":1,\"optionIds\":[]}],\"addressId\":\"" + addr + "\",\"paymentMethod\":\"";
+                + "\",\"quantity\":1,\"optionIds\":[]}],\"addressId\":\"" + addr + "\",\"expectedTotalMinor\":990000,\"paymentMethod\":\"";
         send("POST", "/api/v1/food/orders", customer, prefix + "TEST_CARD\"}", "flowers-invalid-0001")
                 .andExpect(status().isUnprocessableEntity());
+        send("POST", "/api/v1/food/orders", customer,
+                prefix.replace("990000", "1") + "DEV_NO_PAYMENT\"}", "flowers-stale-00001")
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("FOOD_PRICE_CHANGED"));
         String order = JsonPath.read(body(send("POST", "/api/v1/food/orders", customer,
                 prefix + "DEV_NO_PAYMENT\"}", "flowers-valid-00001")
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.paymentStatus").value("NO_PAYMENT"))

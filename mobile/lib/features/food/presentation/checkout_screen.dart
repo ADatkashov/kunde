@@ -120,6 +120,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ? 'DEV_NO_PAYMENT'
               : _payment,
           comment: _comment.text,
+          expectedTotalMinor: restaurant.vertical == 'FLOWERS_GIFTS'
+              ? widget.quote.totalMinor
+              : null,
         ),
         _key,
       );
