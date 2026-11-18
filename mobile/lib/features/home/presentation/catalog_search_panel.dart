@@ -9,9 +9,10 @@ import '../data/kunde_api.dart';
 /// Search over published categories. Shown only when the server reports the
 /// marketplace as enabled; results always come from the API, never local demo data.
 class CatalogSearchPanel extends StatefulWidget {
-  const CatalogSearchPanel({required this.api, super.key});
+  const CatalogSearchPanel({required this.api, this.onQueryChanged, super.key});
 
   final KundeApi api;
+  final ValueChanged<String>? onQueryChanged;
 
   @override
   State<CatalogSearchPanel> createState() => _CatalogSearchPanelState();
@@ -78,6 +79,7 @@ class _CatalogSearchPanelState extends State<CatalogSearchPanel> {
           controller: _controller,
           textInputAction: TextInputAction.search,
           maxLength: 200,
+          onChanged: widget.onQueryChanged,
           onSubmitted: (_) => _search(),
           decoration: InputDecoration(
             labelText: strings.searchLabel,

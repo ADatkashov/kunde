@@ -26,7 +26,6 @@ development authorization. Test doubles exist only under mobile/test.
 
 Five visible tabs preserve direct access to Profile. City selection currently
 contains Almaty only; no unsupported city can be selected. Services checks
-`bookingEnabled` before mounting the booking catalog, including direct tab
-entry. AI, favorites, promos and Pay retain explanatory unavailable states.
+`bookingEnabled` before mounting the booking catalog, including entry from the catalog. AI, favorites, promos and Pay retain explanatory unavailable states.
 The theme changes presentation only; order creation, quote, stock, cancellation,
 substitution consent and session transitions retain their existing owners.

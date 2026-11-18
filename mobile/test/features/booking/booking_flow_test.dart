@@ -479,7 +479,6 @@ void main() {
         locale: const Locale('ru'),
         home: HomeScreen(api: api, booking: services)));
     await tester.pumpAndSettle();
-    expect(find.text('Услуги'), findsOneWidget);
     Finder category(String label) => find.descendant(
           of: find.byType(CategoryGrid),
           matching: find.text(label),

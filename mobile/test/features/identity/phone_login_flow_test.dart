@@ -169,10 +169,14 @@ void main() {
     await tester.tap(find.text('Profile'));
     await tester.pumpAndSettle();
     expect(find.text('Aruzhan'), findsOneWidget);
+    await tester.tap(find.text('My addresses'));
+    await tester.pumpAndSettle();
+    expect(calls, contains('GET me/addresses'));
+    await tester.pageBack();
+    await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.byType(ConsentPanel), 300,
         scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
-    expect(calls, contains('GET me/addresses'));
     expect(calls, contains('GET me/consents'));
   });
 

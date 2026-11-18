@@ -18,6 +18,8 @@ extension HomeStrings on KundeLocalizations {
   List<String> get assistantSuggestions => [
         _t('Найти ресторан', 'Мейрамхана табу', 'Find a restaurant'),
         _t('Найти услугу', 'Қызмет табу', 'Find a service'),
+        _t('Записаться на услугу', 'Қызметке жазылу', 'Book a service'),
+        _t('Получить рекомендации', 'Ұсыныс алу', 'Get recommendations'),
       ];
   String get orderDetails => _t('Заказ', 'Тапсырыс', 'Order');
   String get appearance => _t('Тема', 'Тақырып', 'Appearance');
@@ -32,9 +34,9 @@ extension HomeStrings on KundeLocalizations {
   String get homeLocationLabel =>
       _t('Город: Алматы', 'Қала: Алматы', 'City: Almaty');
   String get homeSearchHint => _t(
-        'Что хотите сделать сегодня?',
-        'Бүгін не істегіңіз келеді?',
-        'What do you want to do today?',
+        'Найти сервис, услугу или товар',
+        'Қызметті немесе тауарды табу',
+        'Find a service or product',
       );
   String get homeNotifications =>
       _t('Уведомления', 'Хабарландырулар', 'Notifications');
@@ -110,6 +112,27 @@ extension HomeStrings on KundeLocalizations {
         'Рестораны Алматы в одном приложении. Демо-режим: тестовые рестораны, оплата и доставка имитируются.',
         'Алматы мейрамханалары бір қосымшада. Демо режим: сынақ мейрамханалары, төлем мен жеткізу имитацияланады.',
         'Almaty restaurants in one app. Demo mode: test restaurants, mock payment and simulated delivery.',
+      );
+  String get bannerSubtitle => _t(
+        'Любимые рестораны Алматы с доставкой',
+        'Алматының сүйікті мейрамханаларынан жеткізу',
+        'Delivery from your favourite Almaty restaurants',
+      );
+  String get catalogTitle =>
+      _t('Еда и услуги', 'Тамақ және қызметтер', 'Food and services');
+  String get catalogOpenOnly => _t('Открыто сейчас', 'Қазір ашық', 'Open now');
+  String get catalogSubtitle => _t(
+        'Рестораны, доставка и услуги в Алматы',
+        'Алматыдағы мейрамханалар, жеткізу және қызметтер',
+        'Restaurants, delivery and services in Almaty',
+      );
+  String get ordersAll => _t('Все', 'Барлығы', 'All');
+  String get ordersActive => _t('Активные', 'Белсенді', 'Active');
+  String get ordersCompleted => _t('Завершённые', 'Аяқталған', 'Completed');
+  String get ordersFilterEmpty => _t(
+        'В этой категории заказов пока нет',
+        'Бұл санатта тапсырыс жоқ',
+        'No orders in this category',
       );
   String get bannerCtaLive => _t('Заказать', 'Тапсырыс беру', 'Order');
   String get bannerCta => _t('Найти', 'Іздеу', 'Search');

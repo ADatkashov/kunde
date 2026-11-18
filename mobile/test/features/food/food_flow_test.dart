@@ -612,7 +612,7 @@ void main() {
     final services = await _services(backend, tester);
     await _show(tester,
         Scaffold(body: FoodOrdersTab(key: UniqueKey(), services: services)));
-    expect(find.text('Заказов пока нет'), findsOneWidget);
+    expect(find.text('No orders yet'), findsOneWidget);
 
     backend.offline = true;
     await _show(tester,
@@ -621,7 +621,7 @@ void main() {
     backend.offline = false;
     await tester.tap(find.text('Повторить'));
     await tester.pumpAndSettle();
-    expect(find.text('Заказов пока нет'), findsOneWidget);
+    expect(find.text('No orders yet'), findsOneWidget);
   });
 
   testWidgets('catalog shows a retryable error when the server is unreachable',

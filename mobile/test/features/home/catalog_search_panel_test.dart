@@ -262,7 +262,7 @@ void main() {
     }
 
     await pumpHome(false);
-    await tester.tap(find.text('Что хотите сделать сегодня?'));
+    await tester.tap(find.text('Найти сервис, услугу или товар'));
     await tester.pumpAndSettle();
     expect(find.byType(CatalogSearchPanel), findsNothing);
     expect(find.text('Поиск заработает, когда сервисы будут запущены.'),
@@ -270,7 +270,7 @@ void main() {
     await tester.tap(find.text('Закрыть'));
     await tester.pumpAndSettle();
     await pumpHome(true);
-    await tester.tap(find.text('Что хотите сделать сегодня?'));
+    await tester.tap(find.text('Найти сервис, услугу или товар'));
     await tester.pumpAndSettle();
     expect(find.byType(CatalogSearchPanel), findsOneWidget);
   });

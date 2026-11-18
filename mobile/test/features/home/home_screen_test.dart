@@ -61,7 +61,7 @@ void main() {
     await _pump(tester, _api(), size: const Size(390, 2400));
 
     expect(find.text('Алматы'), findsWidgets);
-    expect(find.text('Что хотите сделать сегодня?'), findsOneWidget);
+    expect(find.text('Найти сервис, услугу или товар'), findsOneWidget);
     expect(find.text('Еда'), findsOneWidget);
     expect(find.text('Продукты'), findsOneWidget);
     expect(find.text('Рядом с вами'), findsOneWidget);

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:kunde_design/kunde_design.dart';
 
 import '../../../core/localization/kunde_localizations.dart';
+import '../../../shared/theme/kunde_art.dart';
 import 'home_strings.dart';
 
 /// Fades and lifts its child in once; skipped when animations are disabled.
@@ -46,29 +47,66 @@ class HomeHeader extends StatelessWidget {
         Expanded(
           child: Align(
             alignment: AlignmentDirectional.centerStart,
-            child: TextButton(
-              onPressed: () => showModalBottomSheet<void>(
-                context: context,
-                builder: (context) => SafeArea(
-                  child: ListTile(
-                    leading: const Icon(Icons.location_on_outlined),
-                    title: Text(s.homeCity),
-                    trailing: const Icon(Icons.check_rounded),
-                    onTap: () => Navigator.pop(context),
-                  ),
+            child: Semantics(
+              label: 'KUNDE',
+              excludeSemantics: true,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  children: [
+                    const CustomPaint(
+                      size: Size(34, 34),
+                      painter: KundeLogoPainter(),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'KUNDE',
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1,
+                              ),
+                    ),
+                  ],
                 ),
               ),
-              style: TextButton.styleFrom(foregroundColor: colors.onSurface),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.location_on_outlined,
-                      size: 20, color: colors.primary),
-                  const SizedBox(width: 8),
-                  Flexible(child: Text(s.homeCity)),
-                  const Icon(Icons.keyboard_arrow_down_rounded, size: 18),
-                ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.sizeOf(context).width * .39,
+          ),
+          child: TextButton(
+            onPressed: () => showModalBottomSheet<void>(
+              context: context,
+              builder: (context) => SafeArea(
+                child: ListTile(
+                  leading: const Icon(Icons.location_on_outlined),
+                  title: Text(s.homeCity),
+                  trailing: const Icon(Icons.check_rounded),
+                  onTap: () => Navigator.pop(context),
+                ),
               ),
+            ),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              backgroundColor: colors.surface,
+              foregroundColor: colors.onSurface,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.location_on_outlined,
+                  size: 18,
+                  color: colors.primary,
+                ),
+                const SizedBox(width: 4),
+                Flexible(child: Text(s.homeCity)),
+                const Icon(Icons.keyboard_arrow_down_rounded, size: 16),
+              ],
             ),
           ),
         ),
@@ -92,7 +130,9 @@ class HomeSearchField extends StatelessWidget {
     final s = KundeLocalizations.of(context);
     final theme = Theme.of(context);
     return Material(
-      color: theme.colorScheme.surfaceContainerHighest,
+      color: theme.colorScheme.surface,
+      elevation: 2,
+      shadowColor: theme.colorScheme.shadow.withValues(alpha: .18),
       borderRadius: BorderRadius.circular(24),
       child: InkWell(
         borderRadius: BorderRadius.circular(24),
@@ -134,29 +174,40 @@ class HomeSearchField extends StatelessWidget {
 }
 
 class AiOrb extends StatelessWidget {
-  const AiOrb({this.size = 40, super.key});
+  const AiOrb({this.size = 40, this.branded = false, super.key});
 
   final double size;
+  final bool branded;
 
   @override
   Widget build(BuildContext context) => ExcludeSemantics(
         child: Container(
           width: size,
           height: size,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(size * (branded ? .29 : .5)),
+            gradient: const LinearGradient(
               begin: Alignment.topRight,
               end: Alignment.bottomLeft,
               colors: [Color(0xFF493CEF), Color(0xFFCF7CF5)],
             ),
-            boxShadow: [
+            boxShadow: const [
               BoxShadow(
                   color: Color(0xA89161FF), blurRadius: 16, spreadRadius: 1),
             ],
           ),
-          child: Icon(Icons.auto_awesome_rounded,
-              color: Colors.white, size: size * .58),
+          child: branded
+              ? Center(
+                  child: CustomPaint(
+                    size: Size.square(size * .52),
+                    painter: const KundeLogoPainter(),
+                  ),
+                )
+              : Icon(
+                  Icons.auto_awesome_rounded,
+                  color: Colors.white,
+                  size: size * .58,
+                ),
         ),
       );
 }
@@ -164,11 +215,12 @@ class AiOrb extends StatelessWidget {
 enum HomePromotion { assistant, rewards, membership }
 
 class HomePromoCard extends StatelessWidget {
-  const HomePromoCard(
-      {required this.promotion,
-      required this.label,
-      required this.onTap,
-      super.key});
+  const HomePromoCard({
+    required this.promotion,
+    required this.label,
+    required this.onTap,
+    super.key,
+  });
 
   final HomePromotion promotion;
   final String label;
@@ -178,12 +230,12 @@ class HomePromoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final (colors, icon, foreground) = switch (promotion) {
       HomePromotion.assistant => (
-          const [Color(0xFF292172), Color(0xFF723BBB)],
+          const [Color(0xFF3B248F), Color(0xFF7447CB)],
           Icons.auto_awesome_rounded,
           Colors.white,
         ),
       HomePromotion.rewards => (
-          const [Color(0xFF8160DD), Color(0xFFF0E4FF)],
+          const [Color(0xFFE8DBFC), Color(0xFFF6EEFF)],
           Icons.card_giftcard_rounded,
           const Color(0xFF211442),
         ),
@@ -211,25 +263,32 @@ class HomePromoCard extends StatelessWidget {
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.all(8),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
                 if (promotion == HomePromotion.assistant)
-                  const AiOrb(size: 28)
+                  const AiOrb(size: 27)
                 else
-                  Icon(icon, color: Colors.white, size: 28),
-                const SizedBox(height: 4),
-                Text(label,
-                    style: TextStyle(
-                        color: foreground,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800)),
-                Text(KundeLocalizations.of(context).homeSoon,
-                    style: TextStyle(
-                        color: foreground,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600)),
+                  Icon(icon, color: foreground, size: 24),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(label,
+                          style: TextStyle(
+                            color: foreground,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          )),
+                      Text(KundeLocalizations.of(context).homeSoon,
+                          style: TextStyle(
+                              color: foreground,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -303,7 +362,7 @@ class CategoryGrid extends StatelessWidget {
                 : 4;
         const gap = 8.0;
         final width = (box.maxWidth - gap * (columns - 1)) / columns;
-        final height = 52 + MediaQuery.textScalerOf(context).scale(44);
+        final height = 44 + MediaQuery.textScalerOf(context).scale(38);
         return Wrap(
           spacing: gap,
           runSpacing: gap,
@@ -336,8 +395,9 @@ class CategoryTile extends StatelessWidget {
         ? ''
         : ', ${category.enabled ? s.categoryAvailable : s.homeSoon}';
     final iconColor = Color.alphaBlend(
-      colors.onSurface
-          .withValues(alpha: theme.brightness == Brightness.dark ? .42 : .05),
+      colors.onSurface.withValues(
+        alpha: theme.brightness == Brightness.dark ? .42 : .05,
+      ),
       category.color,
     );
     return Semantics(
@@ -347,10 +407,13 @@ class CategoryTile extends StatelessWidget {
       child: ExcludeSemantics(
         child: Material(
           color: colors.surface,
+          elevation: 2,
+          shadowColor: colors.shadow.withValues(alpha: .16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side:
-                BorderSide(color: colors.outlineVariant.withValues(alpha: .6)),
+            side: BorderSide(
+              color: colors.outlineVariant.withValues(alpha: .6),
+            ),
           ),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
@@ -367,7 +430,7 @@ class CategoryTile extends StatelessWidget {
                       shape: BoxShape.circle,
                       color: iconColor.withValues(alpha: .14),
                     ),
-                    child: Icon(category.icon, size: 22, color: iconColor),
+                    child: Icon(category.icon, size: 26, color: iconColor),
                   ),
                   const SizedBox(height: 4),
                   Flexible(
@@ -387,11 +450,15 @@ class CategoryTile extends StatelessWidget {
                   ),
                   if (!category.enabled && !category.isAll)
                     Flexible(
-                      child: Text(s.homeSoon,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                              fontSize: 9, color: colors.onSurfaceVariant)),
+                      child: Text(
+                        s.homeSoon,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontSize: 9,
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -419,7 +486,7 @@ class FoodBanner extends StatelessWidget {
       child: Stack(
         children: [
           Positioned.fill(
-            left: 100,
+            left: 110,
             child: Image.asset(
               'assets/photos/food.jpg',
               fit: BoxFit.cover,
@@ -433,10 +500,10 @@ class FoodBanner extends StatelessWidget {
                 gradient: LinearGradient(
                   colors: [
                     Color(0xFF21193D),
-                    Color(0xFF21193D),
-                    Color(0x3321193D)
+                    Color(0xFF472A82),
+                    Color(0x0021193D),
                   ],
-                  stops: [0, .54, 1],
+                  stops: [0, .46, .85],
                 ),
               ),
             ),
@@ -449,7 +516,7 @@ class FoodBanner extends StatelessWidget {
               child: InkWell(
                 onTap: onOrder,
                 child: Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
                       Expanded(
@@ -457,24 +524,46 @@ class FoodBanner extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(s.bannerTitle,
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800)),
-                            const SizedBox(height: 4),
-                            Text(onOrder == null ? s.homeSoon : s.bannerCtaLive,
-                                style: const TextStyle(
-                                    color: KundePalette.gold,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 12)),
+                            Text(
+                              s.bannerTitle,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              s.bannerSubtitle,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            const SizedBox(height: 12),
+                            if (onOrder == null)
+                              const SoonBadge(onDark: true)
+                            else
+                              DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: KundePalette.gold,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 7,
+                                  ),
+                                  child: Text(
+                                    s.bannerCtaLive,
+                                    style: const TextStyle(
+                                      color: Color(0xFF101426),
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
                       ),
                       const Spacer(flex: 2),
-                      if (onOrder != null)
-                        const Icon(Icons.arrow_forward_rounded,
-                            color: Colors.white),
                     ],
                   ),
                 ),

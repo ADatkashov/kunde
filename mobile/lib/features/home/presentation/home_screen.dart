@@ -19,6 +19,7 @@ class HomeScreen extends StatefulWidget {
     required this.api,
     this.onOpenSearch,
     this.onOpenOrders,
+    this.onOpenAssistant,
     this.food,
     this.booking,
     super.key,
@@ -38,6 +39,7 @@ class HomeScreen extends StatefulWidget {
 
   /// Opens the Orders tab when the host has one.
   final VoidCallback? onOpenOrders;
+  final VoidCallback? onOpenAssistant;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -244,7 +246,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showAll(
-      List<ServiceCategory> all, bool foodEnabled, bool bookingEnabled) {
+    List<ServiceCategory> all,
+    bool foodEnabled,
+    bool bookingEnabled,
+  ) {
     final s = KundeLocalizations.of(context);
     showModalBottomSheet<void>(
       context: context,
@@ -312,12 +317,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     s.catHealth,
                     s.catAll,
                   ])
-                    categories
-                        .firstWhere((category) => category.label == label),
+                    categories.firstWhere(
+                      (category) => category.label == label,
+                    ),
                 ];
                 void openAssistant() => Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                          builder: (_) => const AssistantScreen()),
+                        builder: (_) => const AssistantScreen(),
+                      ),
                     );
                 void openSoon(String title, [String? body]) =>
                     _showInfo(title, body ?? s.comingSoonBody);
@@ -341,30 +348,42 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 16),
                     FadeIn(
+                      delay: 120,
+                      child: FoodBanner(
+                        onOrder: marketplace
+                            ? (widget.food == null ? _openSearch : _openFood)
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    FadeIn(
                       child: IntrinsicHeight(
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Expanded(
-                                child: HomePromoCard(
-                              promotion: HomePromotion.assistant,
-                              label: s.homeAiTitle,
-                              onTap: openAssistant,
-                            )),
+                              child: HomePromoCard(
+                                promotion: HomePromotion.assistant,
+                                label: s.homeAiTitle,
+                                onTap: widget.onOpenAssistant ?? openAssistant,
+                              ),
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
-                                child: HomePromoCard(
-                              promotion: HomePromotion.rewards,
-                              label: s.homeRewards,
-                              onTap: () => openSoon(s.homeRewards),
-                            )),
+                              child: HomePromoCard(
+                                promotion: HomePromotion.rewards,
+                                label: s.homeRewards,
+                                onTap: () => openSoon(s.homeRewards),
+                              ),
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
-                                child: HomePromoCard(
-                              promotion: HomePromotion.membership,
-                              label: 'KUNDE+',
-                              onTap: () => openSoon('KUNDE+'),
-                            )),
+                              child: HomePromoCard(
+                                promotion: HomePromotion.membership,
+                                label: 'KUNDE+',
+                                onTap: () => openSoon('KUNDE+'),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -394,15 +413,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                     ),
                     const SizedBox(height: 16),
-                    FadeIn(
-                      delay: 120,
-                      child: FoodBanner(
-                        onOrder: marketplace
-                            ? (widget.food == null ? _openSearch : _openFood)
-                            : null,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
                     SectionTitle(title: s.nearbyTitle, trailing: s.homeCity),
                     const SizedBox(height: 8),
                     if (loading)
@@ -425,7 +435,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               asset: 'assets/photos/groceries.jpg',
                               onTap: () => _onCategory(
                                 categories.firstWhere(
-                                    (c) => c.label == s.catGroceries),
+                                  (c) => c.label == s.catGroceries,
+                                ),
                                 categories,
                                 marketplace,
                                 snapshot?.bookingEnabled ?? false,
@@ -440,8 +451,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 label: s.catHome,
                                 asset: 'assets/photos/home-services.jpg',
                                 onTap: () => _onCategory(
-                                  categories
-                                      .firstWhere((c) => c.label == s.catHome),
+                                  categories.firstWhere(
+                                    (c) => c.label == s.catHome,
+                                  ),
                                   categories,
                                   marketplace,
                                   true,
@@ -476,30 +488,34 @@ class _HomeScreenState extends State<HomeScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
-                              child: ServicePhotoCard(
-                            label: s.catHome,
-                            asset: 'assets/photos/home-services.jpg',
-                            onTap: () => _onCategory(
-                              categories
-                                  .firstWhere((c) => c.label == s.catHome),
-                              categories,
-                              marketplace,
-                              true,
+                            child: ServicePhotoCard(
+                              label: s.catHome,
+                              asset: 'assets/photos/home-services.jpg',
+                              onTap: () => _onCategory(
+                                categories.firstWhere(
+                                  (c) => c.label == s.catHome,
+                                ),
+                                categories,
+                                marketplace,
+                                true,
+                              ),
                             ),
-                          )),
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
-                              child: ServicePhotoCard(
-                            label: s.catBeauty,
-                            asset: 'assets/photos/beauty.jpg',
-                            onTap: () => _onCategory(
-                              categories
-                                  .firstWhere((c) => c.label == s.catBeauty),
-                              categories,
-                              marketplace,
-                              true,
+                            child: ServicePhotoCard(
+                              label: s.catBeauty,
+                              asset: 'assets/photos/beauty.jpg',
+                              onTap: () => _onCategory(
+                                categories.firstWhere(
+                                  (c) => c.label == s.catBeauty,
+                                ),
+                                categories,
+                                marketplace,
+                                true,
+                              ),
                             ),
-                          )),
+                          ),
                         ],
                       ),
                     ],

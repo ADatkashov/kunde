@@ -1,3 +1,4 @@
+import '../../../core/localization/kunde_localizations.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -373,9 +374,15 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
 
 /// Horizontal list of restaurants for the home screen ("Рядом с вами").
 class FoodNearbySection extends StatefulWidget {
-  const FoodNearbySection({required this.services, super.key});
+  const FoodNearbySection(
+      {required this.services,
+      this.query = '',
+      this.openOnly = false,
+      super.key});
 
   final FoodServices services;
+  final String query;
+  final bool openOnly;
 
   @override
   State<FoodNearbySection> createState() => _FoodNearbySectionState();
@@ -405,7 +412,18 @@ class _FoodNearbySectionState extends State<FoodNearbySection> {
               ),
             );
           }
-          final list = state.data!.take(6).toList();
+          final query = widget.query.trim().toLowerCase();
+          final list = state.data!
+              .where((restaurant) {
+                return (!widget.openOnly || restaurant.open) &&
+                    (restaurant.name.toLowerCase().contains(query) ||
+                        restaurant.cuisine.toLowerCase().contains(query));
+              })
+              .take(6)
+              .toList();
+          if (list.isEmpty) {
+            return Text(KundeLocalizations.of(context).searchEmpty);
+          }
           return SizedBox(
             height: 104 + MediaQuery.textScalerOf(context).scale(72),
             child: ListView.separated(

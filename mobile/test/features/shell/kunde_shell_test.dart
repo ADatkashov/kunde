@@ -12,34 +12,46 @@ import 'package:kunde_mobile/features/shell/kunde_shell.dart';
 import 'package:kunde_mobile/shared/theme/kunde_theme.dart';
 
 KundeApi _api({bool marketplace = false}) => KundeApi(
-    baseUri: Uri.parse('https://api.example.test/api/v1/'),
-    client: MockClient((_) async => http.Response(
-        jsonEncode({
-          'releaseStage': 'FOUNDATION',
-          'marketplaceEnabled': marketplace,
-          'oidcIssuerConfigured': false,
-          'aiEnabled': false,
-        }),
-        200)));
+      baseUri: Uri.parse('https://api.example.test/api/v1/'),
+      client: MockClient(
+        (_) async => http.Response(
+          jsonEncode({
+            'releaseStage': 'FOUNDATION',
+            'marketplaceEnabled': marketplace,
+            'oidcIssuerConfigured': false,
+            'aiEnabled': false,
+          }),
+          200,
+        ),
+      ),
+    );
 
-Future<void> _pump(WidgetTester tester, KundeApi api,
-    {String locale = 'ru',
-    Size size = const Size(390, 844),
-    double textScale = 1}) async {
+Future<void> _pump(
+  WidgetTester tester,
+  KundeApi api, {
+  String locale = 'ru',
+  Size size = const Size(390, 844),
+  double textScale = 1,
+}) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  await tester.pumpWidget(MaterialApp(
-    theme: KundeTheme.light,
-    localizationsDelegates: KundeLocalizations.localizationsDelegates,
-    supportedLocales: KundeLocalizations.supportedLocales,
-    locale: Locale(locale),
-    builder: (context, child) => MediaQuery(
+  await tester.pumpWidget(
+    MaterialApp(
+      theme: KundeTheme.light,
+      localizationsDelegates: KundeLocalizations.localizationsDelegates,
+      supportedLocales: KundeLocalizations.supportedLocales,
+      locale: Locale(locale),
+      builder: (context, child) => MediaQuery(
         data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(textScale), disableAnimations: true),
-        child: child!),
-    home: KundeShell(api: api),
-  ));
+          textScaler: TextScaler.linear(textScale),
+          disableAnimations: true,
+        ),
+        child: child!,
+      ),
+      home: KundeShell(api: api),
+    ),
+  );
   await tester.pumpAndSettle();
 }
 
@@ -51,7 +63,7 @@ void main() {
   testWidgets('bottom bar has exactly the five requested tabs', (tester) async {
     await _pump(tester, _api());
     expect(tester.widget<NavigationBar>(bar).destinations.length, 5);
-    for (final label in ['Главная', 'Поиск', 'Заказы', 'Сервисы', 'Профиль']) {
+    for (final label in ['Главная', 'Поиск', 'AI', 'Заказы', 'Профиль']) {
       expect(inBar(label), findsOneWidget);
     }
   });
@@ -62,22 +74,28 @@ void main() {
       'Басты бет',
       'Іздеу',
       'Тапсырыстар',
-      'Қызметтер',
-      'Профиль'
+      'AI',
+      'Профиль',
     ]) {
       expect(inBar(label), findsOneWidget);
     }
     await _pump(tester, _api(), locale: 'en');
-    for (final label in ['Home', 'Search', 'Orders', 'Services', 'Profile']) {
+    for (final label in ['Home', 'Search', 'AI', 'Orders', 'Profile']) {
       expect(inBar(label), findsOneWidget);
     }
   });
 
-  testWidgets('Kazakh navigation labels stay on one line at 320 dp',
-      (tester) async {
-    await _pump(tester, _api(),
-        locale: 'kk', size: const Size(320, 640), textScale: 2);
-    for (final label in ['Басты бет', 'Тапсырыстар', 'Қызметтер']) {
+  testWidgets('Kazakh navigation labels stay on one line at 320 dp', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _api(),
+      locale: 'kk',
+      size: const Size(320, 640),
+      textScale: 2,
+    );
+    for (final label in ['Басты бет', 'Тапсырыстар']) {
       final paragraph = tester.renderObject<RenderParagraph>(inBar(label));
       final boxes = paragraph.getBoxesForSelection(
         TextSelection(baseOffset: 0, extentOffset: label.length),
@@ -86,8 +104,9 @@ void main() {
     }
   });
 
-  testWidgets('search tab explains unavailability while marketplace is off',
-      (tester) async {
+  testWidgets('search tab explains unavailability while marketplace is off', (
+    tester,
+  ) async {
     await _pump(tester, _api());
     await tester.tap(inBar('Поиск'));
     await tester.pumpAndSettle();
@@ -95,8 +114,9 @@ void main() {
     expect(find.byType(CatalogSearchPanel), findsNothing);
   });
 
-  testWidgets('search tab shows real catalog search when enabled',
-      (tester) async {
+  testWidgets('search tab shows real catalog search when enabled', (
+    tester,
+  ) async {
     await _pump(tester, _api(marketplace: true));
     await tester.tap(inBar('Поиск'));
     await tester.pumpAndSettle();
@@ -111,13 +131,14 @@ void main() {
     expect(find.textContaining('оформить заказ нельзя'), findsOneWidget);
   });
 
-  testWidgets('services tab respects disabled server capability',
-      (tester) async {
+  testWidgets('assistant tab shows that sending is unavailable', (
+    tester,
+  ) async {
     await _pump(tester, _api());
-    await tester.tap(inBar('Сервисы'));
+    await tester.tap(inBar('AI'));
     await tester.pumpAndSettle();
-    expect(find.text('Сервисы пока не запущены'), findsOneWidget);
-    expect(find.text('Барбершопы'), findsNothing);
+    expect(find.text('Скоро'), findsOneWidget);
+    expect(tester.widget<TextField>(find.byType(TextField)).enabled, isFalse);
   });
 
   testWidgets('profile tab says sign-in is not set up', (tester) async {
@@ -134,32 +155,43 @@ void main() {
     expect(find.text('Заказов пока нет'), findsOneWidget);
     await tester.tap(inBar('Главная'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Что хотите сделать сегодня?'));
+    await tester.tap(find.text('Найти сервис, услугу или товар'));
     await tester.pumpAndSettle();
     expect(find.byType(CatalogSearchPanel), findsOneWidget);
   });
 
-  testWidgets('destinations keep 48 px touch targets and semantics',
-      (tester) async {
+  testWidgets('destinations keep 48 px touch targets and semantics', (
+    tester,
+  ) async {
     await _pump(tester, _api());
     for (var i = 0; i < 5; i++) {
-      final size = tester.getSize(find
-          .descendant(of: bar, matching: find.byType(NavigationDestination))
-          .at(i));
-      expect(size.height >= 48 && size.width >= 48, isTrue,
-          reason: 'tab $i target is $size');
+      final size = tester.getSize(
+        find
+            .descendant(of: bar, matching: find.byType(NavigationDestination))
+            .at(i),
+      );
+      expect(
+        size.height >= 48 && size.width >= 48,
+        isTrue,
+        reason: 'tab $i target is $size',
+      );
     }
     expect(find.bySemanticsLabel('Основная навигация'), findsOneWidget);
   });
 
   for (final locale in ['ru', 'kk', 'en']) {
     for (final size in [const Size(320, 640), const Size(390, 844)]) {
-      testWidgets('no overflow in every tab $locale ${size.width}',
-          (tester) async {
+      testWidgets('no overflow in every tab $locale ${size.width}', (
+        tester,
+      ) async {
         await _pump(tester, _api(), locale: locale, size: size, textScale: 2);
         for (final i in [0, 1, 2, 3, 4]) {
-          await tester.tap(find.descendant(
-              of: bar, matching: find.byType(NavigationDestination).at(i)));
+          await tester.tap(
+            find.descendant(
+              of: bar,
+              matching: find.byType(NavigationDestination).at(i),
+            ),
+          );
           await tester.pumpAndSettle();
           expect(tester.takeException(), isNull, reason: 'tab $i');
         }

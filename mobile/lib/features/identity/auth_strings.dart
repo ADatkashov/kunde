@@ -26,6 +26,12 @@ class AuthStrings {
       'Проверяем сессию…', 'Сессия тексерілуде…', 'Checking your session…');
   String get profile => pick('Профиль', 'Профиль', 'Profile');
   String get home => pick('Главная', 'Басты бет', 'Home');
+  String get security => pick('Безопасность', 'Қауіпсіздік', 'Security');
+  String get phoneSecurity => pick(
+      'Для входа используется код подтверждения телефона. Выход завершает текущую сессию.',
+      'Кіру үшін телефонды растау коды пайдаланылады. Шығу ағымдағы сеансты аяқтайды.',
+      'Phone verification codes are used to sign in. Signing out ends this session.');
+  String get addresses => pick('Мои адреса', 'Мекенжайларым', 'My addresses');
   String get name => pick('Имя', 'Аты', 'Name');
   String get language =>
       pick('Язык приложения', 'Қолданба тілі', 'App language');

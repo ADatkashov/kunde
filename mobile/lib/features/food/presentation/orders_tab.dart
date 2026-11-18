@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../../../core/localization/kunde_localizations.dart';
 import '../../home/presentation/home_strings.dart';
+import '../../shell/shell_strings.dart';
 import '../data/food_api.dart';
 import '../data/food_models.dart';
 import '../food_services.dart';
-import 'food_home_screen.dart';
 import 'food_widgets.dart';
 import 'order_screen.dart';
-import '../../../shared/theme/kunde_art.dart';
 
 /// Orders tab: history of the signed-in customer, restored from the server on every open.
 class FoodOrdersTab extends StatefulWidget {
@@ -20,8 +19,11 @@ class FoodOrdersTab extends StatefulWidget {
   State<FoodOrdersTab> createState() => _FoodOrdersTabState();
 }
 
+enum _OrderFilter { all, active, completed }
+
 class _FoodOrdersTabState extends State<FoodOrdersTab> {
   late Future<List<FoodOrder>> _orders;
+  _OrderFilter _filter = _OrderFilter.all;
 
   @override
   void initState() {
@@ -72,41 +74,64 @@ class _FoodOrdersTabState extends State<FoodOrdersTab> {
                     onAction: _refresh,
                   );
                 }
-                final orders = state.data!;
-                if (orders.isEmpty) {
-                  return FoodStateMessage(
-                    icon: Icons.receipt_long_outlined,
-                    title: 'Заказов пока нет',
-                    body:
-                        'Выберите ресторан и оформите первый заказ — он появится здесь.',
-                    actionLabel: 'Выбрать ресторан',
-                    onAction: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) =>
-                            FoodHomeScreen(services: widget.services),
-                      ),
-                    ),
-                  );
-                }
+                final s = KundeLocalizations.of(context);
+                final all = state.data!;
+                final orders = all
+                    .where(
+                      (order) => switch (_filter) {
+                        _OrderFilter.all => true,
+                        _OrderFilter.active => !order.terminal,
+                        _OrderFilter.completed => order.terminal,
+                      },
+                    )
+                    .toList();
                 return RefreshIndicator(
                   onRefresh: _refresh,
-                  child: ListView.separated(
+                  child: ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(16),
-                    itemCount: orders.length + 1,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
-                    itemBuilder: (context, i) {
-                      if (i == 0) {
-                        return Text(
-                          KundeLocalizations.of(context).quickOrders,
-                          style: Theme.of(context).textTheme.headlineSmall,
-                        );
-                      }
-                      return _OrderCard(
-                        order: orders[i - 1],
-                        onTap: () => _open(orders[i - 1]),
-                      );
-                    },
+                    children: [
+                      Text(
+                        s.quickOrders,
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          for (final (filter, label) in [
+                            (_OrderFilter.all, s.ordersAll),
+                            (_OrderFilter.active, s.ordersActive),
+                            (_OrderFilter.completed, s.ordersCompleted),
+                          ])
+                            ChoiceChip(
+                              label: Text(label),
+                              selected: _filter == filter,
+                              onSelected: (_) =>
+                                  setState(() => _filter = filter),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      if (orders.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 32),
+                          child: Text(
+                            all.isEmpty
+                                ? s.ordersEmptyTitle
+                                : s.ordersFilterEmpty,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      for (final order in orders)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: _OrderCard(
+                            order: order,
+                            onTap: () => _open(order),
+                          ),
+                        ),
+                    ],
                   ),
                 );
               },
@@ -133,8 +158,14 @@ class _OrderCard extends StatelessWidget {
         : done
             ? (colors.tertiaryContainer, colors.onTertiaryContainer)
             : (colors.secondaryContainer, colors.onSecondaryContainer);
-    final summary =
-        order.items.map((e) => '${e.quantity}× ${e.name}').join(', ');
+    final (asset, icon) = switch (order.vertical) {
+      'GROCERY' => (
+          'assets/photos/groceries.jpg',
+          Icons.shopping_basket_outlined,
+        ),
+      'FLOWERS_GIFTS' => (null, Icons.local_florist_outlined),
+      _ => ('assets/photos/food.jpg', Icons.restaurant_outlined),
+    };
     return Card(
       margin: EdgeInsets.zero,
       elevation: 2,
@@ -146,78 +177,86 @@ class _OrderCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.all(12),
+          child: Row(
             children: [
-              Row(
-                children: [
-                  KundeIllustration(
-                    order.vertical == 'FLOWERS_GIFTS'
-                        ? 'beauty'
-                        : order.vertical == 'GROCERY'
-                            ? 'grocery'
-                            : 'food',
-                    size: 38,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox.square(
+                  dimension: 60,
+                  child: asset == null
+                      ? ColoredBox(
+                          color: colors.primaryContainer,
+                          child: Icon(icon, color: colors.onPrimaryContainer),
+                        )
+                      : Image.asset(
+                          asset,
+                          fit: BoxFit.cover,
+                          excludeFromSemantics: true,
+                        ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
                       order.restaurantName,
                       style: theme.textTheme.titleMedium,
                     ),
-                  ),
-                  const Icon(Icons.chevron_right_rounded),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: chipColor,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  order.vertical == 'FLOWERS_GIFTS'
-                      ? flowersStatusLabel(
-                          order.status,
-                          Localizations.localeOf(context).languageCode,
-                        )
-                      : orderStatusLabel(order.status),
-                  style: TextStyle(
-                    color: chipInk,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                summary,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 12,
-                runSpacing: 4,
-                children: [
-                  Text(
-                    formatOrderDate(order.placedAt),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                    Text(
+                      formatOrderDate(order.placedAt),
+                      style: theme.textTheme.bodySmall,
                     ),
-                  ),
-                  Text(
-                    formatTenge(order.totalMinor),
-                    style: theme.textTheme.titleSmall,
-                  ),
-                ],
+                    Text(
+                      order.items
+                          .map((item) => '${item.quantity}× ${item.name}')
+                          .join(', '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: chipColor,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Text(
+                            order.vertical == 'FLOWERS_GIFTS'
+                                ? flowersStatusLabel(
+                                    order.status,
+                                    Localizations.localeOf(context)
+                                        .languageCode,
+                                  )
+                                : orderStatusLabel(order.status),
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: chipInk,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          formatTenge(
+                            order.finalTotalMinor ?? order.totalMinor,
+                          ),
+                          style: theme.textTheme.titleSmall,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
+              const Icon(Icons.chevron_right_rounded),
             ],
           ),
         ),
