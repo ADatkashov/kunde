@@ -70,6 +70,13 @@ app:
   partner-ops:
     seed-demo: ${PARTNER_OPS_SEED_DEMO:false}
     response-timeout-seconds: ${PARTNER_RESPONSE_TIMEOUT_SECONDS:300}
+  rides:
+    enabled: ${RIDES_ENABLED:false}
+    consumer-enabled: ${RIDES_CONSUMER_ENABLED:false}
+    executor-enabled: ${RIDES_EXECUTOR_ENABLED:false}
+    partner-enabled: ${RIDES_PARTNER_ENABLED:false}
+    dispatch-enabled: ${RIDES_DISPATCH_ENABLED:false}
+    payments-enabled: ${RIDES_PAYMENTS_ENABLED:false}
   identity:
     consumer-enabled: ${CONSUMER_IDENTITY_ENABLED:false}
   security:

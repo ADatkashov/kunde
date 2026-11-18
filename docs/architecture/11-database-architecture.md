@@ -16,6 +16,9 @@
 
 Use separate PostgreSQL schemas (e.g. `iam`, `user_data`, `catalog`, `orders`, `bookings`, `finance`, `support`, `ai`, `platform`). Each module has separate migration role and repository. Cross-schema joins in application code are forbidden; cross-domain projections are explicit. Foreign keys enforce same-owner aggregates and selected stable references; do not cascade-delete financial/audit history.
 
+Rides V22 follows the existing `transactions` schema. Fare quotes reference the stable `identity.users` aggregate. Each ride references its quote together with the same user ID. Events are append-only. See [Rides storage and endpoints](../product/rides-transport.md#хранение-и-consumer-api).
+
+
 IDs are opaque UUID/ULID-class values; decision pending workload/team. Money uses integer minor units + ISO 4217 currency. Time uses UTC instants plus explicit IANA zone for local appointments. High-contention availability uses atomic conditional writes/unique exclusion constraints where feasible, not check-then-write races.
 
 ## Migrations and retention

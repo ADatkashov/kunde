@@ -1,5 +1,8 @@
 # 01 — Delivery Strategy
 
+Владелец утвердил разработку запланированных сервисов до публичного запуска. После общей интеграционной проверки, тестирования и доработки сервисы включаются последовательно отдельными решениями владельца через backend Feature Flags. Действующие критерии допуска и проверки провайдеров применяются к каждой публичной активации.
+
+
 ## Approach
 
 Deliver a modular marketplace in narrow, end-to-end slices. First establish decisions, contracts, and a deployable foundation; then prove one category's browse-to-fulfillment-and-finance loop in a controlled Almaty pilot. Keep domain modules in the recommended modular monolith until measured scale or independent ownership justifies extraction. Flutter and backend teams integrate against versioned OpenAPI contracts and design tokens.
