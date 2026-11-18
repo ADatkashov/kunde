@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'booking_strings.dart';
+import '../../../core/localization/kunde_localizations.dart';
+import '../../home/presentation/home_strings.dart';
 
 import '../../food/food_services.dart';
 import '../../food/presentation/orders_tab.dart';
@@ -27,6 +29,14 @@ class _OrdersHubTabState extends State<OrdersHubTab> {
         child: Column(children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(KundeLocalizations.of(context).quickOrders,
+                  style: Theme.of(context).textTheme.headlineSmall),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: SegmentedButton<int>(
               segments: [
                 ButtonSegment(
@@ -45,7 +55,9 @@ class _OrdersHubTabState extends State<OrdersHubTab> {
           Expanded(
             child: _segment == 0
                 ? FoodOrdersTab(
-                    key: const ValueKey('orders'), services: widget.food)
+                    key: const ValueKey('orders'),
+                    services: widget.food,
+                    showHeading: false)
                 : BookingsList(
                     key: const ValueKey('bookings'), services: widget.booking),
           ),

@@ -1,7 +1,10 @@
 import 'dart:async';
+
 import '../../support/premium_goldens.dart';
+
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -39,8 +42,12 @@ class BrowserGateway implements OAuthGateway {
     registered = register;
     await wait?.future;
     if (cancelled) throw IdentityUnavailable();
-    return AuthTokens('access', 'refresh', 'id',
-        DateTime.now().add(const Duration(minutes: 5)));
+    return AuthTokens(
+      'access',
+      'refresh',
+      'id',
+      DateTime.now().add(const Duration(minutes: 5)),
+    );
   }
 
   @override
@@ -60,19 +67,22 @@ void main() {
     final package = (config['packages'] as List)
         .cast<Map<String, dynamic>>()
         .singleWhere((entry) => entry['name'] == 'flutter');
-    final flutter =
-        configFile.absolute.uri.resolve(package['rootUri'] as String);
+    final flutter = configFile.absolute.uri.resolve(
+      package['rootUri'] as String,
+    );
     for (final entry in {
       'Roboto': 'Roboto-Regular.ttf',
-      'MaterialIcons': 'MaterialIcons-Regular.otf'
+      'MaterialIcons': 'MaterialIcons-Regular.otf',
     }.entries) {
       final uri = flutter
           .replace(path: '${flutter.path}/')
           .resolve('../../bin/cache/artifacts/material_fonts/${entry.value}');
       final loader = FontLoader(entry.key)
-        ..addFont(File.fromUri(uri)
-            .readAsBytes()
-            .then((bytes) => ByteData.sublistView(bytes)));
+        ..addFont(
+          File.fromUri(uri)
+              .readAsBytes()
+              .then((bytes) => ByteData.sublistView(bytes)),
+        );
       await loader.load();
     }
   });
@@ -92,35 +102,43 @@ void main() {
       'id': 'synthetic',
       'displayName': 'Aruzhan',
       'preferredLanguage': 'en',
-      'version': 0
+      'version': 0,
     };
     auth = AuthRepository(
-        gateway: gateway,
-        vault: vault,
-        apiBase: Uri.parse('https://api.example.test/api/v1/'),
-        client: MockClient((request) async {
-          if (offline) throw http.ClientException('offline');
-          if (status != 200) return http.Response('{}', status);
-          if (request.method == 'PATCH') {
-            profile = {
-              ...profile,
-              ...jsonDecode(request.body) as Map<String, dynamic>,
-              'version': 1
-            };
-          }
-          return http.Response(jsonEncode(profile), 200,
-              headers: {'content-type': 'application/json; charset=utf-8'});
-        }));
+      gateway: gateway,
+      vault: vault,
+      apiBase: Uri.parse('https://api.example.test/api/v1/'),
+      client: MockClient((request) async {
+        if (offline) throw http.ClientException('offline');
+        if (status != 200) return http.Response('{}', status);
+        if (request.method == 'PATCH') {
+          profile = {
+            ...profile,
+            ...jsonDecode(request.body) as Map<String, dynamic>,
+            'version': 1,
+          };
+        }
+        return http.Response(
+          jsonEncode(profile),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      }),
+    );
     api = KundeApi(
-        baseUri: auth.apiBase,
-        client: MockClient((_) async => http.Response(
-            jsonEncode({
-              'releaseStage': 'FOUNDATION',
-              'marketplaceEnabled': false,
-              'oidcIssuerConfigured': true,
-              'aiEnabled': false,
-            }),
-            200)));
+      baseUri: auth.apiBase,
+      client: MockClient(
+        (_) async => http.Response(
+          jsonEncode({
+            'releaseStage': 'FOUNDATION',
+            'marketplaceEnabled': false,
+            'oidcIssuerConfigured': true,
+            'aiEnabled': false,
+          }),
+          200,
+        ),
+      ),
+    );
   }
 
   tearDown(() {
@@ -129,8 +147,9 @@ void main() {
   });
   Future<void> start(WidgetTester tester, {bool partner = false}) async {
     configure();
-    await tester
-        .pumpWidget(KundeApp(api: api, auth: auth, partnerEnabled: partner));
+    await tester.pumpWidget(
+      KundeApp(api: api, auth: auth, partnerEnabled: partner),
+    );
     await tester.pumpAndSettle();
   }
 
@@ -157,16 +176,19 @@ void main() {
     await login(tester);
     await tester.tap(find.text('Profile'));
     await tester.pumpAndSettle();
-    expect(Theme.of(tester.element(find.byType(NavigationBar))).brightness,
-        Brightness.light);
+    expect(
+      Theme.of(tester.element(find.byType(NavigationBar))).brightness,
+      Brightness.light,
+    );
     await tester.tap(find.byTooltip('App language'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Русский'));
     await premiumGolden(tester, 'premium_profile_390');
   });
 
-  testWidgets('consumer appearance follows the saved choice after restart',
-      (tester) async {
+  testWidgets('consumer appearance follows the saved choice after restart', (
+    tester,
+  ) async {
     FlutterSecureStorage.setMockInitialValues({});
     addTearDown(() => FlutterSecureStorage.setMockInitialValues({}));
     await login(tester);
@@ -175,24 +197,31 @@ void main() {
     await tester.ensureVisible(find.text('Appearance'));
     await tester.tap(find.text('Appearance'));
     await tester.pumpAndSettle();
-    expect(Theme.of(tester.element(find.byType(NavigationBar))).brightness,
-        Brightness.dark);
+    expect(
+      Theme.of(tester.element(find.byType(NavigationBar))).brightness,
+      Brightness.dark,
+    );
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpWidget(KundeApp(api: api, auth: auth));
     await tester.pumpAndSettle();
-    expect(Theme.of(tester.element(find.byType(NavigationBar))).brightness,
-        Brightness.dark);
+    expect(
+      Theme.of(tester.element(find.byType(NavigationBar))).brightness,
+      Brightness.dark,
+    );
   });
 
-  testWidgets('signed-in shell has five tabs and keeps Profile working',
-      (tester) async {
+  testWidgets('signed-in shell has five tabs and keeps Profile working', (
+    tester,
+  ) async {
     await login(tester);
     final bar = find.byType(NavigationBar);
     expect(tester.widget<NavigationBar>(bar).destinations.length, 5);
-    for (final label in ['Home', 'Search', 'Orders', 'Services', 'Profile']) {
+    for (final label in ['Home', 'Search', 'AI', 'Orders', 'Profile']) {
       expect(
-          find.descendant(of: bar, matching: find.text(label)), findsOneWidget);
+        find.descendant(of: bar, matching: find.text(label)),
+        findsOneWidget,
+      );
     }
     await tester.tap(find.descendant(of: bar, matching: find.text('Orders')));
     await tester.pumpAndSettle();
@@ -202,8 +231,10 @@ void main() {
     expect(find.text('Edit profile'), findsOneWidget);
   });
 
-  Future<void> openProfileWithTallWindow(WidgetTester tester,
-      {required bool partner}) async {
+  Future<void> openProfileWithTallWindow(
+    WidgetTester tester, {
+    required bool partner,
+  }) async {
     // A tall window builds the whole profile list, so lower panels exist.
     tester.view.physicalSize = const Size(800, 6000);
     tester.view.devicePixelRatio = 1;
@@ -214,26 +245,29 @@ void main() {
     expect(find.text('Support'), findsOneWidget);
   }
 
-  testWidgets('partner section is hidden unless the build enables it',
-      (tester) async {
+  testWidgets('partner section is hidden unless the build enables it', (
+    tester,
+  ) async {
     await openProfileWithTallWindow(tester, partner: false);
     expect(find.text('For partners'), findsNothing);
     expect(find.text('Become a partner'), findsNothing);
   });
 
-  testWidgets('partner section is shown when the build enables it',
-      (tester) async {
+  testWidgets('partner section is shown when the build enables it', (
+    tester,
+  ) async {
     await openProfileWithTallWindow(tester, partner: true);
     expect(find.text('For partners'), findsOneWidget);
   });
 
-  testWidgets('splash restores stored session and loads profile before home',
-      (tester) async {
+  testWidgets('splash restores stored session and loads profile before home', (
+    tester,
+  ) async {
     configure();
     vault.value = jsonEncode({
       'issuerVersion': 2,
       'context': auth.apiBase.toString(),
-      'refresh': 'saved'
+      'refresh': 'saved',
     });
     gateway.wait = Completer<void>();
     await tester.pumpWidget(KundeApp(api: api, auth: auth));
@@ -266,35 +300,40 @@ void main() {
     expect(vault.value, isNull);
   });
   testWidgets(
-      'registration uses browser registration and prevents duplicate taps',
-      (tester) async {
-    await start(tester);
-    gateway.wait = Completer<void>();
-    await tester.tap(find.text('Create account'));
-    await tester.pump();
-    expect(find.text('Create account'), findsNothing);
-    expect(gateway.logins, 1);
-    expect(gateway.registered, true);
-    gateway.wait!.complete();
-    await tester.pumpAndSettle();
-    expect(find.text('Home'), findsOneWidget);
-  });
-  testWidgets('offline profile load can retry without another browser login',
-      (tester) async {
+    'registration uses browser registration and prevents duplicate taps',
+    (tester) async {
+      await start(tester);
+      gateway.wait = Completer<void>();
+      await tester.tap(find.text('Create account'));
+      await tester.pump();
+      expect(find.text('Create account'), findsNothing);
+      expect(gateway.logins, 1);
+      expect(gateway.registered, true);
+      gateway.wait!.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('Home'), findsOneWidget);
+    },
+  );
+  testWidgets('offline profile load can retry without another browser login', (
+    tester,
+  ) async {
     await start(tester);
     offline = true;
     await tester.tap(find.text('Sign in'));
     await tester.pumpAndSettle();
-    expect(find.text('Cannot connect. Check your connection and try again.'),
-        findsOneWidget);
+    expect(
+      find.text('Cannot connect. Check your connection and try again.'),
+      findsOneWidget,
+    );
     offline = false;
     await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
     expect(find.text('Home'), findsOneWidget);
     expect(gateway.logins, 1);
   });
-  testWidgets('conflict preserves draft and requires explicit reload',
-      (tester) async {
+  testWidgets('conflict preserves draft and requires explicit reload', (
+    tester,
+  ) async {
     await login(tester);
     await edit(tester);
     await tester.enterText(find.byType(TextFormField), 'Draft');
@@ -303,11 +342,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Draft'), findsOneWidget);
     expect(
-        tester
-            .widget<FilledButton>(
-                find.widgetWithText(FilledButton, 'Save changes'))
-            .onPressed,
-        isNull);
+      tester
+          .widget<FilledButton>(
+            find.widgetWithText(FilledButton, 'Save changes'),
+          )
+          .onPressed,
+      isNull,
+    );
     status = 200;
     await tester.tap(find.text('Reload latest profile'));
     await tester.pumpAndSettle();
@@ -315,8 +356,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Aruzhan'), findsOneWidget);
   });
-  testWidgets('401 removes protected routes and asks for reauthentication',
-      (tester) async {
+  testWidgets('401 removes protected routes and asks for reauthentication', (
+    tester,
+  ) async {
     await login(tester);
     await edit(tester);
     status = 401;
@@ -341,61 +383,75 @@ void main() {
     expect(find.text('Войти'), findsOneWidget);
   });
   testWidgets(
-      'invalid name remains in form and unsaved navigation asks to discard',
-      (tester) async {
-    await login(tester);
-    await edit(tester);
-    await tester.enterText(find.byType(TextFormField), ' ');
-    await tester.tap(find.text('Save changes'));
-    await tester.pumpAndSettle();
-    expect(
+    'invalid name remains in form and unsaved navigation asks to discard',
+    (tester) async {
+      await login(tester);
+      await edit(tester);
+      await tester.enterText(find.byType(TextFormField), ' ');
+      await tester.tap(find.text('Save changes'));
+      await tester.pumpAndSettle();
+      expect(
         find.text(
-            'Enter a name of 1–80 characters without control characters.'),
-        findsOneWidget);
-    await tester.tap(find.text('Home'));
-    await tester.pumpAndSettle();
-    expect(find.text('Discard changes?'), findsOneWidget);
-    await tester.tap(find.text('Cancel').last);
-    await tester.pumpAndSettle();
-    expect(find.byType(TextFormField), findsOneWidget);
-  });
-  testWidgets('welcome renders on phone and preserves language controls',
-      (tester) async {
+          'Enter a name of 1–80 characters without control characters.',
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Home'));
+      await tester.pumpAndSettle();
+      expect(find.text('Discard changes?'), findsOneWidget);
+      await tester.tap(find.text('Cancel').last);
+      await tester.pumpAndSettle();
+      expect(find.byType(TextFormField), findsOneWidget);
+    },
+  );
+  testWidgets('welcome renders on phone and preserves language controls', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await start(tester);
     await expectLater(
-        find.byType(MaterialApp), matchesGoldenFile('goldens/welcome_en.png'));
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/welcome_en.png'),
+    );
     expect(tester.takeException(), isNull);
   });
-  testWidgets('restricted account has a safe error and no profile navigation',
-      (tester) async {
+  testWidgets('restricted account has a safe error and no profile navigation', (
+    tester,
+  ) async {
     await start(tester);
     status = 403;
     await tester.tap(find.text('Sign in'));
     await tester.pumpAndSettle();
-    expect(find.text('Account access is restricted. Contact support.'),
-        findsOneWidget);
+    expect(
+      find.text('Account access is restricted. Contact support.'),
+      findsOneWidget,
+    );
     expect(find.text('Edit profile'), findsNothing);
     gateway.logoutOffline = true;
     await tester.tap(find.text('Sign out'));
     await tester.pumpAndSettle();
     expect(
-        find.text(
-            'Signed out of the app. Your browser session may still be active.'),
-        findsOneWidget);
+      find.text(
+        'Signed out of the app. Your browser session may still be active.',
+      ),
+      findsOneWidget,
+    );
     expect(vault.value, isNull);
   });
-  testWidgets('failed first login does not claim an expired session',
-      (tester) async {
+  testWidgets('failed first login does not claim an expired session', (
+    tester,
+  ) async {
     await start(tester);
     gateway.cancelled = true;
     await tester.tap(find.text('Sign in'));
     await tester.pumpAndSettle();
-    expect(find.text('Cannot connect. Check your connection and try again.'),
-        findsOneWidget);
+    expect(
+      find.text('Cannot connect. Check your connection and try again.'),
+      findsOneWidget,
+    );
     expect(find.text('Your session expired. Sign in again.'), findsNothing);
     expect(auth.expired, false);
     expect(find.text('Sign in'), findsOneWidget);

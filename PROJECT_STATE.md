@@ -2,8 +2,9 @@
 
 ## KUNDE Premium UI 2.1
 
-- [PR #127](https://github.com/ADatkashov/kunde/pull/127) recomposes Consumer Home around a compact city/search header, three promos, a responsive service grid and nearby photo cards. Existing tab routes and backend capabilities remain in use. The assistant shows a localized Soon status.
-- The emulator comparison checks 390 and 320 dp, light/dark and RU/KK/EN. See the PR for the latest screenshot artifact, checks and signed DEV delivery status.
+- [PR #128](https://github.com/ADatkashov/kunde/pull/128) updates the five Consumer tabs: Home, Catalog, KUNDE AI, Orders and Profile. The booking catalog remains available from Home and Catalog. Restaurant data, order history, profile, addresses and repeat order use existing APIs.
+- KUNDE AI has a localized Soon preview with disabled sending. Catalog and order surfaces keep DEV data and payment labels. The Consumer profile omits phone or statistics that its API does not return.
+- [PR #127](https://github.com/ADatkashov/kunde/pull/127) remains the prior signed DEV baseline. See PR #128 for the Android before/after captures, checks and signed release evidence.
 
 ## KUNDE Premium UI 2.0
 

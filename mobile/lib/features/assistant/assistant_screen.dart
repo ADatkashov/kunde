@@ -99,49 +99,90 @@ class _AssistantScreenState extends State<AssistantScreen> {
                   child: ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Color(0xFF1A1741),
-                              Color(0xFF3D2779),
-                              Color(0xFF7047B6)
+                      if (connected)
+                        Text(
+                          s.assistantPrompt,
+                          style: theme.textTheme.titleLarge,
+                        )
+                      else
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            gradient: RadialGradient(
+                              center: const Alignment(0, -.45),
+                              colors: [
+                                theme.colorScheme.primaryContainer,
+                                theme.scaffoldBackgroundColor,
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                s.homeAiSubtitle,
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 24),
+                              const AiOrb(size: 100, branded: true),
+                              const SizedBox(height: 20),
+                              Wrap(
+                                alignment: WrapAlignment.center,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                spacing: 12,
+                                runSpacing: 8,
+                                children: [
+                                  Text(
+                                    s.homeAiTitle,
+                                    style: theme.textTheme.headlineMedium
+                                        ?.copyWith(fontWeight: FontWeight.w800),
+                                  ),
+                                  if (!connected) const SoonBadge(),
+                                ],
+                              ),
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(24),
                         ),
-                        child: Column(
-                          children: [
-                            const AiOrb(size: 64),
-                            const SizedBox(height: 16),
-                            if (!connected) ...[
-                              const SoonBadge(onDark: true),
-                              const SizedBox(height: 8),
-                            ],
-                            Text(
-                              connected
-                                  ? s.assistantPrompt
-                                  : s.homeAiUnavailable,
-                              textAlign: TextAlign.center,
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
+                      if (!connected)
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Text(s.homeAiUnavailable),
+                          ),
                         ),
-                      ),
-                      if (connected && _messages.isEmpty && !_historyFailed)
+                      if (_messages.isEmpty && !_historyFailed) ...[
+                        const SizedBox(height: 16),
+                        if (!connected)
+                          Text(
+                            s.assistantPrompt,
+                            style: theme.textTheme.titleLarge,
+                          ),
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           child: Wrap(
                             spacing: 8,
                             runSpacing: 8,
                             children: [
-                              for (final prompt in s.assistantSuggestions)
+                              for (final (icon, prompt) in [
+                                (
+                                  Icons.restaurant_outlined,
+                                  s.assistantSuggestions[0],
+                                ),
+                                (
+                                  Icons.home_repair_service_outlined,
+                                  s.assistantSuggestions[1],
+                                ),
+                                (
+                                  Icons.event_available_outlined,
+                                  s.assistantSuggestions[2],
+                                ),
+                                (
+                                  Icons.auto_awesome_outlined,
+                                  s.assistantSuggestions[3],
+                                ),
+                              ])
                                 ActionChip(
+                                  avatar: Icon(icon, size: 18),
                                   label: Text(prompt),
                                   onPressed: canSend
                                       ? () => _draft.text = prompt
@@ -150,6 +191,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
                             ],
                           ),
                         ),
+                      ],
                       for (final message in _messages)
                         Align(
                           alignment: message.isUser
@@ -189,7 +231,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
                       suffixIcon: IconButton(
                         onPressed: canSend ? _send : null,
                         tooltip: s.assistantSend,
-                        icon: const Icon(Icons.arrow_upward_rounded),
+                        icon: const Icon(Icons.send_rounded),
                       ),
                     ),
                   ),

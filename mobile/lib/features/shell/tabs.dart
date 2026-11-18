@@ -12,11 +12,14 @@ import 'shell_strings.dart';
 import '../booking/booking_services.dart';
 import '../booking/presentation/services_home_screen.dart';
 
-enum KundeTab { home, search, orders, services, profile }
+enum KundeTab { home, search, assistant, orders, profile }
 
 class KundeNavigationBar extends StatelessWidget {
-  const KundeNavigationBar(
-      {required this.selected, required this.onSelected, super.key});
+  const KundeNavigationBar({
+    required this.selected,
+    required this.onSelected,
+    super.key,
+  });
 
   final KundeTab selected;
 
@@ -28,13 +31,7 @@ class KundeNavigationBar extends StatelessWidget {
     final s = KundeLocalizations.of(context);
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final labels = [
-      s.navHome,
-      s.navSearch,
-      s.navOrders,
-      s.navServices,
-      s.navProfile
-    ];
+    final labels = [s.navHome, s.navSearch, 'AI', s.navOrders, s.navProfile];
     final labelStyle = theme.textTheme.labelMedium!.copyWith(letterSpacing: 0);
     final textScaler =
         MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3);
@@ -46,7 +43,9 @@ class KundeNavigationBar extends StatelessWidget {
     for (final label in labels) {
       final painter = TextPainter(
         text: TextSpan(
-            text: label, style: labelStyle.copyWith(fontSize: fontSize)),
+          text: label,
+          style: labelStyle.copyWith(fontSize: fontSize),
+        ),
         textDirection: Directionality.of(context),
         textScaler: textScaler,
         maxLines: 1,
@@ -88,72 +87,29 @@ class KundeNavigationBar extends StatelessWidget {
               : (i) => onSelected!(KundeTab.values[i]),
           destinations: [
             NavigationDestination(
-                icon: const Icon(Icons.home_outlined),
-                selectedIcon: const Icon(Icons.home_rounded),
-                label: s.navHome),
+              icon: const Icon(Icons.home_outlined),
+              selectedIcon: const Icon(Icons.home_rounded),
+              label: s.navHome,
+            ),
             NavigationDestination(
-                icon: const Icon(Icons.search_rounded), label: s.navSearch),
+              icon: const Icon(Icons.search_rounded),
+              label: s.navSearch,
+            ),
+            const NavigationDestination(icon: AiOrb(size: 40), label: 'AI'),
             NavigationDestination(
-                icon: const Icon(Icons.receipt_long_outlined),
-                selectedIcon: const Icon(Icons.receipt_long_rounded),
-                label: s.navOrders),
+              icon: const Icon(Icons.shopping_bag_outlined),
+              selectedIcon: const Icon(Icons.shopping_bag_rounded),
+              label: s.navOrders,
+            ),
             NavigationDestination(
-                icon: const Icon(Icons.grid_view_outlined),
-                selectedIcon: const Icon(Icons.grid_view_rounded),
-                label: s.navServices),
-            NavigationDestination(
-                icon: const Icon(Icons.person_outline),
-                selectedIcon: const Icon(Icons.person_rounded),
-                label: s.navProfile),
+              icon: const Icon(Icons.person_outline),
+              selectedIcon: const Icon(Icons.person_rounded),
+              label: s.navProfile,
+            ),
           ],
         ),
       ),
     );
-  }
-}
-
-/// Uses the same server capability gate as the home category.
-class ServicesTab extends StatefulWidget {
-  const ServicesTab({required this.api, this.booking, super.key});
-  final KundeApi api;
-  final BookingServices? booking;
-
-  @override
-  State<ServicesTab> createState() => _ServicesTabState();
-}
-
-class _ServicesTabState extends State<ServicesTab> {
-  late Future<PlatformSnapshot> _snapshot = widget.api.loadPlatformSnapshot();
-
-  @override
-  Widget build(BuildContext context) {
-    final s = KundeLocalizations.of(context);
-    return FutureBuilder<PlatformSnapshot>(
-        future: _snapshot,
-        builder: (context, state) {
-          if (state.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (state.data?.bookingEnabled == true && widget.booking != null) {
-            return ServicesHomeScreen(services: widget.booking!);
-          }
-          return ListView(padding: const EdgeInsets.all(20), children: [
-            Text(s.navServices,
-                style: Theme.of(context).textTheme.headlineLarge),
-            const SizedBox(height: 24),
-            EmptyStateCard(
-                icon: Icons.grid_view_rounded,
-                title: state.hasError ? s.offline : s.servicesUnavailableTitle,
-                body:
-                    state.hasError ? s.retryHint : s.searchTabUnavailableBody),
-            if (state.hasError)
-              TextButton.icon(
-                  onPressed: () => setState(
-                      () => _snapshot = widget.api.loadPlatformSnapshot()),
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: Text(s.retry)),
-          ]);
-        });
   }
 }
 
@@ -172,11 +128,21 @@ class SearchTab extends StatefulWidget {
 
 class _SearchTabState extends State<SearchTab> {
   late Future<PlatformSnapshot> _snapshot;
+  bool _openOnly = false;
+  String _query = '';
 
   @override
   void initState() {
     super.initState();
     _snapshot = widget.api.loadPlatformSnapshot();
+  }
+
+  void _openFood(FoodServices food, String vertical) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => FoodHomeScreen(services: food, vertical: vertical),
+      ),
+    );
   }
 
   @override
@@ -197,62 +163,125 @@ class _SearchTabState extends State<SearchTab> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                if (!done)
-                  const Center(
-                      child: Padding(
-                          padding: EdgeInsets.all(24),
-                          child: CircularProgressIndicator()))
-                else if (enabled || canBrowseBookings) ...[
-                  if (enabled) CatalogSearchPanel(api: widget.api),
-                  if (enabled && food != null)
-                    for (final (icon, label, vertical) in [
-                      (Icons.restaurant_outlined, s.catFood, 'FOOD'),
-                      (
-                        Icons.shopping_basket_outlined,
-                        s.catGroceries,
-                        'GROCERY'
-                      ),
-                      (
-                        Icons.local_florist_outlined,
-                        s.catFlowers,
-                        'FLOWERS_GIFTS'
-                      ),
-                    ])
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: QuickAction(
-                          icon: icon,
-                          label: label,
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                                builder: (_) => FoodHomeScreen(
-                                    services: food, vertical: vertical)),
+                HomeHeader(
+                  onNotifications: () => showDialog<void>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text(s.homeNotifications),
+                      content: Text(s.homeNotificationsUnavailable),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(
+                            MaterialLocalizations.of(context).okButtonLabel,
                           ),
                         ),
-                      ),
-                  if (canBrowseBookings)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: QuickAction(
-                        icon: Icons.event_available_outlined,
-                        label: s.catServices,
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                              builder: (_) => ServicesHomeScreen(
-                                  services: widget.booking!)),
+                      ],
+                    ),
+                  ),
+                ),
+                Text(
+                  s.catalogTitle,
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
+                Text(s.catalogSubtitle),
+                const SizedBox(height: 16),
+                if (!done)
+                  Center(
+                    child: const CircularProgressIndicator(),
+                  )
+                else if (enabled || canBrowseBookings) ...[
+                  if (enabled)
+                    CatalogSearchPanel(
+                      api: widget.api,
+                      label: s.catalogSearchHint,
+                      onQueryChanged: food == null
+                          ? null
+                          : (value) => setState(() => _query = value),
+                    ),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      if (enabled && food != null)
+                        for (final (icon, label, vertical) in [
+                          (Icons.restaurant_outlined, s.catFood, 'FOOD'),
+                          (
+                            Icons.shopping_basket_outlined,
+                            s.catGroceries,
+                            'GROCERY',
+                          ),
+                          (
+                            Icons.local_florist_outlined,
+                            s.catFlowers,
+                            'FLOWERS_GIFTS',
+                          ),
+                        ])
+                          ActionChip(
+                            avatar: Icon(icon, size: 18),
+                            label: Text(label),
+                            onPressed: () => _openFood(food, vertical),
+                          ),
+                      ActionChip(
+                        avatar: const Icon(
+                          Icons.home_repair_service_outlined,
+                          size: 18,
                         ),
+                        label: Text(
+                          canBrowseBookings
+                              ? s.catServices
+                              : '${s.catServices} · ${s.homeSoon}',
+                        ),
+                        onPressed: canBrowseBookings
+                            ? () => Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => ServicesHomeScreen(
+                                      services: widget.booking!,
+                                    ),
+                                  ),
+                                )
+                            : null,
+                      ),
+                    ],
+                  ),
+                  if (enabled && food != null) ...[
+                    const SizedBox(height: 16),
+                    FoodBanner(
+                        compact: true, onOrder: () => _openFood(food, 'FOOD')),
+                    const SizedBox(height: 20),
+                    SectionTitle(title: s.nearbyTitle),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: FilterChip(
+                        avatar: const Icon(Icons.tune_rounded, size: 18),
+                        label: Text(s.catalogOpenOnly),
+                        selected: _openOnly,
+                        onSelected: (value) =>
+                            setState(() => _openOnly = value),
                       ),
                     ),
-                ] else if (state.hasError)
+                    FoodNearbySection(
+                        services: food, query: _query, openOnly: _openOnly),
+                  ],
+                ] else if (state.hasError) ...[
                   EmptyStateCard(
-                      icon: Icons.cloud_off_outlined,
-                      title: s.offline,
-                      body: s.retryHint)
-                else
+                    icon: Icons.cloud_off_outlined,
+                    title: s.offline,
+                    body: s.retryHint,
+                  ),
+                  TextButton(
+                    onPressed: () => setState(
+                      () => _snapshot = widget.api.loadPlatformSnapshot(),
+                    ),
+                    child: Text(s.retry),
+                  ),
+                ] else
                   EmptyStateCard(
-                      icon: Icons.search_off_rounded,
-                      title: s.searchTabUnavailableTitle,
-                      body: s.searchTabUnavailableBody),
+                    icon: Icons.search_off_rounded,
+                    title: s.searchTabUnavailableTitle,
+                    body: s.searchTabUnavailableBody,
+                  ),
               ],
             ),
           ),
@@ -276,9 +305,10 @@ class OrdersTab extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           children: [
             EmptyStateCard(
-                icon: Icons.receipt_long_outlined,
-                title: s.ordersEmptyTitle,
-                body: s.ordersEmptyBody),
+              icon: Icons.receipt_long_outlined,
+              title: s.ordersEmptyTitle,
+              body: s.ordersEmptyBody,
+            ),
           ],
         ),
       ),

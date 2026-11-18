@@ -78,6 +78,42 @@ def feed(version):
     screenshot(f"{version}-feed")
 
 
+def back_to_home_in_russian():
+    home()
+    tap("Профиль", "Profile", clickable=True)
+    tap("Язык приложения", "App language", "Қолданба тілі", clickable=True)
+    tap("Русский")
+    tap("Главная", clickable=True)
+
+
+def capture_tabs(version):
+    tap("Поиск", "Каталог", "Search", clickable=True)
+    find(node_class="android.widget.EditText", timeout=120)
+    screenshot(f"{version}-catalog")
+
+    tap("Заказы", "Orders", clickable=True)
+    find("Мои заказы", "My orders", "Заказов пока нет", "No orders yet", timeout=120)
+    screenshot(f"{version}-orders")
+
+    tap("Профиль", "Profile", clickable=True)
+    find("Тема", "Appearance", "Тақырып")
+    screenshot(f"{version}-profile")
+
+    tap("Главная", "Home", "Басты бет", clickable=True)
+    home()
+    try:
+        tap("AI", clickable=True, timeout=5)
+        assistant_is_tab = True
+    except RuntimeError:
+        tap("KUNDE AI")
+        assistant_is_tab = False
+    find("Скоро", "Soon", "Жақында")
+    screenshot(f"{version}-assistant")
+    if not assistant_is_tab:
+        adb("shell", "input", "keyevent", 4)
+    tap("Главная", "Home", "Басты бет", clickable=True)
+
+
 def main():
     REPORT.mkdir(parents=True, exist_ok=True)
     adb("shell", "wm", "size", "390x844")
@@ -89,17 +125,17 @@ def main():
     tap("Получить код", "Get code", "Код алу")
     find("Введите код", "Enter the code", "Кодты енгізіңіз", timeout=120)
     adb("shell", "input", "text", "123456")
+    back_to_home_in_russian()
     feed("before")
+    capture_tabs("before")
 
     launch("after")
+    back_to_home_in_russian()
     feed("after")
     adb("shell", "am", "force-stop", PACKAGE)
     adb("shell", "am", "start", "-W", "-n", f"{PACKAGE}/.MainActivity")
-    home()
-    tap("KUNDE AI")
-    find("Скоро", "Soon", "Жақында")
-    screenshot("after-assistant")
-    adb("shell", "input", "keyevent", 4)
+    back_to_home_in_russian()
+    capture_tabs("after")
     tap("Профиль", "Profile", clickable=True)
     tap("Тема", "Appearance", "Тақырып")
     tap("Главная", "Home", "Басты бет", clickable=True)

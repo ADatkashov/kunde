@@ -459,6 +459,41 @@ void main() {
     await premiumGolden(tester, 'premium_home_nearby');
   });
 
+  testWidgets('catalog filters real API results by availability and query',
+      (tester) async {
+    final backend = _FakeBackend()..withClosedRestaurant = true;
+    final services = await _services(backend, tester);
+    final api = KundeApi(
+      baseUri: Uri.parse('https://api.example.test/api/v1/'),
+      client: MockClient((_) async => http.Response(
+          jsonEncode({
+            'releaseStage': 'DEV',
+            'marketplaceEnabled': true,
+            'oidcIssuerConfigured': false,
+            'aiEnabled': false,
+          }),
+          200)),
+    );
+    addTearDown(api.close);
+
+    await _show(tester, Scaffold(body: SearchTab(api: api, food: services)),
+        locale: const Locale('ru'), size: const Size(390, 1000), pixelRatio: 1);
+    final closed = find.text('Закрытая Пиццерия');
+    expect(closed, findsOneWidget);
+    await tester.tap(find.text('Открыто сейчас'));
+    await tester.pumpAndSettle();
+    expect(closed, findsNothing);
+    expect(find.text('Пицца Тест'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'Суши');
+    await tester.pumpAndSettle();
+    expect(find.text('Пицца Тест'), findsNothing);
+    expect(
+        find.text(KundeLocalizations.of(tester.element(find.byType(SearchTab)))
+            .searchEmpty),
+        findsOneWidget);
+    expect(backend.requestedVerticals, hasLength(1));
+  });
+
   testWidgets('premium golden Food and Grocery Samsung', (tester) async {
     await tester.runAsync(loadPremiumFonts);
     final services = await _services(_FakeBackend(), tester);
@@ -612,7 +647,7 @@ void main() {
     final services = await _services(backend, tester);
     await _show(tester,
         Scaffold(body: FoodOrdersTab(key: UniqueKey(), services: services)));
-    expect(find.text('Заказов пока нет'), findsOneWidget);
+    expect(find.text('No orders yet'), findsOneWidget);
 
     backend.offline = true;
     await _show(tester,
@@ -621,7 +656,7 @@ void main() {
     backend.offline = false;
     await tester.tap(find.text('Повторить'));
     await tester.pumpAndSettle();
-    expect(find.text('Заказов пока нет'), findsOneWidget);
+    expect(find.text('No orders yet'), findsOneWidget);
   });
 
   testWidgets('catalog shows a retryable error when the server is unreachable',

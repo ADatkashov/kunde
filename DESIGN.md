@@ -7,7 +7,7 @@ Food, Grocery and booking retain their existing DEV contracts.
 
 ## Visual direction
 Compact Almaty header and search, three violet/lilac/gold promotion cards,
-a two-row category grid, a horizontal meal banner and a nearby photo rail.
+a prominent meal banner, a two-row category grid and a nearby photo rail.
 The dark canvas is navy and the light canvas is cool white. AI has a luminous
 violet mark and a localized Soon status. Rewards, membership and notifications
 explain their availability when opened.
@@ -37,10 +37,10 @@ Remote HTTPS product imagery retains fallback behavior. Synthetic merchants
 keep the ДЕМО label. City picker lists only the supported city, Almaty.
 
 ## Navigation and compatibility
-Five tabs: Home, Search, Orders, Services, Profile. This owner request supersedes
+Five tabs: Home, Search, AI, Orders, Profile. This owner request supersedes
 the older four-tab design decision; Profile remains directly reachable to
 preserve addresses, language, consents, support, partner tools and logout.
-Services uses the same server booking gate as Home. Language/logout are in the
+The catalog exposes services using the same server booking gate as Home. Language/logout are in the
 Profile app bar; the main feed has one branded header. Backend, capability
 flags, pricing, stock, idempotent ordering and authentication are unchanged.
 

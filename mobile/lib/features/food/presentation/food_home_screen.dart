@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/kunde_localizations.dart';
+import '../../../core/localization/kunde_formats.dart';
+import '../../home/presentation/home_strings.dart';
 import '../data/food_api.dart';
 import '../data/food_models.dart';
 import '../food_services.dart';
@@ -373,9 +376,15 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
 
 /// Horizontal list of restaurants for the home screen ("Рядом с вами").
 class FoodNearbySection extends StatefulWidget {
-  const FoodNearbySection({required this.services, super.key});
+  const FoodNearbySection(
+      {required this.services,
+      this.query = '',
+      this.openOnly = false,
+      super.key});
 
   final FoodServices services;
+  final String query;
+  final bool openOnly;
 
   @override
   State<FoodNearbySection> createState() => _FoodNearbySectionState();
@@ -388,26 +397,38 @@ class _FoodNearbySectionState extends State<FoodNearbySection> {
   Widget build(BuildContext context) => FutureBuilder<List<Restaurant>>(
         future: _future,
         builder: (context, state) {
+          final s = KundeLocalizations.of(context);
           if (state.connectionState != ConnectionState.done) {
             return const SizedBox(
                 height: 120, child: Center(child: CircularProgressIndicator()));
           }
-          if (state.hasError || state.data!.isEmpty) {
+          if (state.hasError) {
             return Card(
               margin: EdgeInsets.zero,
               child: ListTile(
                 leading: const Icon(Icons.cloud_off_outlined),
-                title: const Text('Не удалось загрузить рестораны'),
+                title: Text(s.catalogRestaurantsError),
                 trailing: TextButton(
                     onPressed: () => setState(
                         () => _future = widget.services.api.restaurants()),
-                    child: const Text('Повторить')),
+                    child: Text(s.retry)),
               ),
             );
           }
-          final list = state.data!.take(6).toList();
+          final query = widget.query.trim().toLowerCase();
+          final list = state.data!
+              .where((restaurant) {
+                return (!widget.openOnly || restaurant.open) &&
+                    (restaurant.name.toLowerCase().contains(query) ||
+                        restaurant.cuisine.toLowerCase().contains(query));
+              })
+              .take(6)
+              .toList();
+          if (list.isEmpty) {
+            return Text(s.searchEmpty);
+          }
           return SizedBox(
-            height: 104 + MediaQuery.textScalerOf(context).scale(72),
+            height: 104 + MediaQuery.textScalerOf(context).scale(96),
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: list.length,
@@ -415,7 +436,7 @@ class _FoodNearbySectionState extends State<FoodNearbySection> {
               itemBuilder: (context, i) {
                 final r = list[i];
                 return SizedBox(
-                  width: 136,
+                  width: 154,
                   child: Card(
                     clipBehavior: Clip.antiAlias,
                     margin: EdgeInsets.zero,
@@ -428,7 +449,7 @@ class _FoodNearbySectionState extends State<FoodNearbySection> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             MerchantArtwork(
-                                restaurant: r, height: 80, nearby: true),
+                                restaurant: r, height: 88, nearby: true),
                             Padding(
                               padding: const EdgeInsets.all(8),
                               child: Column(
@@ -444,13 +465,26 @@ class _FoodNearbySectionState extends State<FoodNearbySection> {
                                     if (r.synthetic) const DemoBadge(),
                                     Text(
                                         r.open
-                                            ? '${r.cuisine} · ${r.eta}'
-                                            : 'Закрыто',
+                                            ? '${r.cuisine} · ${s.catalogEta(r.etaMinMinutes, r.etaMaxMinutes)}'
+                                            : s.catalogClosed,
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
                                         style: Theme.of(context)
                                             .textTheme
                                             .bodySmall),
+                                    if (r.minOrderMinor > 0)
+                                      Text(
+                                        s.catalogMinOrder(KundeFormats.money(
+                                          r.minOrderMinor,
+                                          'KZT',
+                                          Localizations.localeOf(context),
+                                        )),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .labelSmall,
+                                      ),
                                   ]),
                             ),
                           ]),

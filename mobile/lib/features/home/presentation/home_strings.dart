@@ -18,6 +18,8 @@ extension HomeStrings on KundeLocalizations {
   List<String> get assistantSuggestions => [
         _t('Найти ресторан', 'Мейрамхана табу', 'Find a restaurant'),
         _t('Найти услугу', 'Қызмет табу', 'Find a service'),
+        _t('Записаться на услугу', 'Қызметке жазылу', 'Book a service'),
+        _t('Получить рекомендации', 'Ұсыныс алу', 'Get recommendations'),
       ];
   String get orderDetails => _t('Заказ', 'Тапсырыс', 'Order');
   String get appearance => _t('Тема', 'Тақырып', 'Appearance');
@@ -32,9 +34,9 @@ extension HomeStrings on KundeLocalizations {
   String get homeLocationLabel =>
       _t('Город: Алматы', 'Қала: Алматы', 'City: Almaty');
   String get homeSearchHint => _t(
-        'Что хотите сделать сегодня?',
-        'Бүгін не істегіңіз келеді?',
-        'What do you want to do today?',
+        'Найти сервис, услугу или товар',
+        'Қызметті немесе тауарды табу',
+        'Find a service or product',
       );
   String get homeNotifications =>
       _t('Уведомления', 'Хабарландырулар', 'Notifications');
@@ -97,7 +99,7 @@ extension HomeStrings on KundeLocalizations {
   String get bannerBadge =>
       _t('Старт в Алматы', 'Алматыда бастау', 'Starting in Almaty');
   String get bannerTitle => _t(
-        'Заказ еды в KUNDE',
+        'Заказ еды\nв KUNDE',
         'KUNDE-де тамақ тапсырысы',
         'Food ordering in KUNDE',
       );
@@ -111,12 +113,45 @@ extension HomeStrings on KundeLocalizations {
         'Алматы мейрамханалары бір қосымшада. Демо режим: сынақ мейрамханалары, төлем мен жеткізу имитацияланады.',
         'Almaty restaurants in one app. Demo mode: test restaurants, mock payment and simulated delivery.',
       );
+  String get bannerSubtitle => _t(
+        'Любимые рестораны Алматы с доставкой',
+        'Алматының сүйікті мейрамханаларынан жеткізу',
+        'Delivery from your favourite Almaty restaurants',
+      );
+  String get catalogTitle =>
+      _t('Еда и услуги', 'Тамақ және қызметтер', 'Food and services');
+  String get catalogSearchHint => _t(
+      'Найти ресторан, блюдо или услугу',
+      'Мейрамхана, тағам немесе қызмет табу',
+      'Find a restaurant, dish or service');
+  String get catalogClosed => _t('Закрыто', 'Жабық', 'Closed');
+  String catalogEta(int min, int max) =>
+      _t('$min–$max мин', '$min–$max мин', '$min–$max min');
+  String catalogMinOrder(String amount) =>
+      _t('Мин. заказ $amount', 'Мин. тапсырыс $amount', 'Min. order $amount');
+  String get catalogRestaurantsError => _t('Не удалось загрузить рестораны',
+      'Мейрамханаларды жүктеу мүмкін болмады', 'Could not load restaurants');
+  String get catalogOpenOnly => _t('Открыто сейчас', 'Қазір ашық', 'Open now');
+  String get catalogSubtitle => _t(
+        'Рестораны, доставка и услуги в Алматы',
+        'Алматыдағы мейрамханалар, жеткізу және қызметтер',
+        'Restaurants, delivery and services in Almaty',
+      );
+  String get ordersAll => _t('Все', 'Барлығы', 'All');
+  String get ordersActive => _t('Активные', 'Белсенді', 'Active');
+  String get ordersCompleted => _t('Завершённые', 'Аяқталған', 'Completed');
+  String get ordersFilterEmpty => _t(
+        'В этой категории заказов пока нет',
+        'Бұл санатта тапсырыс жоқ',
+        'No orders in this category',
+      );
   String get bannerCtaLive => _t('Заказать', 'Тапсырыс беру', 'Order');
   String get bannerCta => _t('Найти', 'Іздеу', 'Search');
   String get quickOrders => _t('Мои заказы', 'Тапсырыстарым', 'My orders');
   String get quickFavorites => _t('Избранное', 'Таңдаулылар', 'Favorites');
   String get quickPromo => _t('Скидки и промо', 'Жеңілдіктер', 'Deals & promo');
   String get quickPay => 'KUNDE Pay';
+  String get nearbySeeAll => _t('Смотреть все', 'Барлығын көру', 'See all');
   String get nearbyTitle => _t('Рядом с вами', 'Жаныңызда', 'Near you');
   String get nearbyEmptyTitle => _t(
         'Пока нет ресторанов',
