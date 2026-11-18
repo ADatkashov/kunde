@@ -279,7 +279,13 @@ class _OrderScreenState extends State<OrderScreen> {
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.payments_outlined),
           title: const Text('Оплата'),
-          subtitle: Text(order.paymentLabel)),
+          subtitle: Text(order.paymentMethod == 'DEV_NO_PAYMENT'
+              ? switch (Localizations.localeOf(context).languageCode) {
+                  'kk' => 'Сынақ тапсырыс — төлемсіз',
+                  'en' => 'Test order — no payment',
+                  _ => 'Тестовый заказ — без оплаты',
+                }
+              : order.paymentLabel)),
       if (order.comment != null)
         ListTile(
             contentPadding: EdgeInsets.zero,
@@ -356,9 +362,13 @@ class _StatusTimeline extends StatelessWidget {
       );
     }
     final current = orderFlow.indexOf(order.status);
+    final label = order.vertical == 'FLOWERS_GIFTS'
+        ? flowersStatusLabel(
+            order.status, Localizations.localeOf(context).languageCode)
+        : orderStatusLabel(order.status);
     return Semantics(
       container: true,
-      label: 'Статус заказа: ${orderStatusLabel(order.status)}',
+      label: label,
       child: Column(children: [
         for (var i = 0; i < orderFlow.length; i++)
           _step(
@@ -406,7 +416,11 @@ class _StatusTimeline extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 14),
             child: Row(children: [
               Expanded(
-                child: Text(orderStatusLabel(orderFlow[index]),
+                child: Text(
+                    order.vertical == 'FLOWERS_GIFTS'
+                        ? flowersStatusLabel(orderFlow[index],
+                            Localizations.localeOf(context).languageCode)
+                        : orderStatusLabel(orderFlow[index]),
                     style: theme.textTheme.bodyLarge?.copyWith(
                         fontWeight: active ? FontWeight.w700 : FontWeight.w400,
                         color: done || active

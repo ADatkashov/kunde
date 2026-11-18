@@ -460,6 +460,12 @@ void main() {
     await premiumGolden(tester, 'premium_history');
   });
 
+  test('flowers statuses describe synthetic fulfilment', () {
+    expect(flowersStatusLabel('DELIVERED', 'ru'), contains('Тестовая'));
+    expect(flowersStatusLabel('DELIVERED', 'kk'), contains('Сынақ'));
+    expect(flowersStatusLabel('DELIVERED', 'en'), contains('Test'));
+  });
+
   test('price changes are explained in all checkout languages', () {
     const error = FoodException(FoodFailure.priceChanged);
     expect(error.messageFor('ru'), contains('Цена изменилась'));

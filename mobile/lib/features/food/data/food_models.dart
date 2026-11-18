@@ -430,6 +430,45 @@ String orderStatusLabel(String status) => switch (status) {
       _ => status,
     };
 
+/// Flower orders use synthetic fulfilment steps; no courier or delivery is implied.
+String flowersStatusLabel(String status, String language) {
+  final values = <String, (String, String, String)>{
+    'PLACED': (
+      'Тестовый заказ создан',
+      'Сынақ тапсырыс жасалды',
+      'Test order created'
+    ),
+    'ACCEPTED': (
+      'Партнёр принял заказ',
+      'Серіктес тапсырысты қабылдады',
+      'Partner accepted'
+    ),
+    'PREPARING': (
+      'Партнёр обрабатывает',
+      'Серіктес өңдеуде',
+      'Partner processing'
+    ),
+    'ON_THE_WAY': (
+      'Тестовый этап передачи',
+      'Сынақ тапсыру кезеңі',
+      'Test handoff step'
+    ),
+    'DELIVERED': (
+      'Тестовая обработка завершена',
+      'Сынақ өңдеу аяқталды',
+      'Test processing completed'
+    ),
+    'CANCELLED': ('Заказ отменён', 'Тапсырыс тоқтатылды', 'Order cancelled'),
+  };
+  final value = values[status];
+  if (value == null) return status;
+  return switch (language) {
+    'kk' => value.$2,
+    'en' => value.$3,
+    _ => value.$1
+  };
+}
+
 class FoodOrder {
   const FoodOrder({
     required this.id,

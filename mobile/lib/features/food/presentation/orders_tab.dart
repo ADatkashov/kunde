@@ -153,7 +153,11 @@ class _OrderCard extends StatelessWidget {
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                     color: chipColor, borderRadius: BorderRadius.circular(999)),
-                child: Text(orderStatusLabel(order.status),
+                child: Text(
+                    order.vertical == 'FLOWERS_GIFTS'
+                        ? flowersStatusLabel(order.status,
+                            Localizations.localeOf(context).languageCode)
+                        : orderStatusLabel(order.status),
                     style: const TextStyle(
                         fontSize: 12, fontWeight: FontWeight.w600)),
               ),
