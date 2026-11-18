@@ -103,6 +103,7 @@ class _FakeBackend {
   final keys = <String, String>{};
   bool offline = false;
   bool withClosedRestaurant = false;
+  bool flowersCatalog = false;
   final requestedVerticals = <String?>[];
   int minOrder = 0;
 
@@ -118,6 +119,12 @@ class _FakeBackend {
         : jsonDecode(request.body) as Map<String, dynamic>;
     if (path == 'food/restaurants') {
       requestedVerticals.add(request.url.queryParameters['vertical']);
+      if (request.url.queryParameters['vertical'] == 'FLOWERS_GIFTS' &&
+          flowersCatalog) {
+        return _json([
+          {..._restaurant(), 'vertical': 'FLOWERS_GIFTS'}
+        ]);
+      }
       if (request.url.queryParameters['vertical'] == 'GROCERY') {
         return _json([
           {
@@ -142,7 +149,13 @@ class _FakeBackend {
       ]);
     }
     if (path == 'food/restaurants/$_restaurantId') {
-      return _json({..._menu, 'restaurant': _restaurant(minOrder: minOrder)});
+      return _json({
+        ..._menu,
+        'restaurant': {
+          ..._restaurant(minOrder: minOrder),
+          if (flowersCatalog) 'vertical': 'FLOWERS_GIFTS'
+        }
+      });
     }
     if (path == 'food/search') return _json({'restaurants': [], 'dishes': []});
     if (path == 'me/addresses') {
@@ -170,6 +183,7 @@ class _FakeBackend {
         'id': 'aaaaaaaa-0000-0000-0000-00000000000${orders.length + 1}',
         'restaurantId': _restaurantId,
         'restaurantName': 'Пицца Тест',
+        if (flowersCatalog) 'vertical': 'FLOWERS_GIFTS',
         'status': 'PLACED',
         'paymentMethod': body['paymentMethod'],
         'paymentStatus': body['paymentMethod'] == 'DEV_NO_PAYMENT'
@@ -311,6 +325,31 @@ void main() {
         tester, FoodHomeScreen(services: services, vertical: 'FLOWERS_GIFTS'));
     expect(backend.requestedVerticals, contains('FLOWERS_GIFTS'));
     expect(find.text('Flowers & gifts'), findsOneWidget);
+  });
+
+  testWidgets('flowers store to test order and history', (tester) async {
+    final backend = _FakeBackend()..flowersCatalog = true;
+    final services = await _services(backend, tester);
+    await _show(
+        tester, FoodHomeScreen(services: services, vertical: 'FLOWERS_GIFTS'));
+    await tester.tap(find.text('Пицца Тест'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Маргарита'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Add ·'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Cart · 1'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Checkout ·'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.textContaining('Confirm order'), 300,
+        scrollable: find.byType(Scrollable).last);
+    await tester.tap(find.textContaining('Confirm order'));
+    await tester.pumpAndSettle();
+    expect(backend.orders.single['paymentMethod'], 'DEV_NO_PAYMENT');
+    expect(find.text('Test order created'), findsWidgets);
+    await _show(tester, Scaffold(body: FoodOrdersTab(services: services)));
+    expect(find.text('Пицца Тест'), findsOneWidget);
   });
 
   testWidgets('flowers checkout submits no payment', (tester) async {

@@ -260,7 +260,12 @@ class FoodCartBar extends StatelessWidget {
                 child: Row(children: [
                   const Icon(Icons.shopping_bag_outlined),
                   const SizedBox(width: 10),
-                  Text('Корзина · ${cart.itemCount}'),
+                  Text(
+                      '${cart.restaurant?.vertical == 'FLOWERS_GIFTS' ? switch (Localizations.localeOf(context).languageCode) {
+                          'kk' => 'Себет',
+                          'en' => 'Cart',
+                          _ => 'Корзина'
+                        } : 'Корзина'} · ${cart.itemCount}'),
                   const Spacer(),
                   Text(formatTenge(cart.previewSubtotalMinor),
                       style: const TextStyle(fontWeight: FontWeight.w700)),
