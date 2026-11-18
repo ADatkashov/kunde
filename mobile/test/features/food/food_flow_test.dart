@@ -707,17 +707,14 @@ void main() {
       (tester) async {
     final backend = _FakeBackend()..withClosedRestaurant = true;
     final services = await _services(backend, tester);
-    await _show(tester, FoodHomeScreen(services: services));
+    await _show(tester, FoodHomeScreen(services: services),
+        size: const Size(640, 800), pixelRatio: 1);
     expect(find.text('Закрытая Пиццерия'), findsOneWidget);
     await tester.tap(find.text('Открыто сейчас'));
     await tester.pumpAndSettle();
     expect(find.text('Закрытая Пиццерия'), findsNothing);
     expect(find.text('Пицца Тест'), findsOneWidget);
     final cuisine = find.widgetWithText(ChoiceChip, 'Итальянская');
-    await tester.scrollUntilVisible(cuisine, 100,
-        scrollable: find.byWidgetPredicate((widget) =>
-            widget is Scrollable &&
-            widget.axisDirection == AxisDirection.right));
     await tester.tap(cuisine);
     await tester.pumpAndSettle();
     expect(tester.widget<ChoiceChip>(cuisine).selected, isTrue);
