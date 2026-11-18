@@ -11,9 +11,11 @@ import 'order_screen.dart';
 
 /// Orders tab: history of the signed-in customer, restored from the server on every open.
 class FoodOrdersTab extends StatefulWidget {
-  const FoodOrdersTab({required this.services, super.key});
+  const FoodOrdersTab(
+      {required this.services, this.showHeading = true, super.key});
 
   final FoodServices services;
+  final bool showHeading;
 
   @override
   State<FoodOrdersTab> createState() => _FoodOrdersTabState();
@@ -91,10 +93,11 @@ class _FoodOrdersTabState extends State<FoodOrdersTab> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(16),
                     children: [
-                      Text(
-                        s.quickOrders,
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
+                      if (widget.showHeading)
+                        Text(
+                          s.quickOrders,
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
                       const SizedBox(height: 8),
                       Wrap(
                         spacing: 8,
@@ -105,6 +108,7 @@ class _FoodOrdersTabState extends State<FoodOrdersTab> {
                             (_OrderFilter.completed, s.ordersCompleted),
                           ])
                             ChoiceChip(
+                              shape: const StadiumBorder(),
                               label: Text(label),
                               selected: _filter == filter,
                               onSelected: (_) =>

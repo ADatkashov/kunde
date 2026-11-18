@@ -99,7 +99,7 @@ extension HomeStrings on KundeLocalizations {
   String get bannerBadge =>
       _t('Старт в Алматы', 'Алматыда бастау', 'Starting in Almaty');
   String get bannerTitle => _t(
-        'Заказ еды в KUNDE',
+        'Заказ еды\nв KUNDE',
         'KUNDE-де тамақ тапсырысы',
         'Food ordering in KUNDE',
       );
@@ -120,6 +120,17 @@ extension HomeStrings on KundeLocalizations {
       );
   String get catalogTitle =>
       _t('Еда и услуги', 'Тамақ және қызметтер', 'Food and services');
+  String get catalogSearchHint => _t(
+      'Найти ресторан, блюдо или услугу',
+      'Мейрамхана, тағам немесе қызмет табу',
+      'Find a restaurant, dish or service');
+  String get catalogClosed => _t('Закрыто', 'Жабық', 'Closed');
+  String catalogEta(int min, int max) =>
+      _t('$min–$max мин', '$min–$max мин', '$min–$max min');
+  String catalogMinOrder(String amount) =>
+      _t('Мин. заказ $amount', 'Мин. тапсырыс $amount', 'Min. order $amount');
+  String get catalogRestaurantsError => _t('Не удалось загрузить рестораны',
+      'Мейрамханаларды жүктеу мүмкін болмады', 'Could not load restaurants');
   String get catalogOpenOnly => _t('Открыто сейчас', 'Қазір ашық', 'Open now');
   String get catalogSubtitle => _t(
         'Рестораны, доставка и услуги в Алматы',
@@ -140,6 +151,7 @@ extension HomeStrings on KundeLocalizations {
   String get quickFavorites => _t('Избранное', 'Таңдаулылар', 'Favorites');
   String get quickPromo => _t('Скидки и промо', 'Жеңілдіктер', 'Deals & promo');
   String get quickPay => 'KUNDE Pay';
+  String get nearbySeeAll => _t('Смотреть все', 'Барлығын көру', 'See all');
   String get nearbyTitle => _t('Рядом с вами', 'Жаныңызда', 'Near you');
   String get nearbyEmptyTitle => _t(
         'Пока нет ресторанов',

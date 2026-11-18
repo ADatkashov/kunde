@@ -412,9 +412,17 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                     ),
-                    const SizedBox(height: 16),
-                    SectionTitle(title: s.nearbyTitle, trailing: s.homeCity),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
+                    SectionTitle(
+                      title: s.nearbyTitle,
+                      action: marketplace
+                          ? TextButton(
+                              onPressed: _openSearch,
+                              child: Text(s.nearbySeeAll,
+                                  textAlign: TextAlign.end),
+                            )
+                          : null,
+                    ),
                     if (loading)
                       const _CategorySkeleton()
                     else if (marketplace && widget.food != null) ...[
@@ -424,7 +432,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Expanded(
                             child: ServicePhotoCard(
                               label: s.nearbyRestaurants,
-                              asset: 'assets/photos/food.jpg',
+                              asset: 'assets/photos/nearby-restaurants.webp',
                               onTap: _openFood,
                             ),
                           ),
@@ -432,7 +440,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Expanded(
                             child: ServicePhotoCard(
                               label: s.nearbyStores,
-                              asset: 'assets/photos/groceries.jpg',
+                              asset: 'assets/photos/nearby-groceries.webp',
                               onTap: () => _onCategory(
                                 categories.firstWhere(
                                   (c) => c.label == s.catGroceries,
@@ -449,7 +457,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             Expanded(
                               child: ServicePhotoCard(
                                 label: s.catHome,
-                                asset: 'assets/photos/home-services.jpg',
+                                asset: 'assets/photos/nearby-home.webp',
                                 onTap: () => _onCategory(
                                   categories.firstWhere(
                                     (c) => c.label == s.catHome,

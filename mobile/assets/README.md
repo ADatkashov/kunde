@@ -9,6 +9,10 @@
   Download: https://images.unsplash.com/photo-1568901346375-23c9450c58cd
   License: https://unsplash.com/license (free commercial use; downloaded 2026-11-15).
   Used only as a promotional illustration, never as a merchant/product photograph.
+- `photos/food-banner.webp`: generated promotional artwork for KUNDE.
+  Used as decorative banner imagery.
+- `photos/nearby-*.webp`: generated category illustrations for the home
+  recommendations. They do not depict a catalog merchant or item.
 - Almaty mountains and K mark: original vector artwork in the Flutter source.
 
 All artwork is bundled for offline rendering; no third-party image requests are

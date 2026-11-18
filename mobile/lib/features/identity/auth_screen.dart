@@ -206,7 +206,7 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
         appBar: signedIn && _profile != null && _tab != KundeTab.profile
             ? null
             : AppBar(
-                title: const Text('KUNDE'),
+                title: Text(signedIn && _profile != null ? s.profile : 'KUNDE'),
                 actions: [
                   if (!_editing)
                     if (!signedIn || _profile == null) _languageMenu(s),
@@ -457,7 +457,8 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          _profile!['displayName'] as String? ?? s.profile,
+                          _profile!['displayName'] as String? ??
+                              s.unnamedProfile,
                           style:
                               Theme.of(context).textTheme.titleLarge?.copyWith(
                                     color: Colors.white,

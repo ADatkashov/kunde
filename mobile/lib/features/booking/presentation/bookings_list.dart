@@ -109,18 +109,18 @@ class _BookingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final s = bkL10n(context);
-    final cancelled = booking.status == 'CANCELLED';
-    final chipColor = cancelled
-        ? theme.colorScheme.errorContainer
-        : booking.status == 'COMPLETED'
-            ? const Color(0xFFDDF4E2)
-            : const Color(0xFFDDEBFF);
+    final colors = theme.colorScheme;
+    final (chipColor, chipInk) = switch (booking.status) {
+      'CANCELLED' => (colors.errorContainer, colors.onErrorContainer),
+      'COMPLETED' => (colors.tertiaryContainer, colors.onTertiaryContainer),
+      _ => (colors.secondaryContainer, colors.onSecondaryContainer),
+    };
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Card(
         margin: EdgeInsets.zero,
         elevation: 0,
-        color: Colors.white,
+        color: colors.surface,
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
             side: BorderSide(color: theme.colorScheme.outlineVariant)),
@@ -132,20 +132,28 @@ class _BookingCard extends StatelessWidget {
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
+                Icon(
+                    booking.isCleaning
+                        ? Icons.cleaning_services_outlined
+                        : Icons.content_cut,
+                    color: colors.primary,
+                    size: 20),
+                const SizedBox(width: 8),
                 Expanded(
-                    child: Text(
-                        '${booking.isCleaning ? '🧹' : '💈'} ${booking.venueName}',
+                    child: Text(booking.venueName,
                         style: theme.textTheme.titleMedium)),
-                Container(
+                const SizedBox(width: 8),
+                Flexible(
+                    child: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                       color: chipColor,
                       borderRadius: BorderRadius.circular(999)),
                   child: Text(s.bkStatus(booking.status),
-                      style: const TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.w600)),
-                ),
+                      style: theme.textTheme.labelMedium
+                          ?.copyWith(color: chipInk)),
+                )),
               ]),
               const SizedBox(height: 6),
               Text(

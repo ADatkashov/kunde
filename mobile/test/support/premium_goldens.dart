@@ -49,6 +49,13 @@ Future<void> premiumGolden(WidgetTester tester, String name) async {
         precacheImage(AssetImage('assets/illustrations/$name.png'), context),
       for (final name in ['food', 'groceries', 'home-services', 'beauty'])
         precacheImage(AssetImage('assets/photos/$name.jpg'), context),
+      for (final name in [
+        'food-banner',
+        'nearby-restaurants',
+        'nearby-groceries',
+        'nearby-home',
+      ])
+        precacheImage(AssetImage('assets/photos/$name.webp'), context),
     ]);
   });
   await tester.pumpAndSettle();

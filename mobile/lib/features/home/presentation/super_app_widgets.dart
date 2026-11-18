@@ -394,6 +394,15 @@ class CategoryTile extends StatelessWidget {
     final status = category.isAll
         ? ''
         : ', ${category.enabled ? s.categoryAvailable : s.homeSoon}';
+    final artwork = switch (category.icon) {
+      Icons.ramen_dining_rounded => 'burger',
+      Icons.shopping_basket_rounded => 'grocery',
+      Icons.home_rounded => 'home',
+      Icons.directions_car_rounded => 'auto',
+      Icons.confirmation_number_rounded => 'leisure',
+      Icons.favorite_rounded => 'health',
+      _ => null,
+    };
     final iconColor = Color.alphaBlend(
       colors.onSurface.withValues(
         alpha: theme.brightness == Brightness.dark ? .42 : .05,
@@ -409,12 +418,7 @@ class CategoryTile extends StatelessWidget {
           color: colors.surface,
           elevation: 2,
           shadowColor: colors.shadow.withValues(alpha: .16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: colors.outlineVariant.withValues(alpha: .6),
-            ),
-          ),
+          borderRadius: BorderRadius.circular(18),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: onTap,
@@ -423,15 +427,13 @@ class CategoryTile extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: iconColor.withValues(alpha: .14),
+                  if (artwork != null)
+                    KundeIllustration(artwork, size: 36)
+                  else
+                    SizedBox.square(
+                      dimension: 36,
+                      child: Icon(category.icon, size: 28, color: iconColor),
                     ),
-                    child: Icon(category.icon, size: 26, color: iconColor),
-                  ),
                   const SizedBox(height: 4),
                   Flexible(
                     child: Text(
@@ -471,24 +473,24 @@ class CategoryTile extends StatelessWidget {
 }
 
 class FoodBanner extends StatelessWidget {
-  const FoodBanner({this.onOrder, super.key});
+  const FoodBanner({this.onOrder, this.compact = false, super.key});
 
   /// Null while the marketplace is not enabled: the action is shown disabled.
   final VoidCallback? onOrder;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final s = KundeLocalizations.of(context);
     return Material(
       color: const Color(0xFF21193D),
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(22),
       clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
           Positioned.fill(
-            left: 110,
             child: Image.asset(
-              'assets/photos/food.jpg',
+              'assets/photos/food-banner.webp',
               fit: BoxFit.cover,
               alignment: Alignment.center,
               excludeFromSemantics: true,
@@ -498,12 +500,8 @@ class FoodBanner extends StatelessWidget {
             child: DecoratedBox(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    Color(0xFF21193D),
-                    Color(0xFF472A82),
-                    Color(0x0021193D),
-                  ],
-                  stops: [0, .46, .85],
+                  colors: [Color(0xD921193D), Color(0x0021193D)],
+                  stops: [0, .64],
                 ),
               ),
             ),
@@ -520,23 +518,23 @@ class FoodBanner extends StatelessWidget {
                   child: Row(
                     children: [
                       Expanded(
-                        flex: 7,
+                        flex: 6,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               s.bannerTitle,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 22,
+                                fontSize: compact ? 19 : 22,
                                 fontWeight: FontWeight.w800,
+                                height: 1.12,
                               ),
                             ),
                             const SizedBox(height: 6),
-                            Text(
-                              s.bannerSubtitle,
-                              style: const TextStyle(color: Colors.white),
-                            ),
+                            if (!compact)
+                              Text(s.bannerSubtitle,
+                                  style: const TextStyle(color: Colors.white)),
                             const SizedBox(height: 12),
                             if (onOrder == null)
                               const SoonBadge(onDark: true)
@@ -551,19 +549,28 @@ class FoodBanner extends StatelessWidget {
                                     horizontal: 12,
                                     vertical: 7,
                                   ),
-                                  child: Text(
-                                    s.bannerCtaLive,
-                                    style: const TextStyle(
-                                      color: Color(0xFF101426),
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                                  child: Wrap(
+                                    spacing: 6,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    children: [
+                                      Text(
+                                        s.bannerCtaLive,
+                                        style: const TextStyle(
+                                          color: Color(0xFF101426),
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      const Icon(Icons.arrow_forward_rounded,
+                                          size: 16, color: Color(0xFF101426)),
+                                    ],
                                   ),
                                 ),
                               ),
                           ],
                         ),
                       ),
-                      const Spacer(flex: 2),
+                      const Spacer(flex: 4),
                     ],
                   ),
                 ),
@@ -663,28 +670,25 @@ class QuickAction extends StatelessWidget {
 }
 
 class SectionTitle extends StatelessWidget {
-  const SectionTitle({required this.title, this.trailing, super.key});
+  const SectionTitle({required this.title, this.action, super.key});
 
   final String title;
-  final String? trailing;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Row(
       children: [
-        Flexible(
+        Expanded(
           child: Semantics(
             header: true,
-            child: Text(title, style: theme.textTheme.titleLarge),
+            child: Text(title, style: Theme.of(context).textTheme.titleLarge),
           ),
         ),
-        if (trailing != null) ...[
-          const SizedBox(width: 8),
-          Icon(Icons.location_on, size: 16, color: theme.colorScheme.primary),
-          const SizedBox(width: 2),
-          Flexible(child: Text(trailing!, style: theme.textTheme.bodySmall)),
-        ],
+        if (action != null)
+          Flexible(
+              child: Align(
+                  alignment: AlignmentDirectional.centerEnd, child: action!)),
       ],
     );
   }

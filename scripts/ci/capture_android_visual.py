@@ -78,6 +78,14 @@ def feed(version):
     screenshot(f"{version}-feed")
 
 
+def back_to_home_in_russian():
+    home()
+    tap("Профиль", "Profile", clickable=True)
+    tap("Язык приложения", "App language", "Қолданба тілі", clickable=True)
+    tap("Русский")
+    tap("Главная", clickable=True)
+
+
 def capture_tabs(version):
     tap("Поиск", "Каталог", "Search", clickable=True)
     find(node_class="android.widget.EditText", timeout=120)
@@ -117,19 +125,16 @@ def main():
     tap("Получить код", "Get code", "Код алу")
     find("Введите код", "Enter the code", "Кодты енгізіңіз", timeout=120)
     adb("shell", "input", "text", "123456")
-    home()
-    tap("Профиль", "Profile", clickable=True)
-    tap("Язык приложения", "App language", "Қолданба тілі", clickable=True)
-    tap("Русский")
-    tap("Главная", "Home", "Басты бет", clickable=True)
+    back_to_home_in_russian()
     feed("before")
     capture_tabs("before")
 
     launch("after")
+    back_to_home_in_russian()
     feed("after")
     adb("shell", "am", "force-stop", PACKAGE)
     adb("shell", "am", "start", "-W", "-n", f"{PACKAGE}/.MainActivity")
-    home()
+    back_to_home_in_russian()
     capture_tabs("after")
     tap("Профиль", "Profile", clickable=True)
     tap("Тема", "Appearance", "Тақырып")

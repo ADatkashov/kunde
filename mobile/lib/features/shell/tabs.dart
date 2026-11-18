@@ -95,7 +95,7 @@ class KundeNavigationBar extends StatelessWidget {
               icon: const Icon(Icons.search_rounded),
               label: s.navSearch,
             ),
-            const NavigationDestination(icon: AiOrb(size: 34), label: 'AI'),
+            const NavigationDestination(icon: AiOrb(size: 40), label: 'AI'),
             NavigationDestination(
               icon: const Icon(Icons.shopping_bag_outlined),
               selectedIcon: const Icon(Icons.shopping_bag_rounded),
@@ -194,6 +194,7 @@ class _SearchTabState extends State<SearchTab> {
                   if (enabled)
                     CatalogSearchPanel(
                       api: widget.api,
+                      label: s.catalogSearchHint,
                       onQueryChanged: food == null
                           ? null
                           : (value) => setState(() => _query = value),
@@ -245,7 +246,8 @@ class _SearchTabState extends State<SearchTab> {
                   ),
                   if (enabled && food != null) ...[
                     const SizedBox(height: 16),
-                    FoodBanner(onOrder: () => _openFood(food, 'FOOD')),
+                    FoodBanner(
+                        compact: true, onOrder: () => _openFood(food, 'FOOD')),
                     const SizedBox(height: 20),
                     SectionTitle(title: s.nearbyTitle),
                     const SizedBox(height: 8),
