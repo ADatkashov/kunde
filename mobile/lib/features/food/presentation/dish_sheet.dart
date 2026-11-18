@@ -13,6 +13,7 @@ class DishSheet extends StatefulWidget {
     required this.restaurantOpen,
     this.api,
     this.grocery = false,
+    this.flowers = false,
     super.key,
   });
 
@@ -22,6 +23,7 @@ class DishSheet extends StatefulWidget {
   /// Used to load acceptable replacements in stores.
   final FoodApi? api;
   final bool grocery;
+  final bool flowers;
 
   @override
   State<DishSheet> createState() => _DishSheetState();
@@ -82,6 +84,15 @@ class _DishSheetState extends State<DishSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    String tx(String ru, String kk, String en) {
+      if (!widget.flowers) return ru;
+      return switch (Localizations.localeOf(context).languageCode) {
+        'kk' => kk,
+        'en' => en,
+        _ => ru,
+      };
+    }
+
     final dish = _dish;
     final lowStock =
         dish.stockQty != null && dish.stockQty! <= (dish.weighed ? 2000 : 5);
@@ -118,7 +129,7 @@ class _DishSheetState extends State<DishSheet> {
                   Padding(
                     padding: const EdgeInsets.only(top: 6),
                     child: Text(
-                        'Осталось: ${formatQuantity(dish.unit, dish.stockQty!)}',
+                        '${tx('Осталось', 'Қалды', 'Remaining')}: ${formatQuantity(dish.unit, dish.stockQty!)}',
                         style: TextStyle(
                             color: theme.colorScheme.error,
                             fontWeight: FontWeight.w600)),
@@ -126,7 +137,8 @@ class _DishSheetState extends State<DishSheet> {
                 if (_max < _step)
                   Padding(
                     padding: const EdgeInsets.only(top: 6),
-                    child: Text('Нет в наличии',
+                    child: Text(
+                        tx('Нет в наличии', 'Қолжетімсіз', 'Unavailable'),
                         style: TextStyle(color: theme.colorScheme.error)),
                   ),
                 for (final group in dish.optionGroups) ...[
@@ -189,7 +201,7 @@ class _DishSheetState extends State<DishSheet> {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
             child: Row(children: [
               IconButton.outlined(
-                tooltip: 'Меньше',
+                tooltip: tx('Меньше', 'Азайту', 'Decrease'),
                 onPressed: _quantity - _step >= _step
                     ? () => setState(() => _quantity -= _step)
                     : null,
@@ -201,7 +213,7 @@ class _DishSheetState extends State<DishSheet> {
                       textAlign: TextAlign.center,
                       style: theme.textTheme.titleMedium)),
               IconButton.outlined(
-                tooltip: 'Больше',
+                tooltip: tx('Больше', 'Көбейту', 'Increase'),
                 onPressed: _quantity + _step <= _max
                     ? () => setState(() => _quantity += _step)
                     : null,
@@ -214,10 +226,11 @@ class _DishSheetState extends State<DishSheet> {
                       ? _submit
                       : null,
                   child: Text(_valid
-                      ? 'Добавить · ${formatTenge(lineTotalMinor(dish.unit, _unit, _quantity))}'
+                      ? '${tx('Добавить', 'Қосу', 'Add')} · ${formatTenge(lineTotalMinor(dish.unit, _unit, _quantity))}'
                       : _max < _step
-                          ? 'Нет в наличии'
-                          : 'Выберите опции'),
+                          ? tx('Нет в наличии', 'Қолжетімсіз', 'Unavailable')
+                          : tx('Выберите опции', 'Нұсқаларды таңдаңыз',
+                              'Choose options')),
                 ),
               ),
             ]),

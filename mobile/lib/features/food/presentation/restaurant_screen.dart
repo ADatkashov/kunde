@@ -47,7 +47,8 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
           dish: dish,
           restaurantOpen: restaurant.open,
           api: widget.services.api,
-          grocery: restaurant.vertical != 'FOOD'),
+          grocery: restaurant.vertical == 'GROCERY',
+          flowers: restaurant.vertical == 'FLOWERS_GIFTS'),
     );
     if (added == null || !mounted) return;
     if (cart.conflictsWith(restaurant.id)) {
@@ -158,6 +159,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                         itemBuilder: (context, i) => _DishTile(
                           dish: section.dishes[i],
                           enabled: restaurant.open,
+                          flowers: restaurant.vertical == 'FLOWERS_GIFTS',
                           onTap: () => _openDish(restaurant, section.dishes[i]),
                         ),
                       ),
@@ -250,16 +252,27 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
 
 class _DishTile extends StatelessWidget {
   const _DishTile(
-      {required this.dish, required this.enabled, required this.onTap});
+      {required this.dish,
+      required this.enabled,
+      required this.flowers,
+      required this.onTap});
 
   final Dish dish;
   final bool enabled;
+  final bool flowers;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final canOrder = enabled && dish.available;
+    final unavailable = flowers
+        ? switch (Localizations.localeOf(context).languageCode) {
+            'kk' => 'Қолжетімсіз',
+            'en' => 'Unavailable',
+            _ => 'Нет в наличии',
+          }
+        : 'Нет в наличии';
     return Semantics(
       button: canOrder,
       label:
@@ -288,7 +301,7 @@ class _DishTile extends StatelessWidget {
                       Text(
                           dish.available && dish.maxQuantity > 0
                               ? unitPriceLabel(dish.unit, dish.priceMinor)
-                              : 'Нет в наличии',
+                              : unavailable,
                           style: theme.textTheme.titleSmall
                               ?.copyWith(fontWeight: FontWeight.w700)),
                     ]),
@@ -296,7 +309,11 @@ class _DishTile extends StatelessWidget {
               const SizedBox(width: 12),
               Stack(clipBehavior: Clip.none, children: [
                 EmojiTile(
-                    emoji: dish.emoji, tone: dish.tone, size: 84, radius: 18),
+                    emoji: dish.emoji,
+                    tone: dish.tone,
+                    size: 84,
+                    radius: 18,
+                    imageUrl: dish.imageUrl),
                 if (canOrder)
                   Positioned(
                     right: -4,
