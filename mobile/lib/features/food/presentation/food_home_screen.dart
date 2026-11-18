@@ -27,6 +27,15 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
   bool get _flowers => widget.vertical == 'FLOWERS_GIFTS';
   bool get _grocery => widget.vertical != 'FOOD';
 
+  String _tx(String ru, String kk, String en) {
+    if (!_flowers) return ru;
+    return switch (Localizations.localeOf(context).languageCode) {
+      'kk' => kk,
+      'en' => en,
+      _ => ru,
+    };
+  }
+
   String _flowersTitle(BuildContext context) =>
       switch (Localizations.localeOf(context).languageCode) {
         'kk' => 'Гүлдер мен сыйлықтар',
@@ -94,7 +103,7 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
             ListenableBuilder(
               listenable: widget.services.cart,
               builder: (context, _) => IconButton(
-                tooltip: 'Корзина',
+                tooltip: _tx('Корзина', 'Себет', 'Cart'),
                 onPressed: widget.services.cart.isEmpty
                     ? null
                     : () => Navigator.of(context).push(MaterialPageRoute<void>(
@@ -118,13 +127,15 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                 child: SearchBar(
                   controller: _query,
-                  hintText:
-                      _grocery ? 'Магазины и товары' : 'Рестораны и блюда',
+                  hintText: _grocery
+                      ? _tx('Магазины и товары', 'Дүкендер мен тауарлар',
+                          'Shops and products')
+                      : 'Рестораны и блюда',
                   leading: const Icon(Icons.search_rounded),
                   trailing: [
                     if (_query.text.isNotEmpty)
                       IconButton(
-                        tooltip: 'Очистить',
+                        tooltip: _tx('Очистить', 'Тазалау', 'Clear'),
                         icon: const Icon(Icons.close_rounded),
                         onPressed: () {
                           _query.clear();
@@ -159,7 +170,8 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
             return FoodStateMessage(
                 icon: Icons.cloud_off_outlined,
                 title: _grocery
-                    ? 'Не удалось загрузить магазины'
+                    ? _tx('Не удалось загрузить магазины',
+                        'Дүкендер жүктелмеді', 'Could not load shops')
                     : 'Не удалось загрузить рестораны',
                 body: message,
                 onAction: _refresh);
@@ -169,9 +181,15 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
           if (all.isEmpty) {
             return FoodStateMessage(
                 icon: Icons.storefront_outlined,
-                title: _grocery ? 'Пока нет магазинов' : 'Пока нет ресторанов',
+                title: _grocery
+                    ? _tx('Пока нет магазинов', 'Дүкендер әзірге жоқ',
+                        'No shops yet')
+                    : 'Пока нет ресторанов',
                 body: _grocery
-                    ? 'Магазины появятся здесь, когда будут добавлены.'
+                    ? _tx(
+                        'Магазины появятся здесь, когда будут добавлены.',
+                        'Дүкендер қосылғанда осында көрсетіледі.',
+                        'Shops will appear here once added.')
                     : 'Рестораны появятся здесь, когда будут добавлены.');
           }
           return RefreshIndicator(
@@ -183,9 +201,13 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
               itemBuilder: (context, i) {
                 if (i == 0) return _filters(all);
                 if (list.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Text('По выбранным фильтрам ничего нет.',
+                  return Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                        _tx(
+                            'По выбранным фильтрам ничего нет.',
+                            'Таңдалған сүзгілер бойынша ештеңе табылмады.',
+                            'No results for these filters.'),
                         textAlign: TextAlign.center),
                   );
                 }
@@ -219,25 +241,35 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
       height: 24 + MediaQuery.textScalerOf(context).scale(24),
       child: ListView(scrollDirection: Axis.horizontal, children: [
         FilterChip(
-          label: const Text('Открыто сейчас'),
+          label: Text(_tx('Открыто сейчас', 'Қазір ашық', 'Open now')),
           selected: _openOnly,
           onSelected: (v) => setState(() => _openOnly = v),
         ),
         const SizedBox(width: 8),
         PopupMenuButton<String>(
-          tooltip: 'Сортировка',
+          tooltip: _tx('Сортировка', 'Сұрыптау', 'Sort'),
           onSelected: (v) => setState(() => _sort = v),
-          itemBuilder: (_) => const [
-            PopupMenuItem(value: 'default', child: Text('По умолчанию')),
-            PopupMenuItem(value: 'eta', child: Text('Быстрее доставка')),
-            PopupMenuItem(value: 'fee', child: Text('Дешевле доставка')),
+          itemBuilder: (_) => [
+            PopupMenuItem(
+                value: 'default',
+                child: Text(_tx('По умолчанию', 'Әдепкі', 'Default'))),
+            PopupMenuItem(
+                value: 'eta',
+                child: Text(_tx(
+                    'Быстрее доставка', 'Жылдам жеткізу', 'Fastest delivery'))),
+            PopupMenuItem(
+                value: 'fee',
+                child: Text(_tx('Дешевле доставка', 'Арзан жеткізу',
+                    'Lowest delivery fee'))),
           ],
           child: Chip(
             avatar: const Icon(Icons.sort_rounded, size: 18),
             label: Text(switch (_sort) {
-              'eta' => 'Быстрее доставка',
-              'fee' => 'Дешевле доставка',
-              _ => 'Сортировка',
+              'eta' =>
+                _tx('Быстрее доставка', 'Жылдам жеткізу', 'Fastest delivery'),
+              'fee' =>
+                _tx('Дешевле доставка', 'Арзан жеткізу', 'Lowest delivery fee'),
+              _ => _tx('Сортировка', 'Сұрыптау', 'Sort'),
             }),
           ),
         ),
@@ -262,7 +294,8 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
           if (state.hasError) {
             return FoodStateMessage(
                 icon: Icons.cloud_off_outlined,
-                title: 'Поиск не удался',
+                title: _tx(
+                    'Поиск не удался', 'Іздеу орындалмады', 'Search failed'),
                 onAction: () => setState(() => _search = widget.services.api
                     .search(_term, vertical: widget.vertical)));
           }
@@ -270,16 +303,23 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
           if (result.isEmpty) {
             return FoodStateMessage(
                 icon: Icons.search_off_rounded,
-                title: 'Ничего не найдено',
+                title:
+                    _tx('Ничего не найдено', 'Ештеңе табылмады', 'No results'),
                 body: _grocery
-                    ? 'По запросу «$_term» нет магазинов и товаров.'
+                    ? _tx(
+                        'По запросу «$_term» нет магазинов и товаров.',
+                        '«$_term» бойынша дүкендер мен тауарлар табылмады.',
+                        'No shops or products found for “$_term”.')
                     : 'По запросу «$_term» нет ресторанов и блюд.');
           }
           return ListView(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
               children: [
                 if (result.restaurants.isNotEmpty) ...[
-                  Text('Рестораны',
+                  Text(
+                      _flowers
+                          ? _tx('Магазины', 'Дүкендер', 'Shops')
+                          : 'Рестораны',
                       style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 8),
                   for (final r in result.restaurants) ...[
@@ -290,7 +330,10 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
                 ],
                 if (result.dishes.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  Text(_grocery ? 'Товары' : 'Блюда',
+                  Text(
+                      _grocery
+                          ? _tx('Товары', 'Тауарлар', 'Products')
+                          : 'Блюда',
                       style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 8),
                   for (final d in result.dishes)

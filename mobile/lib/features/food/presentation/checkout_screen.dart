@@ -155,6 +155,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final flowers =
         widget.services.cart.restaurant?.vertical == 'FLOWERS_GIFTS';
     final language = Localizations.localeOf(context).languageCode;
+    String tx(String ru, String kk, String en) => !flowers
+        ? ru
+        : switch (language) {
+            'kk' => kk,
+            'en' => en,
+            _ => ru,
+          };
     final noPayment = switch (language) {
       'kk' =>
         'Бұл сынақ тапсырыс. Төлем жүргізілмейді және жеткізу орындалмайды.',
@@ -163,7 +170,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         'Это тестовый заказ. Оплата не производится, реальная доставка не выполняется.',
     };
     return Scaffold(
-      appBar: AppBar(title: const Text('Оформление заказа')),
+      appBar: AppBar(
+          title:
+              Text(tx('Оформление заказа', 'Тапсырысты рәсімдеу', 'Checkout'))),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 640),
@@ -171,7 +180,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
               children: [
                 const OrderProgressHeader(checkout: true),
-                Text('Адрес доставки', style: theme.textTheme.titleLarge),
+                Text(
+                    tx('Адрес доставки', 'Жеткізу мекенжайы',
+                        'Delivery address'),
+                    style: theme.textTheme.titleLarge),
                 const SizedBox(height: 8),
                 FutureBuilder<List<Map<String, dynamic>>>(
                   future: _addresses,
@@ -183,12 +195,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     }
                     if (state.hasError) {
                       return Column(children: [
-                        const Text('Не удалось загрузить адреса.'),
+                        Text(tx(
+                            'Не удалось загрузить адреса.',
+                            'Мекенжайлар жүктелмеді.',
+                            'Could not load addresses.')),
                         TextButton(
                             onPressed: () => setState(() {
                                   _addresses = _loadAddresses();
                                 }),
-                            child: const Text('Повторить')),
+                            child: Text(tx('Повторить', 'Қайталау', 'Retry'))),
                       ]);
                     }
                     final list = state.data!;
@@ -196,10 +211,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           if (list.isEmpty)
-                            const Padding(
-                              padding: EdgeInsets.only(bottom: 8),
-                              child: Text(
-                                  'У вас пока нет адресов. Добавьте тестовый адрес в Алматы.'),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Text(tx(
+                                  'У вас пока нет адресов. Добавьте тестовый адрес в Алматы.',
+                                  'Мекенжай жоқ. Алматыдағы сынақ мекенжайын қосыңыз.',
+                                  'No addresses yet. Add a test address in Almaty.')),
                             ),
                           RadioGroup<String>(
                             groupValue: _addressId,
@@ -229,13 +246,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           OutlinedButton.icon(
                             onPressed: _busy ? null : () => _addAddress(),
                             icon: const Icon(Icons.edit_location_alt_outlined),
-                            label: const Text('Другой адрес'),
+                            label: Text(tx('Другой адрес', 'Басқа мекенжай',
+                                'Another address')),
                           ),
                         ]);
                   },
                 ),
                 const SizedBox(height: 24),
-                Text('Оплата', style: theme.textTheme.titleLarge),
+                Text(tx('Оплата', 'Төлем', 'Payment'),
+                    style: theme.textTheme.titleLarge),
                 if (flowers)
                   Text(noPayment)
                 else
@@ -264,13 +283,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   enabled: !_busy,
                   maxLength: 300,
                   maxLines: 2,
-                  decoration: const InputDecoration(
-                      labelText: 'Комментарий к заказу',
-                      hintText: 'Например: позвоните за 5 минут',
-                      border: OutlineInputBorder()),
+                  decoration: InputDecoration(
+                      labelText: tx('Комментарий к заказу',
+                          'Тапсырысқа түсініктеме', 'Order note'),
+                      hintText: tx(
+                          'Например: позвоните за 5 минут',
+                          'Мысалы: 5 минут бұрын қоңырау шалыңыз',
+                          'For example: call 5 minutes ahead'),
+                      border: const OutlineInputBorder()),
                 ),
                 const SizedBox(height: 8),
-                Text('Ваш заказ · ${quote.restaurantName}',
+                Text(
+                    '${tx('Ваш заказ', 'Тапсырысыңыз', 'Your order')} · ${quote.restaurantName}',
                     style: theme.textTheme.titleLarge),
                 const SizedBox(height: 8),
                 for (final l in quote.lines)
@@ -287,13 +311,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ]),
                   ),
                 const Divider(height: 24),
-                _total('Блюда', formatTenge(quote.subtotalMinor)),
+                _total(tx('Блюда', 'Тауарлар', 'Items'),
+                    formatTenge(quote.subtotalMinor)),
                 _total(
-                    'Доставка',
+                    tx('Доставка', 'Жеткізу', 'Delivery'),
                     quote.deliveryFeeMinor == 0
-                        ? 'Бесплатно'
+                        ? tx('Бесплатно', 'Тегін', 'Free')
                         : formatTenge(quote.deliveryFeeMinor)),
-                _total('Итого', formatTenge(quote.totalMinor), bold: true),
+                _total(tx('Итого', 'Барлығы', 'Total'),
+                    formatTenge(quote.totalMinor),
+                    bold: true),
                 if (_error != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 12),
@@ -311,7 +338,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           height: 22,
                           child: CircularProgressIndicator(strokeWidth: 2.5))
                       : Text(
-                          'Подтвердить заказ · ${formatTenge(quote.totalMinor)}'),
+                          '${tx('Подтвердить заказ', 'Тапсырысты растау', 'Confirm order')} · ${formatTenge(quote.totalMinor)}'),
                 ),
                 const SizedBox(height: 8),
                 Text(

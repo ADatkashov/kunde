@@ -193,11 +193,22 @@ class _OrderScreenState extends State<OrderScreen> {
         Card(
           color: theme.colorScheme.primaryContainer,
           margin: const EdgeInsets.only(bottom: 12),
-          child: const ListTile(
-            leading: Icon(Icons.check_circle_rounded),
-            title: Text('Заказ принят!'),
-            subtitle:
-                Text('Следите за статусом ниже. Он обновляется автоматически.'),
+          child: ListTile(
+            leading: const Icon(Icons.check_circle_rounded),
+            title: Text(order.vertical == 'FLOWERS_GIFTS'
+                ? switch (Localizations.localeOf(context).languageCode) {
+                    'kk' => 'Сынақ тапсырыс жасалды',
+                    'en' => 'Test order created',
+                    _ => 'Тестовый заказ создан',
+                  }
+                : 'Заказ принят!'),
+            subtitle: Text(order.vertical == 'FLOWERS_GIFTS'
+                ? switch (Localizations.localeOf(context).languageCode) {
+                    'kk' => 'Серіктестің жауабын күтіңіз.',
+                    'en' => 'Waiting for the partner to respond.',
+                    _ => 'Ожидайте ответа партнёра.',
+                  }
+                : 'Следите за статусом ниже. Он обновляется автоматически.'),
           ),
         ),
       if (_error != null)
@@ -329,8 +340,16 @@ class _StatusTimeline extends StatelessWidget {
               : order.cancelledBy == 'PARTNER'
                   ? 'Заказ отклонён заведением'
                   : 'Заказ отменён'),
-          subtitle: Text(
-              order.cancelReason != null && order.cancelledBy == 'PARTNER'
+          subtitle: Text(order.paymentMethod == 'DEV_NO_PAYMENT'
+              ? switch (Localizations.localeOf(context).languageCode) {
+                  'kk' =>
+                    '${order.cancelReason != null && order.cancelledBy == 'PARTNER' ? 'Себебі: ${order.cancelReason}\n' : ''}Төлем жүргізілген жоқ.',
+                  'en' =>
+                    '${order.cancelReason != null && order.cancelledBy == 'PARTNER' ? 'Reason: ${order.cancelReason}\n' : ''}No payment was made.',
+                  _ =>
+                    '${order.cancelReason != null && order.cancelledBy == 'PARTNER' ? 'Причина: ${order.cancelReason}\n' : ''}Оплата не производилась.',
+                }
+              : order.cancelReason != null && order.cancelledBy == 'PARTNER'
                   ? 'Причина: ${order.cancelReason}\nПлатёж аннулирован.'
                   : 'Платёж аннулирован.'),
         ),

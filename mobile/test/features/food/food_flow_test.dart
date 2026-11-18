@@ -266,7 +266,8 @@ Future<FoodServices> _services(
 Future<void> _show(WidgetTester tester, Widget home,
     {Size size = const Size(1080, 2200),
     double pixelRatio = 2.75,
-    double textScale = 1}) async {
+    double textScale = 1,
+    Locale? locale}) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = pixelRatio;
   addTearDown(tester.view.reset);
@@ -275,6 +276,9 @@ Future<void> _show(WidgetTester tester, Widget home,
   await tester.pumpWidget(MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: KundeTheme.light,
+      locale: locale,
+      supportedLocales: KundeLocalizations.supportedLocales,
+      localizationsDelegates: KundeLocalizations.localizationsDelegates,
       builder: (context, child) => MediaQuery(
           data: MediaQuery.of(context)
               .copyWith(textScaler: TextScaler.linear(textScale)),
@@ -335,11 +339,47 @@ void main() {
     await _show(tester, CheckoutScreen(services: services, quote: quote));
     expect(find.textContaining('No payment or real delivery'), findsWidgets);
     expect(find.text('Тестовая карта (DEV)'), findsNothing);
-    await tester.ensureVisible(find.textContaining('Подтвердить заказ'));
-    await tester.tap(find.textContaining('Подтвердить заказ'));
+    await tester.ensureVisible(find.textContaining('Confirm order'));
+    await tester.tap(find.textContaining('Confirm order'));
     await tester.pumpAndSettle();
     expect(backend.orders.single['paymentMethod'], 'DEV_NO_PAYMENT');
   });
+
+  for (final entry in {
+    'ru': 'Подтвердить заказ',
+    'kk': 'Тапсырысты растау',
+    'en': 'Confirm order',
+  }.entries) {
+    testWidgets('flowers checkout language ${entry.key}', (tester) async {
+      final backend = _FakeBackend();
+      final services = await _services(backend, tester);
+      services.cart.add(
+          Restaurant.fromJson({..._restaurant(), 'vertical': 'FLOWERS_GIFTS'}),
+          CartLine(
+              dishId: _dishId,
+              name: 'Test',
+              emoji: '💐',
+              tone: 'red',
+              optionIds: const [_sizeS],
+              optionsText: '',
+              unitPriceMinor: 350000,
+              quantity: 1));
+      final quote = FoodQuote.fromJson(backend._price({
+        'items': [
+          {
+            'dishId': _dishId,
+            'quantity': 1,
+            'optionIds': [_sizeS]
+          }
+        ]
+      })!);
+      await _show(tester, CheckoutScreen(services: services, quote: quote),
+          locale: Locale(entry.key));
+      await tester.ensureVisible(find.textContaining(entry.value));
+      expect(find.textContaining(entry.value), findsOneWidget);
+      expect(find.text('Тестовая карта (DEV)'), findsNothing);
+    });
+  }
 
   testWidgets('premium golden complete home with nearby merchants',
       (tester) async {
@@ -616,6 +656,41 @@ void main() {
     await tester.tap(find.widgetWithText(ChoiceChip, 'Итальянская'));
     await tester.pumpAndSettle();
     expect(find.text('Пицца Тест'), findsOneWidget);
+  });
+
+  testWidgets('cancelled flowers order does not claim a payment was voided',
+      (tester) async {
+    final backend = _FakeBackend();
+    backend.orders.add({
+      'id': 'cccccccc-0000-0000-0000-000000000001',
+      'restaurantId': _restaurantId,
+      'restaurantName': 'Flowers',
+      'status': 'CANCELLED',
+      'paymentMethod': 'DEV_NO_PAYMENT',
+      'paymentStatus': 'NO_PAYMENT',
+      'subtotalMinor': 100,
+      'deliveryFeeMinor': 0,
+      'totalMinor': 100,
+      'vertical': 'FLOWERS_GIFTS',
+      'addressLabel': 'Test',
+      'addressText': 'Test',
+      'comment': null,
+      'placedAt': DateTime.now().toUtc().toIso8601String(),
+      'cancellable': false,
+      'cancelledBy': 'PARTNER',
+      'cancelReason': 'Test',
+      'timeline': <Map<String, dynamic>>[],
+      'items': <Map<String, dynamic>>[],
+    });
+    final services = await _services(backend, tester);
+    await _show(
+        tester,
+        OrderScreen(
+            services: services,
+            orderId: 'cccccccc-0000-0000-0000-000000000001'));
+    expect(find.textContaining('No payment was made.'), findsOneWidget);
+    expect(find.textContaining('Reason: Test'), findsOneWidget);
+    expect(find.textContaining('Платёж аннулирован'), findsNothing);
   });
 
   testWidgets(
