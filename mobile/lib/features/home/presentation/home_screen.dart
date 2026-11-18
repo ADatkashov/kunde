@@ -3,6 +3,8 @@ import '../../booking/booking_services.dart';
 import '../../booking/presentation/category_screens.dart';
 import '../../food/food_services.dart';
 import '../../food/presentation/food_home_screen.dart';
+import '../../rides/ride_api.dart';
+import '../../rides/rides_screen.dart';
 
 import 'package:flutter/material.dart';
 
@@ -22,6 +24,7 @@ class HomeScreen extends StatefulWidget {
     this.onOpenAssistant,
     this.food,
     this.booking,
+    this.rides,
     super.key,
   });
 
@@ -36,6 +39,7 @@ class HomeScreen extends StatefulWidget {
 
   /// Service booking (barbershops); shown when the server enables it.
   final BookingServices? booking;
+  final RideApi? rides;
 
   /// Opens the Orders tab when the host has one.
   final VoidCallback? onOpenOrders;
@@ -124,6 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
     KundeLocalizations s,
     bool foodEnabled,
     bool bookingEnabled,
+    bool ridesEnabled,
   ) =>
       [
         ServiceCategory(
@@ -148,6 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
           icon: Icons.local_taxi_rounded,
           label: s.catRides,
           color: const Color(0xFFB7791F),
+          enabled: ridesEnabled && widget.rides != null,
         ),
         ServiceCategory(
           icon: Icons.inventory_2_rounded,
@@ -198,6 +204,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final s = KundeLocalizations.of(context);
     if (c.isAll) {
       _showAll(all, foodEnabled, bookingEnabled);
+    } else if (c.label == s.catRides && c.enabled && widget.rides != null) {
+      Navigator.of(context).push<void>(
+        MaterialPageRoute(builder: (_) => RidesScreen(api: widget.rides!)),
+      );
     } else if (c.label == s.catBeauty &&
         bookingEnabled &&
         widget.booking != null) {
@@ -305,11 +315,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   s,
                   marketplace,
                   snapshot?.bookingEnabled ?? false,
+                  snapshot?.ridesEnabled ?? false,
                 );
                 final visibleCategories = [
                   for (final label in [
                     s.catFood,
                     s.catGroceries,
+                    if (snapshot?.ridesEnabled == true && widget.rides != null)
+                      s.catRides,
                     s.catHome,
                     s.catBeauty,
                     s.catAuto,
