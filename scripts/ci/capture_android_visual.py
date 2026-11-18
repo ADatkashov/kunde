@@ -69,6 +69,7 @@ def home():
 
 def feed(version):
     home()
+    find("Продукты", "Азық-түлік", "Groceries", timeout=120)
     screenshot(f"{version}-home")
     # The visible coordinates refer to the fixed emulator dimensions below.
     for _ in range(2):
@@ -113,7 +114,7 @@ def main():
         ("ru", "Русский", "Продукты"),
     ]:
         tap("Профиль", "Profile", clickable=True)
-        tap("Язык", "Language", "Тіл", clickable=True)
+        tap("Язык приложения", "App language", "Қолданба тілі", clickable=True)
         tap(menu_label)
         tap("Главная", "Home", "Басты бет", clickable=True)
         find(grid_label)
