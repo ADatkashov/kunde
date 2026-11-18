@@ -52,13 +52,15 @@ jobs:
           )
           build "$RUNNER_TEMP/kunde-before" before
           build "$GITHUB_WORKSPACE" after
+          (cd mobile/android && bash gradlew --stop)
+          jps -l | awk '$2 == "org.jetbrains.kotlin.daemon.KotlinCompileDaemon" {print $1}' | xargs -r kill
       - uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
         with:
           api-level: 35
           arch: x86_64
           target: google_apis
           disable-animations: true
-          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -memory 1536 -cores 2
           script: python3 scripts/ci/capture_android_visual.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()

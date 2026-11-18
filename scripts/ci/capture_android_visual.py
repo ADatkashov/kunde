@@ -76,9 +76,6 @@ def feed(version):
         adb("shell", "input", "swipe", 180, 690, 180, 330, 350)
         time.sleep(.4)
     screenshot(f"{version}-feed")
-    for _ in range(3):
-        adb("shell", "input", "swipe", 180, 280, 180, 720, 300)
-        time.sleep(.25)
 
 
 def main():
@@ -96,6 +93,9 @@ def main():
 
     launch("after")
     feed("after")
+    adb("shell", "am", "force-stop", PACKAGE)
+    adb("shell", "am", "start", "-W", "-n", f"{PACKAGE}/.MainActivity")
+    home()
     tap("KUNDE AI")
     find("Скоро", "Soon", "Жақында")
     screenshot("after-assistant")
