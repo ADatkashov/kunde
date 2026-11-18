@@ -64,19 +64,32 @@ class _OrderScreenState extends State<OrderScreen> {
   }
 
   Future<void> _cancel() async {
+    String tx(String ru, String kk, String en) {
+      if (_order?.vertical != 'FLOWERS_GIFTS') return ru;
+      return switch (Localizations.localeOf(context).languageCode) {
+        'kk' => kk,
+        'en' => en,
+        _ => ru,
+      };
+    }
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Отменить заказ?'),
-        content: const Text(
-            'Бесплатная отмена возможна, пока ресторан не принял заказ.'),
+        title: Text(tx('Отменить заказ?', 'Тапсырыстан бас тарту керек пе?',
+            'Cancel order?')),
+        content: Text(tx(
+            'Бесплатная отмена возможна, пока ресторан не принял заказ.',
+            'Серіктес қабылдағанға дейін бас тартуға болады.',
+            'You can cancel until the partner accepts.')),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Нет')),
+              child: Text(tx('Нет', 'Жоқ', 'No'))),
           FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Отменить заказ')),
+              child: Text(tx(
+                  'Отменить заказ', 'Тапсырыстан бас тарту', 'Cancel order'))),
         ],
       ),
     );
