@@ -52,7 +52,8 @@ public class RideRequestService {
             throw new ApiException(HttpStatus.NOT_FOUND, "RIDES_UNAVAILABLE", "New rides are currently unavailable");
         }
         if (Boolean.TRUE.equals(db.queryForObject("""
-                select exists(select 1 from transactions.rides where user_id = ? and status = 'REQUESTED')
+                select exists(select 1 from transactions.rides where user_id = ? and status in
+                    ('REQUESTED','SEARCHING_DRIVER','DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','IN_PROGRESS'))
                 """, Boolean.class, customer))) {
             throw conflict("RIDE_ALREADY_REQUESTED", "A ride is already pending");
         }
@@ -88,6 +89,7 @@ public class RideRequestService {
         var next = ride.status().transition(RideState.Actor.CUSTOMER, RideState.Action.CANCEL)
                 .orElseThrow(() -> conflict("RIDE_CANCELLATION_UNAVAILABLE", "Ride can no longer be cancelled"));
         db.update("update transactions.rides set status = ? where id = ?", next.name(), rideId);
+        db.update("update transactions.ride_offers set state = 'EXPIRED' where ride_id = ? and state = 'PENDING'", rideId);
         event(rideId, next);
         return get(customer, rideId);
     }

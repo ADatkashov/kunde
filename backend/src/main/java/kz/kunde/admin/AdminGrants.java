@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class AdminGrants {
-    public enum Permission { PARTNER_VERIFICATION, ADMIN_GRANTS }
+    public enum Permission { PARTNER_VERIFICATION, ADMIN_GRANTS, RIDE_VERIFICATION }
 
     private final JdbcTemplate db;
 

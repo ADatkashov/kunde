@@ -121,6 +121,184 @@ paths:
         '404': { description: Ride not found for caller }
         '409': { description: Ride can no longer be cancelled }
         '429': { $ref: '#/components/responses/RateLimited' }
+  /rides/{rideId}/dispatch:
+    parameters:
+      - name: rideId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      operationId: searchForRideDriver
+      security:
+        - bearerAuth: []
+      responses:
+        '200': { description: Ride status after advancing dispatch }
+        '401': { description: Authentication required }
+        '403': { description: Insufficient permissions }
+        '404': { description: Resource or feature unavailable }
+        '409': { description: Operation conflicts with the resource state }
+  /rides/{rideId}/location:
+    parameters:
+      - name: rideId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      operationId: getAssignedDriverLocation
+      security:
+        - bearerAuth: []
+      responses:
+        '200': { description: Latest permitted driver position }
+        '401': { description: Authentication required }
+        '403': { description: Insufficient permissions }
+        '404': { description: Resource or feature unavailable }
+        '204': { description: No fresh location available for this trip }
+  /executor/rides/profile:
+    get:
+      operationId: getRideDriverProfile
+      security:
+        - bearerAuth: []
+      responses:
+        '200': { description: Authenticated driver profile and vehicle }
+        '401': { description: Authentication required }
+        '403': { description: Insufficient permissions }
+        '404': { description: Resource or feature unavailable }
+    post:
+      operationId: registerRideDriver
+      security:
+        - bearerAuth: []
+      responses:
+        '200': { description: Driver profile pending review }
+        '401': { description: Authentication required }
+        '403': { description: Insufficient permissions }
+        '404': { description: Resource or feature unavailable }
+        '409': { description: Operation conflicts with the resource state }
+  /executor/rides/vehicle:
+    post:
+      operationId: registerRideVehicle
+      security:
+        - bearerAuth: []
+      responses:
+        '200': { description: Driver profile with pending vehicle }
+        '401': { description: Authentication required }
+        '403': { description: Insufficient permissions }
+        '404': { description: Resource or feature unavailable }
+        '409': { description: Operation conflicts with the resource state }
+  /executor/rides/availability:
+    put:
+      operationId: updateRideDriverAvailability
+      security:
+        - bearerAuth: []
+      responses:
+        '200': { description: Driver profile with current availability }
+        '401': { description: Authentication required }
+        '403': { description: Insufficient permissions }
+        '404': { description: Resource or feature unavailable }
+        '409': { description: Operation conflicts with the resource state }
+  /executor/rides/location:
+    put:
+      operationId: reportRideDriverLocation
+      security:
+        - bearerAuth: []
+      responses:
+        '204': { description: Position accepted }
+        '401': { description: Authentication required }
+        '403': { description: Insufficient permissions }
+        '404': { description: Resource or feature unavailable }
+        '409': { description: Operation conflicts with the resource state }
+  /executor/rides/offers:
+    get:
+      operationId: listRideOffers
+      security:
+        - bearerAuth: []
+      responses:
+        '200': { description: Unexpired offers for the authenticated driver }
+        '401': { description: Authentication required }
+        '403': { description: Insufficient permissions }
+        '404': { description: Resource or feature unavailable }
+  /executor/rides/offers/{offerId}/response:
+    parameters:
+      - name: offerId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      operationId: respondToRideOffer
+      security:
+        - bearerAuth: []
+      responses:
+        '204': { description: Offer response recorded }
+        '401': { description: Authentication required }
+        '403': { description: Insufficient permissions }
+        '404': { description: Resource or feature unavailable }
+        '409': { description: Operation conflicts with the resource state }
+  /executor/rides/trips:
+    get:
+      operationId: listExecutorRides
+      security:
+        - bearerAuth: []
+      responses:
+        '200': { description: Trips assigned to the authenticated driver }
+        '401': { description: Authentication required }
+        '403': { description: Insufficient permissions }
+        '404': { description: Resource or feature unavailable }
+  /executor/rides/trips/{rideId}/progress:
+    parameters:
+      - name: rideId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      operationId: advanceExecutorRide
+      security:
+        - bearerAuth: []
+      responses:
+        '204': { description: Assigned trip advanced }
+        '401': { description: Authentication required }
+        '403': { description: Insufficient permissions }
+        '404': { description: Resource or feature unavailable }
+        '409': { description: Operation conflicts with the resource state }
+  /admin/rides/drivers:
+    get:
+      operationId: listRideDriversForReview
+      security:
+        - bearerAuth: []
+      responses:
+        '200': { description: Driver identifiers pending review }
+        '401': { description: Authentication required }
+        '403': { description: Insufficient permissions }
+        '404': { description: Resource or feature unavailable }
+  /admin/rides/drivers/{driverId}:
+    parameters:
+      - name: driverId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      operationId: getRideDriverForReview
+      security:
+        - bearerAuth: []
+      responses:
+        '200': { description: Driver and vehicle details }
+        '401': { description: Authentication required }
+        '403': { description: Insufficient permissions }
+        '404': { description: Resource or feature unavailable }
+  /admin/rides/drivers/{driverId}/decision:
+    parameters:
+      - name: driverId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      operationId: decideRideDriverReview
+      security:
+        - bearerAuth: []
+      responses:
+        '200': { description: Updated vehicle or driver status }
+        '401': { description: Authentication required }
+        '403': { description: Insufficient permissions }
+        '404': { description: Resource or feature unavailable }
+        '409': { description: Operation conflicts with the resource state }
   /rides/quotes:
     post:
       operationId: issueRideQuote
@@ -587,7 +765,10 @@ components:
       properties:
         id: { type: string, format: uuid }
         quoteId: { type: string, format: uuid }
-        status: { type: string, enum: [REQUESTED, CANCELLED_BY_CUSTOMER] }
+        status:
+          type: string
+          enum: [REQUESTED, SEARCHING_DRIVER, DRIVER_ASSIGNED, DRIVER_ARRIVING, DRIVER_ARRIVED, IN_PROGRESS,
+                 COMPLETED, CANCELLED_BY_CUSTOMER, CANCELLED_BY_DRIVER, CANCELLED_BY_SYSTEM, NO_DRIVER_AVAILABLE, FAILED]
         rideClass: { type: string, enum: [ECONOMY, COMFORT, BUSINESS] }
         tariffVersion: { type: string }
         estimateKzt: { type: number, minimum: 0 }
