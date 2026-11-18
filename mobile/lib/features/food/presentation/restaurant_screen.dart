@@ -47,7 +47,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
           dish: dish,
           restaurantOpen: restaurant.open,
           api: widget.services.api,
-          grocery: restaurant.vertical == 'GROCERY'),
+          grocery: restaurant.vertical != 'FOOD'),
     );
     if (added == null || !mounted) return;
     if (cart.conflictsWith(restaurant.id)) {
@@ -137,7 +137,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                       hasScrollBody: false,
                       child: FoodStateMessage(
                           icon: Icons.menu_book_outlined,
-                          title: restaurant.vertical == 'GROCERY'
+                          title: restaurant.vertical != 'FOOD'
                               ? 'Ассортимент пока пуст'
                               : 'Меню пока пустое'),
                     )
@@ -207,7 +207,7 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
               borderRadius: BorderRadius.circular(12),
               child: Padding(
                 padding: const EdgeInsets.all(12),
-                child: Text(r.vertical == 'GROCERY'
+                child: Text(r.vertical != 'FOOD'
                     ? 'Магазин сейчас закрыт — заказ недоступен.'
                     : 'Ресторан сейчас закрыт — заказ недоступен.'),
               ),

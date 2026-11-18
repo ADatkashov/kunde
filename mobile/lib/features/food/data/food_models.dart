@@ -483,6 +483,7 @@ class FoodOrder {
   bool get terminal => status == 'DELIVERED' || status == 'CANCELLED';
 
   String get paymentLabel => switch (paymentStatus) {
+        'NO_PAYMENT' => 'Тестовый заказ — без оплаты',
         'TEST_PAID' => 'Тестовая карта (DEV) — оплачено',
         'PAY_ON_RECEIPT' => 'Наличными при получении',
         'VOIDED' => 'Платёж аннулирован',

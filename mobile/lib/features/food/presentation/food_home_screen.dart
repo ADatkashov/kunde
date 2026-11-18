@@ -24,7 +24,14 @@ class FoodHomeScreen extends StatefulWidget {
 }
 
 class _FoodHomeScreenState extends State<FoodHomeScreen> {
-  bool get _grocery => widget.vertical == 'GROCERY';
+  bool get _flowers => widget.vertical == 'FLOWERS_GIFTS';
+  bool get _grocery => widget.vertical != 'FOOD';
+
+  String _flowersTitle(BuildContext context) => switch (Localizations.localeOf(context).languageCode) {
+        'kk' => 'Гүлдер мен сыйлықтар',
+        'en' => 'Flowers & gifts',
+        _ => 'Цветы и подарки',
+      };
   bool _openOnly = false;
   String? _cuisine;
   String _sort = 'default';
@@ -79,7 +86,7 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
-          title: Text(_grocery ? 'Продукты · Алматы' : 'Еда · Алматы'),
+          title: Text(_flowers ? _flowersTitle(context) : (_grocery ? 'Продукты · Алматы' : 'Еда · Алматы')),
           actions: [
             ListenableBuilder(
               listenable: widget.services.cart,
@@ -103,7 +110,7 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 640),
             child: Column(children: [
-              FoodCollectionHeader(grocery: _grocery),
+              if (!_flowers) FoodCollectionHeader(grocery: _grocery),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                 child: SearchBar(

@@ -69,7 +69,7 @@ class PartnerOperationsApiIntegrationTest {
     @BeforeEach
     void seed() throws Exception {
         db.update("DELETE FROM identity.otp_challenges WHERE phone_e164 IN ('+77000000002','+77000000003','+77000000401','+77000000402','+77000000403')");
-        for (String file : new String[] {"food/demo-catalog.json", "food/partner-demo-catalog.json"}) {
+        for (String file : new String[] {"food/demo-catalog.json", "food/partner-demo-catalog.json", "food/flowers-demo-catalog.json"}) {
             try (var in = new ClassPathResource(file).getInputStream()) {
                 new FoodDemoSeeder(db).seed(new ObjectMapper().readTree(in));
             }
@@ -203,6 +203,28 @@ class PartnerOperationsApiIntegrationTest {
     }
 
     // ---- food ----------------------------------------------------------------------------------
+
+    @Test
+    void flowersRequireNoPaymentAndArePartnerManagedAndIsolated() throws Exception {
+        String store = db.queryForObject("select id from marketplace.food_restaurants where slug = 'partner-flowers-demo'", String.class);
+        String dish = db.queryForObject("select id from marketplace.food_dishes where restaurant_id = ?::uuid and name = 'Розы'", String.class, store);
+        String addr = address(customer);
+        String prefix = "{\"restaurantId\":\"" + store + "\",\"items\":[{\"dishId\":\"" + dish
+                + "\",\"quantity\":1,\"optionIds\":[]}],\"addressId\":\"" + addr + "\",\"paymentMethod\":\"";
+        send("POST", "/api/v1/food/orders", customer, prefix + "TEST_CARD\"}", "flowers-invalid-0001")
+                .andExpect(status().isUnprocessableEntity());
+        String order = JsonPath.read(body(send("POST", "/api/v1/food/orders", customer,
+                prefix + "DEV_NO_PAYMENT\"}", "flowers-valid-00001")
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.paymentStatus").value("NO_PAYMENT"))
+                .andExpect(jsonPath("$.simulated").value(false))), "$.id");
+        send("GET", foodBase() + "/orders/" + order, ownerToken, null, null).andExpect(status().isOk());
+        UUID other = db.queryForObject("select id from marketplace.partners where display_name like 'Демо-партнёр Б%'", UUID.class);
+        send("GET", "/api/v1/partner/partners/" + other + "/food/orders/" + order, otherToken, null, null)
+                .andExpect(status().isNotFound());
+        setStatus(ownerToken, order, "ACCEPTED", null).andExpect(status().isOk());
+        send("GET", "/api/v1/food/orders/" + order, customer, null, null)
+                .andExpect(jsonPath("$.status").value("ACCEPTED"));
+    }
 
     @Test
     void orderAppearsForPartnerAndCustomerSeesEachStatusWithHistory() throws Exception {

@@ -123,6 +123,11 @@ class _HomeScreenState extends State<HomeScreen> {
             color: const Color(0xFF2E8174),
             enabled: foodEnabled && widget.food != null),
         ServiceCategory(
+            icon: Icons.local_florist_rounded,
+            label: s.catFlowers,
+            color: const Color(0xFFB83280),
+            enabled: foodEnabled && widget.food != null),
+        ServiceCategory(
             icon: Icons.local_taxi_rounded,
             label: s.catRides,
             color: const Color(0xFFB7791F)),
@@ -181,6 +186,10 @@ class _HomeScreenState extends State<HomeScreen> {
       Navigator.of(context).push(MaterialPageRoute<void>(
           builder: (_) =>
               FoodHomeScreen(services: widget.food!, vertical: 'GROCERY')));
+    } else if (c.label == s.catFlowers && foodEnabled && widget.food != null) {
+      Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => FoodHomeScreen(
+              services: widget.food!, vertical: 'FLOWERS_GIFTS')));
     } else if (c.label == s.catFood) {
       foodEnabled ? _openSearch() : _showInfo(s.catFood, s.foodPreparingBody);
     } else {

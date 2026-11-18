@@ -214,7 +214,7 @@ public class FoodOrderService {
                     "Idempotency-Key must be 16-64 characters: letters, digits, '-' or '_'");
         }
         String payment = request.paymentMethod();
-        if (!"TEST_CARD".equals(payment) && !"CASH_ON_DELIVERY".equals(payment)) {
+        if (!"TEST_CARD".equals(payment) && !"CASH_ON_DELIVERY".equals(payment) && !"DEV_NO_PAYMENT".equals(payment)) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "PAYMENT_METHOD_UNSUPPORTED",
                     "Only the DEV test card and cash on delivery are available");
         }
@@ -245,6 +245,17 @@ public class FoodOrderService {
                 """, (rs, row) -> new String[] {rs.getString(1), rs.getString(2)}, request.addressId(), user)
                 .stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY,
                         "ADDRESS_NOT_FOUND", "Choose one of your saved delivery addresses"));
+        var store = db.query("select r.vertical, r.partner_id, p.verification_status from marketplace.food_restaurants r left join marketplace.partners p on p.id = r.partner_id where r.id = ? for share of r",
+                (rs, row) -> new Object[] {rs.getString(1), rs.getObject(2, UUID.class), rs.getString(3)}, request.restaurantId())
+                .stream().findFirst();
+        boolean flowers = store.isPresent() && "FLOWERS_GIFTS".equals(store.get()[0]);
+        if (flowers && (!"DEV_NO_PAYMENT".equals(payment) || store.get()[1] == null || !"APPROVED".equals(store.get()[2]))) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "FLOWERS_ORDER_UNAVAILABLE",
+                    "Flowers orders require a partner and DEV no-payment checkout");
+        }
+        if (!flowers && "DEV_NO_PAYMENT".equals(payment)) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "PAYMENT_METHOD_UNSUPPORTED", "Payment method unsupported");
+        }
         Quote quote = quote(request.restaurantId(), request.items());
         // Reserve stock atomically per line; a concurrent order that took the last units makes this one fail cleanly.
         for (QuoteLine line : quote.lines()) {
@@ -266,7 +277,8 @@ public class FoodOrderService {
                     case when (select partner_id from marketplace.food_restaurants where id = ?) is null then 'SIMULATED' else 'PARTNER' end)
                 returning id
                 """, UUID.class, user, request.restaurantId(), quote.restaurantName(), payment,
-                "TEST_CARD".equals(payment) ? "TEST_PAID" : "PAY_ON_RECEIPT", quote.subtotalMinor(),
+                "DEV_NO_PAYMENT".equals(payment) ? "NO_PAYMENT" :
+                        ("TEST_CARD".equals(payment) ? "TEST_PAID" : "PAY_ON_RECEIPT"), quote.subtotalMinor(),
                 quote.deliveryFeeMinor(), quote.totalMinor(), address[0], address[1], comment, idempotencyKey,
                 request.restaurantId(), request.restaurantId(), request.restaurantId());
         int lineNo = 0;

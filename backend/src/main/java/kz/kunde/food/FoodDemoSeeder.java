@@ -31,7 +31,7 @@ public class FoodDemoSeeder implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        for (String file : new String[] {"food/demo-catalog.json", "food/grocery-demo-catalog.json", "food/partner-demo-catalog.json"}) {
+        for (String file : new String[] {"food/demo-catalog.json", "food/grocery-demo-catalog.json", "food/partner-demo-catalog.json", "food/flowers-demo-catalog.json"}) {
             try (InputStream in = new ClassPathResource(file).getInputStream()) {
                 int inserted = seed(new ObjectMapper().readTree(in));
                 log.info("Demo seed {}: {} synthetic stores/restaurants inserted", file, inserted);
