@@ -125,7 +125,7 @@ void main() {
 
   Future<int> firstRowTiles(WidgetTester tester) async {
     final tiles = tester.widgetList(find.byType(CategoryTile)).length;
-    expect(tiles, 10);
+    expect(tiles, 11);
     final tops = [
       for (var i = 0; i < tiles; i++)
         tester.getTopLeft(find.byType(CategoryTile).at(i)).dy
@@ -155,11 +155,11 @@ void main() {
       (tester) async {
     await _pump(tester, _api(marketplace: true),
         locale: 'kk', size: const Size(360, 800));
-    // 8 inactive categories carry the localized "Жақында" badge.
+    // 9 inactive categories carry the localized "Жақында" badge.
     expect(
         find.descendant(
             of: find.byType(CategoryGrid), matching: find.text('Жақында')),
-        findsNWidgets(8));
+        findsNWidgets(9));
     final foodTile = find.ancestor(
         of: find.text('Тамақ'), matching: find.byType(CategoryTile));
     expect(tester.getSemantics(foodTile).label, contains('Қолжетімді'));
