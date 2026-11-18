@@ -22,6 +22,15 @@ class _CartScreenState extends State<CartScreen> {
 
   CartController get _cart => widget.services.cart;
 
+  String _tx(String ru, String kk, String en) {
+    if (_cart.restaurant?.vertical != 'FLOWERS_GIFTS') return ru;
+    return switch (Localizations.localeOf(context).languageCode) {
+      'kk' => kk,
+      'en' => en,
+      _ => ru,
+    };
+  }
+
   @override
   void initState() {
     super.initState();
@@ -55,9 +64,11 @@ class _CartScreenState extends State<CartScreen> {
     final theme = Theme.of(context);
     final restaurant = _cart.restaurant;
     return Scaffold(
-      appBar: AppBar(title: const Text('Корзина'), actions: [
+      appBar: AppBar(title: Text(_tx('Корзина', 'Себет', 'Cart')), actions: [
         if (!_cart.isEmpty)
-          TextButton(onPressed: _cart.clear, child: const Text('Очистить')),
+          TextButton(
+              onPressed: _cart.clear,
+              child: Text(_tx('Очистить', 'Тазалау', 'Clear'))),
       ]),
       body: _cart.isEmpty || restaurant == null
           ? FoodStateMessage(
@@ -72,7 +83,9 @@ class _CartScreenState extends State<CartScreen> {
                 child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                     children: [
-                      const OrderProgressHeader(checkout: false),
+                      OrderProgressHeader(
+                          checkout: false,
+                          flowers: restaurant.vertical == 'FLOWERS_GIFTS'),
                       Text(restaurant.name, style: theme.textTheme.titleLarge),
                       const SizedBox(height: 8),
                       for (final line in _cart.lines)
@@ -117,23 +130,28 @@ class _CartScreenState extends State<CartScreen> {
         const SizedBox(height: 12),
         if (failure == FoodFailure.offline || failure == FoodFailure.other)
           OutlinedButton(
-              onPressed: _requote, child: const Text('Обновить цены')),
+              onPressed: _requote,
+              child: Text(
+                  _tx('Обновить цены', 'Бағаларды жаңарту', 'Refresh prices'))),
         if (failure == FoodFailure.itemUnavailable ||
             failure == FoodFailure.optionsInvalid)
           OutlinedButton(
-              onPressed: _cart.clear, child: const Text('Очистить корзину')),
+              onPressed: _cart.clear,
+              child: Text(
+                  _tx('Очистить корзину', 'Себетті тазалау', 'Clear cart'))),
       ]);
     }
     final quote = state.data!;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      _Row('Блюда', formatTenge(quote.subtotalMinor)),
+      _Row(_tx('Блюда', 'Тауарлар', 'Items'), formatTenge(quote.subtotalMinor)),
       _Row(
-          'Доставка',
+          _tx('Доставка', 'Жеткізу', 'Delivery'),
           quote.deliveryFeeMinor == 0
-              ? 'Бесплатно'
+              ? _tx('Бесплатно', 'Тегін', 'Free')
               : formatTenge(quote.deliveryFeeMinor)),
       const SizedBox(height: 4),
-      _Row('Итого', formatTenge(quote.totalMinor), bold: true),
+      _Row(_tx('Итого', 'Барлығы', 'Total'), formatTenge(quote.totalMinor),
+          bold: true),
       if (belowMin)
         Padding(
           padding: const EdgeInsets.only(top: 12),
@@ -149,7 +167,8 @@ class _CartScreenState extends State<CartScreen> {
             : () => Navigator.of(context).push(MaterialPageRoute<void>(
                 builder: (_) =>
                     CheckoutScreen(services: widget.services, quote: quote))),
-        child: Text('Оформить заказ · ${formatTenge(quote.totalMinor)}'),
+        child: Text(
+            '${_tx('Оформить заказ', 'Тапсырысты рәсімдеу', 'Checkout')} · ${formatTenge(quote.totalMinor)}'),
       ),
     ]);
   }

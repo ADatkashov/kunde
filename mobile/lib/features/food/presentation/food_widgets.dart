@@ -324,8 +324,10 @@ String formatOrderDate(DateTime time) {
 
 /// Shared stage hierarchy for cart and checkout; server pricing is unchanged.
 class OrderProgressHeader extends StatelessWidget {
-  const OrderProgressHeader({required this.checkout, super.key});
+  const OrderProgressHeader(
+      {required this.checkout, this.flowers = false, super.key});
   final bool checkout;
+  final bool flowers;
 
   @override
   Widget build(BuildContext context) {
@@ -344,7 +346,20 @@ class OrderProgressHeader extends StatelessWidget {
             color: colors.primary),
         const SizedBox(width: 10),
         Expanded(
-            child: Text(checkout ? '2 / 2 · Оформление' : '1 / 2 · Ваш заказ',
+            child: Text(
+                flowers
+                    ? switch (Localizations.localeOf(context).languageCode) {
+                        'kk' => checkout
+                            ? '2 / 2 · Рәсімдеу'
+                            : '1 / 2 · Тапсырысыңыз',
+                        'en' =>
+                          checkout ? '2 / 2 · Checkout' : '1 / 2 · Your order',
+                        _ =>
+                          checkout ? '2 / 2 · Оформление' : '1 / 2 · Ваш заказ',
+                      }
+                    : checkout
+                        ? '2 / 2 · Оформление'
+                        : '1 / 2 · Ваш заказ',
                 style: TextStyle(
                     color: colors.onPrimaryContainer,
                     fontWeight: FontWeight.w800))),

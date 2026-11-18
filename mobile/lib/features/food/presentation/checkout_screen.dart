@@ -179,7 +179,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
               children: [
-                const OrderProgressHeader(checkout: true),
+                OrderProgressHeader(checkout: true, flowers: flowers),
                 Text(
                     tx('Адрес доставки', 'Жеткізу мекенжайы',
                         'Delivery address'),
