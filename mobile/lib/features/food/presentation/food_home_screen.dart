@@ -407,7 +407,7 @@ class _FoodNearbySectionState extends State<FoodNearbySection> {
           }
           final list = state.data!.take(6).toList();
           return SizedBox(
-            height: 150 + MediaQuery.textScalerOf(context).scale(60),
+            height: 104 + MediaQuery.textScalerOf(context).scale(72),
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: list.length,
@@ -415,7 +415,7 @@ class _FoodNearbySectionState extends State<FoodNearbySection> {
               itemBuilder: (context, i) {
                 final r = list[i];
                 return SizedBox(
-                  width: 168,
+                  width: 136,
                   child: Card(
                     clipBehavior: Clip.antiAlias,
                     margin: EdgeInsets.zero,
@@ -427,9 +427,10 @@ class _FoodNearbySectionState extends State<FoodNearbySection> {
                       child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            MerchantArtwork(restaurant: r, height: 100),
+                            MerchantArtwork(
+                                restaurant: r, height: 80, nearby: true),
                             Padding(
-                              padding: const EdgeInsets.all(12),
+                              padding: const EdgeInsets.all(8),
                               child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [

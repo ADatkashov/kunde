@@ -26,33 +26,50 @@ class KundeNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = KundeLocalizations.of(context);
+    final colors = Theme.of(context).colorScheme;
     return Semantics(
       container: true,
       label: s.navLabel,
-      child: NavigationBar(
-        selectedIndex: selected.index,
-        onDestinationSelected:
-            onSelected == null ? null : (i) => onSelected!(KundeTab.values[i]),
-        destinations: [
-          NavigationDestination(
-              icon: const Icon(Icons.home_outlined),
-              selectedIcon: const Icon(Icons.home_rounded),
-              label: s.navHome),
-          NavigationDestination(
-              icon: const Icon(Icons.search_rounded), label: s.navSearch),
-          NavigationDestination(
-              icon: const Icon(Icons.receipt_long_outlined),
-              selectedIcon: const Icon(Icons.receipt_long_rounded),
-              label: s.navOrders),
-          NavigationDestination(
-              icon: const Icon(Icons.grid_view_outlined),
-              selectedIcon: const Icon(Icons.grid_view_rounded),
-              label: s.navServices),
-          NavigationDestination(
-              icon: const Icon(Icons.person_outline),
-              selectedIcon: const Icon(Icons.person_rounded),
-              label: s.navProfile),
-        ],
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: colors.outlineVariant)),
+          boxShadow: [
+            BoxShadow(
+              color: colors.shadow.withValues(alpha: .09),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: NavigationBar(
+          height: 64,
+          animationDuration: const Duration(milliseconds: 180),
+          indicatorColor: colors.primaryContainer,
+          selectedIndex: selected.index,
+          onDestinationSelected: onSelected == null
+              ? null
+              : (i) => onSelected!(KundeTab.values[i]),
+          destinations: [
+            NavigationDestination(
+                icon: const Icon(Icons.home_outlined),
+                selectedIcon: const Icon(Icons.home_rounded),
+                label: s.navHome),
+            NavigationDestination(
+                icon: const Icon(Icons.search_rounded), label: s.navSearch),
+            NavigationDestination(
+                icon: const Icon(Icons.receipt_long_outlined),
+                selectedIcon: const Icon(Icons.receipt_long_rounded),
+                label: s.navOrders),
+            NavigationDestination(
+                icon: const Icon(Icons.grid_view_outlined),
+                selectedIcon: const Icon(Icons.grid_view_rounded),
+                label: s.navServices),
+            NavigationDestination(
+                icon: const Icon(Icons.person_outline),
+                selectedIcon: const Icon(Icons.person_rounded),
+                label: s.navProfile),
+          ],
+        ),
       ),
     );
   }

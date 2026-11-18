@@ -409,9 +409,13 @@ class FoodCollectionHeader extends StatelessWidget {
 /// An offline, missing or broken image always falls back to a licensed illustration.
 class MerchantArtwork extends StatelessWidget {
   const MerchantArtwork(
-      {required this.restaurant, this.height = 140, super.key});
+      {required this.restaurant,
+      this.height = 140,
+      this.nearby = false,
+      super.key});
   final Restaurant restaurant;
   final double height;
+  final bool nearby;
 
   @override
   Widget build(BuildContext context) {
@@ -420,12 +424,15 @@ class MerchantArtwork extends StatelessWidget {
       width: double.infinity,
       color: toneColors(restaurant.tone).background,
       alignment: Alignment.center,
-      child: EmojiTile(
-          emoji: restaurant.emoji,
-          tone: restaurant.tone,
-          size: height * .85,
-          plain: true,
-          radius: 0),
+      child: nearby
+          ? Icon(Icons.restaurant_rounded,
+              size: 28, color: toneColors(restaurant.tone).foreground)
+          : EmojiTile(
+              emoji: restaurant.emoji,
+              tone: restaurant.tone,
+              size: height * .85,
+              plain: true,
+              radius: 0),
     );
     final url = restaurant.imageUrl;
     if (url == null || !url.startsWith('https://')) return fallback;

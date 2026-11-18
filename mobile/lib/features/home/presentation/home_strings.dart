@@ -36,6 +36,18 @@ extension HomeStrings on KundeLocalizations {
         'Бүгін не істегіңіз келеді?',
         'What do you want to do today?',
       );
+  String get homeNotifications =>
+      _t('Уведомления', 'Хабарландырулар', 'Notifications');
+  String get homeNotificationsUnavailable => _t(
+        'Уведомления пока недоступны.',
+        'Хабарландырулар әзірге қолжетімсіз.',
+        'Notifications are not available yet.',
+      );
+  String get homeRewards =>
+      _t('Акции и бонусы', 'Науқандар мен бонустар', 'Offers and rewards');
+  String get nearbyRestaurants =>
+      _t('Рестораны', 'Мейрамханалар', 'Restaurants');
+  String get nearbyStores => _t('Магазины', 'Дүкендер', 'Groceries');
   String get homeSoon => _t('Скоро', 'Жақында', 'Soon');
   String get homeAiTitle => 'KUNDE AI';
   String get homeAiSubtitle => _t(

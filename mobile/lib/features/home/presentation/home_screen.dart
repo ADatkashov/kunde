@@ -195,7 +195,7 @@ class _HomeScreenState extends State<HomeScreen> {
   ) {
     final s = KundeLocalizations.of(context);
     if (c.isAll) {
-      _showAll(all);
+      _showAll(all, foodEnabled, bookingEnabled);
     } else if (c.label == s.catBeauty &&
         bookingEnabled &&
         widget.booking != null) {
@@ -243,7 +243,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _showAll(List<ServiceCategory> all) {
+  void _showAll(
+      List<ServiceCategory> all, bool foodEnabled, bool bookingEnabled) {
     final s = KundeLocalizations.of(context);
     showModalBottomSheet<void>(
       context: context,
@@ -264,6 +265,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(c.icon, color: c.color),
                 title: Text(c.label),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _onCategory(c, all, foodEnabled, bookingEnabled);
+                },
                 trailing:
                     c.enabled ? Text(s.categoryAvailable) : const SoonBadge(),
               ),
@@ -296,13 +301,36 @@ class _HomeScreenState extends State<HomeScreen> {
                   marketplace,
                   snapshot?.bookingEnabled ?? false,
                 );
+                final visibleCategories = [
+                  for (final label in [
+                    s.catFood,
+                    s.catGroceries,
+                    s.catHome,
+                    s.catBeauty,
+                    s.catAuto,
+                    s.catLeisure,
+                    s.catHealth,
+                    s.catAll,
+                  ])
+                    categories
+                        .firstWhere((category) => category.label == label),
+                ];
+                void openAssistant() => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                          builder: (_) => const AssistantScreen()),
+                    );
                 void openSoon(String title, [String? body]) =>
                     _showInfo(title, body ?? s.comingSoonBody);
                 return ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
                   children: [
-                    const HomeHeader(),
-                    const SizedBox(height: 16),
+                    HomeHeader(
+                      onNotifications: () => openSoon(
+                        s.homeNotifications,
+                        s.homeNotificationsUnavailable,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
                     HomeSearchField(
                       onTap: marketplace ||
                               (snapshot?.bookingEnabled == true &&
@@ -313,11 +341,31 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 16),
                     FadeIn(
-                      child: AiEntryCard(
-                        onOpen: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => const AssistantScreen(),
-                          ),
+                      child: IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                                child: HomePromoCard(
+                              promotion: HomePromotion.assistant,
+                              label: s.homeAiTitle,
+                              onTap: openAssistant,
+                            )),
+                            const SizedBox(width: 8),
+                            Expanded(
+                                child: HomePromoCard(
+                              promotion: HomePromotion.rewards,
+                              label: s.homeRewards,
+                              onTap: () => openSoon(s.homeRewards),
+                            )),
+                            const SizedBox(width: 8),
+                            Expanded(
+                                child: HomePromoCard(
+                              promotion: HomePromotion.membership,
+                              label: 'KUNDE+',
+                              onTap: () => openSoon('KUNDE+'),
+                            )),
+                          ],
                         ),
                       ),
                     ),
@@ -336,7 +384,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: loading
                           ? const _CategorySkeleton()
                           : CategoryGrid(
-                              categories: categories,
+                              categories: visibleCategories,
                               onTap: (c) => _onCategory(
                                 c,
                                 categories,
@@ -345,7 +393,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
                     FadeIn(
                       delay: 120,
                       child: FoodBanner(
@@ -355,41 +403,106 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    if (widget.onOpenOrders != null)
-                      QuickAction(
-                        icon: Icons.receipt_long_outlined,
-                        label: s.quickOrders,
-                        onTap: widget.onOpenOrders!,
-                      ),
-                    if (snapshot?.bookingEnabled == true &&
-                        widget.booking != null) ...[
-                      const SizedBox(height: 24),
-                      SectionTitle(title: s.catServices),
-                      for (final category in categories.where((c) =>
-                          c.label == s.catBeauty || c.label == s.catHome))
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: QuickAction(
-                            icon: category.icon,
-                            label: category.label,
-                            onTap: () => _onCategory(
-                                category, categories, marketplace, true),
-                          ),
-                        ),
-                    ],
-                    const SizedBox(height: 24),
                     SectionTitle(title: s.nearbyTitle, trailing: s.homeCity),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     if (loading)
                       const _CategorySkeleton()
-                    else if (marketplace && widget.food != null)
-                      FoodNearbySection(services: widget.food!)
-                    else if (!failed)
+                    else if (marketplace && widget.food != null) ...[
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: ServicePhotoCard(
+                              label: s.nearbyRestaurants,
+                              asset: 'assets/photos/food.jpg',
+                              onTap: _openFood,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: ServicePhotoCard(
+                              label: s.nearbyStores,
+                              asset: 'assets/photos/groceries.jpg',
+                              onTap: () => _onCategory(
+                                categories.firstWhere(
+                                    (c) => c.label == s.catGroceries),
+                                categories,
+                                marketplace,
+                                snapshot?.bookingEnabled ?? false,
+                              ),
+                            ),
+                          ),
+                          if (snapshot?.bookingEnabled == true &&
+                              widget.booking != null) ...[
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ServicePhotoCard(
+                                label: s.catHome,
+                                asset: 'assets/photos/home-services.jpg',
+                                onTap: () => _onCategory(
+                                  categories
+                                      .firstWhere((c) => c.label == s.catHome),
+                                  categories,
+                                  marketplace,
+                                  true,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      FoodNearbySection(services: widget.food!),
+                    ] else if (!failed)
                       EmptyStateCard(
                         icon: Icons.storefront_outlined,
                         title: s.nearbyEmptyTitle,
                         body: s.nearbyEmptyBody,
                       ),
+                    if (widget.onOpenOrders != null) ...[
+                      const SizedBox(height: 16),
+                      QuickAction(
+                        icon: Icons.receipt_long_outlined,
+                        label: s.quickOrders,
+                        onTap: widget.onOpenOrders!,
+                      ),
+                    ],
+                    if (snapshot?.bookingEnabled == true &&
+                        widget.booking != null) ...[
+                      const SizedBox(height: 24),
+                      SectionTitle(title: s.catServices),
+                      const SizedBox(height: 8),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                              child: ServicePhotoCard(
+                            label: s.catHome,
+                            asset: 'assets/photos/home-services.jpg',
+                            onTap: () => _onCategory(
+                              categories
+                                  .firstWhere((c) => c.label == s.catHome),
+                              categories,
+                              marketplace,
+                              true,
+                            ),
+                          )),
+                          const SizedBox(width: 8),
+                          Expanded(
+                              child: ServicePhotoCard(
+                            label: s.catBeauty,
+                            asset: 'assets/photos/beauty.jpg',
+                            onTap: () => _onCategory(
+                              categories
+                                  .firstWhere((c) => c.label == s.catBeauty),
+                              categories,
+                              marketplace,
+                              true,
+                            ),
+                          )),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 24),
                     _PlatformStatus(
                       loading: loading,

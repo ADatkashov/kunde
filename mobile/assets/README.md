@@ -23,3 +23,13 @@ existing behavior and local fallback.
 - DEV Flowers catalog: illustrative flower photo `photo-1490750967868-88aa4486c946`,
   https://images.unsplash.com/photo-1490750967868-88aa4486c946,
   https://unsplash.com/license; synthetic items and prices do not represent an actual offer.
+
+- `photos/home-services.jpg` and `photos/beauty.jpg`: Unsplash category artwork
+  (https://images.unsplash.com/photo-1581578731548-c64695cc6952 and
+  https://images.unsplash.com/photo-1503951914875-452162b0f3f1).
+  https://unsplash.com/license. Illustrative photos for the Home and Beauty
+  categories, without suggesting they show any particular provider.
+
+- `photos/groceries.jpg`: Unsplash category artwork
+  (https://images.unsplash.com/photo-1542838132-92c53300491e),
+  https://unsplash.com/license. Illustrative photo for the Grocery catalog.

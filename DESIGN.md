@@ -2,25 +2,21 @@
 
 ## Product and audience
 Consumer Super App for everyday life in Almaty, then Kazakhstan. Russian,
-Kazakh and English. The owner’s Premium UI 2.0 brief is the visual reference: violet, gold,
-illustrated services and rounded surfaces. Existing Food/Grocery and booking DEV behavior remains authoritative;
-see docs/product/food-mvp.md and docs/product/booking-mvp.md.
+Kazakh and English. The approved Premium UI 2.1 concept is the Home and assistant visual reference.
+Food, Grocery and booking retain their existing DEV contracts.
 
 ## Visual direction
-Brand violet #7055F5, light canvas #F8F9FC, dark canvas #101426,
-white surface #FFFFFF, accent gold #F2C77D and light ink #172033.
-Consumer starts in light mode and stores the selected theme on the device.
-Violet mountain and assistant surfaces, illustrated categories and Food
-photography anchor the home screen. The assistant has an explicit unavailable
-state while the backend lacks an AI API.
+Compact Almaty header and search, three violet/lilac/gold promotion cards,
+a two-row category grid, a horizontal meal banner and a nearby photo rail.
+The dark canvas is navy and the light canvas is cool white. AI has a luminous
+violet mark and a localized Soon status. Rewards, membership and notifications
+explain their availability when opened.
 
 ## Typography and layout
-Bundled Noto Sans (KundeSans) with Cyrillic/Kazakh coverage; 30/24/20 display,
-17/16 body, 10.5–12 compact category/caption text. Wordmark uses heavy weight.
-Content max width 600–640 dp, 16–24 dp insets, 16–24 dp radii. Controls have
-at least 48 dp touch targets. Five category columns at 360 dp and above;
-large text and smaller screens reflow to four/three columns. Content scrolls
-naturally within safe areas. Main target widths: Samsung 360/390/412 dp.
+Bundled Noto Sans (KundeSans) covers Cyrillic and Kazakh. Home uses 4/8 dp
+spacing, 16 dp outer insets and 16 dp radius on tiles and promotions.
+The category grid reflows from four to three or two columns for narrow
+viewports and large text. The compact category tiles use Material icons.
 
 ## Runtime ownership
 packages/kunde_design owns shared palette tokens. Consumer and Partner adapt
@@ -35,8 +31,8 @@ See UX-CONTRACT.md and mobile/test/features for behavior and visual coverage.
 
 ## Assets and availability
 Bundled Fluent Emoji (MIT), Unsplash promotional hamburger photo, original
-vector artwork. Sources and licenses: mobile/assets/README.md. Merchant cards
-use catalog data and bundled illustrations; no fabricated ratings or photos.
+vector artwork. Sources and licenses: mobile/assets/README.md. Merchant cards use catalog data and actual images when supplied. A Material
+icon is the nearby fallback. Service photos illustrate categories.
 Remote HTTPS product imagery retains fallback behavior. Synthetic merchants
 keep the ДЕМО label. City picker lists only the supported city, Almaty.
 
