@@ -15,6 +15,7 @@ import 'package:kunde_mobile/features/food/data/food_api.dart';
 import 'package:kunde_mobile/features/food/data/food_models.dart';
 import 'package:kunde_mobile/features/food/food_services.dart';
 import 'package:kunde_mobile/features/food/presentation/food_home_screen.dart';
+import 'package:kunde_mobile/features/food/presentation/checkout_screen.dart';
 import 'package:kunde_mobile/features/food/presentation/order_screen.dart';
 import 'package:kunde_mobile/features/food/presentation/orders_tab.dart';
 import 'package:kunde_mobile/features/identity/auth_repository.dart';
@@ -171,9 +172,11 @@ class _FakeBackend {
         'restaurantName': 'Пицца Тест',
         'status': 'PLACED',
         'paymentMethod': body['paymentMethod'],
-        'paymentStatus': body['paymentMethod'] == 'TEST_CARD'
-            ? 'TEST_PAID'
-            : 'PAY_ON_RECEIPT',
+        'paymentStatus': body['paymentMethod'] == 'DEV_NO_PAYMENT'
+            ? 'NO_PAYMENT'
+            : body['paymentMethod'] == 'TEST_CARD'
+                ? 'TEST_PAID'
+                : 'PAY_ON_RECEIPT',
         'subtotalMinor': quote['subtotalMinor'],
         'deliveryFeeMinor': quote['deliveryFeeMinor'],
         'totalMinor': quote['totalMinor'],
@@ -282,7 +285,7 @@ Future<void> _show(WidgetTester tester, Widget home,
 
 void main() {
   for (final width in [360.0, 390.0, 412.0]) {
-    for (final vertical in ['FOOD', 'GROCERY']) {
+    for (final vertical in ['FOOD', 'GROCERY', 'FLOWERS_GIFTS']) {
       testWidgets('Samsung $width $vertical large text layout', (tester) async {
         await tester.runAsync(loadPremiumFonts);
         final services = await _services(_FakeBackend(), tester);
@@ -296,6 +299,47 @@ void main() {
       });
     }
   }
+
+  testWidgets('flowers catalog requests its own vertical', (tester) async {
+    final backend = _FakeBackend();
+    final services = await _services(backend, tester);
+    await _show(
+        tester, FoodHomeScreen(services: services, vertical: 'FLOWERS_GIFTS'));
+    expect(backend.requestedVerticals, contains('FLOWERS_GIFTS'));
+    expect(find.text('Цветы и подарки'), findsOneWidget);
+  });
+
+  testWidgets('flowers checkout submits no payment', (tester) async {
+    final backend = _FakeBackend();
+    final services = await _services(backend, tester);
+    services.cart.add(
+        Restaurant.fromJson({..._restaurant(), 'vertical': 'FLOWERS_GIFTS'}),
+        CartLine(
+            dishId: _dishId,
+            name: 'Маргарита',
+            emoji: '💐',
+            tone: 'red',
+            optionIds: const [_sizeS],
+            optionsText: '',
+            unitPriceMinor: 350000,
+            quantity: 1));
+    final quote = FoodQuote.fromJson(backend._price({
+      'items': [
+        {
+          'dishId': _dishId,
+          'quantity': 1,
+          'optionIds': [_sizeS]
+        }
+      ]
+    })!);
+    await _show(tester, CheckoutScreen(services: services, quote: quote));
+    expect(find.textContaining('Оплата не производится'), findsWidgets);
+    expect(find.text('Тестовая карта (DEV)'), findsNothing);
+    await tester.ensureVisible(find.textContaining('Подтвердить заказ'));
+    await tester.tap(find.textContaining('Подтвердить заказ'));
+    await tester.pumpAndSettle();
+    expect(backend.orders.single['paymentMethod'], 'DEV_NO_PAYMENT');
+  });
 
   testWidgets('premium golden complete home with nearby merchants',
       (tester) async {

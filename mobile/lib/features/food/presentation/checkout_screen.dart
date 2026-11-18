@@ -116,7 +116,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           restaurantId: restaurant.id,
           items: [for (final l in widget.services.cart.lines) l.toRequest()],
           addressId: _addressId!,
-          paymentMethod: restaurant.vertical == 'FLOWERS_GIFTS' ? 'DEV_NO_PAYMENT' : _payment,
+          paymentMethod: restaurant.vertical == 'FLOWERS_GIFTS'
+              ? 'DEV_NO_PAYMENT'
+              : _payment,
           comment: _comment.text,
         ),
         _key,
@@ -147,12 +149,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final quote = widget.quote;
-    final flowers = widget.services.cart.restaurant?.vertical == 'FLOWERS_GIFTS';
+    final flowers =
+        widget.services.cart.restaurant?.vertical == 'FLOWERS_GIFTS';
     final language = Localizations.localeOf(context).languageCode;
     final noPayment = switch (language) {
-      'kk' => 'Бұл сынақ тапсырыс. Төлем жүргізілмейді және жеткізу орындалмайды.',
+      'kk' =>
+        'Бұл сынақ тапсырыс. Төлем жүргізілмейді және жеткізу орындалмайды.',
       'en' => 'This is a test order. No payment or real delivery takes place.',
-      _ => 'Это тестовый заказ. Оплата не производится, реальная доставка не выполняется.',
+      _ =>
+        'Это тестовый заказ. Оплата не производится, реальная доставка не выполняется.',
     };
     return Scaffold(
       appBar: AppBar(title: const Text('Оформление заказа')),
@@ -228,25 +233,28 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
                 const SizedBox(height: 24),
                 Text('Оплата', style: theme.textTheme.titleLarge),
-                if (flowers) Text(noPayment) else RadioGroup<String>(
-                  groupValue: _payment,
-                  onChanged: _busy
-                      ? (_) {}
-                      : (v) => setState(() => _payment = v ?? _payment),
-                  child: const Column(children: [
-                    RadioListTile<String>(
-                      value: 'TEST_CARD',
-                      title: Text('Тестовая карта (DEV)'),
-                      subtitle: Text(
-                          'Имитация оплаты. Данные карты не вводятся и не списываются.'),
-                    ),
-                    RadioListTile<String>(
-                      value: 'CASH_ON_DELIVERY',
-                      title: Text('Наличными при получении'),
-                      subtitle: Text('Оплата курьеру при доставке.'),
-                    ),
-                  ]),
-                ),
+                if (flowers)
+                  Text(noPayment)
+                else
+                  RadioGroup<String>(
+                    groupValue: _payment,
+                    onChanged: _busy
+                        ? (_) {}
+                        : (v) => setState(() => _payment = v ?? _payment),
+                    child: const Column(children: [
+                      RadioListTile<String>(
+                        value: 'TEST_CARD',
+                        title: Text('Тестовая карта (DEV)'),
+                        subtitle: Text(
+                            'Имитация оплаты. Данные карты не вводятся и не списываются.'),
+                      ),
+                      RadioListTile<String>(
+                        value: 'CASH_ON_DELIVERY',
+                        title: Text('Наличными при получении'),
+                        subtitle: Text('Оплата курьеру при доставке.'),
+                      ),
+                    ]),
+                  ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _comment,
@@ -304,7 +312,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                    flowers ? noPayment : 'DEV-режим: оплата и доставка имитируются, реальные деньги не списываются.',
+                    flowers
+                        ? noPayment
+                        : 'DEV-режим: оплата и доставка имитируются, реальные деньги не списываются.',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodySmall
                         ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),

@@ -27,7 +27,8 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
   bool get _flowers => widget.vertical == 'FLOWERS_GIFTS';
   bool get _grocery => widget.vertical != 'FOOD';
 
-  String _flowersTitle(BuildContext context) => switch (Localizations.localeOf(context).languageCode) {
+  String _flowersTitle(BuildContext context) =>
+      switch (Localizations.localeOf(context).languageCode) {
         'kk' => 'Гүлдер мен сыйлықтар',
         'en' => 'Flowers & gifts',
         _ => 'Цветы и подарки',
@@ -86,7 +87,9 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
-          title: Text(_flowers ? _flowersTitle(context) : (_grocery ? 'Продукты · Алматы' : 'Еда · Алматы')),
+          title: Text(_flowers
+              ? _flowersTitle(context)
+              : (_grocery ? 'Продукты · Алматы' : 'Еда · Алматы')),
           actions: [
             ListenableBuilder(
               listenable: widget.services.cart,

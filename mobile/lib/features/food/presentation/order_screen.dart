@@ -213,7 +213,19 @@ class _OrderScreenState extends State<OrderScreen> {
       const SizedBox(height: 16),
       _StatusTimeline(order: order),
       const SizedBox(height: 8),
-      Text('DEV-режим: приготовление и доставка имитируются по таймеру.',
+      Text(
+          order.vertical == 'FLOWERS_GIFTS'
+              ? switch (Localizations.localeOf(context).languageCode) {
+                  'kk' =>
+                    'Сынақ тапсырыс: төлем мен нақты жеткізу жоқ. Күйді серіктес өзгертеді.',
+                  'en' =>
+                    'Test order: no payment or real delivery. The partner updates the status.',
+                  _ =>
+                    'Тестовый заказ: оплаты и реальной доставки нет. Статусы меняет партнёр.',
+                }
+              : order.simulated
+                  ? 'DEV-режим: приготовление и доставка имитируются по таймеру.'
+                  : 'DEV-режим: статусы меняет партнёр.',
           style: theme.textTheme.bodySmall
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
       const Divider(height: 32),
