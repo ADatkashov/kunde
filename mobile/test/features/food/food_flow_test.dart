@@ -318,14 +318,22 @@ void main() {
     }
   }
 
-  testWidgets('flowers catalog requests its own vertical', (tester) async {
-    final backend = _FakeBackend();
-    final services = await _services(backend, tester);
-    await _show(
-        tester, FoodHomeScreen(services: services, vertical: 'FLOWERS_GIFTS'));
-    expect(backend.requestedVerticals, contains('FLOWERS_GIFTS'));
-    expect(find.text('Flowers & gifts'), findsOneWidget);
-  });
+  for (final entry in {
+    'ru': 'Цветы и подарки',
+    'kk': 'Гүлдер мен сыйлықтар',
+    'en': 'Flowers & gifts',
+  }.entries) {
+    testWidgets('flowers catalog requests its vertical in ${entry.key}',
+        (tester) async {
+      final backend = _FakeBackend();
+      final services = await _services(backend, tester);
+      await _show(
+          tester, FoodHomeScreen(services: services, vertical: 'FLOWERS_GIFTS'),
+          locale: Locale(entry.key));
+      expect(backend.requestedVerticals, contains('FLOWERS_GIFTS'));
+      expect(find.text(entry.value), findsOneWidget);
+    });
+  }
 
   testWidgets('flowers store to test order and history', (tester) async {
     final backend = _FakeBackend()..flowersCatalog = true;
