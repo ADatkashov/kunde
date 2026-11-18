@@ -223,9 +223,7 @@ class _OrderScreenState extends State<OrderScreen> {
                   _ =>
                     'Тестовый заказ: оплаты и реальной доставки нет. Статусы меняет партнёр.',
                 }
-              : order.simulated
-                  ? 'DEV-режим: приготовление и доставка имитируются по таймеру.'
-                  : 'DEV-режим: статусы меняет партнёр.',
+              : 'DEV-режим: приготовление и доставка имитируются по таймеру.',
           style: theme.textTheme.bodySmall
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
       const Divider(height: 32),

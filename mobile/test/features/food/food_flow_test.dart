@@ -306,7 +306,7 @@ void main() {
     await _show(
         tester, FoodHomeScreen(services: services, vertical: 'FLOWERS_GIFTS'));
     expect(backend.requestedVerticals, contains('FLOWERS_GIFTS'));
-    expect(find.text('Цветы и подарки'), findsOneWidget);
+    expect(find.text('Flowers & gifts'), findsOneWidget);
   });
 
   testWidgets('flowers checkout submits no payment', (tester) async {
@@ -333,7 +333,7 @@ void main() {
       ]
     })!);
     await _show(tester, CheckoutScreen(services: services, quote: quote));
-    expect(find.textContaining('Оплата не производится'), findsWidgets);
+    expect(find.textContaining('No payment or real delivery'), findsWidgets);
     expect(find.text('Тестовая карта (DEV)'), findsNothing);
     await tester.ensureVisible(find.textContaining('Подтвердить заказ'));
     await tester.tap(find.textContaining('Подтвердить заказ'));
