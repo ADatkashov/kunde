@@ -143,7 +143,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       }
       setState(() {
         _busy = false;
-        _error = error.message;
+        _error = restaurant.vertical == 'FLOWERS_GIFTS'
+            ? error.messageFor(Localizations.localeOf(context).languageCode)
+            : error.message;
       });
     }
   }

@@ -460,6 +460,13 @@ void main() {
     await premiumGolden(tester, 'premium_history');
   });
 
+  test('price changes are explained in all checkout languages', () {
+    const error = FoodException(FoodFailure.priceChanged);
+    expect(error.messageFor('ru'), contains('Цена изменилась'));
+    expect(error.messageFor('kk'), contains('Баға өзгерді'));
+    expect(error.messageFor('en'), contains('price changed'));
+  });
+
   test('formatTenge groups thousands and hides zero tiyn', () {
     expect(formatTenge(350000), '3 500 ₸');
     expect(formatTenge(1220000), '12 200 ₸');

@@ -123,7 +123,10 @@ class _CartScreenState extends State<CartScreen> {
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Text(error is FoodException
-                ? error.message
+                ? (restaurant.vertical == 'FLOWERS_GIFTS'
+                    ? error.messageFor(
+                        Localizations.localeOf(context).languageCode)
+                    : error.message)
                 : FoodException(FoodFailure.other).message),
           ),
         ),
