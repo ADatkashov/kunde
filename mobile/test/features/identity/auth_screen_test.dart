@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:kunde_mobile/main.dart';
@@ -162,6 +163,26 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Русский'));
     await premiumGolden(tester, 'premium_profile_390');
+  });
+
+  testWidgets('consumer appearance follows the saved choice after restart',
+      (tester) async {
+    FlutterSecureStorage.setMockInitialValues({});
+    addTearDown(() => FlutterSecureStorage.setMockInitialValues({}));
+    await login(tester);
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Appearance'));
+    await tester.tap(find.text('Appearance'));
+    await tester.pumpAndSettle();
+    expect(Theme.of(tester.element(find.byType(NavigationBar))).brightness,
+        Brightness.dark);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpWidget(KundeApp(api: api, auth: auth));
+    await tester.pumpAndSettle();
+    expect(Theme.of(tester.element(find.byType(NavigationBar))).brightness,
+        Brightness.dark);
   });
 
   testWidgets('signed-in shell has five tabs and keeps Profile working',

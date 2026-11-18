@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kunde_design/kunde_design.dart';
 
 /// Bundled Fluent Emoji illustrations (Microsoft, MIT). No network requests.
 class KundeIllustration extends StatelessWidget {
@@ -39,7 +40,7 @@ class AlmatyMountains extends CustomPainter {
       ..lineTo(size.width, size.height * .54)
       ..lineTo(size.width, size.height)
       ..close();
-    canvas.drawPath(far, Paint()..color = const Color(0xFFBDDCED));
+    canvas.drawPath(far, Paint()..color = const Color(0xFF9B8BE3));
     final snow = Path()
       ..moveTo(size.width * .4, size.height * .43)
       ..lineTo(size.width * .55, size.height * .12)
@@ -57,7 +58,7 @@ class AlmatyMountains extends CustomPainter {
           size.width * .72, size.height * .38, size.width, size.height * .75)
       ..lineTo(size.width, size.height)
       ..close();
-    canvas.drawPath(near, Paint()..color = const Color(0xFFA8D6C1));
+    canvas.drawPath(near, Paint()..color = const Color(0xFF6C59BD));
   }
 
   @override
@@ -74,7 +75,7 @@ class KundeLogoPainter extends CustomPainter {
       ..shader = const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [Color(0xFF62DA8D), Color(0xFF00875A), Color(0xFF005436)],
+        colors: [Color(0xFFFFE7AB), KundePalette.gold, Color(0xFFC68641)],
       ).createShader(Offset.zero & size);
     canvas.drawRRect(
         RRect.fromRectAndRadius(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kunde_design/kunde_design.dart';
 
 /// Design tokens of KUNDE Partner. Widgets read spacing, radii and semantic
 /// colors from here instead of hard-coding values.
@@ -19,9 +20,6 @@ abstract final class Radii {
 
 /// Minimum interactive size (Material / WCAG target size).
 const double kMinTap = 48;
-
-/// Deep KUNDE green.
-const Color kBrandGreen = Color(0xFF0B6B47);
 
 /// Semantic colors that the Material scheme does not provide.
 @immutable
@@ -85,14 +83,7 @@ extension KundeTheme on BuildContext {
 
 ThemeData buildTheme(Brightness brightness) {
   final dark = brightness == Brightness.dark;
-  final scheme = ColorScheme.fromSeed(
-    seedColor: kBrandGreen,
-    brightness: brightness,
-  ).copyWith(
-    primary: dark ? const Color(0xFF7FD8A8) : kBrandGreen,
-    onPrimary: dark ? const Color(0xFF00391F) : Colors.white,
-    error: dark ? const Color(0xFFFFB4AB) : const Color(0xFFB3261E),
-  );
+  final scheme = KundePalette.scheme(brightness);
   final shape = RoundedRectangleBorder(
     borderRadius: BorderRadius.circular(Radii.control),
   );
@@ -100,8 +91,7 @@ ThemeData buildTheme(Brightness brightness) {
     useMaterial3: true,
     colorScheme: scheme,
     brightness: brightness,
-    scaffoldBackgroundColor:
-        dark ? const Color(0xFF0F1512) : const Color(0xFFF4F7F5),
+    scaffoldBackgroundColor: KundePalette.background(brightness),
     extensions: [dark ? KundeTones.dark : KundeTones.light],
     appBarTheme: AppBarTheme(
       backgroundColor: Colors.transparent,
@@ -119,13 +109,11 @@ ThemeData buildTheme(Brightness brightness) {
     cardTheme: CardThemeData(
       elevation: 0,
       margin: EdgeInsets.zero,
-      color: dark ? const Color(0xFF18211C) : Colors.white,
+      color: scheme.surface,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(Radii.card),
-        side: BorderSide(
-          color: dark ? const Color(0xFF2B3A32) : const Color(0xFFE1E8E4),
-        ),
+        side: BorderSide(color: scheme.outlineVariant),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
@@ -157,7 +145,7 @@ ThemeData buildTheme(Brightness brightness) {
     navigationBarTheme: NavigationBarThemeData(
       height: 68,
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-      backgroundColor: dark ? const Color(0xFF18211C) : Colors.white,
+      backgroundColor: scheme.surface,
       indicatorColor: scheme.primaryContainer,
     ),
     chipTheme: ChipThemeData(

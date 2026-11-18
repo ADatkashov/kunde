@@ -5,6 +5,8 @@ version: 0.2.0+2
 environment:
   sdk: '>=3.4.0 <4.0.0'
 dependencies:
+  kunde_design:
+    path: ../packages/kunde_design
   flutter:
     sdk: flutter
   flutter_localizations:

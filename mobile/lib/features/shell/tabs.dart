@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../core/localization/kunde_localizations.dart';
+import '../food/food_services.dart';
+import '../food/presentation/food_home_screen.dart';
 import '../home/data/kunde_api.dart';
+import '../home/presentation/home_strings.dart';
 import '../home/data/platform_snapshot.dart';
 import '../home/presentation/catalog_search_panel.dart';
 import '../home/presentation/super_app_widgets.dart';
@@ -103,9 +106,11 @@ class _ServicesTabState extends State<ServicesTab> {
 /// Search tab: real catalog search when the server enables the marketplace,
 /// otherwise an honest empty state.
 class SearchTab extends StatefulWidget {
-  const SearchTab({required this.api, super.key});
+  const SearchTab({required this.api, this.food, this.booking, super.key});
 
   final KundeApi api;
+  final FoodServices? food;
+  final BookingServices? booking;
 
   @override
   State<SearchTab> createState() => _SearchTabState();
@@ -128,6 +133,10 @@ class _SearchTabState extends State<SearchTab> {
       builder: (context, state) {
         final done = state.connectionState == ConnectionState.done;
         final enabled = done && (state.data?.marketplaceEnabled ?? false);
+        final canBrowseBookings = done &&
+            state.data?.bookingEnabled == true &&
+            widget.booking != null;
+        final food = widget.food;
         return Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600),
@@ -139,9 +148,48 @@ class _SearchTabState extends State<SearchTab> {
                       child: Padding(
                           padding: EdgeInsets.all(24),
                           child: CircularProgressIndicator()))
-                else if (enabled)
-                  CatalogSearchPanel(api: widget.api)
-                else if (state.hasError)
+                else if (enabled || canBrowseBookings) ...[
+                  if (enabled) CatalogSearchPanel(api: widget.api),
+                  if (enabled && food != null)
+                    for (final (icon, label, vertical) in [
+                      (Icons.restaurant_outlined, s.catFood, 'FOOD'),
+                      (
+                        Icons.shopping_basket_outlined,
+                        s.catGroceries,
+                        'GROCERY'
+                      ),
+                      (
+                        Icons.local_florist_outlined,
+                        s.catFlowers,
+                        'FLOWERS_GIFTS'
+                      ),
+                    ])
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: QuickAction(
+                          icon: icon,
+                          label: label,
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                                builder: (_) => FoodHomeScreen(
+                                    services: food, vertical: vertical)),
+                          ),
+                        ),
+                      ),
+                  if (canBrowseBookings)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: QuickAction(
+                        icon: Icons.event_available_outlined,
+                        label: s.catServices,
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                              builder: (_) => ServicesHomeScreen(
+                                  services: widget.booking!)),
+                        ),
+                      ),
+                    ),
+                ] else if (state.hasError)
                   EmptyStateCard(
                       icon: Icons.cloud_off_outlined,
                       title: s.offline,

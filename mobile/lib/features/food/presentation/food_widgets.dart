@@ -153,7 +153,7 @@ class RestaurantCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         margin: EdgeInsets.zero,
         elevation: 0,
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
           side: BorderSide(color: theme.colorScheme.outlineVariant),

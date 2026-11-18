@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../home/presentation/home_strings.dart';
+import '../../../core/localization/kunde_localizations.dart';
 import '../data/cart_controller.dart';
 import '../data/food_api.dart';
 import '../data/food_models.dart';
@@ -175,7 +177,7 @@ class _OrderScreenState extends State<OrderScreen> {
   Widget build(BuildContext context) {
     final order = _order;
     return Scaffold(
-      appBar: AppBar(title: const Text('Заказ')),
+      appBar: AppBar(title: Text(KundeLocalizations.of(context).orderDetails)),
       body: order == null
           ? (_error != null
               ? FoodStateMessage(
@@ -183,7 +185,7 @@ class _OrderScreenState extends State<OrderScreen> {
                   title: 'Не удалось загрузить заказ',
                   body: _error,
                   onAction: _load)
-              : const Center(child: CircularProgressIndicator()))
+              : const RestaurantListSkeleton(count: 1))
           : RefreshIndicator(
               onRefresh: _load,
               child: Center(
@@ -243,13 +245,26 @@ class _OrderScreenState extends State<OrderScreen> {
                   'Offline: showing the most recent data.'),
               style: TextStyle(color: theme.colorScheme.error)),
         ),
-      Text(order.restaurantName, style: theme.textTheme.headlineSmall),
-      Text(
-          '${tx('Оформлен', 'Рәсімделген', 'Placed')} ${formatOrderDate(order.placedAt)}',
-          style: theme.textTheme.bodyMedium
-              ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-      const SizedBox(height: 16),
-      _StatusTimeline(order: order),
+      Card(
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(order.restaurantName, style: theme.textTheme.headlineSmall),
+              const SizedBox(height: 4),
+              Text(
+                '${tx('Оформлен', 'Рәсімделген', 'Placed')} ${formatOrderDate(order.placedAt)}',
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
+              const Divider(height: 28),
+              _StatusTimeline(order: order),
+            ],
+          ),
+        ),
+      ),
       const SizedBox(height: 8),
       Text(
           order.vertical == 'FLOWERS_GIFTS'
