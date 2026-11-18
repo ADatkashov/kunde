@@ -42,6 +42,85 @@ paths:
                   marketplaceEnabled: { type: boolean, example: false }
                   oidcIssuerConfigured: { type: boolean, example: false }
                   aiEnabled: { type: boolean, example: false }
+  /rides:
+    post:
+      operationId: createRide
+      description: Create a request from an unexpired server-issued quote owned by the caller. Reusing a key with the same quote returns the original ride.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, pattern: '^[A-Za-z0-9_-]{16,64}$' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [quoteId]
+              properties:
+                quoteId: { type: string, format: uuid }
+      responses:
+        '200': { $ref: '#/components/responses/RideReturned' }
+        '201': { $ref: '#/components/responses/RideReturned' }
+        '400': { description: Invalid request or key }
+        '401': { description: Authentication required }
+        '403': { description: Consumer access denied }
+        '404': { description: New rides unavailable }
+        '409': { description: Quote unavailable, key reused with a different quote, or ride already pending }
+        '429': { $ref: '#/components/responses/RateLimited' }
+    get:
+      operationId: listMyRides
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 30 }
+        - name: offset
+          in: query
+          schema: { type: integer, minimum: 0, maximum: 10000, default: 0 }
+      responses:
+        '200':
+          description: Caller-owned ride requests, most recent first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/RideRequest' }
+        '400': { description: Invalid pagination }
+        '401': { description: Authentication required }
+        '403': { description: Consumer access denied }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /rides/{rideId}:
+    parameters:
+      - $ref: '#/components/parameters/RideId'
+    get:
+      operationId: getMyRide
+      security:
+        - bearerAuth: []
+      responses:
+        '200': { $ref: '#/components/responses/RideReturned' }
+        '401': { description: Authentication required }
+        '403': { description: Consumer access denied }
+        '404': { description: Ride not found for caller }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /rides/{rideId}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/RideId'
+    post:
+      operationId: cancelMyRide
+      security:
+        - bearerAuth: []
+      responses:
+        '200': { $ref: '#/components/responses/RideReturned' }
+        '401': { description: Authentication required }
+        '403': { description: Consumer access denied }
+        '404': { description: Ride not found for caller }
+        '409': { description: Ride can no longer be cancelled }
+        '429': { $ref: '#/components/responses/RateLimited' }
   /rides/address-search:
     post:
       operationId: searchRideAddresses
@@ -422,12 +501,23 @@ paths:
         '200':
           description: Cancelled; free until the appointment starts.
 components:
+  parameters:
+    RideId:
+      name: rideId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
   responses:
+    RideReturned:
+      description: Current state of the caller-owned ride request.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/RideRequest' }
     RequestBodyTooLarge:
       description: API request body exceeds the configured byte limit (65536 bytes by default). Applies to declared and streamed bodies before parsing or controller execution.
       headers:
@@ -450,6 +540,20 @@ components:
           schema:
             $ref: '#/components/schemas/ApiError'
   schemas:
+    RideRequest:
+      type: object
+      required: [id, quoteId, status, rideClass, tariffVersion, estimateKzt, currency, distanceMeters, durationSeconds, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        quoteId: { type: string, format: uuid }
+        status: { type: string, enum: [REQUESTED, CANCELLED_BY_CUSTOMER] }
+        rideClass: { type: string, enum: [ECONOMY, COMFORT, BUSINESS] }
+        tariffVersion: { type: string }
+        estimateKzt: { type: number, minimum: 0 }
+        currency: { const: KZT }
+        distanceMeters: { type: integer, minimum: 1 }
+        durationSeconds: { type: integer, minimum: 1 }
+        createdAt: { type: string, format: date-time }
     RideLanguage:
       type: string
       enum: [ru, kk, en]

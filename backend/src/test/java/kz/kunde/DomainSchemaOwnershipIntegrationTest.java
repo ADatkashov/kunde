@@ -50,6 +50,7 @@ class DomainSchemaOwnershipIntegrationTest {
             "transactions.food_orders -> marketplace.food_restaurants",
             "transactions.food_order_items -> marketplace.food_dishes",
             "transactions.bookings -> identity.users",
+            "transactions.ride_fare_quotes -> identity.users",
             "transactions.bookings -> marketplace.booking_venues",
             "transactions.bookings -> marketplace.booking_services",
             "transactions.bookings -> marketplace.booking_masters");
