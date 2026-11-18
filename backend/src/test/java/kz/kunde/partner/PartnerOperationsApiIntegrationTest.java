@@ -211,6 +211,10 @@ class PartnerOperationsApiIntegrationTest {
         String addr = address(customer);
         String prefix = "{\"restaurantId\":\"" + store + "\",\"items\":[{\"dishId\":\"" + dish
                 + "\",\"quantity\":1,\"optionIds\":[]}],\"addressId\":\"" + addr + "\",\"expectedTotalMinor\":990000,\"paymentMethod\":\"";
+        db.update("update marketplace.food_restaurants set partner_id = null where id = ?::uuid", store);
+        send("POST", "/api/v1/food/orders", customer, prefix + "DEV_NO_PAYMENT\"}", "flowers-unlinked-01")
+                .andExpect(status().isUnprocessableEntity());
+        db.update("update marketplace.food_restaurants set partner_id = ? where id = ?::uuid", partnerA, store);
         send("POST", "/api/v1/food/orders", customer, prefix + "TEST_CARD\"}", "flowers-invalid-0001")
                 .andExpect(status().isUnprocessableEntity());
         send("POST", "/api/v1/food/orders", customer,
@@ -220,6 +224,8 @@ class PartnerOperationsApiIntegrationTest {
                 prefix + "DEV_NO_PAYMENT\"}", "flowers-valid-00001")
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.paymentStatus").value("NO_PAYMENT"))
                 .andExpect(jsonPath("$.simulated").value(false))), "$.id");
+        assertThat(JsonPath.<String>read(body(send("POST", "/api/v1/food/orders", customer,
+                prefix + "DEV_NO_PAYMENT\"}", "flowers-valid-00001").andExpect(status().isOk())), "$.id")).isEqualTo(order);
         send("GET", foodBase() + "/orders/" + order, ownerToken, null, null).andExpect(status().isOk());
         UUID other = db.queryForObject("select id from marketplace.partners where display_name like 'Демо-партнёр Б%'", UUID.class);
         send("GET", "/api/v1/partner/partners/" + other + "/food/orders/" + order, otherToken, null, null)
@@ -227,6 +233,20 @@ class PartnerOperationsApiIntegrationTest {
         setStatus(ownerToken, order, "ACCEPTED", null).andExpect(status().isOk());
         send("GET", "/api/v1/food/orders/" + order, customer, null, null)
                 .andExpect(jsonPath("$.status").value("ACCEPTED"));
+        for (String next : List.of("PREPARING", "ON_THE_WAY", "DELIVERED")) {
+            setStatus(ownerToken, order, next, null).andExpect(status().isOk());
+        }
+        send("GET", "/api/v1/food/orders/" + order, customer, null, null)
+                .andExpect(jsonPath("$.status").value("DELIVERED"))
+                .andExpect(jsonPath("$.paymentStatus").value("NO_PAYMENT"));
+        assertThat(body(send("GET", foodBase() + "/orders?scope=history", ownerToken, null, null)
+                .andExpect(status().isOk()))).contains(order);
+        String rejected = JsonPath.read(body(send("POST", "/api/v1/food/orders", customer,
+                prefix + "DEV_NO_PAYMENT\"}", "flowers-rejected-01").andExpect(status().isCreated())), "$.id");
+        setStatus(ownerToken, rejected, "CANCELLED", "Нет товара").andExpect(status().isOk());
+        send("GET", "/api/v1/food/orders/" + rejected, customer, null, null)
+                .andExpect(jsonPath("$.status").value("CANCELLED"))
+                .andExpect(jsonPath("$.paymentStatus").value("NO_PAYMENT"));
     }
 
     @Test

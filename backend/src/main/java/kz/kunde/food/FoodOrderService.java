@@ -327,7 +327,7 @@ public class FoodOrderService {
                     "The restaurant has already accepted this order");
         }
         db.update("""
-                update transactions.food_orders set status = 'CANCELLED', payment_status = 'VOIDED', cancelled_by = 'CUSTOMER',
+                update transactions.food_orders set status = 'CANCELLED', payment_status = case when payment_method = 'DEV_NO_PAYMENT' then 'NO_PAYMENT' else 'VOIDED' end, cancelled_by = 'CUSTOMER',
                     updated_at = now(), version = version + 1 where id = ?
                 """, orderId);
         db.update("insert into transactions.food_order_events (order_id, status, actor_type, actor_user_id) values (?, 'CANCELLED', 'CUSTOMER', ?)",
@@ -413,7 +413,7 @@ public class FoodOrderService {
             // Only the partner moves these orders; the one thing the system does is the unanswered-order timeout (D-05).
             if ("PLACED".equals(row[0]) && (long) row[1] >= partnerResponseSeconds) {
                 db.update("""
-                        update transactions.food_orders set status = 'CANCELLED', payment_status = 'VOIDED', cancelled_by = 'SYSTEM',
+                        update transactions.food_orders set status = 'CANCELLED', payment_status = case when payment_method = 'DEV_NO_PAYMENT' then 'NO_PAYMENT' else 'VOIDED' end, cancelled_by = 'SYSTEM',
                             cancel_reason = 'PARTNER_TIMEOUT', updated_at = now(), version = version + 1 where id = ?
                         """, orderId);
                 db.update("""
@@ -518,7 +518,7 @@ public class FoodOrderService {
         if (lines.isEmpty()) { return; }
         if (!anyKept) {
             db.update("""
-                    update transactions.food_orders set status = 'CANCELLED', payment_status = 'VOIDED', has_changes = true,
+                    update transactions.food_orders set status = 'CANCELLED', payment_status = case when payment_method = 'DEV_NO_PAYMENT' then 'NO_PAYMENT' else 'VOIDED' end, has_changes = true,
                         cancelled_by = 'SYSTEM', cancel_reason = 'NO_ITEMS_AVAILABLE', final_total_minor = 0, updated_at = now(), version = version + 1 where id = ?
                     """, orderId);
             db.update("insert into transactions.food_order_events (order_id, status, occurred_at) values (?, 'CANCELLED', ?)",

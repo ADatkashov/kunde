@@ -96,7 +96,7 @@ public class FoodPartnerService {
         }
         if ("CANCELLED".equals(to)) {
             db.update("""
-                    update transactions.food_orders set status = 'CANCELLED', payment_status = 'VOIDED', cancelled_by = 'PARTNER',
+                    update transactions.food_orders set status = 'CANCELLED', payment_status = case when payment_method = 'DEV_NO_PAYMENT' then 'NO_PAYMENT' else 'VOIDED' end, cancelled_by = 'PARTNER',
                         cancel_reason = ?, updated_at = now(), version = version + 1 where id = ?
                     """, clean, orderId);
             orders.restoreStock(orderId);
