@@ -26,7 +26,7 @@ public class AutoCatalogController {
     public record Category(String code, String nameRu, String nameKk, String nameEn, boolean mobile, boolean enabled) {}
 
     public record Venue(String id, String name, String description, String addressText, boolean open, boolean synthetic,
-            Long fromPriceMinor, List<String> categories) {}
+            Long fromPriceMinor, List<String> categories, Double rating, int reviews) {}
 
     public record ServiceItem(String id, String name, String description, String category, int durationMinutes, long priceMinor,
             String priceKind, String conditions, boolean available) {}
@@ -66,6 +66,8 @@ public class AutoCatalogController {
                 select v.id, v.name, v.description, v.address_text, v.is_open, v.is_synthetic,
                        (select min(s.price_minor) from marketplace.booking_services s where s.venue_id = v.id and s.available
                             and (?::text is null or s.auto_category = ?::text)) as from_price,
+                       (select round(avg(r.rating), 1) from transactions.auto_reviews r where r.venue_id = v.id) as rating,
+                       (select count(*) from transactions.auto_reviews r where r.venue_id = v.id) as reviews,
                        coalesce((select array_agg(distinct s.auto_category order by s.auto_category) from marketplace.booking_services s
                             join marketplace.auto_service_categories c on c.code = s.auto_category and c.enabled
                             where s.venue_id = v.id and s.available), '{}') as cats
@@ -79,7 +81,7 @@ public class AutoCatalogController {
                 """, (rs, n) -> {
                     var arr = (String[]) rs.getArray("cats").getArray();
                     return new Venue(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getBoolean(5), rs.getBoolean(6),
-                            rs.getObject("from_price", Long.class), List.of(arr));
+                            rs.getObject("from_price", Long.class), List.of(arr), rs.getBigDecimal("rating") == null ? null : rs.getBigDecimal("rating").doubleValue(), rs.getInt("reviews"));
                 }, category, category, category, category, text, text, text));
     }
 

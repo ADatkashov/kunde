@@ -153,6 +153,33 @@ extension AutoStrings on KundeLocalizations {
         _ => status,
       };
 
+  String get auReview => _t('Оценить', 'Бағалау', 'Rate');
+  String get auReviewTitle =>
+      _t('Оценка обслуживания', 'Қызмет көрсетуді бағалау', 'Rate the service');
+  String get auReviewText => _t('Комментарий (необязательно)',
+      'Пікір (міндетті емес)', 'Comment (optional)');
+  String get auReviewThanks => _t('Спасибо за отзыв!', 'Пікіріңіз үшін рахмет!',
+      'Thank you for your review!');
+  String get auSend => _t('Отправить', 'Жіберу', 'Send');
+  String get auComplain => _t('Пожаловаться', 'Шағымдану', 'Report a problem');
+  String get auComplaintTitle => _t('Жалоба', 'Шағым', 'Complaint');
+  String get auComplaintText => _t(
+      'Опишите проблему (от 5 символов)',
+      'Мәселені сипаттаңыз (5 таңбадан)',
+      'Describe the problem (5+ characters)');
+  String get auComplaintSent => _t(
+      'Жалоба отправлена, мы разберёмся.',
+      'Шағым жіберілді, қарастырамыз.',
+      'Complaint sent, we will look into it.');
+  String auComplaintKind(String k) => switch (k) {
+        'QUALITY' => _t('Качество', 'Сапа', 'Quality'),
+        'PRICE' => _t('Цена', 'Баға', 'Price'),
+        'BEHAVIOR' => _t('Поведение', 'Мінез-құлық', 'Behaviour'),
+        'NO_SHOW' => _t('Не явились', 'Келмеді', 'No-show'),
+        _ => _t('Другое', 'Басқа', 'Other'),
+      };
+  String auRating(String value, int count) => '★ $value ($count)';
+
   String auError(AutoFailure f) => switch (f) {
         AutoFailure.offline => _t(
             'Нет связи с сервером. Проверьте интернет и повторите.',
@@ -200,6 +227,8 @@ extension AutoStrings on KundeLocalizations {
             'Данные изменились. Обновите и повторите.',
             'Деректер өзгерді. Жаңартып, қайталаңыз.',
             'Data changed. Refresh and retry.'),
+        AutoFailure.alreadyDone => _t('Это уже отправлено.',
+            'Бұл бұрын жіберілген.', 'This was already sent.'),
         AutoFailure.invalid => _t('Проверьте введённые данные.',
             'Енгізілген деректерді тексеріңіз.', 'Check the entered data.'),
         AutoFailure.notFound => _t('Не найдено.', 'Табылмады.', 'Not found.'),

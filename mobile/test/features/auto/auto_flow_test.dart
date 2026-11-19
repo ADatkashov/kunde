@@ -55,6 +55,8 @@ class _FakeAuto {
   final bookings = <Map<String, dynamic>>[];
   final keys = <String, String>{};
   bool offline = false;
+  final reviews = <String, Map<String, dynamic>>{};
+  final complaints = <Map<String, dynamic>>[];
   bool slotTakenOnQuote = false;
   String? lastQuery;
   int quotes = 0;
@@ -187,6 +189,25 @@ class _FakeAuto {
     }
     if (path == 'auto/bookings' && request.method == 'GET') {
       return _json(bookings);
+    }
+    final review = RegExp(r'^auto/bookings/([^/]+)/review$').firstMatch(path);
+    if (review != null && request.method == 'POST') {
+      if (reviews.containsKey(review[1])) {
+        return _json({'code': 'REVIEW_EXISTS'}, 409);
+      }
+      reviews[review[1]!] = body!;
+      return _json({
+        'bookingId': review[1],
+        'rating': body['rating'],
+        'text': body['text'] ?? ''
+      }, 201);
+    }
+    if (path == 'auto/complaints' && request.method == 'POST') {
+      if (complaints.any((c) => c['bookingId'] == body!['bookingId'])) {
+        return _json({'code': 'COMPLAINT_ALREADY_OPEN'}, 409);
+      }
+      complaints.add(body!);
+      return _json({'id': 'c-1', 'status': 'OPEN'}, 201);
     }
     final cancel = RegExp(r'^auto/bookings/([^/]+)/cancel$').firstMatch(path);
     if (cancel != null) {
@@ -415,5 +436,78 @@ void main() {
     expect(find.text('Service history'), findsOneWidget);
     expect(find.textContaining('In progress'), findsOneWidget);
     expect(find.textContaining('Completed'), findsOneWidget);
+  });
+
+  testWidgets('a completed booking can be rated once and reported once',
+      (tester) async {
+    _bigScreen(tester);
+    final backend = _FakeAuto();
+    backend.bookings.add({
+      'id': 'b-9',
+      'venueId': _venueId,
+      'serviceId': _serviceId,
+      'venueName': 'Тестовое СТО',
+      'venueAddress': 'a',
+      'serviceName': 'Замена масла',
+      'durationMinutes': 45,
+      'vehicleId': 'v-1',
+      'vehicle': 'Toyota Camry 2018',
+      'startsAt': '2030-01-02T10:00:00+05:00',
+      'priceMinor': 1200000,
+      'priceKind': 'FIXED',
+      'status': 'COMPLETED',
+      'cancellable': false,
+      'reschedulable': false,
+      'timeline': [],
+    });
+    final services = await _services(backend);
+    await tester.pumpWidget(_app(AutoBookingsScreen(services: services)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Замена масла'));
+    await tester.pumpAndSettle();
+    // review: the send button waits for a rating
+    await tester.tap(find.text('Оценить'));
+    await tester.pumpAndSettle();
+    expect(
+        tester
+            .widget<FilledButton>(
+                find.widgetWithText(FilledButton, 'Отправить'))
+            .onPressed,
+        isNull);
+    await tester.tap(find.byTooltip('4'));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Отправить'));
+    await tester.pumpAndSettle();
+    expect(backend.reviews['b-9']?['rating'], 4);
+    expect(find.text('Спасибо за отзыв!'), findsOneWidget);
+    // a second review is refused with a clear message
+    await tester.tap(find.text('Оценить'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('5'));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Отправить'));
+    await tester.pumpAndSettle();
+    expect(find.text('Это уже отправлено.'), findsOneWidget);
+    // complaint needs 5+ characters
+    await tester.tap(find.text('Пожаловаться'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'мало');
+    await tester.pump();
+    expect(
+        tester
+            .widget<FilledButton>(
+                find.widgetWithText(FilledButton, 'Отправить'))
+            .onPressed,
+        isNull);
+    await tester.enterText(find.byType(TextField), 'Долили не то масло');
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Отправить'));
+    await tester.pumpAndSettle();
+    expect(backend.complaints.single, {
+      'bookingId': 'b-9',
+      'kind': 'QUALITY',
+      'description': 'Долили не то масло'
+    });
+    expect(find.text('Жалоба отправлена, мы разберёмся.'), findsOneWidget);
   });
 }

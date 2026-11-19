@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../auto_admin/auto_admin_screen.dart';
 import '../delivery_admin/delivery_admin_screen.dart';
 import '../identity/auth_repository.dart';
 import '../rides/ride_strings.dart';
@@ -51,6 +52,48 @@ class RideAdminScreen extends StatelessWidget {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context).push<void>(MaterialPageRoute(
                 builder: (_) => DeliveryAdminScreen(auth: auth, area: area),
+              )),
+            )),
+          for (final (area, label, icon) in [
+            (
+              AutoAdminArea.specialists,
+              s.t('Авто-специалисты', 'Авто мамандар', 'Auto specialists'),
+              Icons.build_circle_outlined
+            ),
+            (
+              AutoAdminArea.venues,
+              s.t('СТО и автомойки', 'СТО және көлік жуу',
+                  'Stations and washes'),
+              Icons.garage_outlined
+            ),
+            (
+              AutoAdminArea.categories,
+              s.t('Категории Auto', 'Auto санаттары', 'Auto categories'),
+              Icons.category_outlined
+            ),
+            (
+              AutoAdminArea.bookings,
+              s.t('Записи Auto', 'Auto жазылулары', 'Auto bookings'),
+              Icons.event_note_outlined
+            ),
+            (
+              AutoAdminArea.jobs,
+              s.t('Выездные заявки', 'Шығу өтінімдері', 'On-site jobs'),
+              Icons.emergency_outlined
+            ),
+            (
+              AutoAdminArea.complaints,
+              s.t('Жалобы Auto', 'Auto шағымдары', 'Auto complaints'),
+              Icons.report_outlined
+            ),
+          ])
+            Card(
+                child: ListTile(
+              leading: Icon(icon),
+              title: Text(label),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push<void>(MaterialPageRoute(
+                builder: (_) => AutoAdminScreen(auth: auth, area: area),
               )),
             )),
           for (final (route, label, icon) in [
