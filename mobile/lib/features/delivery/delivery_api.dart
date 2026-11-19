@@ -77,6 +77,19 @@ class DeliveryApi {
         await auth.authorizedJson(method, path) as Map<String, dynamic>,
       );
 
+  Future<(double, double)?> location(String id) async {
+    final result = await auth.authorizedJson(
+      'GET',
+      'deliveries/$id/location',
+      expected: {200, 204},
+    ) as Map<String, dynamic>?;
+    if (result == null) return null;
+    return (
+      (result['latitude'] as num).toDouble(),
+      (result['longitude'] as num).toDouble()
+    );
+  }
+
   Future<(String, DateTime)> handoffCode(String id) async {
     final data = await auth.authorizedJson(
             'POST', 'deliveries/$id/handoff-code', expected: {201})
@@ -117,6 +130,20 @@ class DeliveryOrder {
   final num amount;
   final bool synthetic;
   final String? courier;
+
+  bool get active => const {
+        'CREATED',
+        'SEARCHING_COURIER',
+        'COURIER_ASSIGNED',
+        'COURIER_ARRIVING',
+        'COURIER_ARRIVED',
+        'PICKED_UP',
+        'IN_TRANSIT',
+        'DELIVERED',
+        'DELIVERY_FAILED',
+        'RETURN_REQUESTED',
+        'RETURNING',
+      }.contains(status);
 
   bool get searching => status == 'CREATED' || status == 'SEARCHING_COURIER';
 

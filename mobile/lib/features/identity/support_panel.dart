@@ -6,9 +6,11 @@ import 'auth_repository.dart';
 /// Consumer support cases (SUP-001). Cases are not linked to orders yet and no
 /// response time is promised: the server records the request, nothing more.
 class SupportPanel extends StatefulWidget {
-  const SupportPanel({required this.auth, this.rideId, super.key});
+  const SupportPanel(
+      {required this.auth, this.rideId, this.deliveryId, super.key});
   final AuthRepository auth;
   final String? rideId;
+  final String? deliveryId;
 
   @override
   State<SupportPanel> createState() => _SupportPanelState();
@@ -27,9 +29,16 @@ class _SupportPanelState extends State<SupportPanel> {
 
   // Block body: an arrow would return the Future and make setState(_reload) throw.
   void _reload() {
-    _cases = widget.auth.supportCases().then((cases) => widget.rideId == null
-        ? cases
-        : cases.where((c) => c['rideId'] == widget.rideId).toList());
+    _cases = widget.auth.supportCases().then((cases) {
+      if (widget.deliveryId != null) {
+        return cases
+            .where((item) => item['deliveryId'] == widget.deliveryId)
+            .toList();
+      }
+      return widget.rideId == null
+          ? cases
+          : cases.where((item) => item['rideId'] == widget.rideId).toList();
+    });
   }
 
   String _t(String ru, String kk, String en) {
@@ -82,11 +91,26 @@ class _SupportPanelState extends State<SupportPanel> {
         (category: draft.category, message: draft.message, key: key);
     setState(() => _pending = 'new');
     try {
-      await widget.auth.openSupportCase(
-          category: draft.category,
-          message: draft.message,
-          idempotencyKey: key,
-          rideId: widget.rideId);
+      final delivery = widget.deliveryId;
+      if (delivery != null) {
+        await widget.auth.authorizedJson(
+          'POST',
+          'me/support/cases',
+          body: {
+            'category': draft.category,
+            'message': draft.message.trim(),
+            'deliveryId': delivery
+          },
+          headers: {'Idempotency-Key': key},
+          expected: {200, 201},
+        );
+      } else {
+        await widget.auth.openSupportCase(
+            category: draft.category,
+            message: draft.message,
+            idempotencyKey: key,
+            rideId: widget.rideId);
+      }
       _lastSubmission = null;
       if (mounted) setState(_reload);
     } catch (error) {

@@ -5,15 +5,21 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../identity/auth_repository.dart';
+import '../identity/support_panel.dart';
 import '../rides/ride_api.dart';
 import 'delivery_api.dart';
 import 'delivery_strings.dart';
 
 class DeliveryScreen extends StatefulWidget {
-  const DeliveryScreen({required this.api, required this.synthetic, super.key});
+  const DeliveryScreen(
+      {required this.api,
+      required this.synthetic,
+      this.intakeEnabled = true,
+      super.key});
 
   final DeliveryApi api;
   final bool synthetic;
+  final bool intakeEnabled;
 
   @override
   State<DeliveryScreen> createState() => _DeliveryScreenState();
@@ -188,6 +194,9 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.intakeEnabled) {
+      return _History(api: widget.api, allowDispatch: false);
+    }
     final s = DeliveryStrings(context);
     final quote = _quote;
     final locked = _busy || quote != null;
@@ -351,8 +360,9 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
 }
 
 class _History extends StatefulWidget {
-  const _History({required this.api});
+  const _History({required this.api, this.allowDispatch = true});
   final DeliveryApi api;
+  final bool allowDispatch;
 
   @override
   State<_History> createState() => _HistoryState();
@@ -395,8 +405,10 @@ class _HistoryState extends State<_History> {
                   await Navigator.push<void>(
                       context,
                       MaterialPageRoute(
-                          builder: (_) =>
-                              _Details(api: widget.api, initial: order)));
+                          builder: (_) => _Details(
+                              api: widget.api,
+                              initial: order,
+                              allowDispatch: widget.allowDispatch)));
                   if (mounted) setState(() => _history = widget.api.history());
                 },
               ),
@@ -408,9 +420,11 @@ class _HistoryState extends State<_History> {
 }
 
 class _Details extends StatefulWidget {
-  const _Details({required this.api, required this.initial});
+  const _Details(
+      {required this.api, required this.initial, this.allowDispatch = true});
   final DeliveryApi api;
   final DeliveryOrder initial;
+  final bool allowDispatch;
 
   @override
   State<_Details> createState() => _DetailsState();
@@ -422,6 +436,15 @@ class _DetailsState extends State<_Details> {
   bool _busy = false;
   bool _failed = false;
   (String, DateTime)? _code;
+  (double, double)? _location;
+  static const _trackable = {
+    'COURIER_ASSIGNED',
+    'COURIER_ARRIVING',
+    'COURIER_ARRIVED',
+    'PICKED_UP',
+    'IN_TRANSIT',
+    'RETURNING'
+  };
 
   @override
   void initState() {
@@ -469,12 +492,21 @@ class _DetailsState extends State<_Details> {
         final latest = await widget.api.detail(_order.id);
         if (!mounted) return;
         setState(() => _order = latest);
-        if (latest.searching) {
+        if (latest.searching && widget.allowDispatch) {
           final dispatched = await widget.api.dispatch(latest.id);
           if (mounted) setState(() => _order = dispatched);
         }
-        if (mounted && _order.status != 'IN_TRANSIT') {
-          setState(() => _code = null);
+        if (!mounted) return;
+        if (_order.status != 'IN_TRANSIT') setState(() => _code = null);
+        if (_trackable.contains(_order.status)) {
+          try {
+            final point = await widget.api.location(_order.id);
+            if (mounted) setState(() => _location = point);
+          } catch (_) {
+            if (mounted) setState(() => _location = null);
+          }
+        } else {
+          setState(() => _location = null);
         }
       });
 
@@ -522,6 +554,14 @@ class _DetailsState extends State<_Details> {
             ListTile(
                 leading: const Icon(Icons.person_outline),
                 title: Text(courier)),
+          if (_location case final point?)
+            ListTile(
+              leading: const Icon(Icons.my_location),
+              title: Text(
+                  s.t('Точка курьера', 'Курьердің орны', 'Courier location')),
+              subtitle: Text(
+                  '${point.$1.toStringAsFixed(5)}, ${point.$2.toStringAsFixed(5)}'),
+            ),
           Text('${_order.amount} ₸'),
           if (_order.status == 'IN_TRANSIT')
             if (code != null) ...[
@@ -553,6 +593,27 @@ class _DetailsState extends State<_Details> {
             OutlinedButton(
                 onPressed: _busy ? null : () => _cancel(s),
                 child: Text(s.cancel)),
+          TextButton.icon(
+            icon: const Icon(Icons.support_agent),
+            label: Text(s.t('Обратиться в поддержку', 'Қолдау қызметіне жазу',
+                'Contact support')),
+            onPressed: () => Navigator.push<void>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => Scaffold(
+                    appBar: AppBar(
+                        title: Text(s.t('Поддержка', 'Қолдау', 'Support'))),
+                    body: SafeArea(
+                        child: ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        SupportPanel(
+                            auth: widget.api.auth, deliveryId: _order.id)
+                      ],
+                    )),
+                  ),
+                )),
+          ),
           if (_busy) const LinearProgressIndicator(),
         ],
       )),

@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,11 +32,14 @@ public class DeliveryExecutorController {
     private final ConsumerIdentityService identity;
     private final DeliveryCouriers couriers;
     private final DeliveryDispatch dispatch;
+    private final DeliveryTracking tracking;
 
-    public DeliveryExecutorController(ConsumerIdentityService identity, DeliveryCouriers couriers, DeliveryDispatch dispatch) {
+    public DeliveryExecutorController(ConsumerIdentityService identity, DeliveryCouriers couriers, DeliveryDispatch dispatch,
+            DeliveryTracking tracking) {
         this.identity = identity;
         this.couriers = couriers;
         this.dispatch = dispatch;
+        this.tracking = tracking;
     }
 
     @GetMapping("/profile")
@@ -58,6 +62,19 @@ public class DeliveryExecutorController {
     @PutMapping("/location")
     public ResponseEntity<Void> location(@AuthenticationPrincipal Jwt principal, @Valid @RequestBody Coordinates point) {
         couriers.location(identity.get(principal).id(), point);
+        return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
+    }
+
+    @PutMapping("/{id}/location")
+    public ResponseEntity<Void> publishAssignmentLocation(@AuthenticationPrincipal Jwt principal, @PathVariable UUID id,
+            @Valid @RequestBody Coordinates point) {
+        tracking.publish(identity.get(principal).id(), id, point);
+        return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
+    }
+
+    @DeleteMapping("/{id}/location")
+    public ResponseEntity<Void> stopAssignmentLocation(@AuthenticationPrincipal Jwt principal, @PathVariable UUID id) {
+        tracking.stop(identity.get(principal).id(), id);
         return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
     }
 

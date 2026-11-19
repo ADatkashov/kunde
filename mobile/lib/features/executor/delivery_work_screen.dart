@@ -8,10 +8,14 @@ import '../identity/auth_repository.dart';
 
 class DeliveryWorkScreen extends StatefulWidget {
   const DeliveryWorkScreen(
-      {required this.auth, required this.synthetic, super.key});
+      {required this.auth,
+      required this.synthetic,
+      this.intakeEnabled = true,
+      super.key});
 
   final AuthRepository auth;
   final bool synthetic;
+  final bool intakeEnabled;
 
   @override
   State<DeliveryWorkScreen> createState() => _DeliveryWorkScreenState();
@@ -66,7 +70,7 @@ class _DeliveryWorkScreenState extends State<DeliveryWorkScreen> {
       } on IdentityApiError catch (failure) {
         if (failure.code != 'DELIVERY_COURIER_NOT_FOUND') rethrow;
       }
-      final offers = profile?['online'] == true
+      final offers = widget.intakeEnabled && profile?['online'] == true
           ? (await _call('GET', '$_root/offers') as List)
               .cast<Map<String, dynamic>>()
           : <Map<String, dynamic>>[];
@@ -95,7 +99,8 @@ class _DeliveryWorkScreenState extends State<DeliveryWorkScreen> {
     }
   }
 
-  Future<void> _sendLocation({required bool fixture}) => _load(() async {
+  Future<void> _sendLocation({required bool fixture, String? shipmentId}) =>
+      _load(() async {
         final double latitude;
         final double longitude;
         if (fixture) {
@@ -121,7 +126,11 @@ class _DeliveryWorkScreenState extends State<DeliveryWorkScreen> {
           longitude = position.longitude;
         }
         if (!mounted) return;
-        await _call('PUT', '$_root/location',
+        await _call(
+            'PUT',
+            shipmentId == null
+                ? '$_root/location'
+                : '$_root/$shipmentId/location',
             body: {'latitude': latitude, 'longitude': longitude},
             expected: {204});
       });
@@ -186,7 +195,7 @@ class _DeliveryWorkScreenState extends State<DeliveryWorkScreen> {
                       'Код неверен, просрочен или исчерпал попытки.',
                       'Код қате, мерзімі өткен немесе әрекеттер таусылған.',
                       'The code is incorrect, expired, or out of attempts.'))),
-            if (_loaded && profile == null) ...[
+            if (widget.intakeEnabled && _loaded && profile == null) ...[
               TextField(
                 controller: _name,
                 maxLength: 80,
@@ -239,7 +248,7 @@ class _DeliveryWorkScreenState extends State<DeliveryWorkScreen> {
                       'Ожидает проверки', 'Тексеру күтілуде', 'Pending review'),
                 }),
               ),
-            if (approval == 'APPROVED')
+            if (widget.intakeEnabled && approval == 'APPROVED')
               SwitchListTile(
                 title: Text(s.t('Готов принимать заказы',
                     'Тапсырыс қабылдауға дайынмын', 'Available for offers')),
@@ -249,7 +258,7 @@ class _DeliveryWorkScreenState extends State<DeliveryWorkScreen> {
                     : (value) => _load(() => _call('PUT', '$_root/availability',
                         body: {'online': value})),
               ),
-            if (online) ...[
+            if (widget.intakeEnabled && online) ...[
               OutlinedButton(
                 onPressed: _busy ? null : () => _sendLocation(fixture: false),
                 child: Text(s.t('Передать текущую точку',
@@ -366,6 +375,30 @@ class _DeliveryWorkScreenState extends State<DeliveryWorkScreen> {
           FilledButton(
               onPressed: _busy ? null : () => _progress(id, step.$1),
               child: Text(step.$2)),
+        if (const {
+          'COURIER_ASSIGNED',
+          'COURIER_ARRIVING',
+          'COURIER_ARRIVED',
+          'PICKED_UP',
+          'IN_TRANSIT',
+          'RETURNING'
+        }.contains(status))
+          Wrap(spacing: 8, children: [
+            TextButton(
+              onPressed: _busy
+                  ? null
+                  : () => _sendLocation(fixture: false, shipmentId: id),
+              child: Text(s.t('Передать точку отправителю',
+                  'Жіберушіге орынды жіберу', 'Share location with sender')),
+            ),
+            TextButton(
+              onPressed: _busy
+                  ? null
+                  : () => _load(() =>
+                      _call('DELETE', '$_root/$id/location', expected: {204})),
+              child: Text(s.t('Скрыть точку', 'Орнын жасыру', 'Hide location')),
+            ),
+          ]),
         if (status == 'IN_TRANSIT')
           FilledButton(
               onPressed: _busy ? null : () => _handoff(id, s),

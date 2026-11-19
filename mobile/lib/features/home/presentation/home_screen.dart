@@ -57,15 +57,37 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late Future<PlatformSnapshot> _snapshot;
+  bool _deliveryResume = false;
 
   @override
   void initState() {
     super.initState();
-    _snapshot = widget.api.loadPlatformSnapshot();
+    _snapshot = _loadSnapshot();
   }
 
   void _retry() {
-    setState(() => _snapshot = widget.api.loadPlatformSnapshot());
+    setState(() {
+      _deliveryResume = false;
+      _snapshot = _loadSnapshot();
+    });
+  }
+
+  Future<PlatformSnapshot> _loadSnapshot() async {
+    final snapshot = await widget.api.loadPlatformSnapshot();
+    final api = widget.delivery;
+    if (!snapshot.deliveryEnabled && api != null) {
+      unawaited(_checkActiveDeliveries(api));
+    }
+    return snapshot;
+  }
+
+  Future<void> _checkActiveDeliveries(DeliveryApi api) async {
+    try {
+      final active = (await api.history()).any((order) => order.active);
+      if (mounted && active) setState(() => _deliveryResume = true);
+    } catch (_) {
+      // Capability discovery stays available while the account history is offline.
+    }
   }
 
   void _showInfo(String title, String body) {
@@ -106,11 +128,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _openDelivery() async {
     final snapshot = await _snapshot;
-    if (!mounted || !snapshot.deliveryEnabled) return;
+    if (!mounted || (!snapshot.deliveryEnabled && !_deliveryResume)) return;
     await Navigator.of(context).push<void>(MaterialPageRoute(
       builder: (_) => DeliveryScreen(
         api: widget.delivery!,
         synthetic: snapshot.deliverySyntheticRouting,
+        intakeEnabled: snapshot.deliveryEnabled,
       ),
     ));
   }
@@ -339,7 +362,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   marketplace,
                   snapshot?.bookingEnabled ?? false,
                   snapshot?.ridesEnabled ?? false,
-                  snapshot?.deliveryEnabled ?? false,
+                  (snapshot?.deliveryEnabled ?? false) || _deliveryResume,
                 );
                 final visibleCategories = [
                   for (final label in [
@@ -347,7 +370,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     s.catGroceries,
                     if (snapshot?.ridesEnabled == true && widget.rides != null)
                       s.catRides,
-                    if (snapshot?.deliveryEnabled == true &&
+                    if ((snapshot?.deliveryEnabled == true ||
+                            _deliveryResume) &&
                         widget.delivery != null)
                       s.catDelivery,
                     s.catHome,

@@ -36,11 +36,13 @@ public class DeliveryController {
     private final ConsumerIdentityService identity;
     private final DeliveryService service;
     private final DeliveryDispatch dispatch;
+    private final DeliveryTracking tracking;
 
-    public DeliveryController(ConsumerIdentityService identity, DeliveryService service, DeliveryDispatch dispatch) {
+    public DeliveryController(ConsumerIdentityService identity, DeliveryService service, DeliveryDispatch dispatch, DeliveryTracking tracking) {
         this.identity = identity;
         this.service = service;
         this.dispatch = dispatch;
+        this.tracking = tracking;
     }
 
     @PostMapping("/quotes")
@@ -72,6 +74,14 @@ public class DeliveryController {
     @PostMapping("/{id}/cancel")
     public ResponseEntity<DeliveryService.Order> cancel(@AuthenticationPrincipal Jwt principal, @PathVariable("id") UUID id) {
         return response(HttpStatus.OK, service.cancel(identity.get(principal).id(), null, id));
+    }
+
+    @GetMapping("/{id}/location")
+    public ResponseEntity<DeliveryTracking.Location> location(@AuthenticationPrincipal Jwt principal,
+            @PathVariable("id") UUID id) {
+        return tracking.current(identity.get(principal).id(), id)
+                .map(point -> response(HttpStatus.OK, point))
+                .orElseGet(() -> ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build());
     }
 
     @PostMapping("/{id}/dispatch")

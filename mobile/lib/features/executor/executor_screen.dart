@@ -41,6 +41,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
   String? _failure;
   String? _locationFailure;
   bool _deliveryEnabled = false;
+  bool _deliveryResume = false;
   bool _deliverySynthetic = false;
 
   @override
@@ -58,9 +59,16 @@ class _ExecutorScreenState extends State<ExecutorScreen>
     try {
       final capabilities = await widget.auth
           .authorizedJson('GET', 'capabilities') as Map<String, dynamic>;
+      final enabled = capabilities['deliveryExecutorEnabled'] == true;
+      final List<dynamic> shipments = enabled
+          ? const []
+          : await widget.auth.authorizedJson('GET', 'executor/deliveries')
+              as List<dynamic>;
       if (!mounted) return;
       setState(() {
-        _deliveryEnabled = capabilities['deliveryExecutorEnabled'] == true;
+        _deliveryEnabled = enabled;
+        _deliveryResume = shipments.any((row) =>
+            row is Map<String, dynamic> && row['pickupAddress'] != null);
         _deliverySynthetic = capabilities['deliverySyntheticRouting'] == true;
       });
     } catch (_) {
@@ -274,7 +282,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
       appBar: AppBar(
         title: const Text('KUNDE Executor'),
         actions: [
-          if (_deliveryEnabled)
+          if (_deliveryEnabled || _deliveryResume)
             IconButton(
               icon: const Icon(Icons.inventory_2_outlined),
               tooltip: s.t('Режим доставки', 'Жеткізу режимі', 'Delivery mode'),
@@ -283,6 +291,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
                 builder: (_) => DeliveryWorkScreen(
                   auth: widget.auth,
                   synthetic: _deliverySynthetic,
+                  intakeEnabled: _deliveryEnabled,
                 ),
               )),
             ),

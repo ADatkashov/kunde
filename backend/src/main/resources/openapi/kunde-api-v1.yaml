@@ -154,6 +154,319 @@ paths:
       responses:
         '200': { $ref: '#/components/responses/PersonalDelivery' }
         '404': { description: Delivery was not found for this caller. }
+  /deliveries/{deliveryId}/dispatch:
+    post:
+      operationId: searchDeliveryCourier
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: deliveryId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: 'Start or continue search for an owned delivery.' }
+  /deliveries/{deliveryId}/handoff-code:
+    post:
+      operationId: issueDeliveryHandoffCode
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: deliveryId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '201': { description: 'Issue a one-time code for manual relay in DEV/TEST. Cache-Control is no-store.' }
+  /deliveries/{deliveryId}/location:
+    get:
+      operationId: getDeliveryLocation
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: deliveryId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: 'Read the last fresh coordinate shared for an owned delivery.' }
+        '204': { description: No fresh coordinate is shared. }
+  /executor/deliveries/profile:
+    get:
+      operationId: getDeliveryCourier
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Read the current courier enrollment and status.' }
+    post:
+      operationId: registerDeliveryCourier
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Submit the courier enrollment for review.' }
+  /executor/deliveries/availability:
+    put:
+      operationId: setDeliveryCourierAvailability
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Change availability for this approved courier.' }
+  /executor/deliveries/location:
+    put:
+      operationId: updateDeliveryCourierSupplyPoint
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DeliveryPoint' }
+      responses:
+        '204': { description: 'Publish the personal supply point used only for matching.' }
+  /executor/deliveries/offers:
+    get:
+      operationId: listDeliveryOffers
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'List unexpired offers for the current courier.' }
+  /executor/deliveries/offers/{offerId}/response:
+    post:
+      operationId: respondToDeliveryOffer
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: offerId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: 'Accept or reject an offer addressed to the courier.' }
+  /executor/deliveries:
+    get:
+      operationId: listCourierShipments
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'List assigned shipments with address data limited to active assignments.' }
+  /executor/deliveries/{deliveryId}/progress:
+    post:
+      operationId: updateCourierShipment
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: deliveryId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: 'Apply an authorized lifecycle action.' }
+  /executor/deliveries/{deliveryId}/handoff:
+    post:
+      operationId: verifyDeliveryHandoff
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: deliveryId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string, pattern: '^[0-9]{8}$', writeOnly: true }
+      responses:
+        '204': { description: 'Verify a one-time handoff code for an assigned shipment.' }
+        '422': { description: Invalid, expired, consumed, or exhausted handoff code. }
+  /executor/deliveries/{deliveryId}/location:
+    put:
+      operationId: publishDeliveryLocation
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: deliveryId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DeliveryPoint' }
+      responses:
+        '204': { description: 'Explicitly share a coordinate for the current active assignment.' }
+    delete:
+      operationId: stopPublishingDeliveryLocation
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: deliveryId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: 'Remove the coordinate shared for this assignment.' }
+  /partner/partners/{partnerId}/deliveries/quotes:
+    post:
+      operationId: quotePartnerDelivery
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: partnerId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '201': { description: 'Issue a quote scoped to the actor and verified organization.' }
+  /partner/partners/{partnerId}/deliveries:
+    get:
+      operationId: listPartnerDeliveries
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: partnerId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: 'List shipments of the verified organization.' }
+    post:
+      operationId: createPartnerDelivery
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: partnerId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, pattern: '^[A-Za-z0-9_-]{16,64}$' }
+      responses:
+        '201': { description: 'Create a shipment from an unexpired organization quote. Requires Idempotency-Key.' }
+        '200': { description: Previous shipment for the same idempotency key and request. }
+  /partner/partners/{partnerId}/deliveries/{deliveryId}:
+    get:
+      operationId: getPartnerDelivery
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: partnerId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: deliveryId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: 'Read a shipment belonging to the organization.' }
+  /partner/partners/{partnerId}/deliveries/{deliveryId}/cancel:
+    post:
+      operationId: cancelPartnerDelivery
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: partnerId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: deliveryId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: 'Cancel a shipment belonging to the organization.' }
+  /partner/partners/{partnerId}/deliveries/{deliveryId}/dispatch:
+    post:
+      operationId: dispatchPartnerDelivery
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: partnerId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: deliveryId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: 'Search for a courier for a shipment belonging to the organization.' }
+  /partner/partners/{partnerId}/deliveries/{deliveryId}/handoff-code:
+    post:
+      operationId: issuePartnerDeliveryHandoffCode
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: partnerId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: deliveryId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '201': { description: 'Issue a DEV/TEST handoff code for an organization shipment.' }
+  /partner/partners/{partnerId}/deliveries/totals:
+    get:
+      operationId: getPartnerDeliveryTotals
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: partnerId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: 'List sums of quoted amounts and counts grouped by status.' }
+  /admin/deliveries:
+    get:
+      operationId: monitorDeliveries
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'List operational shipment metadata. Requires DELIVERY_OPERATIONS.' }
+  /admin/deliveries/couriers:
+    get:
+      operationId: listDeliveryCouriers
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'List couriers for moderation. Requires DELIVERY_OPERATIONS.' }
+  /admin/deliveries/couriers/{courierId}/decision:
+    post:
+      operationId: reviewDeliveryCourier
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: courierId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: 'Approve or block a courier and audit the decision. Requires DELIVERY_OPERATIONS.' }
+  /admin/deliveries/{deliveryId}/audit:
+    get:
+      operationId: getDeliveryAudit
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: deliveryId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: 'Read the append-only lifecycle timeline. Requires DELIVERY_OPERATIONS.' }
+  /admin/deliveries/{deliveryId}/return:
+    post:
+      operationId: requestDeliveryReturn
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: deliveryId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: 'Authorize return after a failed handoff. Requires DELIVERY_OPERATIONS.' }
+  /admin/deliveries/complaints:
+    get:
+      operationId: listDeliveryComplaints
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'List support cases scoped to Delivery. Requires DELIVERY_OPERATIONS.' }
+  /admin/deliveries/complaints/{caseId}/resolve:
+    post:
+      operationId: resolveDeliveryComplaint
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: caseId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: 'Close a Delivery support case with audit. Requires DELIVERY_OPERATIONS.' }
   /rides:
     post:
       operationId: createRide
