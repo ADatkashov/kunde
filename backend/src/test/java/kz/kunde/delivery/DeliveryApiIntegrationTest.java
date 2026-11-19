@@ -275,6 +275,9 @@ class DeliveryApiIntegrationTest {
         http.perform(get(otherPath + "/" + id).with(partner(owner))).andExpect(status().isNotFound());
         http.perform(get(path + "/" + id).with(partner(coworker))).andExpect(status().isOk());
         UUID employee = db.queryForObject("insert into identity.users default values returning id", UUID.class);
+        db.update("insert into identity.external_bindings (issuer, subject, user_id) values (?, ?, ?)",
+                "https://identity.example.test", "delivery-scoped-reader", employee);
+        db.update("insert into profile.consumer_profiles (user_id) values (?)", employee);
         db.update("insert into identity.admin_roles(code) values ('delivery-reader')");
         db.update("insert into identity.admin_role_permissions values ('delivery-reader', 'DELIVERY_OPERATIONS')");
         UUID assignment = db.queryForObject("""
@@ -282,7 +285,7 @@ class DeliveryApiIntegrationTest {
                     (user_id, role_code, product_code, organization_id, resource_id, assigned_by)
                 values (?, 'delivery-reader', 'DELIVERY', ?, ?, ?) returning id
                 """, UUID.class, employee, first, UUID.fromString(id), owner);
-        var scopedAdmin = jwt().jwt(token -> token.issuer("https://identity.example.test").subject(employee.toString())
+        var scopedAdmin = jwt().jwt(token -> token.issuer("https://identity.example.test").subject("delivery-scoped-reader")
                 .claim("typ", "Bearer").claim("azp", "kunde-consumer").claim("scope", "kunde.consumer kunde.admin"));
         String adminPath = "/api/v1/admin/deliveries";
         http.perform(get(adminPath).with(scopedAdmin)).andExpect(status().isOk())
