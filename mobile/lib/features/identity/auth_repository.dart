@@ -393,6 +393,7 @@ class AuthRepository extends ChangeNotifier {
     required String category,
     required String message,
     required String idempotencyKey,
+    String? rideId,
   }) async {
     final text = message.trim();
     if (!supportCategories.contains(category) ||
@@ -401,12 +402,16 @@ class AuthRepository extends ChangeNotifier {
         !RegExp(r'^[A-Za-z0-9_-]{16,64}$').hasMatch(idempotencyKey)) {
       throw ArgumentError('Invalid support case');
     }
-    return (await _requestJson(
-        'POST',
-        'me/support/cases',
-        {'category': category, 'message': text},
-        {200, 201},
-        {'Idempotency-Key': idempotencyKey})) as Map<String, dynamic>;
+    return (await _requestJson('POST', 'me/support/cases', {
+      'category': category,
+      'message': text,
+      if (rideId != null) 'rideId': rideId
+    }, {
+      200,
+      201
+    }, {
+      'Idempotency-Key': idempotencyKey
+    })) as Map<String, dynamic>;
   }
 
   Future<Map<String, dynamic>> requestSupportEscalation(String caseId) async {

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.UUID;
 import kz.kunde.identity.ConsumerIdentityService;
 import kz.kunde.platform.ApiException;
+import kz.kunde.rides.RideRequestService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -32,25 +33,32 @@ public class SupportCaseService {
     public enum Category { GENERAL, ACCOUNT, PRIVACY, APP_PROBLEM }
 
     public record CaseView(UUID id, String category, String message, String status,
-                           OffsetDateTime createdAt, OffsetDateTime updatedAt) {}
+                           OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID rideId) {}
 
     public record Created(CaseView view, boolean created) {}
 
     private static final RowMapper<CaseView> MAPPER = (rs, row) -> new CaseView(
             rs.getObject("id", UUID.class), rs.getString("category"), rs.getString("message"),
             rs.getString("status"), rs.getObject("created_at", OffsetDateTime.class),
-            rs.getObject("updated_at", OffsetDateTime.class));
+            rs.getObject("updated_at", OffsetDateTime.class), rs.getObject("ride_id", UUID.class));
 
     private final JdbcTemplate db;
     private final ConsumerIdentityService identity;
+    private final RideRequestService rides;
 
-    public SupportCaseService(JdbcTemplate db, ConsumerIdentityService identity) {
+    public SupportCaseService(JdbcTemplate db, ConsumerIdentityService identity, RideRequestService rides) {
         this.db = db;
         this.identity = identity;
+        this.rides = rides;
     }
 
     @Transactional
     public Created open(Jwt principal, String idempotencyKey, Category category, String message) {
+        return open(principal, idempotencyKey, category, message, null);
+    }
+
+    @Transactional
+    public Created open(Jwt principal, String idempotencyKey, Category category, String message, UUID rideId) {
         if (idempotencyKey == null || !idempotencyKey.matches("[A-Za-z0-9_-]{16,64}")) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_IDEMPOTENCY_KEY",
                     "Idempotency-Key must be 16-64 characters: letters, digits, '-' or '_'");
@@ -61,11 +69,14 @@ public class SupportCaseService {
                     "Message must be 1-2000 characters");
         }
         UUID owner = identity.get(principal).id();
+        if (rideId != null) {
+            rides.get(owner, rideId);
+        }
         // One lock per owner (not per key): both the idempotency lookup and the case cap must be
         // evaluated serially, otherwise concurrent requests with different keys exceed the cap.
         db.query("SELECT pg_advisory_xact_lock(hashtext(?), hashtext(?))", (RowCallbackHandler) rs -> {},
                 "support.cases.open", owner.toString());
-        String hash = sha256(category.name() + "\n" + text);
+        String hash = sha256(category.name() + "\n" + text + (rideId == null ? "" : "\nRIDE:" + rideId));
         List<Object[]> existing = db.query("""
                 SELECT id, request_sha256 FROM support.cases
                 WHERE owner_user_id = ? AND idempotency_key = ?
@@ -79,15 +90,15 @@ public class SupportCaseService {
             return new Created(find(owner, (UUID) existing.get(0)[0]), false);
         }
         Integer active = db.queryForObject(
-                "SELECT count(*) FROM support.cases WHERE owner_user_id = ?", Integer.class, owner);
+                "SELECT count(*) FROM support.cases WHERE owner_user_id = ? AND status <> 'RESOLVED'", Integer.class, owner);
         if (active != null && active >= MAX_ACTIVE_CASES) {
             throw new ApiException(HttpStatus.CONFLICT, "CASE_LIMIT_REACHED",
                     "Too many open support cases");
         }
         UUID id = db.queryForObject("""
-                INSERT INTO support.cases (owner_user_id, category, message, idempotency_key, request_sha256)
-                VALUES (?, ?, ?, ?, ?) RETURNING id
-                """, UUID.class, owner, category.name(), text, idempotencyKey, hash);
+                INSERT INTO support.cases (owner_user_id, category, message, idempotency_key, request_sha256, ride_id)
+                VALUES (?, ?, ?, ?, ?, ?) RETURNING id
+                """, UUID.class, owner, category.name(), text, idempotencyKey, hash, rideId);
         db.update("INSERT INTO support.case_events (case_id, event_type) VALUES (?, 'CREATED')", id);
         return new Created(find(owner, id), true);
     }
@@ -99,7 +110,7 @@ public class SupportCaseService {
         }
         UUID owner = identity.get(principal).id();
         return db.query("""
-                SELECT id, category, message, status, created_at, updated_at FROM support.cases
+                SELECT id, category, message, status, created_at, updated_at, ride_id FROM support.cases
                 WHERE owner_user_id = ? ORDER BY created_at DESC, id LIMIT ? OFFSET ?
                 """, MAPPER, owner, limit, offset);
     }
@@ -128,7 +139,7 @@ public class SupportCaseService {
 
     private CaseView find(UUID owner, UUID id) {
         List<CaseView> rows = db.query("""
-                SELECT id, category, message, status, created_at, updated_at FROM support.cases
+                SELECT id, category, message, status, created_at, updated_at, ride_id FROM support.cases
                 WHERE id = ? AND owner_user_id = ?
                 """, MAPPER, id, owner);
         if (rows.isEmpty()) {

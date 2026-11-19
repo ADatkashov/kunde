@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -40,9 +41,10 @@ public class RideAdminController {
     }
 
     @GetMapping("/drivers")
-    ResponseEntity<List<UUID>> queue(@AuthenticationPrincipal Jwt principal) {
+    ResponseEntity<List<UUID>> queue(@AuthenticationPrincipal Jwt principal,
+            @RequestParam(defaultValue = "false") boolean includeReviewed) {
         reviewer(principal);
-        return noStore(drivers.pendingDrivers());
+        return noStore(drivers.reviewDrivers(includeReviewed));
     }
 
     @GetMapping("/drivers/{driverId}")
