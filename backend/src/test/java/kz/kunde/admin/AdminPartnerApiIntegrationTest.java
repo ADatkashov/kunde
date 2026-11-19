@@ -3,6 +3,7 @@ package kz.kunde.admin;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -150,6 +151,27 @@ class AdminPartnerApiIntegrationTest {
                 user(loginC), user(loginC));
         // Same token, still unexpired and still carrying kunde.admin: the per-request grant check refuses it.
         fetch("/api/v1/admin/partners", admin).andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("ADMIN_FORBIDDEN"));
+    }
+
+    @Test
+    void capabilitiesReportOnlyCurrentGrantsOfTheAuthenticatedEmployee() throws Exception {
+        String path = "/api/v1/admin/me/capabilities";
+        http.perform(get(path)).andExpect(status().isUnauthorized());
+        String employee = login("+77000000114");
+        fetch(path, JsonPath.read(employee, "$.accessToken")).andExpect(status().isForbidden());
+
+        String anotherEmployee = login("+77000000115");
+        adminToken(anotherEmployee, "PARTNER_VERIFICATION");
+        String token = adminToken(employee, "DELIVERY_OPERATIONS");
+        fetch(path, token).andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.permissions.length()").value(1))
+                .andExpect(jsonPath("$.permissions[0]").value("DELIVERY_OPERATIONS"));
+
+        UUID employeeId = user(employee);
+        db.update("UPDATE identity.admin_grants SET revoked_at = now(), revoked_by_user_id = ? WHERE user_id = ?",
+                employeeId, employeeId);
+        fetch(path, token).andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("ADMIN_FORBIDDEN"));
     }
 
     @Test

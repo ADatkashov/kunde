@@ -1,5 +1,6 @@
 package kz.kunde.admin;
 
+import java.util.List;
 import java.util.UUID;
 import kz.kunde.platform.ApiException;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,17 @@ public class AdminGrants {
 
     public AdminGrants(JdbcTemplate db) {
         this.db = db;
+    }
+
+    public List<Permission> activePermissions(UUID userId) {
+        var permissions = db.queryForList("""
+                SELECT g.permission FROM identity.admin_grants g JOIN identity.users u ON u.id = g.user_id
+                WHERE g.user_id = ? AND g.revoked_at IS NULL AND u.status = 'ACTIVE'
+                ORDER BY g.permission""", String.class, userId);
+        if (permissions.isEmpty()) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "ADMIN_FORBIDDEN", "Administrator permission is required");
+        }
+        return permissions.stream().map(Permission::valueOf).toList();
     }
 
     public void require(UUID userId, Permission permission) {
