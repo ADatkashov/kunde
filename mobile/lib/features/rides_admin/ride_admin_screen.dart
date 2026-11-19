@@ -5,113 +5,138 @@ import '../delivery_admin/delivery_admin_screen.dart';
 import '../identity/auth_repository.dart';
 import '../rides/ride_strings.dart';
 
-class RideAdminScreen extends StatelessWidget {
+class RideAdminScreen extends StatefulWidget {
   const RideAdminScreen({required this.auth, super.key});
 
   final AuthRepository auth;
+
+  @override
+  State<RideAdminScreen> createState() => _RideAdminScreenState();
+}
+
+class _RideAdminScreenState extends State<RideAdminScreen> {
+  late Future<Set<String>> _permissions = _loadPermissions();
+
+  Future<Set<String>> _loadPermissions() async {
+    final response = await widget.auth.authorizedJson(
+      'GET',
+      'admin/me/capabilities',
+    );
+    return ((response as Map<String, dynamic>)['permissions'] as List<dynamic>)
+        .cast<String>()
+        .toSet();
+  }
 
   @override
   Widget build(BuildContext context) {
     final s = RideStrings(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('KUNDE Rides Admin'),
+        title: const Text('KUNDE Control Center'),
         actions: [
           IconButton(
-            onPressed: auth.logout,
+            onPressed: widget.auth.logout,
             tooltip: s.t('Выйти', 'Шығу', 'Sign out'),
             icon: const Icon(Icons.logout),
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
+      body: FutureBuilder<Set<String>>(
+        future: _permissions,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      s.t(
+                        'Не удалось загрузить доступные разделы',
+                        'Қолжетімді бөлімдер жүктелмеді',
+                        'Could not load available workspaces',
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () =>
+                          setState(() => _permissions = _loadPermissions()),
+                      child: Text(s.t('Повторить', 'Қайталау', 'Retry')),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+          final permissions = snapshot.requireData;
+          final workspaces = _workspaces(context, s, permissions);
+          if (workspaces.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  s.t(
+                    'Для этой учётной записи нет доступных очередей',
+                    'Бұл есептік жазбаға кезектер қолжетімсіз',
+                    'No queues are available for this account',
+                  ),
+                ),
+              ),
+            );
+          }
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final columns = switch (constraints.maxWidth) {
+                >= 1200 => 3,
+                >= 760 => 2,
+                _ => 1,
+              };
+              final width =
+                  (constraints.maxWidth - 32 - 12 * (columns - 1)) / columns;
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    for (final workspace in workspaces)
+                      SizedBox(width: width, child: workspace),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  List<Widget> _workspaces(
+    BuildContext context,
+    RideStrings s,
+    Set<String> permissions,
+  ) =>
+      [
+        if (permissions.contains('DELIVERY_OPERATIONS'))
           for (final (area, label, icon) in [
             (
               DeliveryAdminArea.couriers,
               s.t('Курьеры', 'Курьерлер', 'Couriers'),
-              Icons.inventory_2_outlined
+              Icons.inventory_2_outlined,
             ),
             (
               DeliveryAdminArea.shipments,
               s.t('Отправления', 'Жөнелтілімдер', 'Shipments'),
-              Icons.local_shipping_outlined
+              Icons.local_shipping_outlined,
             ),
             (
               DeliveryAdminArea.complaints,
               s.t('Жалобы на доставку', 'Жеткізу шағымдары',
                   'Delivery complaints'),
-              Icons.flag_outlined
-            ),
-          ])
-            Card(
-                child: ListTile(
-              leading: Icon(icon),
-              title: Text(label),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).push<void>(MaterialPageRoute(
-                builder: (_) => DeliveryAdminScreen(auth: auth, area: area),
-              )),
-            )),
-          for (final (area, label, icon) in [
-            (
-              AutoAdminArea.specialists,
-              s.t('Авто-специалисты', 'Авто мамандар', 'Auto specialists'),
-              Icons.build_circle_outlined
-            ),
-            (
-              AutoAdminArea.venues,
-              s.t('СТО и автомойки', 'СТО және көлік жуу',
-                  'Stations and washes'),
-              Icons.garage_outlined
-            ),
-            (
-              AutoAdminArea.categories,
-              s.t('Категории Auto', 'Auto санаттары', 'Auto categories'),
-              Icons.category_outlined
-            ),
-            (
-              AutoAdminArea.bookings,
-              s.t('Записи Auto', 'Auto жазылулары', 'Auto bookings'),
-              Icons.event_note_outlined
-            ),
-            (
-              AutoAdminArea.jobs,
-              s.t('Выездные заявки', 'Шығу өтінімдері', 'On-site jobs'),
-              Icons.emergency_outlined
-            ),
-            (
-              AutoAdminArea.complaints,
-              s.t('Жалобы Auto', 'Auto шағымдары', 'Auto complaints'),
-              Icons.report_outlined
-            ),
-          ])
-            Card(
-                child: ListTile(
-              leading: Icon(icon),
-              title: Text(label),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).push<void>(MaterialPageRoute(
-                builder: (_) => AutoAdminScreen(auth: auth, area: area),
-              )),
-            )),
-          for (final (route, label, icon) in [
-            (
-              'drivers',
-              s.t('Водители', 'Жүргізушілер', 'Drivers'),
-              Icons.person_outline
-            ),
-            (
-              'fleets',
-              s.t('Автопарки', 'Автопарктер', 'Fleets'),
-              Icons.local_taxi_outlined
-            ),
-            ('trips', s.rides, Icons.route_outlined),
-            (
-              'complaints',
-              s.t('Жалобы', 'Шағымдар', 'Complaints'),
-              Icons.flag_outlined
+              Icons.flag_outlined,
             ),
           ])
             Card(
@@ -121,15 +146,96 @@ class RideAdminScreen extends StatelessWidget {
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => Navigator.of(context).push<void>(
                   MaterialPageRoute(
-                      builder: (_) =>
-                          _AdminQueue(auth: auth, route: route, label: label)),
+                    builder: (_) =>
+                        DeliveryAdminScreen(auth: widget.auth, area: area),
+                  ),
                 ),
               ),
             ),
-        ],
-      ),
-    );
-  }
+        if (permissions.contains('AUTO_OPERATIONS'))
+          for (final (area, label, icon) in [
+            (
+              AutoAdminArea.specialists,
+              s.t('Авто-специалисты', 'Авто мамандар', 'Auto specialists'),
+              Icons.build_circle_outlined,
+            ),
+            (
+              AutoAdminArea.venues,
+              s.t('СТО и автомойки', 'СТО және көлік жуу',
+                  'Stations and washes'),
+              Icons.garage_outlined,
+            ),
+            (
+              AutoAdminArea.categories,
+              s.t('Категории Auto', 'Auto санаттары', 'Auto categories'),
+              Icons.category_outlined,
+            ),
+            (
+              AutoAdminArea.bookings,
+              s.t('Записи Auto', 'Auto жазылулары', 'Auto bookings'),
+              Icons.event_note_outlined,
+            ),
+            (
+              AutoAdminArea.jobs,
+              s.t('Выездные заявки', 'Шығу өтінімдері', 'On-site jobs'),
+              Icons.emergency_outlined,
+            ),
+            (
+              AutoAdminArea.complaints,
+              s.t('Жалобы Auto', 'Auto шағымдары', 'Auto complaints'),
+              Icons.report_outlined,
+            ),
+          ])
+            Card(
+              child: ListTile(
+                leading: Icon(icon),
+                title: Text(label),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push<void>(
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        AutoAdminScreen(auth: widget.auth, area: area),
+                  ),
+                ),
+              ),
+            ),
+        for (final (route, label, icon) in [
+          (
+            'drivers',
+            s.t('Водители', 'Жүргізушілер', 'Drivers'),
+            Icons.person_outline,
+          ),
+          (
+            'fleets',
+            s.t('Автопарки', 'Автопарктер', 'Fleets'),
+            Icons.local_taxi_outlined,
+          ),
+          ('trips', s.rides, Icons.route_outlined),
+          (
+            'complaints',
+            s.t('Жалобы', 'Шағымдар', 'Complaints'),
+            Icons.flag_outlined,
+          ),
+        ])
+          if (permissions.contains(
+            route == 'drivers' || route == 'fleets'
+                ? 'RIDE_VERIFICATION'
+                : 'RIDE_OPERATIONS',
+          ))
+            Card(
+              child: ListTile(
+                leading: Icon(icon),
+                title: Text(label),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push<void>(
+                  MaterialPageRoute(
+                    builder: (_) => _AdminQueue(
+                        auth: widget.auth, route: route, label: label),
+                  ),
+                ),
+              ),
+            ),
+      ];
 }
 
 class _AdminQueue extends StatefulWidget {
