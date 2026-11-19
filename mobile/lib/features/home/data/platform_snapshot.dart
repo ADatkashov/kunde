@@ -6,6 +6,8 @@ class PlatformSnapshot {
     required this.aiEnabled,
     this.bookingEnabled = false,
     this.ridesEnabled = false,
+    this.deliveryEnabled = false,
+    this.deliverySyntheticRouting = false,
   });
 
   final String releaseStage;
@@ -16,6 +18,8 @@ class PlatformSnapshot {
   /// Service booking (barbershops) DEV pilot; absent on older servers.
   final bool bookingEnabled;
   final bool ridesEnabled;
+  final bool deliveryEnabled;
+  final bool deliverySyntheticRouting;
 
   factory PlatformSnapshot.fromJson(Map<String, dynamic> json) {
     final stage = json['releaseStage'];
@@ -35,6 +39,8 @@ class PlatformSnapshot {
       aiEnabled: ai,
       bookingEnabled: json['bookingEnabled'] == true,
       ridesEnabled: json['ridesEnabled'] == true,
+      deliveryEnabled: json['deliveryEnabled'] == true,
+      deliverySyntheticRouting: json['deliverySyntheticRouting'] == true,
     );
   }
 }
