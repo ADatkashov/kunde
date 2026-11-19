@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest(properties = {
         "app.environment=test",
@@ -59,12 +60,7 @@ class DeliveryConcurrencyIntegrationTest {
 
     @Test
     void oneCourierCannotAcceptConflictingAssignmentsConcurrently() throws Exception {
-        UUID courier = user();
-        db.update("""
-                insert into transactions.delivery_couriers
-                    (user_id, display_name, vehicle, status, online, max_grams, max_side_cm, latitude, longitude, observed_at)
-                values (?, 'Synthetic Courier', 'BICYCLE', 'APPROVED', true, 3000, 40, 43.24, 76.92, statement_timestamp())
-                """, courier);
+        UUID courier = readyCourier(43.240);
         UUID left = offer(courier);
         UUID right = offer(courier);
         var gate = new CountDownLatch(1);
@@ -83,6 +79,60 @@ class DeliveryConcurrencyIntegrationTest {
                     select count(*) from transactions.deliveries where courier_id = ? and status = 'COURIER_ASSIGNED'
                     """, Integer.class, courier)).isEqualTo(1);
         }
+    }
+
+    @Test
+    @Transactional
+    void refusalRematchesAndExpiredSearchDoesNotAssign() {
+        UUID near = readyCourier(43.240);
+        UUID far = readyCourier(43.250);
+        UUID sender = user();
+        UUID delivery = deliveries.create(sender, null, UUID.randomUUID().toString(), newRequest(sender)).order().id();
+        dispatch.search(sender, null, delivery);
+        UUID first = dispatch.offers(near).getFirst().id();
+        assertThat(dispatch.offers(far)).isEmpty();
+        dispatch.respond(near, first, false);
+        UUID second = dispatch.offers(far).getFirst().id();
+
+        db.update("update transactions.delivery_offers set expires_at = statement_timestamp() - interval '1 second' where id = ?",
+                second);
+        db.update("update transactions.deliveries set search_started_at = statement_timestamp() - interval '3 minutes' where id = ?",
+                delivery);
+        dispatch.search(sender, null, delivery);
+        assertThat(dispatch.offers(far)).isEmpty();
+        assertThat(deliveries.get(sender, null, delivery).status()).isEqualTo(DeliveryState.NO_COURIER_AVAILABLE);
+    }
+
+    @Test
+    @Transactional
+    void failedDeliveryCanReturnAndReleasesTheCourierSlot() {
+        UUID courier = readyCourier(43.240);
+        UUID sender = user();
+        UUID operator = user();
+        UUID delivery = deliveries.create(sender, null, UUID.randomUUID().toString(), newRequest(sender)).order().id();
+        db.update("update transactions.deliveries set courier_id = ?, status = 'IN_TRANSIT' where id = ?",
+                courier, delivery);
+        assertThat(dispatch.progress(courier, delivery, DeliveryState.Action.FAIL_DELIVERY))
+                .isEqualTo(DeliveryState.DELIVERY_FAILED);
+        assertThat(dispatch.requestReturn(operator, delivery)).isEqualTo(DeliveryState.RETURN_REQUESTED);
+        assertThat(dispatch.progress(courier, delivery, DeliveryState.Action.START_RETURN))
+                .isEqualTo(DeliveryState.RETURNING);
+        assertThat(dispatch.progress(courier, delivery, DeliveryState.Action.CONFIRM_RETURN))
+                .isEqualTo(DeliveryState.RETURNED_TO_SENDER);
+        assertThat(db.queryForList("""
+                select status::text from transactions.delivery_events where delivery_id = ? order by id
+                """, String.class, delivery))
+                .containsExactly("CREATED", "DELIVERY_FAILED", "RETURN_REQUESTED", "RETURNING", "RETURNED_TO_SENDER");
+    }
+
+    private UUID readyCourier(double latitude) {
+        UUID id = user();
+        db.update("""
+                insert into transactions.delivery_couriers
+                   (user_id, display_name, vehicle, status, online, max_grams, max_side_cm, latitude, longitude, observed_at)
+                values (?, 'Synthetic Courier', 'BICYCLE', 'APPROVED', true, 3000, 40, ?, 76.92, statement_timestamp())
+                """, id, latitude);
+        return id;
     }
 
     private boolean accept(UUID courier, UUID offer) {
