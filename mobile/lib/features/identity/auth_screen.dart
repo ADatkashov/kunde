@@ -13,6 +13,7 @@ import '../assistant/assistant_screen.dart';
 import 'auth_repository.dart';
 import 'auth_strings.dart';
 import 'consent_panel.dart';
+import '../rides/ride_api.dart';
 import 'phone_auth_gateway.dart';
 import 'phone_login_flow.dart';
 import '../partner/partner_panel.dart';
@@ -289,6 +290,7 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                                         : const OrdersTab(),
                                 KundeTab.home => HomeScreen(
                                     api: widget.api,
+                                    rides: RideApi(widget.auth),
                                     food: widget.food,
                                     booking: widget.booking,
                                     onOpenAssistant: () => setState(
