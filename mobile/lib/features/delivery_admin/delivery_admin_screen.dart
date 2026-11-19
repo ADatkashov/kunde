@@ -7,10 +7,14 @@ enum DeliveryAdminArea { couriers, shipments, complaints }
 
 class DeliveryAdminScreen extends StatefulWidget {
   const DeliveryAdminScreen(
-      {required this.auth, required this.area, super.key});
+      {required this.auth,
+      required this.area,
+      this.canRequestReturn = false,
+      super.key});
 
   final AuthRepository auth;
   final DeliveryAdminArea area;
+  final bool canRequestReturn;
 
   @override
   State<DeliveryAdminScreen> createState() => _DeliveryAdminScreenState();
@@ -131,7 +135,7 @@ class _DeliveryAdminScreenState extends State<DeliveryAdminScreen> {
               TextButton(
                   onPressed: () => _audit(id, s),
                   child: Text(s.t('Аудит', 'Аудит', 'Audit trail'))),
-              if (status == 'DELIVERY_FAILED')
+              if (widget.canRequestReturn && status == 'DELIVERY_FAILED')
                 TextButton(
                   onPressed: _busy
                       ? null
