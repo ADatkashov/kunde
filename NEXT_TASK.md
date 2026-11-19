@@ -1,5 +1,5 @@
-# Следующая задача KUNDE Auto 1.0
+# Следующая проверка KUNDE Control Center
 
-Backend-срез смержен в PR (см. [auto](docs/product/auto.md)). Далее по порядку: Consumer Flutter (автомобили, каталог, котировка, запись, перенос/отмена, история), Partner Flutter (inbox, жизненный цикл, недоступные периоды), затем Executor `AUTO_SPECIALIST`, Admin, платёжный DEV-контракт, Android E2E и подписанные DEV Release APK.
+Подтвердить авторизованный Web E2E объединённого Admin из #152 и #159: вход сотрудника, доступная сводка Delivery, отказ за пределами разрешений и выход. Интегрировать Web после успешных проверок и зафиксировать SHA сборок. См. [дорожную карту](docs/roadmap/27-control-center-2-audit.md).
 
-Приёмка: `cd backend && mvn verify` на PostgreSQL 16, `flutter analyze` и `flutter test`, Android E2E «Consumer → запись → Partner подтверждает → обслуживание → история». Публичный запуск Auto выключен.
+Закрыть текущий этап до начала остальных Dashboard и бизнес-модулей. D-14 остаётся открытым.

@@ -6,6 +6,7 @@
 - [#157](https://github.com/ADatkashov/kunde/pull/157) добавил навигацию по разрешённым очередям Rides, Delivery и Auto.
 - [#160](https://github.com/ADatkashov/kunde/pull/160) добавил назначения ролей с областью, сроком действия и отзывом. [#161](https://github.com/ADatkashov/kunde/pull/161) применяет область к списку отправлений Delivery и аудиту. [#162](https://github.com/ADatkashov/kunde/pull/162) открывает эти два сценария во Flutter для scoped-оператора.
 - [#164](https://github.com/ADatkashov/kunde/pull/164) добавил серверный реестр сотрудников с постраничной выдачей под действующим платформенным `ADMIN_GRANTS`. Управление назначениями и D-14 остаются открытыми.
+- [#165](https://github.com/ADatkashov/kunde/pull/165) добавил Flutter-реестр сотрудников. [#163](https://github.com/ADatkashov/kunde/pull/163) и [#166](https://github.com/ADatkashov/kunde/pull/166) добавили scoped-сводку Delivery и выбор периода.
 - В работе: scoped RBAC, панели продуктов, реестры, поддержка, финансы, операции, аудит и проверка поставки на всех платформах. Functional DEV/TEST Ready ещё не подтверждён.
 
 ## KUNDE Auto 1.0 — backend slice (в работе)

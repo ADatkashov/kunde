@@ -17,6 +17,9 @@ class _AdminSession implements AuthRepository {
     Set<int> expected = const {200},
     Map<String, String>? headers,
   }) async {
+    if (method == 'GET' && Uri.parse(path).path == 'admin/deliveries/summary') {
+      return <String, dynamic>{'total': 0, 'byStatus': []};
+    }
     if (scoped && (method, path) == ('GET', 'admin/deliveries')) {
       return [
         <String, dynamic>{'id': 'shipment-1', 'status': 'DELIVERY_FAILED'},
@@ -48,6 +51,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Couriers'), findsNothing);
     expect(find.text('Delivery complaints'), findsNothing);
+    await tester.ensureVisible(find.text('Shipments'));
     await tester.tap(find.text('Shipments'));
     await tester.pumpAndSettle();
     expect(find.text('shipment-1'), findsOneWidget);
