@@ -372,6 +372,7 @@ class _RideDetailsState extends State<_RideDetails> {
   Timer? _poll;
   bool _pending = false;
   bool _failed = false;
+  RideDriverLocation? _driverLocation;
 
   @override
   void initState() {
@@ -399,10 +400,24 @@ class _RideDetailsState extends State<_RideDetails> {
       if (!trip.active) _poll?.cancel();
       setState(() {
         _trip = trip;
+        _driverLocation = null;
         _failed = false;
       });
+      if (trip.active && !trip.searching) {
+        try {
+          final location = await widget.api.driverLocation(trip.id);
+          if (mounted) setState(() => _driverLocation = location);
+        } catch (_) {
+          // The server can withhold position without interrupting trip status.
+        }
+      }
     } catch (_) {
-      if (mounted) setState(() => _failed = true);
+      if (mounted) {
+        setState(() {
+          _driverLocation = null;
+          _failed = true;
+        });
+      }
     } finally {
       if (mounted) setState(() => _pending = false);
     }
@@ -454,6 +469,14 @@ class _RideDetailsState extends State<_RideDetails> {
                 subtitle: Text('${_trip.fare} KZT'),
               ),
             ),
+            if (_driverLocation case final location?)
+              ListTile(
+                leading: const Icon(Icons.my_location),
+                title: Text(s.t('Местоположение водителя',
+                    'Жүргізушінің орналасуы', 'Driver location')),
+                subtitle: Text(
+                    '${location.latitude.toStringAsFixed(5)}, ${location.longitude.toStringAsFixed(5)}'),
+              ),
             if (_failed) _InlineError(message: s.error),
             if (_failed)
               TextButton(
