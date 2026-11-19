@@ -6,12 +6,15 @@ import 'package:geolocator/geolocator.dart';
 
 import '../identity/auth_repository.dart';
 import '../rides/ride_strings.dart';
+import 'delivery_work_screen.dart';
 import 'executor_api.dart';
 
 class ExecutorScreen extends StatefulWidget {
-  const ExecutorScreen({required this.auth, super.key});
+  const ExecutorScreen(
+      {required this.auth, this.checkDeliveryMode = false, super.key});
 
   final AuthRepository auth;
+  final bool checkDeliveryMode;
 
   @override
   State<ExecutorScreen> createState() => _ExecutorScreenState();
@@ -37,6 +40,8 @@ class _ExecutorScreenState extends State<ExecutorScreen>
   String _rideClass = 'ECONOMY';
   String? _failure;
   String? _locationFailure;
+  bool _deliveryEnabled = false;
+  bool _deliverySynthetic = false;
 
   @override
   void initState() {
@@ -46,6 +51,21 @@ class _ExecutorScreenState extends State<ExecutorScreen>
       if (_foreground && _loaded && _profile != null) unawaited(_load());
     });
     unawaited(_load());
+    if (widget.checkDeliveryMode) unawaited(_loadModes());
+  }
+
+  Future<void> _loadModes() async {
+    try {
+      final capabilities = await widget.auth
+          .authorizedJson('GET', 'capabilities') as Map<String, dynamic>;
+      if (!mounted) return;
+      setState(() {
+        _deliveryEnabled = capabilities['deliveryExecutorEnabled'] == true;
+        _deliverySynthetic = capabilities['deliverySyntheticRouting'] == true;
+      });
+    } catch (_) {
+      if (mounted && _deliveryEnabled) setState(() => _deliveryEnabled = false);
+    }
   }
 
   @override
@@ -55,6 +75,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
       unawaited(_stopLocation());
     } else {
       unawaited(_load());
+      if (widget.checkDeliveryMode) unawaited(_loadModes());
     }
   }
 
@@ -253,6 +274,18 @@ class _ExecutorScreenState extends State<ExecutorScreen>
       appBar: AppBar(
         title: const Text('KUNDE Executor'),
         actions: [
+          if (_deliveryEnabled)
+            IconButton(
+              icon: const Icon(Icons.inventory_2_outlined),
+              tooltip: s.t('Режим доставки', 'Жеткізу режимі', 'Delivery mode'),
+              onPressed: () =>
+                  Navigator.of(context).push<void>(MaterialPageRoute(
+                builder: (_) => DeliveryWorkScreen(
+                  auth: widget.auth,
+                  synthetic: _deliverySynthetic,
+                ),
+              )),
+            ),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: s.t('Выйти', 'Шығу', 'Sign out'),
