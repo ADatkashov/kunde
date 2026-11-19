@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequestMapping("/api/v1/admin/deliveries")
@@ -32,19 +33,22 @@ public class DeliveryAdminController {
     private final AdminGrants grants;
     private final DeliveryCouriers couriers;
     private final DeliveryDispatch dispatch;
+    private final DeliveryOperations operations;
 
     public DeliveryAdminController(ConsumerIdentityService identity, AdminGrants grants, DeliveryCouriers couriers,
-            DeliveryDispatch dispatch) {
+            DeliveryDispatch dispatch, DeliveryOperations operations) {
         this.identity = identity;
         this.grants = grants;
         this.couriers = couriers;
         this.dispatch = dispatch;
+        this.operations = operations;
     }
 
     @GetMapping("/couriers")
-    public ResponseEntity<List<DeliveryCouriers.Profile>> queue(@AuthenticationPrincipal Jwt principal) {
+    public ResponseEntity<List<DeliveryCouriers.Profile>> queue(@AuthenticationPrincipal Jwt principal,
+            @RequestParam(defaultValue = "false") boolean includeReviewed) {
         reviewer(principal);
-        return noStore(couriers.forReview());
+        return noStore(couriers.forReview(includeReviewed));
     }
 
     @PostMapping("/couriers/{id}/decision")
@@ -58,6 +62,31 @@ public class DeliveryAdminController {
     public ResponseEntity<DeliveryExecutorController.StateResponse> requestReturn(@AuthenticationPrincipal Jwt principal,
             @PathVariable UUID id) {
         return noStore(new DeliveryExecutorController.StateResponse(dispatch.requestReturn(reviewer(principal), id)));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<DeliveryOperations.Shipment>> shipments(@AuthenticationPrincipal Jwt principal) {
+        reviewer(principal);
+        return noStore(operations.shipments());
+    }
+
+    @GetMapping("/{id}/audit")
+    public ResponseEntity<List<DeliveryOperations.Event>> audit(@AuthenticationPrincipal Jwt principal,
+            @PathVariable UUID id) {
+        reviewer(principal);
+        return noStore(operations.audit(id));
+    }
+
+    @GetMapping("/complaints")
+    public ResponseEntity<List<DeliveryOperations.Complaint>> complaints(@AuthenticationPrincipal Jwt principal) {
+        reviewer(principal);
+        return noStore(operations.complaints());
+    }
+
+    @PostMapping("/complaints/{id}/resolve")
+    public ResponseEntity<DeliveryOperations.Complaint> resolve(@AuthenticationPrincipal Jwt principal,
+            @PathVariable UUID id) {
+        return noStore(operations.resolve(reviewer(principal), id));
     }
 
     private UUID reviewer(Jwt principal) {

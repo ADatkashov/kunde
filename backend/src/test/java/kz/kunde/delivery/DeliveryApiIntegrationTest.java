@@ -179,6 +179,30 @@ class DeliveryApiIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("COMPLETED"));
         http.perform(get(PATH + "/" + id).with(owner)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("COMPLETED"));
+
+        String support = "/api/v1/me/support/cases";
+        String note = """
+                {"category":"GENERAL","message":"Synthetic delivery issue","deliveryId":"%s"}
+                """.formatted(id);
+        String complaint = http.perform(post(support).with(owner)
+                        .header("Idempotency-Key", UUID.randomUUID().toString())
+                        .contentType(MediaType.APPLICATION_JSON).content(note))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.deliveryId").value(id))
+                .andReturn().getResponse().getContentAsString();
+        http.perform(post(support).with(courier).header("Idempotency-Key", UUID.randomUUID().toString())
+                        .contentType(MediaType.APPLICATION_JSON).content(note))
+                .andExpect(status().isNotFound());
+        String complaints = "/api/v1/admin/deliveries/complaints";
+        http.perform(get(complaints).with(owner)).andExpect(status().isForbidden());
+        String complaintId = JsonPath.read(complaint, "$.id");
+        http.perform(get(complaints).with(admin))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].id").value(complaintId));
+        for (int replay = 0; replay < 2; replay++) {
+            http.perform(post(complaints + "/" + complaintId + "/resolve").with(admin))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("RESOLVED"));
+        }
+        http.perform(get("/api/v1/admin/deliveries/" + id + "/audit").with(admin))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[7].status").value("DELIVERED"));
     }
 
     @Test
