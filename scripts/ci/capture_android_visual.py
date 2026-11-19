@@ -16,7 +16,7 @@ def adb(*args):
     return subprocess.check_output(["adb", *map(str, args)], timeout=30)
 
 
-def find(*labels, node_class=None, clickable=False, timeout=45):
+def find(*labels, node_class=None, clickable=False, resource_id=None, timeout=45):
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         try:
@@ -32,6 +32,8 @@ def find(*labels, node_class=None, clickable=False, timeout=45):
                 value == label or value.startswith(f"{label},")
                 for label in labels for value in text
             ):
+                continue
+            if resource_id and node.get("resource-id", "").rsplit("/", 1)[-1] != resource_id:
                 continue
             if node_class and node.get("class") != node_class:
                 continue
