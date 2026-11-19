@@ -19,8 +19,12 @@ public class RideRequestService {
     private static final Pattern REQUEST_KEY = Pattern.compile("^[A-Za-z0-9_-]{16,64}$");
     private static final String VIEW = """
             select r.id, r.quote_id, r.status, q.ride_class, q.tariff_version, q.estimate_kzt,
-                   q.distance_meters, q.duration_seconds, r.created_at, q.synthetic
+                   q.distance_meters, q.duration_seconds, r.created_at, q.synthetic,
+                   d.display_name as driver_name, v.description as vehicle_name, v.plate as vehicle_plate
             from transactions.rides r join transactions.ride_fare_quotes q on q.id = r.quote_id
+            left join transactions.ride_drivers d on d.user_id = r.driver_id
+                and r.status in ('DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','IN_PROGRESS')
+            left join transactions.ride_vehicles v on v.driver_id = d.user_id
             where r.user_id = ?
             """;
 
@@ -99,11 +103,14 @@ public class RideRequestService {
     }
 
     private RideView view(ResultSet rs, int row) throws SQLException {
+        String name = rs.getString("driver_name");
+        AssignedDriver driver = name == null ? null :
+                new AssignedDriver(name, rs.getString("vehicle_name"), rs.getString("vehicle_plate"));
         return new RideView(rs.getObject("id", UUID.class), rs.getObject("quote_id", UUID.class),
                 RideState.valueOf(rs.getString("status")), RideClass.valueOf(rs.getString("ride_class")),
                 rs.getString("tariff_version"), rs.getBigDecimal("estimate_kzt"), "KZT",
                 rs.getInt("distance_meters"), rs.getInt("duration_seconds"),
-                rs.getObject("created_at", OffsetDateTime.class), rs.getBoolean("synthetic"));
+                rs.getObject("created_at", OffsetDateTime.class), rs.getBoolean("synthetic"), driver);
     }
 
     private static ApiException conflict(String code, String message) {
@@ -111,7 +118,9 @@ public class RideRequestService {
     }
 
     public record RideView(UUID id, UUID quoteId, RideState status, RideClass rideClass, String tariffVersion,
-            BigDecimal estimateKzt, String currency, int distanceMeters, int durationSeconds, OffsetDateTime createdAt, boolean synthetic) {}
+            BigDecimal estimateKzt, String currency, int distanceMeters, int durationSeconds, OffsetDateTime createdAt, boolean synthetic, AssignedDriver driver) {}
+
+    public record AssignedDriver(String name, String vehicle, String plate) {}
 
     public record Requested(RideView ride, boolean created) {}
 }

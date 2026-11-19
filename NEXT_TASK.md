@@ -1,7 +1,7 @@
-# Следующий этап Rides — интеграция двух приложений в DEV/TEST
+# Следующая проверка KUNDE Rides 1.3
 
-После обязательного Security CI последовательно объединить стек PR #131–133 и Executor. Провести поездку Consumer → Executor → Consumer на двух устройствах или эмуляторах с тестовым маршрутом, проверить историю, отмену, повторы и сетевые ошибки.
+На интегрированном `main` проверить [Android E2E](docs/product/rides-transport.md#нативный-e2e) и два [подписанных DEV APK](docs/infrastructure/android-release-apk.md). В `status.json` должен быть `PASSED`; для каждого APK сверить пакет, версию, SHA исходников, SHA-256 файла и сертификата. Маршрут только тестовый. E2E использует изолированную БД и отключённые платежи.
 
-Проверки backend выполняются на тестовом PostgreSQL через `cd backend && mvn -Dtest='kz.kunde.rides.*Test' test`. Проверки Flutter выполняются через `cd mobile && flutter analyze --fatal-infos && flutter test`. Обе команды должны пройти. Для двух сборок использовать Android Release APK (DEV) с разными значениями параметра `executor`, проверить идентификаторы, сертификаты и SHA-256.
+После проверки DEV остаются согласованный дорожный провайдер, платёжный цикл и проверка файлов водительских документов. Публичная активация выполняется отдельно по решению владельца.
 
-[Контекст и ограничения Rides](docs/product/rides-transport.md) · [Статус проекта](PROJECT_STATE.md)
+[Статус проекта](PROJECT_STATE.md) · [Linear ADA-44](https://linear.app/adatkashov/issue/ADA-44/feat-013-provider-dispatch)

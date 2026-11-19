@@ -208,6 +208,8 @@ def main():
         launch(CONSUMER)
         android.find("Водитель назначен", "Driver assigned", "Жүргізуші тағайындалды")
         android.find("Местоположение водителя", "Driver location", "Жүргізушінің орналасуы")
+        android.find("Synthetic driver")
+        android.find("Synthetic vehicle · UITEST1")
         android.screenshot("consumer-assigned")
         completed.append("consumer_driver_position")
 
@@ -257,14 +259,29 @@ def main():
         replay = call("POST", "rides", body=body, token=token, key=key)
         assert first["id"] == replay["id"], "Repeat request created a different ride"
         completed.append("backend_idempotent_repeat")
+        ride_id = first["id"]
+        driver = session("+77000000002")
+        call("PUT", "executor/rides/location", body={"latitude": 43.24, "longitude": 76.92},
+             token=driver, expected=204)
+        call("POST", f"rides/{ride_id}/dispatch", token=token)
+        offers = call("GET", "executor/rides/offers", token=driver)
+        offer = next(offer for offer in offers if offer["rideId"] == ride_id)
+        call("POST", f"executor/rides/offers/{offer['id']}/response", body={"accept": True},
+             token=driver, expected=204)
+        progress = f"executor/rides/trips/{ride_id}/progress"
+        for step in ("DEPART", "ARRIVE", "START"):
+            call("POST", progress, body={"step": step}, token=driver, expected=204)
         stop_backend(process)
         process = start_backend(False)
-        token = session("+77000000001")
         call("POST", "rides/quotes", body={
             "rideClass": "ECONOMY", "pickup": {"latitude": 43.24, "longitude": 76.92},
             "destination": {"latitude": 43.25, "longitude": 76.94},
         }, token=token, expected=404)
         completed.append("backend_feature_flag_off")
+        assert call("GET", f"rides/{ride_id}", token=token)["status"] == "IN_PROGRESS"
+        call("POST", progress, body={"step": "COMPLETE"}, token=driver, expected=204)
+        assert call("GET", f"rides/{ride_id}", token=token)["status"] == "COMPLETED"
+        completed.append("backend_active_ride_completes_with_flag_off")
         write_report("PASSED", phase)
     except Exception:
         write_report("FAILED", phase)

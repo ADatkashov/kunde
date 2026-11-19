@@ -34,3 +34,6 @@ Requirement IDs in features link back to PRD 1.1 `24-requirements-traceability.m
 Planning is ready to transition into decision closure and foundation preparation. Production implementation of real transactions is **not ready** until D-01 through D-08 and D-11/D-14 have accountable owners and approvals. See [blockers](22-delivery-risks-and-blockers.md) and [operational readiness](21-operational-readiness.md).
 
 
+### Rides & Transport
+
+Implement the planned services before public rollout, run cross-service integration checks, and activate individual services only after the owner approves the launch. Rides has a distinct internal milestone for the four roles, the isolated Android E2E, and both signed DEV builds. The public rollout remains gated on the approved routing and payment providers, verification of driver documents, and operating requirements for Kazakhstan. [Rides status and evidence](../product/rides-transport.md).

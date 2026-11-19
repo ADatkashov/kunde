@@ -1,5 +1,10 @@
 name: Rides two-app Android E2E
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/rides-native-e2e.yml'
+      - 'scripts/ci/rides_native_e2e.py'
   pull_request:
     paths:
       - '.github/workflows/rides-native-e2e.yml'
@@ -98,3 +103,18 @@ jobs:
           name: rides-native-e2e
           path: reports/rides-native/
           retention-days: 3
+  release-dev-apk:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: emulator
+    strategy:
+      fail-fast: false
+      matrix:
+        executor: [false, true]
+    uses: ./.github/workflows/android-release.yml
+    with:
+      executor: ${{ matrix.executor }}
+    secrets:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}

@@ -117,8 +117,8 @@ class RideQuote {
 }
 
 class RideTrip {
-  const RideTrip(
-      this.id, this.status, this.fare, this.createdAt, this.synthetic);
+  const RideTrip(this.id, this.status, this.fare, this.createdAt,
+      this.synthetic, this.driver);
 
   factory RideTrip.fromJson(Map<String, dynamic> data) => RideTrip(
         data['id'] as String,
@@ -126,6 +126,11 @@ class RideTrip {
         data['estimateKzt'] as num,
         DateTime.parse(data['createdAt'] as String),
         data['synthetic'] == true,
+        switch (data['driver']) {
+          final Map<String, dynamic> driver =>
+            AssignedRideDriver.fromJson(driver),
+          _ => null,
+        },
       );
 
   final String id;
@@ -133,6 +138,7 @@ class RideTrip {
   final num fare;
   final DateTime createdAt;
   final bool synthetic;
+  final AssignedRideDriver? driver;
 
   bool get searching => status == 'REQUESTED' || status == 'SEARCHING_DRIVER';
 
@@ -151,4 +157,21 @@ class RideDriverLocation {
   const RideDriverLocation(this.latitude, this.longitude);
   final double latitude;
   final double longitude;
+}
+
+class AssignedRideDriver {
+  const AssignedRideDriver(this.name, this.vehicle, this.plate);
+
+  factory AssignedRideDriver.fromJson(Map<String, dynamic> json) =>
+      AssignedRideDriver(json['name'] as String, json['vehicle'] as String?,
+          json['plate'] as String?);
+
+  final String name;
+  final String? vehicle;
+  final String? plate;
+
+  String? get vehicleSummary {
+    final parts = [vehicle, plate].whereType<String>();
+    return parts.isEmpty ? null : parts.join(' · ');
+  }
 }

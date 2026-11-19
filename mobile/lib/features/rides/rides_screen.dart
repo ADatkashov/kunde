@@ -481,6 +481,17 @@ class _RideDetailsState extends State<_RideDetails> {
               ListTile(
                   leading: const Icon(Icons.science_outlined),
                   title: Text(s.synthetic)),
+            if (_trip.driver case final driver?)
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.person_outline),
+                  title: Text(driver.name),
+                  subtitle: switch (driver.vehicleSummary) {
+                    final String summary => Text(summary),
+                    null => null,
+                  },
+                ),
+              ),
             if (_driverLocation case final location?)
               ListTile(
                 leading: const Icon(Icons.my_location),
