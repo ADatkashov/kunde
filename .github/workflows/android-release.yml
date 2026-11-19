@@ -20,6 +20,10 @@ on:
         description: 'Build KUNDE Executor instead of KUNDE Consumer'
         type: boolean
         default: false
+      admin:
+        description: 'Build KUNDE Admin. Leave executor disabled.'
+        type: boolean
+        default: false
       api-base-url:
         description: 'API base URL baked into the APK'
         default: 'https://kunde-backend-ty81.onrender.com/api/v1/'
@@ -49,9 +53,10 @@ jobs:
       KUNDE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       KUNDE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       KUNDE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      KUNDE_ADMIN_BUILD: ${{ inputs.admin && 'true' || 'false' }}
       KUNDE_EXECUTOR_BUILD: ${{ inputs.executor && 'true' || 'false' }}
-      APK_BASENAME: ${{ inputs.executor && 'KUNDE-executor-dev-release' || 'KUNDE-dev-release' }}
-      APK_PACKAGE: ${{ inputs.executor && 'com.kunde.executor' || 'com.example.kunde_mobile' }}
+      APK_BASENAME: ${{ inputs.admin && 'KUNDE-admin-dev-release' || inputs.executor && 'KUNDE-executor-dev-release' || 'KUNDE-dev-release' }}
+      APK_PACKAGE: ${{ inputs.admin && 'com.kunde.admin' || inputs.executor && 'com.kunde.executor' || 'com.example.kunde_mobile' }}
       KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -59,6 +64,10 @@ jobs:
           persist-credentials: false
       - name: Require signing secrets and HTTPS API URL
         run: |
+          if [ "$KUNDE_ADMIN_BUILD" = true ] && [ "$KUNDE_EXECUTOR_BUILD" = true ]; then
+            echo "::error::Choose Admin or Executor, not both"
+            exit 1
+          fi
           miss=0
           for v in KEYSTORE_B64 KUNDE_KEYSTORE_PASSWORD KUNDE_KEY_ALIAS KUNDE_KEY_PASSWORD; do
             [ -n "${!v}" ] || { echo "::error::missing secret for $v (see docs/infrastructure/android-release-apk.md)"; miss=1; }
@@ -92,6 +101,7 @@ jobs:
           export KUNDE_KEYSTORE_PATH="$RUNNER_TEMP/release.jks"
           target=lib/main.dart
           if [ "$KUNDE_EXECUTOR_BUILD" = true ]; then target=lib/executor_main.dart; fi
+          if [ "$KUNDE_ADMIN_BUILD" = true ]; then target=lib/admin_rides_main.dart; fi
           flutter build apk --release --target-platform android-arm64 --target "$target" \
             --dart-define=API_BASE_URL="$API_BASE_URL" \
             --dart-define=API_TIMEOUT_SECONDS=90 \
@@ -115,6 +125,9 @@ jobs:
           grep -q "uses-permission: name='android.permission.INTERNET'" dist/badging.txt
           if [ "$KUNDE_EXECUTOR_BUILD" = true ]; then
             grep -q "uses-permission: name='android.permission.ACCESS_FINE_LOCATION'" dist/badging.txt
+          fi
+          if [ "$KUNDE_ADMIN_BUILD" = true ]; then
+            grep -qF "application-label:'KUNDE Admin'" dist/badging.txt
           fi
           if grep -q "application-debuggable" dist/badging.txt; then echo "::error::debuggable"; exit 1; fi
           unzip -l "$apk" | grep -q "lib/arm64-v8a/libapp.so"

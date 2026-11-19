@@ -16,6 +16,8 @@ android {
     }
 
     val executor = providers.environmentVariable("KUNDE_EXECUTOR_BUILD").orNull == "true"
+    val admin = providers.environmentVariable("KUNDE_ADMIN_BUILD").orNull == "true"
+    require(!(admin && executor)) { "Choose one KUNDE Android app per build." }
     if (executor) {
         sourceSets.getByName("release").manifest.srcFile("src/executor/AndroidManifest.xml")
         sourceSets.getByName("debug").manifest.srcFile("src/executorDebug/AndroidManifest.xml")
@@ -23,9 +25,17 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = if (executor) "com.kunde.executor" else "com.example.kunde_mobile"
-        manifestPlaceholders["kundeAppLabel"] = if (executor) "KUNDE Executor" else "KUNDE"
-        manifestPlaceholders += mapOf("appAuthRedirectScheme" to "com.kunde.mobile")
+        applicationId = when {
+            admin -> "com.kunde.admin"
+            executor -> "com.kunde.executor"
+            else -> "com.example.kunde_mobile"
+        }
+        manifestPlaceholders["kundeAppLabel"] = when {
+            admin -> "KUNDE Admin"
+            executor -> "KUNDE Executor"
+            else -> "KUNDE"
+        }
+        manifestPlaceholders["appAuthRedirectScheme"] = if (admin) "com.kunde.admin" else "com.kunde.mobile"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
