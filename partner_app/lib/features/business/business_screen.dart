@@ -15,8 +15,12 @@ import 'venue_page.dart';
 /// state, leading to menu/price and service/schedule management.
 class BusinessScreen extends StatelessWidget {
   const BusinessScreen(
-      {required this.store, required this.canManage, super.key});
+      {required this.store,
+      required this.canManage,
+      this.fleetAction,
+      super.key});
   final OpsStore store;
+  final Widget? fleetAction;
 
   /// Owner/Manager may toggle the open state, edit prices and schedules.
   final bool canManage;
@@ -25,7 +29,9 @@ class BusinessScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = S.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(s.navBusiness)),
+      appBar: AppBar(
+          title: Text(s.navBusiness),
+          actions: [if (fleetAction != null) fleetAction!]),
       body: ListenableBuilder(
         listenable: store,
         builder: (context, _) {

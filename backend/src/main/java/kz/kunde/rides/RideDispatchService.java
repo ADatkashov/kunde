@@ -69,11 +69,11 @@ public class RideDispatchService {
                     and not exists(select 1 from transactions.rides r where r.driver_id = d.user_id
                         and r.status in ('DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','IN_PROGRESS'))
                     and not exists(select 1 from transactions.ride_offers o where o.ride_id = ? and o.driver_id = d.user_id)
-                """, (rs, row) -> new Candidate(rs.getObject("user_id", UUID.class),
+                """ + ELIGIBLE_FLEET, (rs, row) -> new Candidate(rs.getObject("user_id", UUID.class),
                         RideClass.valueOf(rs.getString("ride_class")), true, true, true, false,
                         new Point(rs.getDouble("latitude"), rs.getDouble("longitude")),
                         rs.getObject("observed_at", OffsetDateTime.class).toInstant()),
-                trip.rideClass().name(), customer, ride);
+                trip.rideClass().name(), customer, ride, flags.partnerAvailable());
         var asOf = Objects.requireNonNull(db.queryForObject("select statement_timestamp()", OffsetDateTime.class));
         RideMatching.nearest(trip.pickup(), trip.rideClass(), candidates, Set.of(), asOf.toInstant(),
                 Duration.ofMinutes(2), 5000).ifPresent(candidate -> db.update("""
@@ -95,10 +95,11 @@ public class RideDispatchService {
                 join transactions.ride_vehicles v on v.driver_id = d.user_id
                 where o.driver_id = ? and o.state = 'PENDING' and o.expires_at > statement_timestamp()
                     and r.status = 'SEARCHING_DRIVER' and d.online and d.status = 'APPROVED' and v.status = 'APPROVED'
+                """ + ELIGIBLE_FLEET + """
                 order by o.expires_at, o.id limit 30
                 """, (rs, row) -> new Offer(rs.getObject("id", UUID.class), rs.getObject("ride_id", UUID.class),
                         rs.getString("state"), rs.getObject("expires_at", OffsetDateTime.class),
-                        rs.getBoolean("synthetic")), driver);
+                        rs.getBoolean("synthetic")), driver, flags.partnerAvailable());
     }
 
     @Transactional
@@ -128,12 +129,16 @@ public class RideDispatchService {
                         and d.observed_at > statement_timestamp() - interval '2 minutes'
                         and v.status = 'APPROVED' and v.ride_class = ?
                         and not exists(select 1 from transactions.rides r where r.driver_id = d.user_id
-                            and r.status in ('DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','IN_PROGRESS')))
-                """, driver, trip.rideClass().name())
+                            and r.status in ('DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','IN_PROGRESS'))
+                """ + ELIGIBLE_FLEET + ")", driver, trip.rideClass().name(), flags.partnerAvailable())
                 || !exists("select expires_at > statement_timestamp() from transactions.ride_offers where id = ?", offerId)) {
             throw conflict("RIDE_DRIVER_UNAVAILABLE");
         }
         change(trip, Actor.SYSTEM, Action.ASSIGN, driver);
+        db.update("""
+                update transactions.rides set fleet_partner_id =
+                    (select fleet_partner_id from transactions.ride_drivers where user_id = ?) where id = ?
+                """, driver, trip.id());
         db.update("update transactions.ride_offers set state = 'ACCEPTED' where id = ?", offerId);
     }
 
@@ -181,6 +186,15 @@ public class RideDispatchService {
                 """, (rs, row) -> new DriverTrip(rs.getObject(1, UUID.class), RideState.valueOf(rs.getString(2)),
                         RideClass.valueOf(rs.getString(3)), rs.getObject(4, OffsetDateTime.class), rs.getBoolean(5)), driver);
     }
+
+    private static final String ELIGIBLE_FLEET = """
+            and (d.fleet_partner_id is null or (? and exists (
+                select 1 from transactions.ride_fleets f
+                join marketplace.partners p on p.id = f.partner_id
+                join marketplace.partner_staff s on s.partner_id = f.partner_id and s.user_id = d.user_id
+                where f.partner_id = d.fleet_partner_id and f.status = 'APPROVED'
+                    and p.verification_status = 'APPROVED' and s.status = 'ACTIVE')))
+            """;
 
     private static final String SELECT = """
             select r.id, r.user_id, r.driver_id, r.status, q.ride_class, q.pickup_latitude, q.pickup_longitude
