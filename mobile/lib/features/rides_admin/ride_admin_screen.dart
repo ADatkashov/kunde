@@ -86,6 +86,10 @@ class _AdminQueueState extends State<_AdminQueue> {
       await widget.auth.authorizedJson('GET', 'admin/rides/$path')
           as List<dynamic>;
 
+  void _reloadQueue() => setState(() {
+        _rows = _loadQueue();
+      });
+
   Future<void> _mutate(String path, {Map<String, dynamic>? body}) async {
     if (_busy) return;
     setState(() {
@@ -95,7 +99,7 @@ class _AdminQueueState extends State<_AdminQueue> {
     try {
       await widget.auth.authorizedJson('POST', 'admin/rides/$path',
           body: body, expected: {200, 204});
-      if (mounted) setState(() => _rows = _loadQueue());
+      if (mounted) _reloadQueue();
     } catch (error) {
       if (mounted) setState(() => _failure = error);
     } finally {
@@ -248,8 +252,7 @@ class _AdminQueueState extends State<_AdminQueue> {
         title: Text(widget.label),
         actions: [
           IconButton(
-            onPressed:
-                _busy ? null : () => setState(() => _rows = _loadQueue()),
+            onPressed: _busy ? null : _reloadQueue,
             tooltip: s.retry,
             icon: const Icon(Icons.refresh),
           ),

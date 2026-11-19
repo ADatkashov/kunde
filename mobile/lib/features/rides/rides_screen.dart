@@ -208,9 +208,9 @@ class _AddressPickerState extends State<_AddressPicker> {
   void _search() {
     final query = _field.text.trim();
     if (query.length < 2) return;
-    setState(
-      () => _results = widget.api.search(query, RideStrings(context).language),
-    );
+    setState(() {
+      _results = widget.api.search(query, RideStrings(context).language);
+    });
   }
 
   @override
@@ -304,6 +304,10 @@ class _RideHistoryState extends State<_RideHistory> {
     _history = widget.api.history();
   }
 
+  void _reloadHistory() => setState(() {
+        _history = widget.api.history();
+      });
+
   @override
   Widget build(BuildContext context) {
     final s = RideStrings(context);
@@ -319,8 +323,7 @@ class _RideHistoryState extends State<_RideHistory> {
             if (snapshot.hasError) {
               return Center(
                 child: TextButton(
-                  onPressed: () =>
-                      setState(() => _history = widget.api.history()),
+                  onPressed: _reloadHistory,
                   child: Text(s.retry),
                 ),
               );
@@ -349,7 +352,7 @@ class _RideHistoryState extends State<_RideHistory> {
                           ),
                         );
                         if (mounted) {
-                          setState(() => _history = widget.api.history());
+                          _reloadHistory();
                         }
                       },
                     ),
