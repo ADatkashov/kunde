@@ -8,10 +8,14 @@ import '../identity/auth_repository.dart';
 
 class DeliveryWorkScreen extends StatefulWidget {
   const DeliveryWorkScreen(
-      {required this.auth, required this.synthetic, super.key});
+      {required this.auth,
+      required this.synthetic,
+      this.intakeEnabled = true,
+      super.key});
 
   final AuthRepository auth;
   final bool synthetic;
+  final bool intakeEnabled;
 
   @override
   State<DeliveryWorkScreen> createState() => _DeliveryWorkScreenState();
@@ -66,7 +70,7 @@ class _DeliveryWorkScreenState extends State<DeliveryWorkScreen> {
       } on IdentityApiError catch (failure) {
         if (failure.code != 'DELIVERY_COURIER_NOT_FOUND') rethrow;
       }
-      final offers = profile?['online'] == true
+      final offers = widget.intakeEnabled && profile?['online'] == true
           ? (await _call('GET', '$_root/offers') as List)
               .cast<Map<String, dynamic>>()
           : <Map<String, dynamic>>[];
@@ -191,7 +195,7 @@ class _DeliveryWorkScreenState extends State<DeliveryWorkScreen> {
                       'Код неверен, просрочен или исчерпал попытки.',
                       'Код қате, мерзімі өткен немесе әрекеттер таусылған.',
                       'The code is incorrect, expired, or out of attempts.'))),
-            if (_loaded && profile == null) ...[
+            if (widget.intakeEnabled && _loaded && profile == null) ...[
               TextField(
                 controller: _name,
                 maxLength: 80,
@@ -244,7 +248,7 @@ class _DeliveryWorkScreenState extends State<DeliveryWorkScreen> {
                       'Ожидает проверки', 'Тексеру күтілуде', 'Pending review'),
                 }),
               ),
-            if (approval == 'APPROVED')
+            if (widget.intakeEnabled && approval == 'APPROVED')
               SwitchListTile(
                 title: Text(s.t('Готов принимать заказы',
                     'Тапсырыс қабылдауға дайынмын', 'Available for offers')),
@@ -254,7 +258,7 @@ class _DeliveryWorkScreenState extends State<DeliveryWorkScreen> {
                     : (value) => _load(() => _call('PUT', '$_root/availability',
                         body: {'online': value})),
               ),
-            if (online) ...[
+            if (widget.intakeEnabled && online) ...[
               OutlinedButton(
                 onPressed: _busy ? null : () => _sendLocation(fixture: false),
                 child: Text(s.t('Передать текущую точку',

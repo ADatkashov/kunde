@@ -11,10 +11,15 @@ import 'delivery_api.dart';
 import 'delivery_strings.dart';
 
 class DeliveryScreen extends StatefulWidget {
-  const DeliveryScreen({required this.api, required this.synthetic, super.key});
+  const DeliveryScreen(
+      {required this.api,
+      required this.synthetic,
+      this.intakeEnabled = true,
+      super.key});
 
   final DeliveryApi api;
   final bool synthetic;
+  final bool intakeEnabled;
 
   @override
   State<DeliveryScreen> createState() => _DeliveryScreenState();
@@ -179,6 +184,9 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.intakeEnabled) {
+      return _History(api: widget.api, allowDispatch: false);
+    }
     final s = DeliveryStrings(context);
     final quote = _quote;
     final locked = _busy || quote != null;
@@ -339,8 +347,9 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
 }
 
 class _History extends StatefulWidget {
-  const _History({required this.api});
+  const _History({required this.api, this.allowDispatch = true});
   final DeliveryApi api;
+  final bool allowDispatch;
 
   @override
   State<_History> createState() => _HistoryState();
@@ -383,8 +392,10 @@ class _HistoryState extends State<_History> {
                   await Navigator.push<void>(
                       context,
                       MaterialPageRoute(
-                          builder: (_) =>
-                              _Details(api: widget.api, initial: order)));
+                          builder: (_) => _Details(
+                              api: widget.api,
+                              initial: order,
+                              allowDispatch: widget.allowDispatch)));
                   if (mounted) setState(() => _history = widget.api.history());
                 },
               ),
@@ -396,9 +407,11 @@ class _HistoryState extends State<_History> {
 }
 
 class _Details extends StatefulWidget {
-  const _Details({required this.api, required this.initial});
+  const _Details(
+      {required this.api, required this.initial, this.allowDispatch = true});
   final DeliveryApi api;
   final DeliveryOrder initial;
+  final bool allowDispatch;
 
   @override
   State<_Details> createState() => _DetailsState();
@@ -466,7 +479,7 @@ class _DetailsState extends State<_Details> {
         final latest = await widget.api.detail(_order.id);
         if (!mounted) return;
         setState(() => _order = latest);
-        if (latest.searching) {
+        if (latest.searching && widget.allowDispatch) {
           final dispatched = await widget.api.dispatch(latest.id);
           if (mounted) setState(() => _order = dispatched);
         }

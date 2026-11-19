@@ -33,3 +33,9 @@ The manual workflow has inputs `partner-features` and `partner-apply` (both defa
 2. В каталоге артефакта проверьте APK командой `sha256sum -c *.apk.sha256`. Сверьте SHA-256 сертификата в `signing.txt` с выводом `apksigner verify --verbose --print-certs <файл.apk>`.
 3. На Android arm64 откройте APK или выполните `adb install -r <файл.apk>`. Для обновления установленного приложения требуется тот же сертификат.
 4. Используйте тестовые аккаунты только с согласованным DEV backend. Доступность Rides определяется backend. Сборка APK сама по себе не включает флаги.
+
+## KUNDE Delivery в DEV Release
+
+Consumer и Executor собираются существующим workflow Android Release APK (DEV). Для Executor включите вход `executor` при запуске workflow. Standalone Partner собирается workflow Partner Android Release APK (DEV). Для отчёта сохраните SHA исходников, ссылки на artifacts, хэш файла APK и SHA-256 сертификата из отчёта проверки подписи.
+
+После распаковки скачанного артефакта установите нужный подписанный APK через `adb install -r <apk>`. Успешная установка не активирует Delivery. Сессия и допуск проверяются обычным способом, а наличие разделов зависит от capabilities выбранного DEV backend. [Флаги, синтетический маршрут и сценарий Android E2E](../product/delivery.md).

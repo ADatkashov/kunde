@@ -131,6 +131,20 @@ class DeliveryOrder {
   final bool synthetic;
   final String? courier;
 
+  bool get active => const {
+        'CREATED',
+        'SEARCHING_COURIER',
+        'COURIER_ASSIGNED',
+        'COURIER_ARRIVING',
+        'COURIER_ARRIVED',
+        'PICKED_UP',
+        'IN_TRANSIT',
+        'DELIVERED',
+        'DELIVERY_FAILED',
+        'RETURN_REQUESTED',
+        'RETURNING',
+      }.contains(status);
+
   bool get searching => status == 'CREATED' || status == 'SEARCHING_COURIER';
 
   bool get cancellable =>
