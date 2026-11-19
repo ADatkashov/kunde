@@ -33,8 +33,8 @@ def tap(*labels, **options):
     android.adb("shell", "input", "tap", *reveal(*labels, **options))
 
 
-def enter(labels, value):
-    tap(*labels, node_class="android.widget.EditText")
+def enter(identifier, value):
+    tap(resource_id=identifier)
     android.adb("shell", "input", "text", value)
     android.adb("shell", "input", "keyevent", "4")
 
@@ -74,16 +74,16 @@ def create_delivery():
     tap("[DEV/TEST] Отправитель", "[DEV/TEST] Pickup", "[DEV/TEST] Жіберуші")
     tap(*DESTINATION)
     tap("[DEV/TEST] Получатель", "[DEV/TEST] Destination", "[DEV/TEST] Алушы")
-    for labels, value in [
-        (("Вес, г", "Weight, g", "Салмақ, г"), "500"),
-        (("Длина, см", "Length, cm", "Ұзындығы, см"), "30"),
-        (("Ширина, см", "Width, cm", "Ені, см"), "20"),
-        (("Высота, см", "Height, cm", "Биіктігі, см"), "2"),
-        (("Имя получателя", "Recipient name", "Алушының аты"), "SyntheticRecipient"),
-        (("Телефон получателя", "Recipient phone", "Алушының телефоны"), "+77000000000"),
-        (("Описание", "Description", "Сипаттамасы"), "Documents"),
+    for identifier, value in [
+        ("delivery-weight", "500"),
+        ("delivery-length", "30"),
+        ("delivery-width", "20"),
+        ("delivery-height", "2"),
+        ("delivery-recipient", "SyntheticRecipient"),
+        ("delivery-phone", "+77000000000"),
+        ("delivery-description", "Documents"),
     ]:
-        enter(labels, value)
+        enter(identifier, value)
     tap("В отправлении нет запрещённых или опасных предметов",
         "The shipment contains no prohibited or dangerous items",
         "Жөнелтілімде тыйым салынған немесе қауіпті заттар жоқ")
