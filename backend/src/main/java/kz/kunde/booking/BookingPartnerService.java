@@ -41,7 +41,11 @@ public class BookingPartnerService {
 
     public record VenueView(String id, String name, String category, boolean open) {}
 
-    public record ServiceView(String id, String name, int durationMinutes, long priceMinor, boolean available) {}
+    public record ServiceView(String id, String name, int durationMinutes, long priceMinor, boolean available, String priceKind,
+            String autoCategory, String conditions) {}
+
+    public record ServiceInput(String name, String description, String autoCategory, Integer durationMinutes, Long priceMinor,
+            String priceKind, String conditions) {}
 
     public record HoursView(int day, String from, String to, String breakFrom, String breakTo) {}
 
@@ -211,8 +215,9 @@ public class BookingPartnerService {
     public List<ServiceView> services(UUID actor, UUID partnerId, UUID venueId) {
         partners.requireProcessing(actor, partnerId);
         requireOwnedVenue(partnerId, venueId);
-        return db.query("select id, name, duration_minutes, price_minor, available from marketplace.booking_services where venue_id = ? order by sort_order, name",
-                (rs, n) -> new ServiceView(rs.getString(1), rs.getString(2), rs.getInt(3), rs.getLong(4), rs.getBoolean(5)), venueId);
+        return db.query("select id, name, duration_minutes, price_minor, available, price_kind, auto_category, conditions from marketplace.booking_services where venue_id = ? order by sort_order, name",
+                (rs, n) -> new ServiceView(rs.getString(1), rs.getString(2), rs.getInt(3), rs.getLong(4), rs.getBoolean(5), rs.getString(6),
+                        rs.getString(7), rs.getString(8)), venueId);
     }
 
     @Transactional
@@ -227,6 +232,125 @@ public class BookingPartnerService {
             audit(partnerId, actor, "SERVICE", serviceId, "available", String.valueOf(previous), String.valueOf(available));
         }
         return services(actor, partnerId, venueId).stream().filter(s -> s.id().equals(serviceId.toString())).findFirst().orElseThrow();
+    }
+
+
+    /** Owner/manager edit of a service: name, price, duration, price kind, conditions. Existing bookings keep their booked price and time. */
+    @Transactional
+    public ServiceView updateService(UUID actor, UUID partnerId, UUID venueId, UUID serviceId, ServiceInput in) {
+        partners.requireProcessing(actor, partnerId, Role.OWNER, Role.MANAGER);
+        requireOwnedVenue(partnerId, venueId);
+        var old = db.query("select name, duration_minutes, price_minor, price_kind, conditions from marketplace.booking_services where id = ? and venue_id = ? for update",
+                (rs, n) -> new Object[] {rs.getString(1), rs.getInt(2), rs.getLong(3), rs.getString(4), rs.getString(5)}, serviceId, venueId)
+                .stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "SERVICE_NOT_FOUND", "Service not found"));
+        String name = in.name() == null ? (String) old[0] : cleanName(in.name());
+        int duration = in.durationMinutes() == null ? (int) old[1] : validDuration(in.durationMinutes());
+        long price = in.priceMinor() == null ? (long) old[2] : validPrice(in.priceMinor());
+        String kind = in.priceKind() == null ? (String) old[3] : validKind(in.priceKind());
+        String conditions = in.conditions() == null ? (String) old[4] : validConditions(in.conditions());
+        db.update("update marketplace.booking_services set name = ?, duration_minutes = ?, price_minor = ?, price_kind = ?, conditions = ? where id = ?",
+                name, duration, price, kind, conditions, serviceId);
+        String before = old[0] + "|" + old[1] + "|" + old[2] + "|" + old[3];
+        String after = name + "|" + duration + "|" + price + "|" + kind;
+        if (!before.equals(after) || !conditions.equals(old[4])) {
+            audit(partnerId, actor, "SERVICE", serviceId, "details", abbreviate(before), abbreviate(after));
+        }
+        return services(actor, partnerId, venueId).stream().filter(x -> x.id().equals(serviceId.toString())).findFirst().orElseThrow();
+    }
+
+    /** Adds an automotive service to an AUTO venue; it is offered by every post of the venue until a post is limited. */
+    @Transactional
+    public ServiceView createService(UUID actor, UUID partnerId, UUID venueId, ServiceInput in) {
+        partners.requireProcessing(actor, partnerId, Role.OWNER, Role.MANAGER);
+        requireOwnedVenue(partnerId, venueId);
+        requireAutoVenue(venueId);
+        String category = in.autoCategory();
+        Integer known = category == null ? 0 : db.queryForObject("select count(*) from marketplace.auto_service_categories where code = ? and enabled", Integer.class, category);
+        if (known == null || known == 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "AUTO_CATEGORY_INVALID", "Unknown or disabled service category");
+        }
+        if (in.name() == null || in.durationMinutes() == null || in.priceMinor() == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "SERVICE_INVALID", "name, durationMinutes and priceMinor are required");
+        }
+        db.query("select id from marketplace.booking_venues where id = ? for update", (org.springframework.jdbc.core.RowCallbackHandler) rs -> {}, venueId);
+        Integer count = db.queryForObject("select count(*) from marketplace.booking_services where venue_id = ?", Integer.class, venueId);
+        if (count != null && count >= 50) {
+            throw new ApiException(HttpStatus.CONFLICT, "TOO_MANY_SERVICES", "At most 50 services per venue");
+        }
+        UUID id = db.queryForObject("""
+                insert into marketplace.booking_services (venue_id, name, description, duration_minutes, price_minor, auto_category, price_kind, conditions, sort_order)
+                values (?, ?, ?, ?, ?, ?, ?, ?, coalesce((select max(sort_order) + 1 from marketplace.booking_services where venue_id = ?), 0)) returning id
+                """, UUID.class, venueId, cleanName(in.name()), in.description() == null ? "" : in.description().strip(), validDuration(in.durationMinutes()),
+                validPrice(in.priceMinor()), category, in.priceKind() == null ? "FIXED" : validKind(in.priceKind()),
+                in.conditions() == null ? "" : validConditions(in.conditions()), venueId);
+        db.update("insert into marketplace.booking_master_services (master_id, service_id) select id, ? from marketplace.booking_masters where venue_id = ? and active", id, venueId);
+        audit(partnerId, actor, "SERVICE", id, "created", null, cleanName(in.name()));
+        return services(actor, partnerId, venueId).stream().filter(x -> x.id().equals(id.toString())).findFirst().orElseThrow();
+    }
+
+    /** Adds a service post (bay) with default hours Mon-Sat 09:00-18:00 that performs every service of the venue. */
+    @Transactional
+    public MasterView createPost(UUID actor, UUID partnerId, UUID venueId, String name) {
+        partners.requireProcessing(actor, partnerId, Role.OWNER, Role.MANAGER);
+        requireOwnedVenue(partnerId, venueId);
+        requireAutoVenue(venueId);
+        db.query("select id from marketplace.booking_venues where id = ? for update", (org.springframework.jdbc.core.RowCallbackHandler) rs -> {}, venueId);
+        Integer count = db.queryForObject("select count(*) from marketplace.booking_masters where venue_id = ?", Integer.class, venueId);
+        if (count != null && count >= 20) {
+            throw new ApiException(HttpStatus.CONFLICT, "TOO_MANY_POSTS", "At most 20 posts per venue");
+        }
+        UUID id = db.queryForObject("insert into marketplace.booking_masters (venue_id, name, bio, emoji, tone, sort_order) values (?, ?, '', '🔧', 'amber', "
+                + "coalesce((select max(sort_order) + 1 from marketplace.booking_masters where venue_id = ?), 0)) returning id", UUID.class, venueId, cleanName(name), venueId);
+        db.update("insert into marketplace.booking_master_services (master_id, service_id) select ?, id from marketplace.booking_services where venue_id = ?", id, venueId);
+        for (int day = 1; day <= 6; day++) {
+            db.update("insert into marketplace.booking_working_hours (master_id, weekday, start_time, end_time) values (?, ?, '09:00', '18:00')", id, day);
+        }
+        audit(partnerId, actor, "MASTER", id, "created", null, cleanName(name));
+        return masters(actor, partnerId, venueId).stream().filter(m -> m.id().equals(id.toString())).findFirst().orElseThrow();
+    }
+
+    private void requireAutoVenue(UUID venueId) {
+        Integer auto = db.queryForObject("select count(*) from marketplace.booking_venues where id = ? and category = 'AUTO'", Integer.class, venueId);
+        if (auto == null || auto == 0) {
+            throw new ApiException(HttpStatus.CONFLICT, "NOT_AN_AUTO_VENUE", "This operation applies to automotive venues only");
+        }
+    }
+
+    private static String cleanName(String name) {
+        String n = name == null ? "" : name.strip();
+        if (n.isEmpty() || n.length() > 120) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "NAME_INVALID", "Name must be 1-120 characters");
+        }
+        return n;
+    }
+
+    private static int validDuration(int minutes) {
+        if (minutes < 15 || minutes > 240 || minutes % 15 != 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "DURATION_INVALID", "Duration must be 15-240 minutes in steps of 15");
+        }
+        return minutes;
+    }
+
+    private static long validPrice(long minor) {
+        if (minor < 0 || minor > 100_000_000_00L) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "PRICE_INVALID", "Price must be a non-negative amount in tiyn");
+        }
+        return minor;
+    }
+
+    private static String validKind(String kind) {
+        if (!java.util.Set.of("FIXED", "FROM", "DIAGNOSTIC").contains(kind)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "PRICE_KIND_INVALID", "priceKind must be FIXED, FROM or DIAGNOSTIC");
+        }
+        return kind;
+    }
+
+    private static String validConditions(String text) {
+        String t = text.strip();
+        if (t.length() > 300) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "CONDITIONS_INVALID", "Conditions are at most 300 characters");
+        }
+        return t;
     }
 
     @Transactional(readOnly = true)

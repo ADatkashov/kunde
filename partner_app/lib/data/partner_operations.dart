@@ -74,11 +74,12 @@ class PartnerOperations {
   }
 
   Future<PartnerBooking> bookingAction(String bookingId, String action,
-      {String? reason}) async {
+      {String? reason, int? finalPriceMinor}) async {
     final json = await api.postMap(
         '$_root/booking/bookings/${Uri.encodeComponent(bookingId)}/action', {
       'action': action,
       if (reason != null) 'reason': reason,
+      if (finalPriceMinor != null) 'finalPriceMinor': finalPriceMinor,
     });
     return PartnerBooking.fromJson(json);
   }
@@ -149,6 +150,64 @@ class PartnerOperations {
 
   Future<Venue> setVenueOpen(String id, bool open) async =>
       Venue.fromJson(await api.patchMap(_venue(id), {'open': open}));
+
+  /// Owner/manager only (server enforced). Only the given fields change.
+  Future<VenueService> updateService(String venueId, String serviceId,
+          {String? name,
+          int? priceMinor,
+          int? durationMinutes,
+          String? priceKind,
+          String? conditions}) async =>
+      VenueService.fromJson(await api.putMap(
+          '${_venue(venueId)}/services/${Uri.encodeComponent(serviceId)}', {
+        if (name != null) 'name': name,
+        if (priceMinor != null) 'priceMinor': priceMinor,
+        if (durationMinutes != null) 'durationMinutes': durationMinutes,
+        if (priceKind != null) 'priceKind': priceKind,
+        if (conditions != null) 'conditions': conditions,
+      }));
+
+  Future<VenueService> createService(String venueId,
+          {required String name,
+          required String autoCategory,
+          required int priceMinor,
+          required int durationMinutes,
+          String priceKind = 'FIXED',
+          String conditions = ''}) async =>
+      VenueService.fromJson(await api.postMap('${_venue(venueId)}/services', {
+        'name': name,
+        'autoCategory': autoCategory,
+        'priceMinor': priceMinor,
+        'durationMinutes': durationMinutes,
+        'priceKind': priceKind,
+        'conditions': conditions,
+      }));
+
+  Future<Master> createPost(String venueId, String name) async =>
+      Master.fromJson(
+          await api.postMap('${_venue(venueId)}/masters', {'name': name}));
+
+  Future<List<TimeOff>> timeOff(String venueId) async =>
+      (await api.getList('${_venue(venueId)}/time-off'))
+          .map(TimeOff.fromJson)
+          .toList();
+
+  Future<TimeOff> addTimeOff(String venueId,
+          {required DateTime startsAt,
+          required DateTime endsAt,
+          String? masterId,
+          String reason = ''}) async =>
+      TimeOff.fromJson(await api.postMap('${_venue(venueId)}/time-off', {
+        'startsAt': startsAt.toUtc().toIso8601String(),
+        'endsAt': endsAt.toUtc().toIso8601String(),
+        if (masterId != null) 'masterId': masterId,
+        'reason': reason,
+      }));
+
+  Future<void> removeTimeOff(String venueId, String timeOffId) async {
+    await api.deleteJson(
+        '${_venue(venueId)}/time-off/${Uri.encodeComponent(timeOffId)}');
+  }
 
   Future<List<VenueService>> services(String venueId) async =>
       (await api.getList('${_venue(venueId)}/services'))

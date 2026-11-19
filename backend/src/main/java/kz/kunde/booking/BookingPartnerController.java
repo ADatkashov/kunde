@@ -82,6 +82,24 @@ public class BookingPartnerController {
         return ok(service.setServiceAvailable(user(principal), partnerId, venueId, serviceId, request.available()));
     }
 
+    @PutMapping("/venues/{venueId}/services/{serviceId}")
+    ResponseEntity<ServiceView> updateService(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
+            @PathVariable UUID venueId, @PathVariable UUID serviceId, @Valid @RequestBody ServiceBody body) {
+        return ok(service.updateService(user(principal), partnerId, venueId, serviceId, body.toInput()));
+    }
+
+    @PostMapping("/venues/{venueId}/services")
+    ResponseEntity<ServiceView> createService(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
+            @PathVariable UUID venueId, @Valid @RequestBody ServiceBody body) {
+        return ok(service.createService(user(principal), partnerId, venueId, body.toInput()));
+    }
+
+    @PostMapping("/venues/{venueId}/masters")
+    ResponseEntity<MasterView> createPost(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
+            @PathVariable UUID venueId, @Valid @RequestBody PostBody body) {
+        return ok(service.createPost(user(principal), partnerId, venueId, body.name()));
+    }
+
     @GetMapping("/venues/{venueId}/masters")
     ResponseEntity<List<MasterView>> masters(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
             @PathVariable UUID venueId) {
@@ -133,6 +151,15 @@ public class BookingPartnerController {
 
     public record TimeOffRequest(java.util.UUID masterId, @NotNull java.time.OffsetDateTime startsAt,
             @NotNull java.time.OffsetDateTime endsAt, @Size(max = 200) String reason) {}
+
+    public record ServiceBody(@Size(max = 120) String name, @Size(max = 300) String description, @Size(max = 24) String autoCategory,
+            Integer durationMinutes, Long priceMinor, @Size(max = 12) String priceKind, @Size(max = 300) String conditions) {
+        BookingPartnerService.ServiceInput toInput() {
+            return new BookingPartnerService.ServiceInput(name, description, autoCategory, durationMinutes, priceMinor, priceKind, conditions);
+        }
+    }
+
+    public record PostBody(@NotNull @Size(min = 1, max = 120) String name) {}
 
     public record OpenRequest(@NotNull Boolean open) {}
 

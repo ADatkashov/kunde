@@ -10,6 +10,8 @@ import '../../data/partner_operations.dart';
 import '../../widgets/dialogs.dart';
 import '../../widgets/states.dart';
 import 'hours_page.dart';
+import 'service_sheet.dart';
+import 'time_off_page.dart';
 
 /// Services (availability, price, duration), specialists (active state) and
 /// their weekly schedule for one booking venue.
@@ -98,6 +100,47 @@ class _VenuePageState extends State<VenuePage> {
     }
   }
 
+  Future<void> _editService(VenueService x) async {
+    final saved = await showModalBottomSheet<VenueService>(
+        context: context,
+        isScrollControlled: true,
+        builder: (_) =>
+            ServiceSheet(ops: _ops, venueId: widget.venue.id, service: x));
+    if (saved != null && mounted) {
+      setState(() =>
+          _services = [for (final e in _services!) e.id == x.id ? saved : e]);
+    }
+  }
+
+  Future<void> _addService() async {
+    final saved = await showModalBottomSheet<VenueService>(
+        context: context,
+        isScrollControlled: true,
+        builder: (_) => ServiceSheet(ops: _ops, venueId: widget.venue.id));
+    if (saved != null && mounted) {
+      setState(() => _services = [..._services!, saved]);
+    }
+  }
+
+  Future<void> _addPost() async {
+    final s = S.of(context);
+    final name = await reasonDialog(context, title: s.postName);
+    if (name == null || !mounted) return;
+    await _run('post', () async {
+      final m = await _ops.createPost(widget.venue.id, name);
+      if (mounted) setState(() => _masters = [..._masters!, m]);
+    });
+  }
+
+  void _openTimeOff() {
+    Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => TimeOffPage(
+            ops: _ops,
+            venueId: widget.venue.id,
+            masters: _masters ?? const [],
+            canManage: widget.canManage)));
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
@@ -126,12 +169,25 @@ class _VenuePageState extends State<VenuePage> {
                           subtitle: Text(
                               '${formatMoney(x.priceMinor)} · ${s.minutesShort(x.durationMinutes)} · ${x.available ? s.dishAvailable : s.dishUnavailable}'),
                           value: x.available,
+                          secondary: widget.canManage
+                              ? IconButton(
+                                  tooltip: s.editService,
+                                  icon: const Icon(Icons.edit_rounded),
+                                  onPressed: () => _editService(x))
+                              : null,
                           onChanged: _busy.contains('s${x.id}')
                               ? null
                               : (v) => _toggleService(x, v),
                         ),
                       ),
                     ),
+                  if (widget.canManage && widget.venue.isAuto)
+                    Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: OutlinedButton.icon(
+                            onPressed: _addService,
+                            icon: const Icon(Icons.add_rounded),
+                            label: Text(s.addService))),
                   const SizedBox(height: Gap.lg),
                   _heading(context, s.mastersTitle),
                   if (masters.isEmpty) Text(s.mastersEmpty),
@@ -173,6 +229,18 @@ class _VenuePageState extends State<VenuePage> {
                         ),
                       ),
                     ),
+                  if (widget.canManage && widget.venue.isAuto)
+                    Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: OutlinedButton.icon(
+                            onPressed: _busy.contains('post') ? null : _addPost,
+                            icon: const Icon(Icons.add_rounded),
+                            label: Text(s.addPost))),
+                  const SizedBox(height: Gap.sm),
+                  OutlinedButton.icon(
+                      onPressed: _openTimeOff,
+                      icon: const Icon(Icons.event_busy_rounded),
+                      label: Text(s.timeOffTitle)),
                   const SizedBox(height: Gap.md),
                   Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Icon(Icons.info_outline_rounded,

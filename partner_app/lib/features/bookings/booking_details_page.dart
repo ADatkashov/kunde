@@ -106,6 +106,14 @@ class _Body extends StatelessWidget {
             row(s.bookingWhen, bookingWhenText(booking, locale, s)),
             if (booking.durationMinutes > 0)
               row(s.durationLabel, s.minutesShort(booking.durationMinutes)),
+            if (booking.vehicle != null) row(s.vehicleLabel, booking.vehicle!),
+            if (booking.priceKind != null && booking.priceKind != 'FIXED')
+              row(s.priceKindLabel, s.priceKind(booking.priceKind!)),
+            if (booking.finalPriceMinor != null)
+              row(
+                  s.finalPriceLabel,
+                  '${formatMoney(booking.finalPriceMinor!, currency: booking.currency)}'
+                  '${booking.priceApproval == null ? '' : ' · ${s.priceApproval(booking.priceApproval!)}'}'),
             if (booking.masterName != null)
               row(s.bookingMaster, booking.masterName!),
             if (booking.venueName.isNotEmpty)

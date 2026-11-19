@@ -86,7 +86,8 @@ void main() {
     expect(calls, 2);
   });
 
-  test('preserves the shipment idempotency key across an auth refresh', () async {
+  test('preserves the shipment idempotency key across an auth refresh',
+      () async {
     const key = 'synthetic-shipment-request-1';
     final seen = <String?>[];
     final client = MockClient((request) async {

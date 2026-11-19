@@ -105,58 +105,57 @@ class _PartnerShellState extends State<PartnerShell>
             OrdersScreen(store: _store),
             BookingsScreen(store: _store),
             BusinessScreen(
-                store: _store,
-                canManage: widget.controller.partner?.canManage ?? false,
-                fleetAction: FutureBuilder<Map<String, dynamic>>(
-                  future: _capabilities,
-                  builder: (context, snapshot) {
-                    final flags = snapshot.data;
-                    final locale = Localizations.localeOf(context).languageCode;
-                    return Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (flags?['deliveryPartnerEnabled'] == true)
-                          IconButton(
-                            tooltip: switch (locale) {
-                              'ru' => 'Доставка для бизнеса',
-                              'kk' => 'Бизнеске арналған жеткізу',
-                              _ => 'Business delivery',
-                            },
-                            icon: const Icon(Icons.inventory_2_outlined),
-                            onPressed: () => Navigator.of(context).push<void>(
-                              MaterialPageRoute(
-                                builder: (_) => BusinessDeliveryScreen(
-                                  ops: _store.ops,
-                                  synthetic:
-                                      flags?['deliverySyntheticRouting'] ==
-                                          true,
-                                ),
+              store: _store,
+              canManage: widget.controller.partner?.canManage ?? false,
+              fleetAction: FutureBuilder<Map<String, dynamic>>(
+                future: _capabilities,
+                builder: (context, snapshot) {
+                  final flags = snapshot.data;
+                  final locale = Localizations.localeOf(context).languageCode;
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (flags?['deliveryPartnerEnabled'] == true)
+                        IconButton(
+                          tooltip: switch (locale) {
+                            'ru' => 'Доставка для бизнеса',
+                            'kk' => 'Бизнеске арналған жеткізу',
+                            _ => 'Business delivery',
+                          },
+                          icon: const Icon(Icons.inventory_2_outlined),
+                          onPressed: () => Navigator.of(context).push<void>(
+                            MaterialPageRoute(
+                              builder: (_) => BusinessDeliveryScreen(
+                                ops: _store.ops,
+                                synthetic:
+                                    flags?['deliverySyntheticRouting'] == true,
                               ),
                             ),
                           ),
-                        if (flags?['ridesFleetEnabled'] == true)
-                          IconButton(
-                            tooltip: s.fleet,
-                            icon: const Icon(Icons.local_taxi_outlined),
-                            onPressed: () => Navigator.of(context).push<void>(
-                              MaterialPageRoute(
-                                builder: (_) => FleetScreen(
-                                  ops: _store.ops,
-                                  canManage:
-                                      widget.controller.partner?.canManage ??
-                                          false,
-                                  isOwner: widget.controller.partner?.isOwner ??
-                                      false,
-                                ),
+                        ),
+                      if (flags?['ridesFleetEnabled'] == true)
+                        IconButton(
+                          tooltip: s.fleet,
+                          icon: const Icon(Icons.local_taxi_outlined),
+                          onPressed: () => Navigator.of(context).push<void>(
+                            MaterialPageRoute(
+                              builder: (_) => FleetScreen(
+                                ops: _store.ops,
+                                canManage:
+                                    widget.controller.partner?.canManage ??
+                                        false,
+                                isOwner:
+                                    widget.controller.partner?.isOwner ?? false,
                               ),
                             ),
                           ),
-                      ],
-                    );
-                  },
-                ),
+                        ),
+                    ],
+                  );
+                },
               ),
-              ProfileScreen(
+            ),
+            ProfileScreen(
                 controller: widget.controller, settings: widget.settings),
           ]),
           bottomNavigationBar: NavigationBar(
