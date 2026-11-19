@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 18612)
-Total output lines: 1178
-
 [
   {
     "id": "TASK-001",
@@ -348,7 +345,456 @@ Total output lines: 1178
     "priority": "P1",
     "dependencies": [],
     "acceptance": [
-      "Behavior matches approved contract and failure state…6612 tokens truncated…"implementation_status": "in_progress",
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-011",
+    "implementation_status": "in_progress",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation. D-01 category/market approved 2026-11-13 (cohort/zone open); synthetic-data work may proceed, TASK-017 needs a web stack and partner identity contract (D-07, TASK-015), TASK-018 needs the order lifecycle (D-05/D-06); status unchanged. D-07 approved 2026-11-13 (partner roles); still needs a web stack and partner identity contract. Update 2026-11-15: partial implementation via ADR-018 (accepted for synthetic DEV): partner application and profile API (#86), offerings API with publish gated on APPROVED (#87), admin verification API (#88) and a Flutter partner section behind PARTNER_FEATURES_ENABLED (#89). Missing: admin/partner web UI, documents/KYC, device and DEV end-to-end evidence, D-01 cohort. Not Done."
+  },
+  {
+    "id": "TASK-018",
+    "epic": "EP-008",
+    "feature": "FEAT-012",
+    "name": "Partner order response queue",
+    "description": "Implement and document partner order response queue within approved architecture and scope.",
+    "area": "web",
+    "priority": "P1",
+    "dependencies": [
+      "TASK-017"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-012",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation. D-01 category/market approved 2026-11-13 (cohort/zone open); synthetic-data work may proceed, TASK-017 needs a web stack and partner identity contract (D-07, TASK-015), TASK-018 needs the order lifecycle (D-05/D-06); status unchanged."
+  },
+  {
+    "id": "TASK-019",
+    "epic": "EP-009",
+    "feature": "FEAT-013",
+    "name": "Provider operating model gate",
+    "description": "Implement and document provider operating model gate within approved architecture and scope.",
+    "area": "product",
+    "priority": "P0",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-0",
+    "user_story_id": "US-013",
+    "implementation_status": "in_progress",
+    "implementation_note": "D-02 approved 2026-11-13: phased hybrid (pickup, merchant delivery, third-party logistics), no KUNDE courier fleet at start, so no provider platform is needed for phase A. Operating-model gate is recorded in PRD 1.1 §23; remaining: partner contracts/terms for phases B/C. Not Done."
+  },
+  {
+    "id": "TASK-020",
+    "epic": "EP-009",
+    "feature": "FEAT-013",
+    "name": "Conditional provider task workflow",
+    "description": "Implement and document conditional provider task workflow within approved architecture and scope.",
+    "area": "mobile",
+    "priority": "P2",
+    "dependencies": [
+      "TASK-019"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-2",
+    "user_story_id": "US-013",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation. D-02 (2026-11-13): conditional on a provider pool; phase A pickup needs no provider workflow. Rides foundation includes lifecycle rules, pricing, ranking, routing contracts, and owner-scoped ride requests and cancellations in Flyway V22. Ride quotes merged in PR #131. Dispatch, Consumer, and Executor remain in stacked PRs. Two-app Android E2E passed on the synthetic test stack in Actions run 44455026918. Integrated-main verification and signed DEV APKs remain open. See docs/product/rides-transport.md."
+  },
+  {
+    "id": "TASK-021",
+    "epic": "EP-010",
+    "feature": "FEAT-010",
+    "name": "Order state machine and idempotency",
+    "description": "Implement and document order state machine and idempotency within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P0",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-010",
+    "implementation_status": "in_progress",
+    "implementation_note": "D-05/D-06 approved 2026-11-13 (PRD 1.1 §23). Contract-only OrderLifecycle (SUBMITTED, CHANGE_PROPOSED, ACCEPTED, SUPPORT_REVIEW, REJECTED, EXPIRED, CANCELLED) with ResponsePolicy 5 min deadline/2 min reminder (versioned config), server-clock timeout, late acceptance rejected, free cancel before acceptance, substitution only with customer approval of the exact quote version, idempotent commandId, version conflict, audit; 16 unit tests. No persistence, API, scheduler, notifications, payment link or partner role enforcement. Not Done."
+  },
+  {
+    "id": "TASK-022",
+    "epic": "EP-010",
+    "feature": "FEAT-009",
+    "name": "Cart quote and checkout API",
+    "description": "Implement and document cart quote and checkout api within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P1",
+    "dependencies": [
+      "TASK-021"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-009",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found; planning documents alone are not implementation. D-05/D-06 approved (2026-11-13) but quote/checkout also needs verified partner data (TASK-015/016), persisted order (TASK-021) and payment decisions D-03/D-04 for any charge; status unchanged."
+  },
+  {
+    "id": "TASK-023",
+    "epic": "EP-011",
+    "feature": "FEAT-028",
+    "name": "Booking requirements and lifecycle decision",
+    "description": "Implement and document booking requirements and lifecycle decision within approved architecture and scope.",
+    "area": "product",
+    "priority": "P2",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-2",
+    "user_story_id": "US-028",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
+  },
+  {
+    "id": "TASK-024",
+    "epic": "EP-011",
+    "feature": "FEAT-028",
+    "name": "Booking state and availability module",
+    "description": "Implement and document booking state and availability module within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P2",
+    "dependencies": [
+      "TASK-023"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-2",
+    "user_story_id": "US-028",
+    "implementation_status": "in_progress",
+    "implementation_note": "DEV pilot only (2026-11-15, PR #96): barbershop slots, idempotent booking, database exclusion against double booking, free cancellation before the start, DEV-mock confirmation. Missing: venue acceptance, reschedule/no-show, provider schedule tooling, other services, device verification; see docs/product/booking-mvp.md."
+  },
+  {
+    "id": "TASK-025",
+    "epic": "EP-012",
+    "feature": "FEAT-014",
+    "name": "Payment provider and funds-flow decision",
+    "description": "Implement and document payment provider and funds-flow decision within approved architecture and scope.",
+    "area": "product",
+    "priority": "P0",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-0",
+    "user_story_id": "US-014",
+    "implementation_status": "blocked",
+    "implementation_note": "Payment provider and funds-flow approval remain open."
+  },
+  {
+    "id": "TASK-026",
+    "epic": "EP-012",
+    "feature": "FEAT-014",
+    "name": "Payment adapter and verified callbacks",
+    "description": "Implement and document payment adapter and verified callbacks within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P0",
+    "dependencies": [
+      "TASK-025"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-014",
+    "implementation_status": "blocked",
+    "implementation_note": "TASK-025 provider/funds-flow approval remains open."
+  },
+  {
+    "id": "TASK-027",
+    "epic": "EP-013",
+    "feature": "FEAT-015",
+    "name": "Refund policy and approval controls",
+    "description": "Implement and document refund policy and approval controls within approved architecture and scope.",
+    "area": "product",
+    "priority": "P0",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-0",
+    "user_story_id": "US-015",
+    "implementation_status": "blocked",
+    "implementation_note": "D-06 approved for product rules (2026-11-13): free cancel before acceptance, no invented penalties. Refund policy and finance approval controls still need D-03/D-04, D-14 and legal terms; unsupported refund/penalty operations stay disabled."
+  },
+  {
+    "id": "TASK-028",
+    "epic": "EP-013",
+    "feature": "FEAT-015",
+    "name": "Reconciliation and refund workflow",
+    "description": "Implement and document reconciliation and refund workflow within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P0",
+    "dependencies": [
+      "TASK-027"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-015",
+    "implementation_status": "blocked",
+    "implementation_note": "TASK-027 approval controls and payment/funds-flow decision (D-03/D-04) remain open; D-06 does not approve refunds or settlement."
+  },
+  {
+    "id": "TASK-029",
+    "epic": "EP-014",
+    "feature": "FEAT-016",
+    "name": "Fulfillment responsibility decision",
+    "description": "Implement and document fulfillment responsibility decision within approved architecture and scope.",
+    "area": "product",
+    "priority": "P0",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-0",
+    "user_story_id": "US-016",
+    "implementation_status": "in_progress",
+    "implementation_note": "D-02 approved 2026-11-13 (PRD 1.1 §23). Contract-only phase A: FulfillmentMethod/FulfillmentPolicy (only PICKUP supportable, default all disabled) and PickupFulfillment lifecycle separate from the order (merchant-only commands, idempotent commandId, version conflict, audit); 9 unit tests. No persistence, API, order link or partner data. Merchant delivery and third-party delivery stay disabled; order lifecycle (TASK-021) still needs D-05/D-06. Not Done."
+  },
+  {
+    "id": "TASK-030",
+    "epic": "EP-014",
+    "feature": "FEAT-016",
+    "name": "Fulfillment status integration",
+    "description": "Implement and document fulfillment status integration within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P1",
+    "dependencies": [
+      "TASK-029"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-016",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation. D-02 approved (2026-11-13); pickup status contract exists only as contract; integration needs the order lifecycle (TASK-021) and verified partner data."
+  },
+  {
+    "id": "TASK-031",
+    "epic": "EP-015",
+    "feature": "FEAT-017",
+    "name": "Transactional notification adapter",
+    "description": "Implement and document transactional notification adapter within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P1",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-017",
+    "implementation_status": "in_progress",
+    "implementation_note": "Contract-only NotificationPolicy and Delivery (PRD 1.1 section 14): notification kinds, channel eligibility by consent/mandatory rules with IN_APP always present, dedup key, lock-screen text guard, distinct queued/sent/delivered/failed/dead-letter statuses with capped exponential backoff; NotificationPolicyTest. No provider (D-11), outbox, persistence, push tokens or sending; OTP, marketing and payment notifications stay disabled."
+  },
+  {
+    "id": "TASK-032",
+    "epic": "EP-015",
+    "feature": "FEAT-017",
+    "name": "Activity and notification UX",
+    "description": "Implement and document activity and notification ux within approved architecture and scope.",
+    "area": "mobile",
+    "priority": "P1",
+    "dependencies": [
+      "TASK-031"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-017",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
+  },
+  {
+    "id": "TASK-033",
+    "epic": "EP-016",
+    "feature": "FEAT-029",
+    "name": "Rating policy and moderation decision",
+    "description": "Implement and document rating policy and moderation decision within approved architecture and scope.",
+    "area": "product",
+    "priority": "P2",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-2",
+    "user_story_id": "US-029",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
+  },
+  {
+    "id": "TASK-034",
+    "epic": "EP-016",
+    "feature": "FEAT-029",
+    "name": "Reviews moderation capability",
+    "description": "Implement and document reviews moderation capability within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P2",
+    "dependencies": [
+      "TASK-033"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-2",
+    "user_story_id": "US-029",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
+  },
+  {
+    "id": "TASK-035",
+    "epic": "EP-017",
+    "feature": "FEAT-030",
+    "name": "Promotion funding and eligibility policy",
+    "description": "Implement and document promotion funding and eligibility policy within approved architecture and scope.",
+    "area": "product",
+    "priority": "P2",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-2",
+    "user_story_id": "US-030",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
+  },
+  {
+    "id": "TASK-036",
+    "epic": "EP-017",
+    "feature": "FEAT-030",
+    "name": "Promotion eligibility service",
+    "description": "Implement and document promotion eligibility service within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P2",
+    "dependencies": [
+      "TASK-035"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-2",
+    "user_story_id": "US-030",
+    "implementation_status": "not_started",
+    "implementation_note": "No implementation matching the complete task acceptance was found in main 4595309; planning documents alone are not implementation."
+  },
+  {
+    "id": "TASK-037",
+    "epic": "EP-018",
+    "feature": "FEAT-018",
+    "name": "Support case API and escalation",
+    "description": "Implement and document support case api and escalation within approved architecture and scope.",
+    "area": "backend",
+    "priority": "P1",
+    "dependencies": [],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-018",
+    "implementation_status": "in_progress",
+    "implementation_note": "Consumer-owned support cases (SUP-001), backend only: Flyway V6 support.cases/case_events; POST/GET /api/v1/me/support/cases with required Idempotency-Key (replay 200, changed payload 409), owner-scoped reads (other users get 404), idempotent consumer escalation request, technical cap of 10 cases per user; SupportCaseHttpIntegrationTest and schema constraint tests. Not linked to orders/bookings/payments (disabled, ADR-014), no staff queue, assignment, SLA, evidence attachments, notifications or resolution workflow (D-12/D-14/D-11 open). Mobile entry points are TASK-038."
+  },
+  {
+    "id": "TASK-038",
+    "epic": "EP-018",
+    "feature": "FEAT-018",
+    "name": "Customer support entry points",
+    "description": "Implement and document customer support entry points within approved architecture and scope.",
+    "area": "mobile",
+    "priority": "P1",
+    "dependencies": [
+      "TASK-037"
+    ],
+    "acceptance": [
+      "Behavior matches approved contract and failure states are explicit.",
+      "No unauthorized or duplicate consequential effect; audit/telemetry evidence is available where applicable."
+    ],
+    "tests": "Unit and integration tests for acceptance paths; negative/failure path where relevant.",
+    "definition_of_done": "Code/config reviewed; required checks pass; docs and runbook updated; security, localization and rollout implications addressed.",
+    "release": "REL-1",
+    "user_story_id": "US-018",
+    "implementation_status": "in_progress",
     "implementation_note": "Flutter SupportPanel on the signed-in profile screen over /api/v1/me/support/cases (TASK-037): list, honest empty/error/retry states, new request (topic + message, one Idempotency-Key per submission), confirmed escalation request with no response-time promise; RU/KK/EN; support_panel_test and repository tests (flutter analyze and flutter test run locally, not a device or TalkBack check). Not linked to orders, no staff replies, no notifications, no attachments; accessibility/device acceptance missing."
   },
   {
