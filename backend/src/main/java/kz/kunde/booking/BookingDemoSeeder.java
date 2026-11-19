@@ -47,11 +47,12 @@ public class BookingDemoSeeder implements ApplicationRunner {
             order++;
             UUID venueId = db.query("""
                     insert into marketplace.booking_venues (slug, category, name, description, address_text, emoji, tone,
-                        is_open, is_synthetic, sort_order) values (?, ?, ?, ?, ?, ?, ?, ?, true, ?)
+                        is_open, is_synthetic, sort_order, buffer_minutes) values (?, ?, ?, ?, ?, ?, ?, ?, true, ?, ?)
                     on conflict (slug) do nothing returning id
                     """, rs -> rs.next() ? rs.getObject(1, UUID.class) : null, v.get("slug").asText(),
                     v.get("category").asText(), v.get("name").asText(), v.get("description").asText(),
-                    v.get("address").asText(), v.get("emoji").asText(), v.get("tone").asText(), v.get("open").asBoolean(), order);
+                    v.get("address").asText(), v.get("emoji").asText(), v.get("tone").asText(), v.get("open").asBoolean(), order,
+                    v.has("bufferMinutes") ? v.get("bufferMinutes").asInt() : 0);
             if (venueId == null) { continue; }
             inserted++;
             Map<String, UUID> serviceIds = new HashMap<>();
@@ -59,13 +60,16 @@ public class BookingDemoSeeder implements ApplicationRunner {
             for (JsonNode s : v.get("services")) {
                 serviceIds.put(s.get("name").asText(), db.queryForObject("""
                         insert into marketplace.booking_services (venue_id, name, description, duration_minutes, price_minor, sort_order,
-                            price_per_sqm_minor, min_area_sqm, max_area_sqm)
-                        values (?, ?, ?, ?, ?, ?, ?, ?, ?) returning id
+                            price_per_sqm_minor, min_area_sqm, max_area_sqm, auto_category, price_kind, conditions)
+                        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning id
                         """, UUID.class, venueId, s.get("name").asText(), s.get("description").asText(),
                         s.get("duration").asInt(), s.get("price").asLong(), serviceOrder++,
                         s.has("pricePerSqm") ? s.get("pricePerSqm").asLong() : 0L,
                         s.has("minArea") ? s.get("minArea").asInt() : null,
-                        s.has("maxArea") ? s.get("maxArea").asInt() : null));
+                        s.has("maxArea") ? s.get("maxArea").asInt() : null,
+                        s.has("autoCategory") ? s.get("autoCategory").asText() : null,
+                        s.has("priceKind") ? s.get("priceKind").asText() : "FIXED",
+                        s.has("conditions") ? s.get("conditions").asText() : ""));
             }
             int masterOrder = 0;
             for (JsonNode m : v.get("masters")) {

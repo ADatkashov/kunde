@@ -45,12 +45,12 @@ public class BookingSlots {
         public boolean areaBased() { return pricePerSqmMinor > 0; }
     }
 
-    public record Venue(UUID id, String category, String name, String address, ZoneId zone) {}
+    public record Venue(UUID id, String category, String name, String address, ZoneId zone, int bufferMinutes) {}
 
     public Venue venue(UUID venueId) {
-        return db.query("select id, category, name, address_text, timezone from marketplace.booking_venues where id = ? and is_open",
+        return db.query("select id, category, name, address_text, timezone, buffer_minutes from marketplace.booking_venues where id = ? and is_open",
                 (rs, row) -> new Venue(rs.getObject(1, UUID.class), rs.getString(2), rs.getString(3), rs.getString(4),
-                        ZoneId.of(rs.getString(5))),
+                        ZoneId.of(rs.getString(5)), rs.getInt(6)),
                 venueId).stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "VENUE_NOT_FOUND",
                 "Venue is not available"));
     }
@@ -66,6 +66,11 @@ public class BookingSlots {
     }
 
     public List<Slot> freeSlots(UUID venueId, UUID serviceId, UUID masterId, LocalDate date) {
+        return freeSlots(venueId, serviceId, masterId, date, null);
+    }
+
+    /** {@code ignoreBooking}: a booking being moved does not block its own new time. */
+    public List<Slot> freeSlots(UUID venueId, UUID serviceId, UUID masterId, LocalDate date, UUID ignoreBooking) {
         Venue venue = venue(venueId);
         Service service = service(venueId, serviceId);
         ZonedDateTime now = ZonedDateTime.now(venue.zone());
@@ -88,13 +93,29 @@ public class BookingSlots {
         Instant from = dayStart.toInstant();
         Instant to = dayStart.plusDays(1).toInstant();
         Map<UUID, List<Instant[]>> busy = new LinkedHashMap<>();
+        long buffer = venue.bufferMinutes() * 60L;
         db.query("""
                 select master_id, starts_at, ends_at from transactions.bookings
-                where status in ('PENDING', 'CONFIRMED', 'COMPLETED') and starts_at < ? and ends_at > ?
+                where status in ('PENDING', 'CONFIRMED', 'CHECKED_IN', 'IN_PROGRESS', 'COMPLETED') and starts_at < ? and ends_at > ?
+                and (?::uuid is null or id <> ?::uuid)
                 """, rs -> {
                     busy.computeIfAbsent(rs.getObject(1, UUID.class), k -> new ArrayList<>())
                             .add(new Instant[] {rs.getTimestamp(2).toInstant(), rs.getTimestamp(3).toInstant()});
-                }, Timestamp.from(to), Timestamp.from(from));
+                }, Timestamp.from(to.plusSeconds(buffer)), Timestamp.from(from.minusSeconds(buffer)), ignoreBooking, ignoreBooking);
+        // Unavailable periods (holidays, repairs): venue-wide (master_id null) or for one post; no buffer applies to them.
+        Map<UUID, List<Instant[]>> off = new LinkedHashMap<>();
+        db.query("""
+                select master_id, starts_at, ends_at from marketplace.booking_time_off
+                where venue_id = ? and starts_at < ? and ends_at > ?
+                """, rs -> {
+                    UUID target = rs.getObject(1, UUID.class);
+                    Instant[] period = {rs.getTimestamp(2).toInstant(), rs.getTimestamp(3).toInstant()};
+                    for (MasterRef m : masters) {
+                        if (target == null || target.equals(m.id())) {
+                            off.computeIfAbsent(m.id(), k -> new ArrayList<>()).add(period);
+                        }
+                    }
+                }, venueId, Timestamp.from(to), Timestamp.from(from));
         int weekday = date.getDayOfWeek().getValue();
         Instant earliest = now.toInstant().plus(Duration.ofMinutes(LEAD_MINUTES));
         Duration length = Duration.ofMinutes(service.durationMinutes());
@@ -117,8 +138,10 @@ public class BookingSlots {
                 Instant stop = start.plus(length);
                 if (start.isBefore(earliest)) { continue; }
                 boolean taken = busy.getOrDefault(master.id(), List.of()).stream()
+                        .anyMatch(b -> start.isBefore(b[1].plusSeconds(buffer)) && stop.isAfter(b[0].minusSeconds(buffer)));
+                boolean closed = off.getOrDefault(master.id(), List.of()).stream()
                         .anyMatch(b -> start.isBefore(b[1]) && stop.isAfter(b[0]));
-                if (taken) { continue; }
+                if (taken || closed) { continue; }
                 Slot slot = new Slot(start.atZone(venue.zone()).toOffsetDateTime(), master.id().toString(), master.name());
                 if (masterId == null) {
                     out.putIfAbsent(start, slot);

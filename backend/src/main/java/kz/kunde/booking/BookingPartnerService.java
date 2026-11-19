@@ -28,7 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @ConditionalOnProperty(name = "app.booking.enabled", havingValue = "true")
 public class BookingPartnerService {
-    public enum Action { CONFIRM, REJECT, CANCEL, COMPLETE }
+    public enum Action { CONFIRM, REJECT, CANCEL, COMPLETE, CHECK_IN, START, NO_SHOW, PROPOSE_PRICE }
 
     public record TimelineEntry(String status, OffsetDateTime at, String actor, String reason) {}
 
@@ -36,7 +36,8 @@ public class BookingPartnerService {
             int durationMinutes, String masterId, String masterName, OffsetDateTime startsAt, OffsetDateTime endsAt,
             long priceMinor, String currency, String status, String comment, String addressText, Integer areaSqm,
             String customerRef, OffsetDateTime createdAt, String cancelledBy, String cancelReason,
-            List<String> allowedActions, List<TimelineEntry> timeline) {}
+            List<String> allowedActions, List<TimelineEntry> timeline, String vehicle, String priceKind,
+            Long finalPriceMinor, String priceApproval) {}
 
     public record VenueView(String id, String name, String category, boolean open) {}
 
@@ -65,8 +66,8 @@ public class BookingPartnerService {
         bookings.completeDue("venue_id in (select id from marketplace.booking_venues where partner_id = ?)", partnerId);
         String where = switch (scope) {
             case "requests" -> "b.status = 'PENDING'";
-            case "upcoming" -> "b.status = 'CONFIRMED'";
-            default -> "b.status in ('CANCELLED', 'COMPLETED')";
+            case "upcoming" -> "b.status in ('CONFIRMED', 'CHECKED_IN', 'IN_PROGRESS')";
+            default -> "b.status in ('CANCELLED', 'COMPLETED', 'NO_SHOW')";
         };
         String order = "history".equals(scope) ? "b.starts_at desc" : "b.starts_at asc";
         List<UUID> ids = db.queryForList("select b.id from transactions.bookings b join marketplace.booking_venues v on v.id = b.venue_id "
@@ -85,12 +86,18 @@ public class BookingPartnerService {
 
     @Transactional
     public PartnerBooking act(UUID actor, UUID partnerId, UUID bookingId, Action action, String reason) {
+        return act(actor, partnerId, bookingId, action, reason, null);
+    }
+
+    @Transactional
+    public PartnerBooking act(UUID actor, UUID partnerId, UUID bookingId, Action action, String reason, Long finalPriceMinor) {
         partners.requireProcessing(actor, partnerId);
         var row = db.query("""
-                select b.status, b.starts_at > now(), b.cancelled_by from transactions.bookings b
+                select b.status, b.starts_at > now(), b.cancelled_by, b.category, b.price_kind, b.price_approval, b.price_minor from transactions.bookings b
                 join marketplace.booking_venues v on v.id = b.venue_id
                 where b.id = ? and v.partner_id = ? for update of b
-                """, (rs, n) -> new Object[] {rs.getString(1), rs.getBoolean(2), rs.getString(3)}, bookingId, partnerId)
+                """, (rs, n) -> new Object[] {rs.getString(1), rs.getBoolean(2), rs.getString(3), rs.getString(4), rs.getString(5),
+                        rs.getString(6), rs.getLong(7)}, bookingId, partnerId)
                 .stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "BOOKING_NOT_FOUND", "Booking not found"));
         String status = (String) row[0];
         boolean future = (boolean) row[1];
@@ -117,9 +124,47 @@ public class BookingPartnerService {
             }
             case COMPLETE -> {
                 if ("COMPLETED".equals(status)) { break; }
-                require("CONFIRMED".equals(status) && !future, action, status);
-                db.update("update transactions.bookings set status = 'COMPLETED', updated_at = now(), version = version + 1 where id = ?", bookingId);
+                boolean auto = "AUTO".equals(row[3]);
+                require(auto ? "IN_PROGRESS".equals(status) : "CONFIRMED".equals(status) && !future, action, status);
+                if (auto && "PENDING".equals(row[5])) {
+                    throw new ApiException(HttpStatus.CONFLICT, "PRICE_APPROVAL_PENDING", "The customer has not approved the final price yet");
+                }
+                // FROM/DIAGNOSTIC without an approved proposal is completed at the quoted price; the final price is never invented.
+                db.update("""
+                        update transactions.bookings set status = 'COMPLETED', updated_at = now(), version = version + 1,
+                            final_price_minor = case when category = 'AUTO' and price_approval = 'APPROVED' then final_price_minor
+                                when category = 'AUTO' then price_minor else final_price_minor end where id = ?
+                        """, bookingId);
                 bookings.event(bookingId, "COMPLETED", "PARTNER", actor, null);
+            }
+            case CHECK_IN -> {
+                if ("CHECKED_IN".equals(status)) { break; }
+                require("CONFIRMED".equals(status) && "AUTO".equals(row[3]), action, status);
+                db.update("update transactions.bookings set status = 'CHECKED_IN', updated_at = now(), version = version + 1 where id = ?", bookingId);
+                bookings.event(bookingId, "CHECKED_IN", "PARTNER", actor, null);
+            }
+            case START -> {
+                if ("IN_PROGRESS".equals(status)) { break; }
+                require("CHECKED_IN".equals(status), action, status);
+                db.update("update transactions.bookings set status = 'IN_PROGRESS', updated_at = now(), version = version + 1 where id = ?", bookingId);
+                bookings.event(bookingId, "IN_PROGRESS", "PARTNER", actor, null);
+            }
+            case NO_SHOW -> {
+                if ("NO_SHOW".equals(status)) { break; }
+                require("CONFIRMED".equals(status) && !future && "AUTO".equals(row[3]), action, status);
+                db.update("update transactions.bookings set status = 'NO_SHOW', updated_at = now(), version = version + 1 where id = ?", bookingId);
+                bookings.event(bookingId, "NO_SHOW", "PARTNER", actor, null);
+            }
+            case PROPOSE_PRICE -> {
+                require("IN_PROGRESS".equals(status) && "AUTO".equals(row[3]) && !"FIXED".equals(row[4]), action, status);
+                if (finalPriceMinor == null || finalPriceMinor < 0 || finalPriceMinor > 100_000_000_00L) {
+                    throw new ApiException(HttpStatus.BAD_REQUEST, "PRICE_INVALID", "finalPriceMinor must be a non-negative amount in tiyn");
+                }
+                db.update("""
+                        update transactions.bookings set final_price_minor = ?, price_approval = 'PENDING', updated_at = now(), version = version + 1
+                        where id = ?
+                        """, finalPriceMinor, bookingId);
+                bookings.event(bookingId, "IN_PROGRESS", "PARTNER", actor, "PRICE_PROPOSED");
             }
         }
         return load(List.of(bookingId)).get(0);
@@ -285,6 +330,58 @@ public class BookingPartnerService {
         return masters(actor, partnerId, venueId).stream().filter(m -> m.id().equals(masterId.toString())).findFirst().orElseThrow();
     }
 
+    // ---- unavailable periods -------------------------------------------------------------------
+
+    public record TimeOffView(String id, String masterId, OffsetDateTime startsAt, OffsetDateTime endsAt, String reason) {}
+
+    @Transactional(readOnly = true)
+    public List<TimeOffView> timeOff(UUID actor, UUID partnerId, UUID venueId) {
+        partners.requireProcessing(actor, partnerId);
+        requireOwnedVenue(partnerId, venueId);
+        return db.query("select id, master_id, starts_at, ends_at, reason from marketplace.booking_time_off where venue_id = ? and ends_at > now() order by starts_at",
+                (rs, n) -> new TimeOffView(rs.getString(1), rs.getString(2), rs.getObject(3, OffsetDateTime.class),
+                        rs.getObject(4, OffsetDateTime.class), rs.getString(5)), venueId);
+    }
+
+    /** Refused with 409 when a pending/confirmed/active booking falls inside the period: it must be cancelled or moved first. */
+    @Transactional
+    public TimeOffView addTimeOff(UUID actor, UUID partnerId, UUID venueId, UUID masterId, OffsetDateTime from, OffsetDateTime to, String reason) {
+        partners.requireProcessing(actor, partnerId, Role.OWNER, Role.MANAGER);
+        requireOwnedVenue(partnerId, venueId);
+        if (!to.isAfter(from) || to.isAfter(from.plusDays(366))) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "TIME_OFF_INVALID", "End must be after start, at most one year");
+        }
+        if (masterId != null) {
+            Integer found = db.queryForObject("select count(*) from marketplace.booking_masters where id = ? and venue_id = ?", Integer.class, masterId, venueId);
+            if (found == null || found == 0) { throw new ApiException(HttpStatus.NOT_FOUND, "MASTER_NOT_FOUND", "Master not found"); }
+        }
+        db.query("select id from marketplace.booking_venues where id = ? for update", (org.springframework.jdbc.core.RowCallbackHandler) rs -> {}, venueId);
+        Integer clash = db.queryForObject("""
+                select count(*) from transactions.bookings where venue_id = ? and (?::uuid is null or master_id = ?::uuid)
+                and status in ('PENDING', 'CONFIRMED', 'CHECKED_IN', 'IN_PROGRESS') and starts_at < ? and ends_at > ?
+                """, Integer.class, venueId, masterId, masterId, Timestamp.from(to.toInstant()), Timestamp.from(from.toInstant()));
+        if (clash != null && clash > 0) {
+            throw new ApiException(HttpStatus.CONFLICT, "TIME_OFF_CONFLICT", "Existing bookings fall into this period");
+        }
+        String clean = reason == null ? "" : reason.strip();
+        UUID id = db.queryForObject("""
+                insert into marketplace.booking_time_off (venue_id, master_id, starts_at, ends_at, reason, created_by)
+                values (?, ?, ?, ?, ?, ?) returning id
+                """, UUID.class, venueId, masterId, Timestamp.from(from.toInstant()), Timestamp.from(to.toInstant()), clean, actor);
+        audit(partnerId, actor, "TIME_OFF", id, "created", null, from + ".." + to);
+        return new TimeOffView(id.toString(), masterId == null ? null : masterId.toString(), from, to, clean);
+    }
+
+    @Transactional
+    public void removeTimeOff(UUID actor, UUID partnerId, UUID venueId, UUID timeOffId) {
+        partners.requireProcessing(actor, partnerId, Role.OWNER, Role.MANAGER);
+        requireOwnedVenue(partnerId, venueId);
+        if (db.update("delete from marketplace.booking_time_off where id = ? and venue_id = ?", timeOffId, venueId) == 0) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "TIME_OFF_NOT_FOUND", "Period not found");
+        }
+        audit(partnerId, actor, "TIME_OFF", timeOffId, "removed", null, null);
+    }
+
     // ---- internals -----------------------------------------------------------------------------
 
     private static String abbreviate(String s) { return s.length() <= 300 ? s : s.substring(0, 297) + "..."; }
@@ -327,7 +424,7 @@ public class BookingPartnerService {
         db.query("""
                 select id, venue_id, venue_name, category, service_name, duration_minutes, master_id, master_name, starts_at, ends_at,
                        price_minor, currency, status, comment, address_text, area_sqm, user_id, created_at, cancelled_by, cancel_reason,
-                       starts_at > now() as future
+                       starts_at > now() as future, vehicle_label, price_kind, final_price_minor, price_approval
                 from transactions.bookings where id = any (?)
                 """, rs -> {
                     UUID id = rs.getObject("id", UUID.class);
@@ -335,8 +432,15 @@ public class BookingPartnerService {
                     boolean future = rs.getBoolean("future");
                     List<String> actions = new ArrayList<>();
                     if ("PENDING".equals(status) && future) { actions.add("CONFIRM"); actions.add("REJECT"); }
+                    boolean auto = "AUTO".equals(rs.getString("category"));
                     if ("CONFIRMED".equals(status) && future) { actions.add("CANCEL"); }
-                    if ("CONFIRMED".equals(status) && !future) { actions.add("COMPLETE"); }
+                    if ("CONFIRMED".equals(status) && auto) { actions.add("CHECK_IN"); }
+                    if ("CONFIRMED".equals(status) && !future) { actions.add(auto ? "NO_SHOW" : "COMPLETE"); }
+                    if ("CHECKED_IN".equals(status)) { actions.add("START"); }
+                    if ("IN_PROGRESS".equals(status)) {
+                        if (!"FIXED".equals(rs.getString("price_kind"))) { actions.add("PROPOSE_PRICE"); }
+                        if (!"PENDING".equals(rs.getString("price_approval"))) { actions.add("COMPLETE"); }
+                    }
                     byId.put(id, new PartnerBooking(id.toString(), rs.getString("venue_id"), rs.getString("venue_name"),
                             rs.getString("category"), rs.getString("service_name"), rs.getInt("duration_minutes"),
                             rs.getString("master_id"), rs.getString("master_name"), rs.getObject("starts_at", OffsetDateTime.class),
@@ -344,7 +448,8 @@ public class BookingPartnerService {
                             status, rs.getString("comment"), rs.getString("address_text"), rs.getObject("area_sqm", Integer.class),
                             rs.getString("user_id").substring(0, 8), rs.getObject("created_at", OffsetDateTime.class),
                             rs.getString("cancelled_by"), rs.getString("cancel_reason"), actions,
-                            timeline.getOrDefault(id, List.of())));
+                            timeline.getOrDefault(id, List.of()), rs.getString("vehicle_label"), rs.getString("price_kind"),
+                            rs.getObject("final_price_minor", Long.class), rs.getString("price_approval")));
                 }, (Object) array);
         return ids.stream().map(byId::get).filter(java.util.Objects::nonNull).toList();
     }

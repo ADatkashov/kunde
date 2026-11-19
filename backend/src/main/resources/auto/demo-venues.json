@@ -1,0 +1,242 @@
+{
+ "venues": [
+  {
+   "slug": "auto-demo-wash",
+   "category": "AUTO",
+   "name": "Тестовая автомойка «Демо»",
+   "description": "Вымышленная автомойка для DEV-проверки. Цены условные.",
+   "address": "Алматы, тестовый адрес 1",
+   "emoji": "🚗",
+   "tone": "blue",
+   "open": true,
+   "bufferMinutes": 15,
+   "services": [
+    {
+     "name": "Мойка кузова",
+     "description": "Бесконтактная мойка",
+     "duration": 30,
+     "price": 300000,
+     "autoCategory": "CAR_WASH",
+     "priceKind": "FIXED",
+     "conditions": "Стоимость итоговая для легкового автомобиля."
+    },
+    {
+     "name": "Комплексная мойка",
+     "description": "Кузов и салон",
+     "duration": 60,
+     "price": 700000,
+     "autoCategory": "CAR_WASH",
+     "priceKind": "FROM",
+     "conditions": "Цена от; итог согласуется после осмотра."
+    }
+   ],
+   "masters": [
+    {
+     "name": "Пост 1",
+     "bio": "Мойка",
+     "emoji": "🚿",
+     "tone": "blue",
+     "services": [
+      "Мойка кузова",
+      "Комплексная мойка"
+     ],
+     "hours": [
+      {
+       "day": 1,
+       "from": "09:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 2,
+       "from": "09:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 3,
+       "from": "09:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 4,
+       "from": "09:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 5,
+       "from": "09:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 6,
+       "from": "09:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      }
+     ]
+    },
+    {
+     "name": "Пост 2",
+     "bio": "Мойка",
+     "emoji": "🚿",
+     "tone": "blue",
+     "services": [
+      "Мойка кузова",
+      "Комплексная мойка"
+     ],
+     "hours": [
+      {
+       "day": 1,
+       "from": "09:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 2,
+       "from": "09:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 3,
+       "from": "09:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 4,
+       "from": "09:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 5,
+       "from": "09:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 6,
+       "from": "09:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "slug": "auto-demo-sto",
+   "category": "AUTO",
+   "name": "Тестовое СТО «Демо»",
+   "description": "Вымышленный сервис для DEV-проверки. Цены условные.",
+   "address": "Алматы, тестовый адрес 2",
+   "emoji": "🔧",
+   "tone": "amber",
+   "open": true,
+   "bufferMinutes": 0,
+   "services": [
+    {
+     "name": "Замена масла",
+     "description": "Масло и фильтр, работа",
+     "duration": 45,
+     "price": 1200000,
+     "autoCategory": "OIL_CHANGE",
+     "priceKind": "FROM",
+     "conditions": "Цена работы; материалы по согласованию."
+    },
+    {
+     "name": "Шиномонтаж (4 колеса)",
+     "description": "Снятие, балансировка, установка",
+     "duration": 60,
+     "price": 900000,
+     "autoCategory": "TIRE",
+     "priceKind": "FIXED",
+     "conditions": ""
+    },
+    {
+     "name": "Компьютерная диагностика",
+     "description": "Считывание ошибок и осмотр",
+     "duration": 60,
+     "price": 800000,
+     "autoCategory": "DIAGNOSTICS",
+     "priceKind": "DIAGNOSTIC",
+     "conditions": "Ремонт по результатам согласуется отдельно."
+    }
+   ],
+   "masters": [
+    {
+     "name": "Пост А",
+     "bio": "Универсальный пост",
+     "emoji": "🔧",
+     "tone": "amber",
+     "services": [
+      "Замена масла",
+      "Шиномонтаж (4 колеса)",
+      "Компьютерная диагностика"
+     ],
+     "hours": [
+      {
+       "day": 1,
+       "from": "09:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 2,
+       "from": "09:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 3,
+       "from": "09:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 4,
+       "from": "09:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 5,
+       "from": "09:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 6,
+       "from": "09:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -70,6 +70,9 @@ public class BookingService {
             return new Booked(view(user, (UUID) existing.get()[0]), false);
         }
         var venue = slots.venue(request.venueId());
+        if ("AUTO".equals(venue.category())) {
+            throw new ApiException(HttpStatus.CONFLICT, "USE_AUTO_API", "Automotive services are booked through /api/v1/auto");
+        }
         var service = slots.service(request.venueId(), request.serviceId());
         boolean home = "CLEANING".equals(venue.category());
         String address = request.addressText() == null || request.addressText().isBlank() ? null : request.addressText().strip();
@@ -177,7 +180,7 @@ public class BookingService {
     /** Lazy transitions on read: finished confirmed visits are COMPLETED; a request nobody answered before the start expires. */
     void completeDue(String scope, Object arg) {
         for (UUID id : db.queryForList("select id from transactions.bookings where " + scope
-                + " and status = 'CONFIRMED' and ends_at <= now() for update", UUID.class, arg)) {
+                + " and status = 'CONFIRMED' and category <> 'AUTO' and ends_at <= now() for update", UUID.class, arg)) {
             db.update("update transactions.bookings set status = 'COMPLETED', updated_at = now(), version = version + 1 where id = ?", id);
             event(id, "COMPLETED", "SYSTEM", null, null);
         }

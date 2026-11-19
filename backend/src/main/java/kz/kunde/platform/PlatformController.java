@@ -15,16 +15,19 @@ public class PlatformController {
     private final boolean bookingEnabled;
     private final RidesFlags rides;
     private final DeliveryProperties delivery;
+    private final boolean autoEnabled;
 
     public PlatformController(@Value("${app.security.oidc.issuer-uri:}") String issuerUri,
             @Value("${app.security.oidc.audience:}") String audience,
             @Value("${app.food.enabled:false}") boolean foodEnabled,
-            @Value("${app.booking.enabled:false}") boolean bookingEnabled, RidesFlags rides, DeliveryProperties delivery) {
+            @Value("${app.booking.enabled:false}") boolean bookingEnabled, RidesFlags rides, DeliveryProperties delivery,
+            @Value("${app.auto.enabled:false}") boolean autoEnabled) {
         this.oidcConfigured = !issuerUri.isBlank() && !audience.isBlank();
         this.foodEnabled = foodEnabled;
         this.bookingEnabled = bookingEnabled;
         this.rides = rides;
         this.delivery = delivery;
+        this.autoEnabled = autoEnabled && bookingEnabled;
     }
 
 
@@ -34,7 +37,7 @@ public class PlatformController {
                 rides.partnerAvailable(), delivery.consumerAvailable(),
                 delivery.enabled() && delivery.partnerEnabled(),
                 delivery.enabled() && delivery.syntheticRoutingEnabled(),
-                delivery.enabled() && delivery.executorEnabled());
+                delivery.enabled() && delivery.executorEnabled(), autoEnabled);
     }
 
     public record PlatformCapabilities(
@@ -44,5 +47,5 @@ public class PlatformController {
             boolean aiEnabled,
             boolean bookingEnabled,
             boolean ridesEnabled, boolean ridesFleetEnabled, boolean deliveryEnabled, boolean deliveryPartnerEnabled,
-            boolean deliverySyntheticRouting, boolean deliveryExecutorEnabled) {}
+            boolean deliverySyntheticRouting, boolean deliveryExecutorEnabled, boolean autoEnabled) {}
 }
