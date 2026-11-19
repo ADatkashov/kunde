@@ -43,6 +43,7 @@ paths:
                   oidcIssuerConfigured: { type: boolean, example: false }
                   aiEnabled: { type: boolean, example: false }
                   deliveryEnabled: { type: boolean, example: false }
+                  deliveryPartnerEnabled: { type: boolean, example: false }
   /deliveries/quotes:
     post:
       operationId: createDeliveryQuote

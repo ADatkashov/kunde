@@ -54,10 +54,10 @@ public class DeliveryDispatch {
     }
 
     @Transactional
-    public void search(UUID sender, UUID id) {
+    public void search(UUID sender, UUID partner, UUID id) {
         requireDispatch();
         var trip = lock(id);
-        if (!sender.equals(trip.sender())) {
+        if (!senderScope(trip, sender, partner)) {
             throw missing();
         }
         if (trip.state() == DeliveryState.CREATED) {
@@ -92,7 +92,7 @@ public class DeliveryDispatch {
                                   where o.delivery_id = ? and o.courier_id = c.user_id)
                 """ + AVAILABLE, (rs, row) -> new Candidate(rs.getObject("user_id", UUID.class),
                         RideMatching.distanceMeters(pickup, new Point(rs.getDouble("latitude"), rs.getDouble("longitude")))),
-                trip.quote(), sender, id);
+                trip.quote(), trip.sender(), id);
         candidates.stream().filter(candidate -> candidate.distance() <= 5000)
                 .min(Comparator.comparingDouble(Candidate::distance).thenComparing(Candidate::id))
                 .ifPresent(candidate -> db.update("""
@@ -143,7 +143,7 @@ public class DeliveryDispatch {
         }
         if (!accept) {
             db.update("update transactions.delivery_offers set state = 'REJECTED' where id = ?", offerId);
-            search(trip.sender(), id);
+            search(trip.sender(), trip.partner(), id);
             return;
         }
         db.queryForObject("select id from identity.users where id = ? for no key update", UUID.class, courier);
@@ -210,9 +210,9 @@ public class DeliveryDispatch {
     }
 
     @Transactional
-    public HandoffCode issueCode(UUID sender, UUID id) {
+    public HandoffCode issueCode(UUID sender, UUID partner, UUID id) {
         var trip = lock(id);
-        if (!sender.equals(trip.sender())) {
+        if (!senderScope(trip, sender, partner)) {
             throw missing();
         }
         if (trip.state() != DeliveryState.IN_TRANSIT || handoffKey.length < 32) {
@@ -274,9 +274,9 @@ public class DeliveryDispatch {
     }
 
     private Trip lock(UUID id) {
-        return db.query("select id, user_id, quote_id, courier_id, status from transactions.deliveries where id = ? for update",
+        return db.query("select id, user_id, partner_id, quote_id, courier_id, status from transactions.deliveries where id = ? for update",
                 (rs, row) -> new Trip(rs.getObject("id", UUID.class), rs.getObject("user_id", UUID.class),
-                        rs.getObject("quote_id", UUID.class), rs.getObject("courier_id", UUID.class),
+                        rs.getObject("partner_id", UUID.class), rs.getObject("quote_id", UUID.class), rs.getObject("courier_id", UUID.class),
                         DeliveryState.valueOf(rs.getString("status"))), id)
                 .stream().findFirst().orElseThrow(DeliveryDispatch::missing);
     }
@@ -289,7 +289,7 @@ public class DeliveryDispatch {
                 insert into transactions.delivery_events(delivery_id, actor_id, status, reason)
                 values (?, ?, cast(? as transactions.delivery_state), ?)
                 """, trip.id(), actor, state.name(), reason);
-        return new Trip(trip.id(), trip.sender(), trip.quote(), trip.courier(), state);
+        return new Trip(trip.id(), trip.sender(), trip.partner(), trip.quote(), trip.courier(), state);
     }
 
     private DeliveryState replay(Trip trip, DeliveryState state, UUID actor) {
@@ -325,7 +325,11 @@ public class DeliveryDispatch {
     }
 
     private record Candidate(UUID id, double distance) {}
-    private record Trip(UUID id, UUID sender, UUID quote, UUID courier, DeliveryState state) {}
+    private record Trip(UUID id, UUID sender, UUID partner, UUID quote, UUID courier, DeliveryState state) {}
+
+    private static boolean senderScope(Trip trip, UUID actor, UUID partner) {
+        return partner == null ? trip.partner() == null && actor.equals(trip.sender()) : partner.equals(trip.partner());
+    }
     public record Offer(UUID id, UUID deliveryId, OffsetDateTime expiresAt, String parcelType, int weightGrams,
             int lengthCm, int widthCm, int heightCm, int distanceMeters, boolean syntheticRoute) {}
     public record CourierShipment(UUID id, DeliveryState status, String parcelType, String pickupAddress,
