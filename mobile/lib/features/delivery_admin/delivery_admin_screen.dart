@@ -76,8 +76,21 @@ class _DeliveryAdminScreenState extends State<DeliveryAdminScreen> {
             icon: const Icon(Icons.bar_chart_outlined),
             onPressed: () => showDialog<void>(
               context: context,
-              builder: (_) =>
-                  _ShipmentSummary(auth: widget.auth, statusLabel: _status),
+              builder: (context) => AlertDialog(
+                scrollable: true,
+                title: Text(s.t('Сводка по отправлениям',
+                    'Жөнелтілімдер жиынтығы', 'Shipment summary')),
+                content: SizedBox(
+                  width: 420,
+                  child: DeliverySummaryPanel(
+                      auth: widget.auth, statusLabel: _status),
+                ),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(s.back))
+                ],
+              ),
             ),
           ),
         IconButton(
@@ -254,17 +267,17 @@ class _DeliveryAdminScreenState extends State<DeliveryAdminScreen> {
       };
 }
 
-class _ShipmentSummary extends StatefulWidget {
-  const _ShipmentSummary({required this.auth, required this.statusLabel});
+class DeliverySummaryPanel extends StatefulWidget {
+  const DeliverySummaryPanel({required this.auth, this.statusLabel, super.key});
 
   final AuthRepository auth;
-  final String Function(String, RideStrings) statusLabel;
+  final String Function(String, RideStrings)? statusLabel;
 
   @override
-  State<_ShipmentSummary> createState() => _ShipmentSummaryState();
+  State<DeliverySummaryPanel> createState() => _ShipmentSummaryState();
 }
 
-class _ShipmentSummaryState extends State<_ShipmentSummary> {
+class _ShipmentSummaryState extends State<DeliverySummaryPanel> {
   int _days = 7;
   late Future<Map<String, dynamic>> _summary = _load();
 
@@ -285,81 +298,88 @@ class _ShipmentSummaryState extends State<_ShipmentSummary> {
     });
   }
 
+  String _statusLabel(String state, RideStrings s) => switch (state) {
+        'CREATED' => s.t('Создано', 'Жасалды', 'Created'),
+        'DELIVERED' || 'COMPLETED' => s.t('Вручено', 'Тапсырылды', 'Delivered'),
+        'IN_TRANSIT' => s.t('В пути', 'Жолда', 'In transit'),
+        'RETURNED_TO_SENDER' => s.t('Возвращено', 'Қайтарылды', 'Returned'),
+        _ => state,
+      };
+
   @override
   Widget build(BuildContext context) {
     final s = RideStrings(context);
-    return AlertDialog(
-      scrollable: true,
-      title: Text(s.t('Сводка по отправлениям', 'Жөнелтілімдер жиынтығы',
-          'Shipment summary')),
-      content: SizedBox(
-        width: 420,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DropdownButton<int>(
-              value: _days,
-              isExpanded: true,
-              items: [
-                for (final days in [1, 7, 30])
-                  DropdownMenuItem(
-                      value: days,
-                      child: Text(s.t(
-                        'Последние ${days * 24} ч',
-                        'Соңғы ${days * 24} сағ',
-                        'Last ${days * 24} hours',
-                      ))),
-              ],
-              onChanged: _refresh,
-            ),
-            FutureBuilder(
-              future: _summary,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return const LinearProgressIndicator();
-                }
-                if (snapshot.hasError) {
-                  return TextButton(
-                      onPressed: () => _refresh(), child: Text(s.retry));
-                }
-                final result = snapshot.requireData;
-                final total = result['total'] as int;
-                final counts =
-                    (result['byStatus'] as List).cast<Map<String, dynamic>>();
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(s.t(
-                        'Всего отправлений · $total',
-                        'Барлық жөнелтілім · $total',
-                        'Total shipments · $total')),
-                    for (final count in counts)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                                '${widget.statusLabel(count['status'] as String, s)} · ${count['shipments']}'),
-                            if (total > 0)
-                              ExcludeSemantics(
-                                child: LinearProgressIndicator(
-                                    value: (count['shipments'] as int) / total),
-                              ),
-                          ],
-                        ),
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          DropdownButton<int>(
+            value: _days,
+            isExpanded: true,
+            items: [
+              for (final days in [1, 7, 30])
+                DropdownMenuItem(
+                    value: days,
+                    child: Text(s.t(
+                      'Последние ${days * 24} ч',
+                      'Соңғы ${days * 24} сағ',
+                      'Last ${days * 24} hours',
+                    ))),
+            ],
+            onChanged: _refresh,
+          ),
+          FutureBuilder(
+            future: _summary,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return const LinearProgressIndicator();
+              }
+              if (snapshot.hasError) {
+                return TextButton(
+                    onPressed: () => _refresh(), child: Text(s.retry));
+              }
+              final result = snapshot.requireData;
+              final total = result['total'] as int;
+              final counts =
+                  (result['byStatus'] as List).cast<Map<String, dynamic>>();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                          s.t(
+                              'Всего отправлений · $total',
+                              'Барлық жөнелтілім · $total',
+                              'Total shipments · $total'),
+                          style: Theme.of(context).textTheme.titleLarge),
+                    ),
+                  ),
+                  for (final count in counts)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                              '${(widget.statusLabel ?? _statusLabel)(count['status'] as String, s)} · ${count['shipments']}'),
+                          if (total > 0)
+                            ExcludeSemantics(
+                              child: LinearProgressIndicator(
+                                  value: (count['shipments'] as int) / total),
+                            ),
+                        ],
                       ),
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(s.back))
-      ],
     );
   }
 }

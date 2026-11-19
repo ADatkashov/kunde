@@ -93,23 +93,140 @@ class _RideAdminScreenState extends State<RideAdminScreen> {
           }
           return LayoutBuilder(
             builder: (context, constraints) {
-              final columns = switch (constraints.maxWidth) {
-                >= 1200 => 3,
-                >= 760 => 2,
-                _ => 1,
-              };
-              final width =
-                  (constraints.maxWidth - 32 - 12 * (columns - 1)) / columns;
-              return SingleChildScrollView(
+              final wide = constraints.maxWidth >= 1040;
+              final railWidth = wide ? 224.0 : 0.0;
+              final contentWidth = constraints.maxWidth - railWidth;
+              final columns = contentWidth >= 1080
+                  ? 3
+                  : contentWidth >= 650
+                      ? 2
+                      : 1;
+              final width = (contentWidth - 32 - 12 * (columns - 1)) / columns;
+              final canReadDelivery = deliveryShipmentRead ||
+                  permissions.contains('DELIVERY_OPERATIONS');
+              final content = SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
-                child: Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    for (final workspace in workspaces)
-                      SizedBox(width: width, child: workspace),
+                    Text(
+                      s.t('Главная панель', 'Басты панель', 'Overview'),
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    const SizedBox(height: 12),
+                    if (canReadDelivery)
+                      Card(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.local_shipping_outlined,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .tertiary),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                      child: Text('Delivery',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleLarge)),
+                                ],
+                              ),
+                            ),
+                            DeliverySummaryPanel(auth: widget.auth),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 16),
+                    ExpansionTile(
+                      leading: const Icon(Icons.shield_outlined),
+                      title: Text(s.t('Мои разрешения', 'Менің рұқсаттарым',
+                          'My permissions')),
+                      children: [
+                        if (deliveryShipmentRead &&
+                            !permissions.contains('DELIVERY_OPERATIONS'))
+                          ListTile(
+                              title: Text(s.t(
+                                  'Delivery · чтение в назначенной области',
+                                  'Delivery · тағайындалған ауқымда оқу',
+                                  'Delivery · scoped read'))),
+                        for (final permission in permissions)
+                          ListTile(title: Text(permission)),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        for (final workspace in workspaces)
+                          SizedBox(width: width, child: workspace),
+                      ],
+                    ),
                   ],
                 ),
+              );
+              if (!wide) return content;
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    width: railWidth,
+                    child: Material(
+                      color: const Color(0xff281945),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const Text('KUNDE',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 24)),
+                            const SizedBox(height: 20),
+                            if (canReadDelivery)
+                              ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                textColor: Colors.white,
+                                iconColor: Colors.white,
+                                leading:
+                                    const Icon(Icons.local_shipping_outlined),
+                                title: const Text('Delivery'),
+                                onTap: () => Navigator.of(context)
+                                    .push<void>(MaterialPageRoute(
+                                  builder: (_) => DeliveryAdminScreen(
+                                    auth: widget.auth,
+                                    area: DeliveryAdminArea.shipments,
+                                    canRequestReturn: permissions
+                                        .contains('DELIVERY_OPERATIONS'),
+                                  ),
+                                )),
+                              ),
+                            if (permissions.contains('ADMIN_GRANTS'))
+                              ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                textColor: Colors.white,
+                                iconColor: Colors.white,
+                                leading: const Icon(Icons.badge_outlined),
+                                title: Text(s.t(
+                                    'Сотрудники', 'Қызметкерлер', 'Employees')),
+                                onTap: () => Navigator.of(context)
+                                    .push<void>(MaterialPageRoute(
+                                  builder: (_) =>
+                                      AdminEmployeeScreen(auth: widget.auth),
+                                )),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(child: content),
+                ],
               );
             },
           );
