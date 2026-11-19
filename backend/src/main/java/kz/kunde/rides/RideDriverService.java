@@ -1,6 +1,7 @@
 package kz.kunde.rides;
 
 import java.util.List;
+import java.time.OffsetDateTime;
 import java.util.Locale;
 import java.util.UUID;
 import kz.kunde.platform.ApiException;
@@ -135,6 +136,16 @@ public class RideDriverService {
         return profile(driver);
     }
 
+    public List<ReviewEvent> audit(UUID driver) {
+        profile(driver);
+        return db.query("""
+                select id, vehicle_id, reviewer_id, status, occurred_at
+                from transactions.ride_driver_review_events where driver_id = ? order by id desc limit 100
+                """, (rs, row) -> new ReviewEvent(rs.getLong(1), rs.getObject(2, UUID.class),
+                        rs.getObject(3, UUID.class), Status.valueOf(rs.getString(4)),
+                        rs.getObject(5, OffsetDateTime.class)), driver);
+    }
+
     private void requireExecutor() {
         if (!flags.executorAvailable()) {
             throw notFound("RIDES_EXECUTOR_UNAVAILABLE", "Rides executor is unavailable");
@@ -166,6 +177,7 @@ public class RideDriverService {
 
     public enum Status { PENDING, APPROVED, BLOCKED }
     public enum Decision { APPROVED, BLOCKED }
+    public record ReviewEvent(long id, UUID vehicleId, UUID reviewerId, Status status, OffsetDateTime occurredAt) {}
     public record Driver(UUID userId, String displayName, Status status, boolean online, Vehicle vehicle) {}
     public record Vehicle(UUID id, String description, String plate, RideClass rideClass, Status status) {}
 }

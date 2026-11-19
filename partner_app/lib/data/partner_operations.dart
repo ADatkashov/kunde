@@ -11,6 +11,18 @@ class PartnerOperations {
 
   String get _root => 'partner/partners/${Uri.encodeComponent(partnerId)}';
 
+  Future<bool> fleetEnabled() async =>
+      (await api.getMap('capabilities'))['ridesFleetEnabled'] == true;
+
+  Future<Map<String, dynamic>> fleet() => api.getMap('$_root/rides/fleet');
+
+  Future<Map<String, dynamic>> applyFleet() =>
+      api.postMap('$_root/rides/fleet', {});
+
+  Future<Map<String, dynamic>> assignFleetDriver(String driver, bool attach) =>
+      api.putMap('$_root/rides/fleet/drivers/${Uri.encodeComponent(driver)}',
+          {'attach': attach});
+
   // ── Food orders ───────────────────────────────────────────────────
   Future<List<PartnerOrder>> orders(
       {required bool history, int limit = 30, int offset = 0}) async {

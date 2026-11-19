@@ -27,7 +27,7 @@ public class PlatformController {
 
     @GetMapping("/capabilities")
     public PlatformCapabilities capabilities() {
-        return new PlatformCapabilities("FOUNDATION", foodEnabled, oidcConfigured, false, bookingEnabled, rides.consumerAvailable());
+        return new PlatformCapabilities("FOUNDATION", foodEnabled, oidcConfigured, false, bookingEnabled, rides.consumerAvailable(), rides.partnerAvailable());
     }
 
     public record PlatformCapabilities(
@@ -36,5 +36,5 @@ public class PlatformController {
             boolean oidcIssuerConfigured,
             boolean aiEnabled,
             boolean bookingEnabled,
-            boolean ridesEnabled) {}
+            boolean ridesEnabled, boolean ridesFleetEnabled) {}
 }

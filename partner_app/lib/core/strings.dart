@@ -32,6 +32,40 @@ class S {
   String get navBusiness => _t('Заведение', 'Мекеме', 'Business');
   String get navProfile => _t('Профиль', 'Профиль', 'Profile');
 
+  String get fleet => _t('Автопарк', 'Автопарк', 'Fleet');
+  String get fleetApply =>
+      _t('Подать заявку', 'Өтінім беру', 'Apply for fleet approval');
+  String get fleetMissing => _t('Автопарк ещё не зарегистрирован',
+      'Автопарк әлі тіркелмеген', 'No fleet registered');
+  String get fleetDrivers => _t('Водители и автомобили',
+      'Жүргізушілер мен көліктер', 'Drivers and vehicles');
+  String get fleetAssign =>
+      _t('Добавить водителя', 'Жүргізушіні қосу', 'Attach driver');
+  String get fleetDetach =>
+      _t('Отвязать водителя', 'Жүргізушіні ажырату', 'Detach driver');
+  String get fleetTrips => _t('Поездки', 'Сапарлар', 'Trips');
+  String get fleetTest => _t('Тестовая поездка', 'Сынақ сапары', 'Test trip');
+  String fleetStats(int active, int complete) => _t(
+      'Активные: $active · Завершённые: $complete',
+      'Белсенді: $active · Аяқталған: $complete',
+      'Active: $active · Completed: $complete');
+  String fleetStatus(String status) => switch (status) {
+        'APPROVED' => _t('Одобрено', 'Мақұлданды', 'Approved'),
+        'PENDING' => _t('На проверке', 'Тексерілуде', 'Under review'),
+        'BLOCKED' => _t('Заблокировано', 'Бұғатталды', 'Blocked'),
+        'DRIVER_ASSIGNED' ||
+        'DRIVER_ARRIVING' ||
+        'DRIVER_ARRIVED' =>
+          _t('Водитель назначен', 'Жүргізуші тағайындалды', 'Driver assigned'),
+        'IN_PROGRESS' => _t('В поездке', 'Сапарда', 'In progress'),
+        'COMPLETED' => _t('Завершена', 'Аяқталды', 'Completed'),
+        _ => _t('Поездка завершена или отменена',
+            'Сапар аяқталды немесе тоқтатылды', 'Trip ended or cancelled'),
+      };
+  String fleetAvailability(bool online) => online
+      ? _t('На линии', 'Желіде', 'Online')
+      : _t('Не на линии', 'Желіде емес', 'Offline');
+
   // ── Common ──────────────────────────────────────────────────────────
   String get retry => _t('Повторить', 'Қайталау', 'Retry');
   String get refresh => _t('Обновить', 'Жаңарту', 'Refresh');
