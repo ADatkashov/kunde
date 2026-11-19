@@ -31,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
         "app.delivery.synthetic-routing-enabled=true",
         "app.delivery.executor-enabled=true",
         "app.delivery.dispatch-enabled=true",
+        "app.delivery.partner-enabled=true",
         "DELIVERY_HANDOFF_KEY=synthetic-handoff-fixture-only-000000000",
         "app.delivery.base-kzt=400",
         "app.delivery.per-km-kzt=200",
@@ -178,6 +179,61 @@ class DeliveryApiIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("COMPLETED"));
         http.perform(get(PATH + "/" + id).with(owner)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("COMPLETED"));
+    }
+
+    @Test
+    void organizationCannotUseAnotherOrganizationsQuoteOrReadItsShipments() throws Exception {
+        UUID owner = db.queryForObject("insert into identity.users default values returning id", UUID.class);
+        UUID coworker = db.queryForObject("insert into identity.users default values returning id", UUID.class);
+        UUID outsider = db.queryForObject("insert into identity.users default values returning id", UUID.class);
+        UUID first = organization(owner, "First synthetic partner");
+        UUID second = organization(outsider, "Second synthetic partner");
+        db.update("""
+                insert into marketplace.partner_staff(partner_id, user_id, role, granted_by_user_id)
+                values (?, ?, 'OPERATOR', ?), (?, ?, 'MANAGER', ?)
+                """, first, coworker, owner, second, owner, outsider);
+        String path = "/api/v1/partner/partners/" + first + "/deliveries";
+        String otherPath = "/api/v1/partner/partners/" + second + "/deliveries";
+        var quote = http.perform(post(path + "/quotes").with(partner(owner))
+                        .contentType(MediaType.APPLICATION_JSON).content(QUOTE))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        String quoteId = JsonPath.read(quote, "$.id");
+        String create = """
+                {"quoteId":"%s","pickupAddress":"[TEST] Warehouse","destinationAddress":"[TEST] Recipient",
+                 "recipientName":"Test Recipient","recipientPhone":"+77000000000",
+                 "description":"Documents","allowedGoodsConfirmed":true}
+                """.formatted(quoteId);
+        String key = UUID.randomUUID().toString();
+        http.perform(post(otherPath).with(partner(owner)).header("Idempotency-Key", key)
+                        .contentType(MediaType.APPLICATION_JSON).content(create)).andExpect(status().isConflict());
+        var created = http.perform(post(path).with(partner(owner)).header("Idempotency-Key", key)
+                        .contentType(MediaType.APPLICATION_JSON).content(create))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        String id = JsonPath.read(created, "$.id");
+        http.perform(get(path + "/" + id).with(partner(outsider))).andExpect(status().isNotFound());
+        http.perform(get(otherPath + "/" + id).with(partner(owner))).andExpect(status().isNotFound());
+        http.perform(get(path + "/" + id).with(partner(coworker))).andExpect(status().isOk());
+        http.perform(get(path + "/totals").with(partner(owner))).andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].quotedTotalKzt").value(1050));
+        http.perform(post(path + "/" + id + "/cancel").with(partner(coworker)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("CANCELLED_BY_CUSTOMER"));
+    }
+
+    private UUID organization(UUID owner, String name) {
+        UUID id = db.queryForObject("""
+                insert into marketplace.partners(display_name, created_by_user_id, verification_status)
+                values (?, ?, 'APPROVED') returning id
+                """, UUID.class, name, owner);
+        db.update("""
+                insert into marketplace.partner_staff(partner_id, user_id, role, granted_by_user_id)
+                values (?, ?, 'OWNER', ?)
+                """, id, owner, owner);
+        return id;
+    }
+
+    private static RequestPostProcessor partner(UUID user) {
+        return jwt().jwt(token -> token.issuer("https://identity.example.test").subject(user.toString())
+                .claim("typ", "Bearer").claim("azp", "kunde-consumer").claim("scope", "kunde.consumer kunde.partner"));
     }
 
     private static RequestPostProcessor customer(String subject) {

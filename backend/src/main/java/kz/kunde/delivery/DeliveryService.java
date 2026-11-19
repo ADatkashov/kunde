@@ -40,8 +40,8 @@ public class DeliveryService {
         this.routing = routing;
     }
 
-    public Quote quote(UUID user, QuoteRequest request) {
-        requireIntake();
+    public Quote quote(UUID user, UUID partner, QuoteRequest request) {
+        requireIntake(partner);
         if (request.weightGrams() > settings.maxWeightGrams()
                 || Math.max(request.lengthCm(), Math.max(request.widthCm(), request.heightCm())) > settings.maxSideCm()) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "DELIVERY_LIMIT_EXCEEDED",
@@ -72,46 +72,46 @@ public class DeliveryService {
         }
         return db.queryForObject("""
                 insert into transactions.delivery_quotes
-                    (user_id, parcel_type, weight_grams, length_cm, width_cm, height_cm, pickup_latitude,
+                    (user_id, partner_id, parcel_type, weight_grams, length_cm, width_cm, height_cm, pickup_latitude,
                      pickup_longitude, destination_latitude, destination_longitude, distance_meters, duration_seconds,
                      synthetic_route, tariff_version, amount_kzt, created_at, expires_at)
-                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, statement_timestamp(),
+                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, statement_timestamp(),
                         statement_timestamp() + (? * interval '1 second'))
                 returning id, created_at, expires_at
                 """, (rs, row) -> new Quote(rs.getObject("id", UUID.class), settings.tariffVersion(), amount, "KZT",
                         route.distanceMeters(), route.durationSeconds(), route.synthetic(),
                         rs.getObject("created_at", OffsetDateTime.class), rs.getObject("expires_at", OffsetDateTime.class)),
-                user, request.parcelType().name(), request.weightGrams(), request.lengthCm(), request.widthCm(),
+                user, partner, request.parcelType().name(), request.weightGrams(), request.lengthCm(), request.widthCm(),
                 request.heightCm(), request.pickup().latitude(), request.pickup().longitude(),
                 request.destination().latitude(), request.destination().longitude(), route.distanceMeters(),
                 route.durationSeconds(), route.synthetic(), settings.tariffVersion(), amount, settings.quoteLifetimeSeconds());
     }
 
     @Transactional
-    public Creation create(UUID user, String key, CreateRequest request) {
+    public Creation create(UUID user, UUID partner, String key, CreateRequest request) {
         if (key == null || !REQUEST_KEY.matcher(key).matches()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_IDEMPOTENCY_KEY", "Invalid Idempotency-Key");
         }
-        var prior = replay(user, key, request);
+        var prior = replay(user, partner, key, request);
         if (prior != null) {
             return prior;
         }
-        requireIntake();
+        requireIntake(partner);
         var inserted = db.query("""
                 insert into transactions.deliveries
-                    (user_id, quote_id, request_key, pickup_address, destination_address, recipient_name,
+                    (user_id, partner_id, quote_id, request_key, pickup_address, destination_address, recipient_name,
                      recipient_phone, description, courier_note, status)
-                select user_id, id, ?, ?, ?, ?, ?, ?, ?, 'CREATED'
+                select user_id, partner_id, id, ?, ?, ?, ?, ?, ?, ?, 'CREATED'
                 from transactions.delivery_quotes
-                where user_id = ? and id = ? and expires_at > statement_timestamp()
+                where user_id = ? and id = ? and partner_id is not distinct from cast(? as uuid) and expires_at > statement_timestamp()
                     and (not synthetic_route or ?)
                 on conflict do nothing
                 returning id
                 """, (rs, row) -> rs.getObject("id", UUID.class), key, request.pickupAddress(),
                 request.destinationAddress(), request.recipientName(), request.recipientPhone(), request.description(),
-                request.courierNote(), user, request.quoteId(), settings.syntheticRoutingEnabled());
+                request.courierNote(), user, request.quoteId(), partner, settings.syntheticRoutingEnabled());
         if (inserted.isEmpty()) {
-            prior = replay(user, key, request);
+            prior = replay(user, partner, key, request);
             if (prior != null) {
                 return prior;
             }
@@ -120,12 +120,12 @@ public class DeliveryService {
         }
         UUID id = inserted.getFirst();
         recordState(id, user, DeliveryState.CREATED);
-        return new Creation(get(user, id), true);
+        return new Creation(get(user, partner, id), true);
     }
 
-    private Creation replay(UUID user, String key, CreateRequest request) {
-        var previous = db.query(ORDERS + " where d.user_id = ? and d.request_key = ?",
-                DeliveryService::readOrder, user, key);
+    private Creation replay(UUID user, UUID partner, String key, CreateRequest request) {
+        var previous = db.query(ORDERS + " where d.user_id = ? and d.request_key = ? and d.partner_id is not distinct from cast(? as uuid)",
+                DeliveryService::readOrder, user, key, partner);
         if (previous.isEmpty()) {
             return null;
         }
@@ -142,31 +142,46 @@ public class DeliveryService {
         return new Creation(order, false);
     }
 
-    public List<Order> list(UUID user, int limit, int offset) {
-        return db.query(ORDERS + " where d.user_id = ? order by d.created_at desc, d.id desc limit ? offset ?",
-                DeliveryService::readOrder, user, limit, offset);
+    public List<Order> list(UUID user, UUID partner, int limit, int offset) {
+        return db.query(ORDERS + scope(partner) + " order by d.created_at desc, d.id desc limit ? offset ?",
+                DeliveryService::readOrder, partner == null ? user : partner, limit, offset);
     }
 
-    public Order get(UUID user, UUID id) {
-        return db.query(ORDERS + " where d.user_id = ? and d.id = ?", DeliveryService::readOrder, user, id)
-                .stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "DELIVERY_NOT_FOUND",
-                        "Delivery was not found"));
+    public Order get(UUID user, UUID partner, UUID id) {
+        return db.query(ORDERS + scope(partner) + " and d.id = ?", DeliveryService::readOrder,
+                partner == null ? user : partner, id).stream().findFirst()
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "DELIVERY_NOT_FOUND", "Delivery was not found"));
     }
 
     @Transactional
-    public Order cancel(UUID user, UUID id) {
+    public Order cancel(UUID user, UUID partner, UUID id) {
         int changed = db.update("""
-                update transactions.deliveries set status = 'CANCELLED_BY_CUSTOMER'
-                where id = ? and user_id = ? and status in ('CREATED', 'SEARCHING_COURIER', 'COURIER_ASSIGNED', 'COURIER_ARRIVING', 'COURIER_ARRIVED')
-                """, id, user);
+                update transactions.deliveries d set status = 'CANCELLED_BY_CUSTOMER'
+                """ + scope(partner) + """
+                 and d.id = ? and d.status in
+                    ('CREATED', 'SEARCHING_COURIER', 'COURIER_ASSIGNED', 'COURIER_ARRIVING', 'COURIER_ARRIVED')
+                """, partner == null ? user : partner, id);
         if (changed == 1) {
             recordState(id, user, DeliveryState.CANCELLED_BY_CUSTOMER);
         }
-        var order = get(user, id);
+        var order = get(user, partner, id);
         if (order.status() != DeliveryState.CANCELLED_BY_CUSTOMER) {
             throw new ApiException(HttpStatus.CONFLICT, "DELIVERY_CANNOT_CANCEL", "Delivery cannot be cancelled");
         }
         return order;
+    }
+
+    public List<ShipmentTotal> totals(UUID partner) {
+        return db.query("""
+                select d.status, count(*) shipment_count, sum(q.amount_kzt) quoted_total_kzt
+                from transactions.deliveries d join transactions.delivery_quotes q on q.id = d.quote_id
+                where d.partner_id = ? group by d.status order by d.status
+                """, (rs, row) -> new ShipmentTotal(DeliveryState.valueOf(rs.getString("status")),
+                        rs.getLong("shipment_count"), rs.getBigDecimal("quoted_total_kzt")), partner);
+    }
+
+    private static String scope(UUID partner) {
+        return partner == null ? " where d.user_id = ? and d.partner_id is null " : " where d.partner_id = ? ";
     }
 
     private void recordState(UUID id, UUID user, DeliveryState status) {
@@ -184,8 +199,8 @@ public class DeliveryService {
                         : new AssignedCourier(rs.getString("courier_name"), rs.getString("vehicle")));
     }
 
-    private void requireIntake() {
-        if (!settings.consumerAvailable()) {
+    private void requireIntake(UUID partner) {
+        if (!settings.enabled() || (partner == null ? !settings.consumerEnabled() : !settings.partnerEnabled())) {
             throw new ApiException(HttpStatus.NOT_FOUND, "DELIVERY_UNAVAILABLE", "New deliveries are unavailable");
         }
     }
@@ -206,4 +221,6 @@ public class DeliveryService {
     public record AssignedCourier(String name, String vehicle) {}
 
     public record Creation(Order order, boolean created) {}
+
+    public record ShipmentTotal(DeliveryState status, long shipmentCount, BigDecimal quotedTotalKzt) {}
 }
