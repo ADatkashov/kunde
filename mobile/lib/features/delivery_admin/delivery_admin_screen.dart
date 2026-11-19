@@ -32,6 +32,12 @@ class _DeliveryAdminScreenState extends State<DeliveryAdminScreen> {
         .cast<Map<String, dynamic>>();
   }
 
+  void _reload() {
+    setState(() {
+      _rows = _load();
+    });
+  }
+
   Future<void> _mutate(String path, {Map<String, dynamic>? body}) async {
     if (_busy) return;
     setState(() {
@@ -40,7 +46,7 @@ class _DeliveryAdminScreenState extends State<DeliveryAdminScreen> {
     });
     try {
       await widget.auth.authorizedJson('POST', '$_root/$path', body: body);
-      if (mounted) setState(() => _rows = _load());
+      if (mounted) _reload();
     } catch (_) {
       if (mounted) setState(() => _failed = true);
     } finally {
@@ -63,7 +69,7 @@ class _DeliveryAdminScreenState extends State<DeliveryAdminScreen> {
         IconButton(
           tooltip: s.retry,
           icon: const Icon(Icons.refresh),
-          onPressed: _busy ? null : () => setState(() => _rows = _load()),
+          onPressed: _busy ? null : _reload,
         ),
       ]),
       body: SafeArea(

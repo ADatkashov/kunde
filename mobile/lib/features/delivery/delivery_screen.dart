@@ -408,6 +408,12 @@ class _History extends StatefulWidget {
 class _HistoryState extends State<_History> {
   late Future<List<DeliveryOrder>> _history = widget.api.history();
 
+  void _reloadHistory() {
+    setState(() {
+      _history = widget.api.history();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = DeliveryStrings(context);
@@ -423,7 +429,7 @@ class _HistoryState extends State<_History> {
           if (snapshot.hasError) {
             return Center(
                 child: TextButton(
-              onPressed: () => setState(() => _history = widget.api.history()),
+              onPressed: _reloadHistory,
               child: Text(s.retry),
             ));
           }
@@ -447,7 +453,7 @@ class _HistoryState extends State<_History> {
                               initial: order,
                               allowDispatch: widget.allowDispatch,
                               syntheticRouting: widget.syntheticRouting)));
-                  if (mounted) setState(() => _history = widget.api.history());
+                  if (mounted) _reloadHistory();
                 },
               ),
           ]);
