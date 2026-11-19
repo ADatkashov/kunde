@@ -2,8 +2,8 @@
 
 ## Rides & Transport 1.2
 
-- `main` содержит V22 и API заявок из [#129](https://github.com/ADatkashov/kunde/pull/129). Выдача котировок, V23 с HTTP-сценарием поездки и Consumer Flutter находятся в [#131](https://github.com/ADatkashov/kunde/pull/131), [#132](https://github.com/ADatkashov/kunde/pull/132) и [#133](https://github.com/ADatkashov/kunde/pull/133). Слияние зависит от результатов Security CI.
-- Ветка `feat/kunde-rides-executor-1-2` добавляет отдельный Flutter entrypoint Executor, существующий Identity и Android application ID, экран водителя на действующих API, передачу координат только в открытом приложении и отображение позиции в Consumer. E2E двух приложений и подписанные APK пока не подтверждены.
+- В `main` объединены V22 и API заявок ([#129](https://github.com/ADatkashov/kunde/pull/129)), затем выдача котировок и восстановление исторических отпечатков Gitleaks ([#131](https://github.com/ADatkashov/kunde/pull/131), merge `f142ca5`). [#132](https://github.com/ADatkashov/kunde/pull/132) обновлён относительно main, Security CI и Backend CI прошли. CodeRabbit вернул лимит квоты. [#133](https://github.com/ADatkashov/kunde/pull/133) зависит от #132.
+- Стек веток добавляет Executor на существующем Identity, Consumer Flutter, передачу координат в открытом приложении и отображение данных назначенного водителя. [Нативный Android E2E](https://github.com/ADatkashov/kunde/actions/runs/44455026918) прошёл с двумя приложениями и тестовым маршрутом. Подписанные DEV APK пока не собраны.
 - Отдельная ветка Fleet добавляет V25, состав и статистику автопарка, маршрут Partner UI и защищённые административные API одобрения и аудита. Административная ветка V26 добавляет мониторинг, жалобы, модерацию, блокировки и журнал в защищённом Flutter entrypoint. Проверка файлов документов и платежный цикл остаются открытыми. Реальный провайдер карт не подключён. Флаги по умолчанию выключены.
 
 ## KUNDE Premium UI 2.1

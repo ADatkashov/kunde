@@ -1,7 +1,7 @@
-# Следующий этап Rides — интеграция двух приложений в DEV/TEST
+# Следующий этап Rides — интеграция и подписанные APK DEV
 
-После обязательного Security CI последовательно объединить стек PR #131–133 и Executor. Провести поездку Consumer → Executor → Consumer на двух устройствах или эмуляторах с тестовым маршрутом, проверить историю, отмену, повторы и сетевые ошибки.
+[#131](https://github.com/ADatkashov/kunde/pull/131) объединён с main. Для [#132](https://github.com/ADatkashov/kunde/pull/132) прошли Security CI и Backend CI. CodeRabbit временно недоступен по квоте. После ревью объединить #132, синхронизировать [#133](https://github.com/ADatkashov/kunde/pull/133) и проверить Flutter CI до слияния. Затем синхронизировать и проверить остальные PR стека.
 
-Проверки backend выполняются на тестовом PostgreSQL через `cd backend && mvn -Dtest='kz.kunde.rides.*Test' test`. Проверки Flutter выполняются через `cd mobile && flutter analyze --fatal-infos && flutter test`. Обе команды должны пройти. Для двух сборок использовать Android Release APK (DEV) с разными значениями параметра `executor`, проверить идентификаторы, сертификаты и SHA-256.
+[Два приложения прошли нативный Android E2E](https://github.com/ADatkashov/kunde/actions/runs/44455026918) на тестовом маршруте. Повторить тест на интегрированной ветке. Для Consumer и Executor запустить Android Release APK (DEV), проверить идентификаторы, сертификаты и SHA-256. Публичная активация требует отдельного решения владельца.
 
 [Контекст и ограничения Rides](docs/product/rides-transport.md) · [Статус проекта](PROJECT_STATE.md)
