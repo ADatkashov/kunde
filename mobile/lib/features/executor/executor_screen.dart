@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 
 import '../identity/auth_repository.dart';
 import '../rides/ride_strings.dart';
+import 'auto_work_screen.dart';
 import 'delivery_work_screen.dart';
 import 'executor_api.dart';
 
@@ -43,6 +44,8 @@ class _ExecutorScreenState extends State<ExecutorScreen>
   bool _deliveryEnabled = false;
   bool _deliveryResume = false;
   bool _deliverySynthetic = false;
+  bool _autoEnabled = false;
+  bool _autoResume = false;
 
   @override
   void initState() {
@@ -73,6 +76,37 @@ class _ExecutorScreenState extends State<ExecutorScreen>
       });
     } catch (_) {
       if (mounted && _deliveryEnabled) setState(() => _deliveryEnabled = false);
+    }
+    await _loadAutoMode();
+  }
+
+  /// KUNDE Auto specialist mode: offered while the server enables Auto, or while the user still has an assigned job.
+  Future<void> _loadAutoMode() async {
+    try {
+      final capabilities = await widget.auth
+          .authorizedJson('GET', 'capabilities') as Map<String, dynamic>;
+      final enabled = capabilities['autoEnabled'] == true;
+      var resume = false;
+      if (!enabled) {
+        try {
+          final jobs = await widget.auth
+              .authorizedJson('GET', 'executor/auto/jobs') as List<dynamic>;
+          resume = jobs.any((row) =>
+              row is Map<String, dynamic> &&
+              const {'ASSIGNED', 'ARRIVED', 'IN_PROGRESS'}
+                  .contains(row['status']));
+        } on IdentityApiError {
+          resume = false;
+        }
+      }
+      if (mounted) {
+        setState(() {
+          _autoEnabled = enabled;
+          _autoResume = resume;
+        });
+      }
+    } catch (_) {
+      if (mounted && _autoEnabled) setState(() => _autoEnabled = false);
     }
   }
 
@@ -292,6 +326,19 @@ class _ExecutorScreenState extends State<ExecutorScreen>
                   auth: widget.auth,
                   synthetic: _deliverySynthetic,
                   intakeEnabled: _deliveryEnabled,
+                ),
+              )),
+            ),
+          if (_autoEnabled || _autoResume)
+            IconButton(
+              icon: const Icon(Icons.build_circle_outlined),
+              tooltip: s.t('Авто-специалист', 'Авто маман', 'Auto specialist'),
+              onPressed: () =>
+                  Navigator.of(context).push<void>(MaterialPageRoute(
+                builder: (_) => AutoWorkScreen(
+                  auth: widget.auth,
+                  synthetic: _deliverySynthetic,
+                  intakeEnabled: _autoEnabled,
                 ),
               )),
             ),
