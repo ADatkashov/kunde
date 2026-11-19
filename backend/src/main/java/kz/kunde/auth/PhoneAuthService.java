@@ -262,13 +262,13 @@ public class PhoneAuthService {
 
     /**
      * ADR-018: every OTP-verified user is a consumer; {@code kunde.partner} needs an ACTIVE partner_staff row and
-     * {@code kunde.admin} an unrevoked admin grant. Re-evaluated on every token issue and refresh, so revocation
+     * {@code kunde.admin} a current admin grant. Re-evaluated on every token issue and refresh, so revocation
      * takes effect at the next refresh (endpoints re-check membership/grants themselves).
      */
     String scopesFor(UUID user) {
         var flags = db.queryForMap("""
                 SELECT EXISTS (SELECT 1 FROM marketplace.partner_staff WHERE user_id = ? AND status = 'ACTIVE') AS partner,
-                       EXISTS (SELECT 1 FROM identity.admin_grants WHERE user_id = ? AND revoked_at IS NULL) AS admin
+                       EXISTS (SELECT 1 FROM identity.effective_admin_permissions WHERE user_id = ?) AS admin
                 """, user, user);
         StringBuilder scope = new StringBuilder("kunde.consumer");
         if (Boolean.TRUE.equals(flags.get("partner"))) scope.append(" kunde.partner");

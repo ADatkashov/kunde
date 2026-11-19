@@ -1,6 +1,7 @@
 package kz.kunde.admin;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -10,7 +11,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.jayway.jsonpath.JsonPath;
 import com.nimbusds.jwt.SignedJWT;
 import java.util.UUID;
+import kz.kunde.admin.AdminGrants.Permission;
+import kz.kunde.admin.AdminGrants.Scope;
 import kz.kunde.partner.PartnerService;
+import kz.kunde.platform.ApiException;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,6 +48,7 @@ class AdminPartnerApiIntegrationTest {
     @Autowired MockMvc http;
     @Autowired JdbcTemplate db;
     @Autowired PartnerService service;
+    @Autowired AdminGrants grants;
 
     @BeforeEach
     void clean() {
@@ -172,6 +177,57 @@ class AdminPartnerApiIntegrationTest {
         db.update("UPDATE identity.admin_grants SET revoked_at = now(), revoked_by_user_id = ? WHERE user_id = ?",
                 employeeId, employeeId);
         fetch(path, token).andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("ADMIN_FORBIDDEN"));
+    }
+
+    @Test
+    void scopedAssignmentsRequireAllResourceAttributesAndRevokeImmediately() throws Exception {
+        String employeeLogin = login("+77000000114");
+        String ownerLogin = login("+77000000115");
+        UUID employee = user(employeeLogin);
+        UUID owner = user(ownerLogin);
+        UUID organization = apply(ownerLogin, "Scope Cafe");
+        UUID otherOrganization = apply(login("+77000000116"), "Other Scope Cafe");
+        UUID resource = UUID.randomUUID();
+        db.update("INSERT INTO identity.admin_roles (code) VALUES ('delivery-operator')");
+        db.update("""
+                INSERT INTO identity.admin_role_permissions (role_code, permission)
+                VALUES ('delivery-operator', 'DELIVERY_OPERATIONS')""");
+        UUID assignment = db.queryForObject("""
+                INSERT INTO identity.admin_role_assignments
+                    (user_id, role_code, product_code, region_code, organization_id, resource_id, assigned_by)
+                VALUES (?, 'delivery-operator', 'DELIVERY', 'ALMATY', ?, ?, ?)
+                RETURNING id""", UUID.class, employee, organization, resource, owner);
+
+        String token = refreshed(employeeLogin);
+        String path = "/api/v1/admin/me/capabilities";
+        fetch(path, token).andExpect(status().isOk()).andExpect(jsonPath("$.permissions").isEmpty());
+        var correct = new Scope("DELIVERY", "ALMATY", organization, resource);
+        grants.require(employee, Permission.DELIVERY_OPERATIONS, correct);
+
+        for (var wrong : new Scope[] {
+                new Scope("RIDES", "ALMATY", organization, resource),
+                new Scope("DELIVERY", "ASTANA", organization, resource),
+                new Scope("DELIVERY", "ALMATY", otherOrganization, resource),
+                new Scope("DELIVERY", "ALMATY", organization, UUID.randomUUID()),
+                new Scope("DELIVERY", "ALMATY", organization, null)
+        }) {
+            assertThatThrownBy(() -> grants.require(employee, Permission.DELIVERY_OPERATIONS, wrong))
+                    .isInstanceOf(ApiException.class);
+        }
+        assertThatThrownBy(() -> grants.require(employee, Permission.DELIVERY_OPERATIONS))
+                .isInstanceOf(ApiException.class);
+        assertThatThrownBy(() -> grants.require(employee, Permission.ADMIN_GRANTS, correct))
+                .isInstanceOf(ApiException.class);
+        db.update("UPDATE identity.admin_role_assignments SET revoked_at = now(), revoked_by = ? WHERE id = ?", owner, assignment);
+        fetch(path, token).andExpect(status().isForbidden());
+        assertThatThrownBy(() -> grants.require(employee, Permission.DELIVERY_OPERATIONS, correct))
+                .isInstanceOf(ApiException.class);
+
+        db.update("""
+                INSERT INTO identity.admin_role_assignments
+                    (user_id, role_code, assigned_by, assigned_at, expires_at)
+                VALUES (?, 'delivery-operator', ?, now() - interval '2 hours', now() - interval '1 hour')""", employee, owner);
+        fetch(path, token).andExpect(status().isForbidden());
     }
 
     @Test
