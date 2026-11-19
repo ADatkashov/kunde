@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jayway.jsonpath.JsonPath;
 import com.nimbusds.jwt.SignedJWT;
+import java.util.List;
 import java.util.UUID;
 import kz.kunde.admin.AdminGrants.Permission;
 import kz.kunde.admin.AdminGrants.Scope;
@@ -199,9 +200,12 @@ class AdminPartnerApiIntegrationTest {
         var last = fetch(path + "?limit=1&after=" + cursor, managerToken).andExpect(status().isOk())
                 .andExpect(jsonPath("$.employees.length()").value(1))
                 .andReturn().getResponse().getContentAsString();
-        assertThat(java.util.Set.of(UUID.fromString(cursor),
-                UUID.fromString(JsonPath.read(last, "$.employees[0].id"))))
-                .containsExactlyInAnyOrder(user(reviewer), user(manager));
+        assertThat((String) JsonPath.read(last, "$.employees[0].id")).isNotEqualTo(cursor);
+        var directory = fetch(path + "?limit=100", managerToken).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        List<String> employeeIds = JsonPath.read(directory, "$.employees[*].id");
+        assertThat(employeeIds).contains(user(reviewer).toString(), user(manager).toString())
+                .doesNotContain(user(ordinary).toString());
 
         UUID managerId = user(manager);
         db.update("update identity.admin_grants set revoked_at = now(), revoked_by_user_id = ? where user_id = ?",
