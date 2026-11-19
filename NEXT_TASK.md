@@ -1,9 +1,5 @@
-# Следующая проверка KUNDE Delivery 1.0
+# Следующая задача KUNDE Auto 1.0
 
-Пройти [Android E2E](docs/product/delivery.md#android-e2e) на интегрированном `main`, сохранить результат и снимки Consumer и Executor. Покрыть отказ и таймаут оффера, отсутствие курьера, отмену, повтор запроса, восстановление сети, недоступного получателя, возврат и выключенный флаг. Отдельно проверить Partner и Admin через существующие приложения.
+Backend-срез смержен в PR (см. [auto](docs/product/auto.md)). Далее по порядку: Consumer Flutter (автомобили, каталог, котировка, запись, перенос/отмена, история), Partner Flutter (inbox, жизненный цикл, недоступные периоды), затем Executor `AUTO_SPECIALIST`, Admin, платёжный DEV-контракт, Android E2E и подписанные DEV Release APK.
 
-После успешных обязательных проверок запустить [подписанные DEV Release APK](docs/infrastructure/android-release-apk.md) на проверенном SHA. Сверить пакет, версию, отсутствие debug-флага, схемы подписи, SHA-256 файла и сертификата. Сохранить ссылки и хэши в отчёте.
-
-Публичная активация остаётся выключенной. Открытые внешние интеграции включают дорожную маршрутизацию Алматы, платежи, проверку файлов документов и канал доставки кода получателю.
-
-[Контракт и ограничения](docs/product/delivery.md) · [Эпик ADA-18](https://linear.app/adatkashov/issue/ADA-18/ep-014-delivery-and-logistics) · [Оставшиеся проверки Rides](docs/product/rides-transport.md#нативный-e2e)
+Приёмка: `cd backend && mvn verify` на PostgreSQL 16, `flutter analyze` и `flutter test`, Android E2E «Consumer → запись → Partner подтверждает → обслуживание → история». Публичный запуск Auto выключен.

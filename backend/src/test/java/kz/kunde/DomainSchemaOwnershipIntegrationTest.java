@@ -66,7 +66,14 @@ class DomainSchemaOwnershipIntegrationTest {
             "transactions.ride_driver_review_events -> identity.users",
             "transactions.bookings -> marketplace.booking_venues",
             "transactions.bookings -> marketplace.booking_services",
-            "transactions.bookings -> marketplace.booking_masters");
+            "transactions.bookings -> marketplace.booking_masters",
+            "transactions.customer_vehicles -> identity.users",
+            "transactions.auto_quotes -> identity.users",
+            "transactions.auto_quotes -> marketplace.booking_venues",
+            "transactions.auto_quotes -> marketplace.booking_services",
+            "transactions.auto_quotes -> marketplace.booking_masters",
+            "marketplace.booking_time_off -> identity.users",
+            "marketplace.auto_admin_events -> identity.users");
 
     @Autowired JdbcTemplate jdbc;
     @Autowired PlatformTransactionManager transactionManager;

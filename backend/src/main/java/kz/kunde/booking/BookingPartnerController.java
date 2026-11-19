@@ -56,7 +56,7 @@ public class BookingPartnerController {
     @PostMapping("/bookings/{bookingId}/action")
     ResponseEntity<PartnerBooking> action(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
             @PathVariable UUID bookingId, @Valid @RequestBody ActionRequest request) {
-        return ok(service.act(user(principal), partnerId, bookingId, Action.valueOf(request.action()), request.reason()));
+        return ok(service.act(user(principal), partnerId, bookingId, Action.valueOf(request.action()), request.reason(), request.finalPriceMinor()));
     }
 
     @GetMapping("/venues")
@@ -100,6 +100,25 @@ public class BookingPartnerController {
         return ok(service.setHours(user(principal), partnerId, venueId, masterId, request.hours()));
     }
 
+    @GetMapping("/venues/{venueId}/time-off")
+    ResponseEntity<List<BookingPartnerService.TimeOffView>> timeOff(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
+            @PathVariable UUID venueId) {
+        return ok(service.timeOff(user(principal), partnerId, venueId));
+    }
+
+    @PostMapping("/venues/{venueId}/time-off")
+    ResponseEntity<BookingPartnerService.TimeOffView> addTimeOff(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
+            @PathVariable UUID venueId, @Valid @RequestBody TimeOffRequest request) {
+        return ok(service.addTimeOff(user(principal), partnerId, venueId, request.masterId(), request.startsAt(), request.endsAt(), request.reason()));
+    }
+
+    @DeleteMapping("/venues/{venueId}/time-off/{timeOffId}")
+    ResponseEntity<Void> removeTimeOff(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
+            @PathVariable UUID venueId, @PathVariable UUID timeOffId) {
+        service.removeTimeOff(user(principal), partnerId, venueId, timeOffId);
+        return ResponseEntity.noContent().build();
+    }
+
     private static UUID user(Jwt principal) {
         return PartnerAccessPolicy.userId(principal)
                 .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN", "Access is not allowed"));
@@ -109,8 +128,11 @@ public class BookingPartnerController {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(body);
     }
 
-    public record ActionRequest(@NotNull @Pattern(regexp = "CONFIRM|REJECT|CANCEL|COMPLETE") String action,
-            @Size(max = 300) String reason) {}
+    public record ActionRequest(@NotNull @Pattern(regexp = "CONFIRM|REJECT|CANCEL|COMPLETE|CHECK_IN|START|NO_SHOW|PROPOSE_PRICE") String action,
+            @Size(max = 300) String reason, Long finalPriceMinor) {}
+
+    public record TimeOffRequest(java.util.UUID masterId, @NotNull java.time.OffsetDateTime startsAt,
+            @NotNull java.time.OffsetDateTime endsAt, @Size(max = 200) String reason) {}
 
     public record OpenRequest(@NotNull Boolean open) {}
 

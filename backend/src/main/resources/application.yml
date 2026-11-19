@@ -66,6 +66,10 @@ app:
   booking:
     enabled: ${BOOKING_ENABLED:false}
     seed-demo: ${BOOKING_SEED_DEMO:false}
+  # KUNDE Auto DEV pilot (car services on the Booking engine). Off by default; needs booking; dev/local/test only (AutoGuard).
+  auto:
+    enabled: ${AUTO_ENABLED:false}
+    seed-demo: ${AUTO_SEED_DEMO:false}
   # Partner Operations DEV pilot: loads two synthetic partners and links them to demo assets; dev/local/test only.
   partner-ops:
     seed-demo: ${PARTNER_OPS_SEED_DEMO:false}
