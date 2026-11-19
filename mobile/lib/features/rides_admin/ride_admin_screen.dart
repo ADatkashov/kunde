@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../delivery_admin/delivery_admin_screen.dart';
 import '../identity/auth_repository.dart';
 import '../rides/ride_strings.dart';
 
@@ -25,6 +26,33 @@ class RideAdminScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          for (final (area, label, icon) in [
+            (
+              DeliveryAdminArea.couriers,
+              s.t('Курьеры', 'Курьерлер', 'Couriers'),
+              Icons.inventory_2_outlined
+            ),
+            (
+              DeliveryAdminArea.shipments,
+              s.t('Отправления', 'Жөнелтілімдер', 'Shipments'),
+              Icons.local_shipping_outlined
+            ),
+            (
+              DeliveryAdminArea.complaints,
+              s.t('Жалобы на доставку', 'Жеткізу шағымдары',
+                  'Delivery complaints'),
+              Icons.flag_outlined
+            ),
+          ])
+            Card(
+                child: ListTile(
+              leading: Icon(icon),
+              title: Text(label),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push<void>(MaterialPageRoute(
+                builder: (_) => DeliveryAdminScreen(auth: auth, area: area),
+              )),
+            )),
           for (final (route, label, icon) in [
             (
               'drivers',

@@ -7,6 +7,7 @@ import java.time.OffsetDateTime;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.UUID;
+import kz.kunde.delivery.DeliveryService;
 import kz.kunde.identity.ConsumerIdentityService;
 import kz.kunde.platform.ApiException;
 import kz.kunde.rides.RideRequestService;
@@ -21,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Consumer-owned support cases (SUP-001). Every query is scoped to the authenticated owner; a case of
- * another user is indistinguishable from a missing one. Not linked to transactions and has no staff side.
+ * another user is indistinguishable from a missing one. Linked transactions also require ownership.
  */
 @Service
 @ConditionalOnProperty(name = "app.identity.consumer-enabled", havingValue = "true")
@@ -33,23 +34,26 @@ public class SupportCaseService {
     public enum Category { GENERAL, ACCOUNT, PRIVACY, APP_PROBLEM }
 
     public record CaseView(UUID id, String category, String message, String status,
-                           OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID rideId) {}
+                           OffsetDateTime createdAt, OffsetDateTime updatedAt, UUID rideId, UUID deliveryId) {}
 
     public record Created(CaseView view, boolean created) {}
 
     private static final RowMapper<CaseView> MAPPER = (rs, row) -> new CaseView(
             rs.getObject("id", UUID.class), rs.getString("category"), rs.getString("message"),
             rs.getString("status"), rs.getObject("created_at", OffsetDateTime.class),
-            rs.getObject("updated_at", OffsetDateTime.class), rs.getObject("ride_id", UUID.class));
+            rs.getObject("updated_at", OffsetDateTime.class), rs.getObject("ride_id", UUID.class),
+            rs.getObject("delivery_id", UUID.class));
 
     private final JdbcTemplate db;
     private final ConsumerIdentityService identity;
     private final RideRequestService rides;
+    private final DeliveryService deliveries;
 
-    public SupportCaseService(JdbcTemplate db, ConsumerIdentityService identity, RideRequestService rides) {
+    public SupportCaseService(JdbcTemplate db, ConsumerIdentityService identity, RideRequestService rides, DeliveryService deliveries) {
         this.db = db;
         this.identity = identity;
         this.rides = rides;
+        this.deliveries = deliveries;
     }
 
     @Transactional
@@ -59,6 +63,15 @@ public class SupportCaseService {
 
     @Transactional
     public Created open(Jwt principal, String idempotencyKey, Category category, String message, UUID rideId) {
+        return open(principal, idempotencyKey, category, message, rideId, null);
+    }
+
+    @Transactional
+    public Created open(Jwt principal, String idempotencyKey, Category category, String message, UUID rideId,
+            UUID deliveryId) {
+        if (rideId != null && deliveryId != null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "MULTIPLE_CASE_REFERENCES", "Use a single case reference");
+        }
         if (idempotencyKey == null || !idempotencyKey.matches("[A-Za-z0-9_-]{16,64}")) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_IDEMPOTENCY_KEY",
                     "Idempotency-Key must be 16-64 characters: letters, digits, '-' or '_'");
@@ -72,11 +85,15 @@ public class SupportCaseService {
         if (rideId != null) {
             rides.get(owner, rideId);
         }
+        if (deliveryId != null) {
+            deliveries.get(owner, null, deliveryId);
+        }
         // One lock per owner (not per key): both the idempotency lookup and the case cap must be
         // evaluated serially, otherwise concurrent requests with different keys exceed the cap.
         db.query("SELECT pg_advisory_xact_lock(hashtext(?), hashtext(?))", (RowCallbackHandler) rs -> {},
                 "support.cases.open", owner.toString());
-        String hash = sha256(category.name() + "\n" + text + (rideId == null ? "" : "\nRIDE:" + rideId));
+        String hash = sha256(category.name() + "\n" + text + (rideId == null ? "" : "\nRIDE:" + rideId)
+                + (deliveryId == null ? "" : "\nDELIVERY:" + deliveryId));
         List<Object[]> existing = db.query("""
                 SELECT id, request_sha256 FROM support.cases
                 WHERE owner_user_id = ? AND idempotency_key = ?
@@ -96,9 +113,9 @@ public class SupportCaseService {
                     "Too many open support cases");
         }
         UUID id = db.queryForObject("""
-                INSERT INTO support.cases (owner_user_id, category, message, idempotency_key, request_sha256, ride_id)
-                VALUES (?, ?, ?, ?, ?, ?) RETURNING id
-                """, UUID.class, owner, category.name(), text, idempotencyKey, hash, rideId);
+                INSERT INTO support.cases (owner_user_id, category, message, idempotency_key, request_sha256, ride_id, delivery_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id
+                """, UUID.class, owner, category.name(), text, idempotencyKey, hash, rideId, deliveryId);
         db.update("INSERT INTO support.case_events (case_id, event_type) VALUES (?, 'CREATED')", id);
         return new Created(find(owner, id), true);
     }
@@ -110,7 +127,7 @@ public class SupportCaseService {
         }
         UUID owner = identity.get(principal).id();
         return db.query("""
-                SELECT id, category, message, status, created_at, updated_at, ride_id FROM support.cases
+                SELECT id, category, message, status, created_at, updated_at, ride_id, delivery_id FROM support.cases
                 WHERE owner_user_id = ? ORDER BY created_at DESC, id LIMIT ? OFFSET ?
                 """, MAPPER, owner, limit, offset);
     }
@@ -139,7 +156,7 @@ public class SupportCaseService {
 
     private CaseView find(UUID owner, UUID id) {
         List<CaseView> rows = db.query("""
-                SELECT id, category, message, status, created_at, updated_at, ride_id FROM support.cases
+                SELECT id, category, message, status, created_at, updated_at, ride_id, delivery_id FROM support.cases
                 WHERE id = ? AND owner_user_id = ?
                 """, MAPPER, id, owner);
         if (rows.isEmpty()) {

@@ -42,8 +42,9 @@ public class DeliveryCouriers {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "DELIVERY_COURIER_NOT_FOUND", "Courier not found"));
     }
 
-    public List<Profile> forReview() {
-        return db.query(PROFILES + " where status = 'PENDING' order by user_id limit 100", DeliveryCouriers::read);
+    public List<Profile> forReview(boolean includeReviewed) {
+        return db.query(PROFILES + " where ? or status = 'PENDING' order by (status = 'PENDING') desc, user_id limit 100",
+                DeliveryCouriers::read, includeReviewed);
     }
 
     @Transactional

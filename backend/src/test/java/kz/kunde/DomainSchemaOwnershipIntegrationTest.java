@@ -36,6 +36,7 @@ class DomainSchemaOwnershipIntegrationTest {
             "profile.consent_events -> identity.users",
             "support.cases -> identity.users",
             "support.cases -> transactions.rides",
+            "support.cases -> transactions.deliveries",
             "support.case_events -> identity.users",
             "marketplace.partners -> identity.users",
             "marketplace.partner_staff -> identity.users",
