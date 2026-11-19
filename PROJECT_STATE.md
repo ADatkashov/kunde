@@ -3,7 +3,8 @@
 ## KUNDE Control Center 2.0 — DEV
 
 - [Аудит и зависимости](docs/roadmap/27-control-center-2-audit.md) приняты в [#155](https://github.com/ADatkashov/kunde/pull/155). [#156](https://github.com/ADatkashov/kunde/pull/156) добавил `GET /api/v1/admin/me/capabilities` для действующих грантов текущего сотрудника. Backend CI и Security CI прошли на PR.
-- В работе: навигация по разрешённым очередям, scoped RBAC, панели продуктов, реестры, поддержка, финансы, операции, аудит и проверка поставки на всех платформах. Functional DEV/TEST Ready ещё не подтверждён.
+- [#157](https://github.com/ADatkashov/kunde/pull/157) добавил навигацию по разрешённым очередям Rides, Delivery и Auto.
+- В работе: scoped RBAC, панели продуктов, реестры, поддержка, финансы, операции, аудит и проверка поставки на всех платформах. Functional DEV/TEST Ready ещё не подтверждён.
 
 ## KUNDE Auto 1.0 — backend slice (в работе)
 
