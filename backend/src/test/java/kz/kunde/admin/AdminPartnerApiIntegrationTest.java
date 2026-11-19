@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jayway.jsonpath.JsonPath;
 import com.nimbusds.jwt.SignedJWT;
+import java.util.List;
 import java.util.UUID;
 import kz.kunde.admin.AdminGrants.Permission;
 import kz.kunde.admin.AdminGrants.Scope;
@@ -177,6 +178,39 @@ class AdminPartnerApiIntegrationTest {
         db.update("UPDATE identity.admin_grants SET revoked_at = now(), revoked_by_user_id = ? WHERE user_id = ?",
                 employeeId, employeeId);
         fetch(path, token).andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("ADMIN_FORBIDDEN"));
+    }
+
+    @Test
+    void directoryRequiresCurrentPlatformAccessManagerPermission() throws Exception {
+        String path = "/api/v1/admin/employees";
+        String ordinary = login("+77000000114");
+        String reviewer = login("+77000000115");
+        String manager = login("+77000000116");
+        fetch(path, JsonPath.read(ordinary, "$.accessToken")).andExpect(status().isForbidden());
+        String reviewerToken = adminToken(reviewer, "PARTNER_VERIFICATION");
+        String managerToken = adminToken(manager, "ADMIN_GRANTS");
+        fetch(path, reviewerToken).andExpect(status().isForbidden());
+        fetch(path + "?limit=101", managerToken).andExpect(status().isBadRequest());
+
+        var page = fetch(path + "?limit=1", managerToken).andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.employees.length()").value(1))
+                .andReturn().getResponse().getContentAsString();
+        String cursor = JsonPath.read(page, "$.next");
+        var last = fetch(path + "?limit=1&after=" + cursor, managerToken).andExpect(status().isOk())
+                .andExpect(jsonPath("$.employees.length()").value(1))
+                .andReturn().getResponse().getContentAsString();
+        assertThat((String) JsonPath.read(last, "$.employees[0].id")).isNotEqualTo(cursor);
+        var directory = fetch(path + "?limit=100", managerToken).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        List<String> employeeIds = JsonPath.read(directory, "$.employees[*].id");
+        assertThat(employeeIds).contains(user(reviewer).toString(), user(manager).toString())
+                .doesNotContain(user(ordinary).toString());
+
+        UUID managerId = user(manager);
+        db.update("update identity.admin_grants set revoked_at = now(), revoked_by_user_id = ? where user_id = ?",
+                managerId, managerId);
+        fetch(path, managerToken).andExpect(status().isForbidden());
     }
 
     @Test
