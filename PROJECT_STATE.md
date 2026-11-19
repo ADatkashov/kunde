@@ -1,10 +1,11 @@
 # KUNDE project state
 
-## Rides & Transport 1.2
+## Rides & Transport 1.3
 
-- В `main` объединены V22 и API заявок ([#129](https://github.com/ADatkashov/kunde/pull/129)), затем выдача котировок и восстановление исторических отпечатков Gitleaks ([#131](https://github.com/ADatkashov/kunde/pull/131), merge `f142ca5`). [#132](https://github.com/ADatkashov/kunde/pull/132) обновлён относительно main, Security CI и Backend CI прошли. CodeRabbit вернул лимит квоты. [#133](https://github.com/ADatkashov/kunde/pull/133) зависит от #132.
-- Стек веток добавляет Executor на существующем Identity, Consumer Flutter, передачу координат в открытом приложении и отображение данных назначенного водителя. [Нативный Android E2E](https://github.com/ADatkashov/kunde/actions/runs/44455026918) прошёл с двумя приложениями и тестовым маршрутом. Подписанные DEV APK пока не собраны.
-- Отдельная ветка Fleet добавляет V25, состав и статистику автопарка, маршрут Partner UI и защищённые административные API одобрения и аудита. Административная ветка V26 добавляет мониторинг, жалобы, модерацию, блокировки и журнал в защищённом Flutter entrypoint. Проверка файлов документов и платежный цикл остаются открытыми. Реальный провайдер карт не подключён. Флаги по умолчанию выключены.
+- Backend поездок, Consumer, Executor, тестовая маршрутизация, Partner Fleet и Admin вошли в `main` через [#131](https://github.com/ADatkashov/kunde/pull/131)–[#137](https://github.com/ADatkashov/kunde/pull/137). Продолжение интеграции — [#138](https://github.com/ADatkashov/kunde/pull/138) и [#139](https://github.com/ADatkashov/kunde/pull/139).
+- **Functional DEV/TEST ready** проверяется нативным E2E и двумя подписанными DEV APK на интегрированном коммите. [Прогон ветки](https://github.com/ADatkashov/kunde/actions/runs/44455026918) подтвердил поездку, координаты, историю, отмену, сетевое восстановление и повтор запроса.
+- **External integration pending** — дорожная маршрутизация Алматы, платёжный цикл, загрузка и проверка файлов водительских документов.
+- **Production launch blocked** — Rides выключен по умолчанию и разрешён только во внутренних средах. [Проверка DEV E2E](docs/product/rides-transport.md#нативный-e2e) · [Установка APK](docs/infrastructure/android-release-apk.md).
 
 ## KUNDE Premium UI 2.1
 

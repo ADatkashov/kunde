@@ -1,7 +1,7 @@
-# Следующий этап Rides — интеграция и подписанные APK DEV
+# Следующая проверка KUNDE Rides 1.3
 
-[#131](https://github.com/ADatkashov/kunde/pull/131) объединён с main. Для [#132](https://github.com/ADatkashov/kunde/pull/132) прошли Security CI и Backend CI. CodeRabbit временно недоступен по квоте. После ревью объединить #132, синхронизировать [#133](https://github.com/ADatkashov/kunde/pull/133) и проверить Flutter CI до слияния. Затем синхронизировать и проверить остальные PR стека.
+На интегрированном `main` проверить [Android E2E](docs/product/rides-transport.md#нативный-e2e) и два [подписанных DEV APK](docs/infrastructure/android-release-apk.md). В `status.json` должен быть `PASSED`; для каждого APK сверить пакет, версию, SHA исходников, SHA-256 файла и сертификата. Маршрут только тестовый. E2E использует изолированную БД и отключённые платежи.
 
-[Два приложения прошли нативный Android E2E](https://github.com/ADatkashov/kunde/actions/runs/44455026918) на тестовом маршруте. Повторить тест на интегрированной ветке. Для Consumer и Executor запустить Android Release APK (DEV), проверить идентификаторы, сертификаты и SHA-256. Публичная активация требует отдельного решения владельца.
+После проверки DEV остаются согласованный дорожный провайдер, платёжный цикл и проверка файлов водительских документов. Публичная активация выполняется отдельно по решению владельца.
 
-[Контекст и ограничения Rides](docs/product/rides-transport.md) · [Статус проекта](PROJECT_STATE.md)
+[Статус проекта](PROJECT_STATE.md) · [Linear ADA-44](https://linear.app/adatkashov/issue/ADA-44/feat-013-provider-dispatch)
