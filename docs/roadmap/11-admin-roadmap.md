@@ -11,3 +11,7 @@
 
 Users, providers, bookings, disputes, moderation, promotions, advanced analytics and system configuration expand only when corresponding product scope is approved. Never put unreviewed unrestricted database editing in the operator portal. Refund limits and dual-control rules await D-14. Admin acceptance requires permission-negative tests, audit completeness, privacy review, recovery workflow and staff runbook.
 
+
+## Control Center 2.0
+
+See the [main audit and delivery sequence](27-control-center-2-audit.md) for reuse, dependencies and existing backlog links.
