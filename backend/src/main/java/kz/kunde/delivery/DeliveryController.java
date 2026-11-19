@@ -46,14 +46,14 @@ public class DeliveryController {
     @PostMapping("/quotes")
     public ResponseEntity<DeliveryService.Quote> quote(@AuthenticationPrincipal Jwt principal,
             @Valid @RequestBody QuoteRequest request) {
-        return response(HttpStatus.CREATED, service.quote(identity.get(principal).id(), request));
+        return response(HttpStatus.CREATED, service.quote(identity.get(principal).id(), null, request));
     }
 
     @PostMapping
     public ResponseEntity<DeliveryService.Order> create(@AuthenticationPrincipal Jwt principal,
             @RequestHeader(value = "Idempotency-Key", required = false) String key,
             @Valid @RequestBody CreateRequest request) {
-        var result = service.create(identity.get(principal).id(), key, request);
+        var result = service.create(identity.get(principal).id(), null, key, request);
         return response(result.created() ? HttpStatus.CREATED : HttpStatus.OK, result.order());
     }
 
@@ -61,30 +61,30 @@ public class DeliveryController {
     public ResponseEntity<List<DeliveryService.Order>> list(@AuthenticationPrincipal Jwt principal,
             @RequestParam(defaultValue = "30") @Min(1) @Max(100) int limit,
             @RequestParam(defaultValue = "0") @Min(0) @Max(10000) int offset) {
-        return response(HttpStatus.OK, service.list(identity.get(principal).id(), limit, offset));
+        return response(HttpStatus.OK, service.list(identity.get(principal).id(), null, limit, offset));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<DeliveryService.Order> detail(@AuthenticationPrincipal Jwt principal, @PathVariable("id") UUID id) {
-        return response(HttpStatus.OK, service.get(identity.get(principal).id(), id));
+        return response(HttpStatus.OK, service.get(identity.get(principal).id(), null, id));
     }
 
     @PostMapping("/{id}/cancel")
     public ResponseEntity<DeliveryService.Order> cancel(@AuthenticationPrincipal Jwt principal, @PathVariable("id") UUID id) {
-        return response(HttpStatus.OK, service.cancel(identity.get(principal).id(), id));
+        return response(HttpStatus.OK, service.cancel(identity.get(principal).id(), null, id));
     }
 
     @PostMapping("/{id}/dispatch")
     public ResponseEntity<DeliveryService.Order> dispatch(@AuthenticationPrincipal Jwt principal, @PathVariable UUID id) {
         UUID sender = identity.get(principal).id();
-        dispatch.search(sender, id);
-        return response(HttpStatus.OK, service.get(sender, id));
+        dispatch.search(sender, null, id);
+        return response(HttpStatus.OK, service.get(sender, null, id));
     }
 
     @PostMapping("/{id}/handoff-code")
     public ResponseEntity<DeliveryDispatch.HandoffCode> handoffCode(@AuthenticationPrincipal Jwt principal,
             @PathVariable UUID id) {
-        return response(HttpStatus.CREATED, dispatch.issueCode(identity.get(principal).id(), id));
+        return response(HttpStatus.CREATED, dispatch.issueCode(identity.get(principal).id(), null, id));
     }
 
     private static <T> ResponseEntity<T> response(HttpStatus status, T body) {

@@ -29,7 +29,7 @@ class DeliveryConfigurationTest {
     }
 
     private static DeliveryProperties settings(boolean enabled, boolean paymentsEnabled) {
-        return new DeliveryProperties(enabled, true, paymentsEnabled, false, false, false, 300, 5000, 50,
+        return new DeliveryProperties(enabled, true, paymentsEnabled, false, false, false, false, 300, 5000, 50,
                 "test-v1", BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
     }
 }

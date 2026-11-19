@@ -7,12 +7,16 @@ on:
       - 'scripts/ci/delivery_native_e2e.py'
       - 'mobile/lib/features/delivery/**'
       - 'mobile/lib/features/executor/delivery_work_screen.dart'
+      - 'backend/src/main/java/kz/kunde/delivery/**'
+      - 'backend/src/main/resources/db/migration/*delivery*.sql'
   pull_request:
     paths:
       - '.github/workflows/delivery-native-e2e.yml'
       - 'scripts/ci/delivery_native_e2e.py'
       - 'mobile/lib/features/delivery/**'
       - 'mobile/lib/features/executor/delivery_work_screen.dart'
+      - 'backend/src/main/java/kz/kunde/delivery/**'
+      - 'backend/src/main/resources/db/migration/*delivery*.sql'
   workflow_dispatch:
 permissions:
   contents: read
