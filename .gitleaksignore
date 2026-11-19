@@ -10,3 +10,7 @@
 37d8425b89c632d848f601a94e592f3d0bf6e923:infrastructure/terraform/modules/render/render.tftest.hcl:generic-api-key:78
 37d8425b89c632d848f601a94e592f3d0bf6e923:backend/src/test/java/kz/kunde/auth/PhoneAuthHttpIntegrationTest.java:generic-api-key:36
 37d8425b89c632d848f601a94e592f3d0bf6e923:backend/src/test/java/kz/kunde/auth/PhoneAuthGuardTest.java:generic-api-key:11
+
+# Historical synthetic Idempotency-Key strings in closed PR #130. Replacement tests generate UUIDs at runtime.
+95c6f95aa6471a92a9a0f1753ef8bd56ac3e174f:backend/src/test/java/kz/kunde/rides/RideQuoteApiIntegrationTest.java:generic-api-key:60
+95c6f95aa6471a92a9a0f1753ef8bd56ac3e174f:backend/src/test/java/kz/kunde/rides/RideQuoteApiIntegrationTest.java:generic-api-key:63
