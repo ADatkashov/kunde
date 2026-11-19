@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/localization/kunde_localizations.dart';
 import '../home/presentation/home_strings.dart';
+import '../auto/auto_services.dart';
 import '../booking/booking_services.dart';
 import '../booking/presentation/orders_hub.dart';
 import '../food/food_services.dart';
@@ -33,6 +34,7 @@ class AuthScreen extends StatefulWidget {
     this.partnerApplyEnabled = true,
     this.food,
     this.booking,
+    this.auto,
     this.authorizedHome,
     super.key,
   });
@@ -52,6 +54,7 @@ class AuthScreen extends StatefulWidget {
 
   /// Service booking (barbershops); shown when the server enables it.
   final BookingServices? booking;
+  final AutoServices? auto;
   @override
   State<AuthScreen> createState() => _AuthScreenState();
 }
@@ -299,6 +302,7 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                                       delivery: DeliveryApi(widget.auth),
                                       food: widget.food,
                                       booking: widget.booking,
+                                      auto: widget.auto,
                                       onOpenAssistant: () => setState(
                                           () => _tab = KundeTab.assistant),
                                       onOpenSearch: () => setState(

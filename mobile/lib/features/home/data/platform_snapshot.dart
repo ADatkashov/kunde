@@ -8,6 +8,7 @@ class PlatformSnapshot {
     this.ridesEnabled = false,
     this.deliveryEnabled = false,
     this.deliverySyntheticRouting = false,
+    this.autoEnabled = false,
   });
 
   final String releaseStage;
@@ -20,6 +21,9 @@ class PlatformSnapshot {
   final bool ridesEnabled;
   final bool deliveryEnabled;
   final bool deliverySyntheticRouting;
+
+  /// KUNDE Auto DEV pilot; absent on older servers.
+  final bool autoEnabled;
 
   factory PlatformSnapshot.fromJson(Map<String, dynamic> json) {
     final stage = json['releaseStage'];
@@ -41,6 +45,7 @@ class PlatformSnapshot {
       ridesEnabled: json['ridesEnabled'] == true,
       deliveryEnabled: json['deliveryEnabled'] == true,
       deliverySyntheticRouting: json['deliverySyntheticRouting'] == true,
+      autoEnabled: json['autoEnabled'] == true,
     );
   }
 }

@@ -58,7 +58,7 @@ public class AutoService {
             int durationMinutes, String vehicleId, String vehicle, OffsetDateTime startsAt, OffsetDateTime endsAt,
             long priceMinor, String priceKind, Long finalPriceMinor, String priceApproval, String currency, String status,
             boolean cancellable, boolean reschedulable, int rescheduleCount, OffsetDateTime createdAt, String cancelledBy,
-            String cancelReason, List<TimelineEntry> timeline) {}
+            String cancelReason, List<TimelineEntry> timeline, String serviceId) {}
 
     public record Booked(AutoBooking booking, boolean created) {}
 
@@ -426,7 +426,7 @@ public class AutoService {
 
     private List<AutoBooking> query(UUID user, UUID id, int limit, int offset) {
         List<AutoBooking> rows = db.query("""
-                select id, venue_id, venue_name, venue_address, service_name, duration_minutes, vehicle_id, vehicle_label, starts_at, ends_at,
+                select id, venue_id, venue_name, venue_address, service_name, duration_minutes, vehicle_id, service_id, vehicle_label, starts_at, ends_at,
                        price_minor, price_kind, final_price_minor, price_approval, currency, status,
                        (status in ('PENDING', 'CONFIRMED') and starts_at > now()) as cancellable,
                        (status in ('PENDING', 'CONFIRMED') and starts_at > now() + make_interval(hours => ?) and reschedule_count < ?) as reschedulable,
@@ -439,7 +439,7 @@ public class AutoService {
                 rs.getLong("price_minor"), rs.getString("price_kind"), rs.getObject("final_price_minor", Long.class), rs.getString("price_approval"),
                 rs.getString("currency"), rs.getString("status"), rs.getBoolean("cancellable"), rs.getBoolean("reschedulable"),
                 rs.getInt("reschedule_count"), rs.getObject("created_at", OffsetDateTime.class), rs.getString("cancelled_by"),
-                rs.getString("cancel_reason"), List.of()), MIN_RESCHEDULE_HOURS, MAX_RESCHEDULES, user, id, id, limit, offset);
+                rs.getString("cancel_reason"), List.of(), rs.getString("service_id")), MIN_RESCHEDULE_HOURS, MAX_RESCHEDULES, user, id, id, limit, offset);
         List<AutoBooking> out = new ArrayList<>();
         for (AutoBooking b : rows) {
             List<TimelineEntry> timeline = db.query("select status, occurred_at, actor_type, reason from transactions.booking_events where booking_id = ? order by id",
@@ -447,7 +447,7 @@ public class AutoService {
                     UUID.fromString(b.id()));
             out.add(new AutoBooking(b.id(), b.venueId(), b.venueName(), b.venueAddress(), b.serviceName(), b.durationMinutes(), b.vehicleId(),
                     b.vehicle(), b.startsAt(), b.endsAt(), b.priceMinor(), b.priceKind(), b.finalPriceMinor(), b.priceApproval(), b.currency(),
-                    b.status(), b.cancellable(), b.reschedulable(), b.rescheduleCount(), b.createdAt(), b.cancelledBy(), b.cancelReason(), timeline));
+                    b.status(), b.cancellable(), b.reschedulable(), b.rescheduleCount(), b.createdAt(), b.cancelledBy(), b.cancelReason(), timeline, b.serviceId()));
         }
         return out;
     }
