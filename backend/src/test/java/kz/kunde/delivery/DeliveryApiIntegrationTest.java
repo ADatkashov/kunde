@@ -155,6 +155,21 @@ class DeliveryApiIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON).content("{\"accept\":true}"))
                 .andExpect(status().isNoContent());
 
+        String trackingPath = PATH + "/" + id + "/location";
+        String courierLocation = executor + "/" + id + "/location";
+        String location = """
+                {"latitude":43.243,"longitude":76.92}
+                """;
+        http.perform(put(courierLocation).with(owner).contentType(MediaType.APPLICATION_JSON).content(location))
+                .andExpect(status().isNotFound());
+        http.perform(get(trackingPath).with(owner)).andExpect(status().isNoContent());
+        http.perform(put(courierLocation).with(courier).contentType(MediaType.APPLICATION_JSON).content(location))
+                .andExpect(status().isNoContent());
+        http.perform(get(trackingPath).with(owner)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.latitude").value(43.243));
+        http.perform(get(trackingPath).with(customer("delivery-location-stranger")))
+                .andExpect(status().isNotFound());
+
         String progress = executor + "/" + id + "/progress";
         for (String action : new String[] {"DEPART", "ARRIVE", "PICK_UP", "TRANSIT"}) {
             http.perform(post(progress).with(courier).contentType(MediaType.APPLICATION_JSON)
@@ -179,6 +194,12 @@ class DeliveryApiIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("COMPLETED"));
         http.perform(get(PATH + "/" + id).with(owner)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("COMPLETED"));
+
+        http.perform(get(trackingPath).with(owner)).andExpect(status().isNoContent());
+        http.perform(put(courierLocation).with(courier).contentType(MediaType.APPLICATION_JSON).content(location))
+                .andExpect(status().isNotFound());
+        assertThat(db.queryForObject("select count(*) from transactions.delivery_locations where delivery_id = ?",
+                Integer.class, UUID.fromString(id))).isZero();
 
         String support = "/api/v1/me/support/cases";
         String note = """
