@@ -231,11 +231,11 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
             onPressed: _busy
                 ? null
                 : () => Navigator.push<void>(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => _History(api: widget.api),
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => _History(api: widget.api),
+                      ),
                     ),
-                  ),
           ),
         ],
       ),
@@ -280,9 +280,8 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                   for (final type in types)
                     DropdownMenuItem(value: type, child: Text(s.parcel(type))),
                 ],
-                onChanged: locked
-                    ? null
-                    : (value) => setState(() => _type = value!),
+                onChanged:
+                    locked ? null : (value) => setState(() => _type = value!),
               ),
               for (var index = 0; index < _fields.length; index++)
                 Padding(
@@ -296,8 +295,8 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                       keyboardType: index < 4
                           ? TextInputType.number
                           : index == 5
-                          ? TextInputType.phone
-                          : TextInputType.text,
+                              ? TextInputType.phone
+                              : TextInputType.text,
                       maxLength: [5, 3, 3, 3, 120, 16, 300, 300][index],
                       validator: (value) =>
                           _validate(s, index, value?.trim() ?? ''),
@@ -358,8 +357,7 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
               if (_error) Semantics(liveRegion: true, child: Text(s.error)),
               const SizedBox(height: 12),
               FilledButton(
-                onPressed:
-                    _busy ||
+                onPressed: _busy ||
                         _pickup == null ||
                         _destination == null ||
                         !_allowed
@@ -384,9 +382,9 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                   onPressed: _busy
                       ? null
                       : () => setState(() {
-                          _quote = null;
-                          _key = null;
-                        }),
+                            _quote = null;
+                            _key = null;
+                          }),
                   child: Text(
                     s.t(
                       'Изменить отправление',
@@ -552,17 +550,17 @@ class _DetailsState extends State<_Details> {
   }
 
   Future<void> _refresh() => _change(() async {
-    final latest = await widget.api.detail(_order.id);
-    if (!mounted) return;
-    setState(() => _order = latest);
-    if (latest.searching) {
-      final dispatched = await widget.api.dispatch(latest.id);
-      if (mounted) setState(() => _order = dispatched);
-    }
-    if (mounted && _order.status != 'IN_TRANSIT') {
-      setState(() => _code = null);
-    }
-  });
+        final latest = await widget.api.detail(_order.id);
+        if (!mounted) return;
+        setState(() => _order = latest);
+        if (latest.searching) {
+          final dispatched = await widget.api.dispatch(latest.id);
+          if (mounted) setState(() => _order = dispatched);
+        }
+        if (mounted && _order.status != 'IN_TRANSIT') {
+          setState(() => _code = null);
+        }
+      });
 
   Future<void> _cancel(DeliveryStrings s) async {
     final confirm = await showDialog<bool>(
@@ -640,11 +638,11 @@ class _DetailsState extends State<_Details> {
                   onPressed: _busy
                       ? null
                       : () => _change(() async {
-                          final issued = await widget.api.handoffCode(
-                            _order.id,
-                          );
-                          if (mounted) setState(() => _code = issued);
-                        }),
+                            final issued = await widget.api.handoffCode(
+                              _order.id,
+                            );
+                            if (mounted) setState(() => _code = issued);
+                          }),
                   child: Text(
                     s.t(
                       'Получить код вручения',
