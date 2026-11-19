@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../identity/auth_repository.dart';
+import '../identity/support_panel.dart';
 import '../rides/ride_api.dart';
 import 'delivery_api.dart';
 import 'delivery_strings.dart';
@@ -409,6 +410,15 @@ class _DetailsState extends State<_Details> {
   bool _busy = false;
   bool _failed = false;
   (String, DateTime)? _code;
+  (double, double)? _location;
+  static const _trackable = {
+    'COURIER_ASSIGNED',
+    'COURIER_ARRIVING',
+    'COURIER_ARRIVED',
+    'PICKED_UP',
+    'IN_TRANSIT',
+    'RETURNING'
+  };
 
   @override
   void initState() {
@@ -460,8 +470,17 @@ class _DetailsState extends State<_Details> {
           final dispatched = await widget.api.dispatch(latest.id);
           if (mounted) setState(() => _order = dispatched);
         }
-        if (mounted && _order.status != 'IN_TRANSIT') {
-          setState(() => _code = null);
+        if (!mounted) return;
+        if (_order.status != 'IN_TRANSIT') setState(() => _code = null);
+        if (_trackable.contains(_order.status)) {
+          try {
+            final point = await widget.api.location(_order.id);
+            if (mounted) setState(() => _location = point);
+          } catch (_) {
+            if (mounted) setState(() => _location = null);
+          }
+        } else {
+          setState(() => _location = null);
         }
       });
 
@@ -509,6 +528,14 @@ class _DetailsState extends State<_Details> {
             ListTile(
                 leading: const Icon(Icons.person_outline),
                 title: Text(courier)),
+          if (_location case final point?)
+            ListTile(
+              leading: const Icon(Icons.my_location),
+              title: Text(
+                  s.t('Точка курьера', 'Курьердің орны', 'Courier location')),
+              subtitle: Text(
+                  '${point.$1.toStringAsFixed(5)}, ${point.$2.toStringAsFixed(5)}'),
+            ),
           Text('${_order.amount} ₸'),
           if (_order.status == 'IN_TRANSIT')
             if (code != null) ...[
@@ -540,6 +567,27 @@ class _DetailsState extends State<_Details> {
             OutlinedButton(
                 onPressed: _busy ? null : () => _cancel(s),
                 child: Text(s.cancel)),
+          TextButton.icon(
+            icon: const Icon(Icons.support_agent),
+            label: Text(s.t('Обратиться в поддержку', 'Қолдау қызметіне жазу',
+                'Contact support')),
+            onPressed: () => Navigator.push<void>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => Scaffold(
+                    appBar: AppBar(
+                        title: Text(s.t('Поддержка', 'Қолдау', 'Support'))),
+                    body: SafeArea(
+                        child: ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        SupportPanel(
+                            auth: widget.api.auth, deliveryId: _order.id)
+                      ],
+                    )),
+                  ),
+                )),
+          ),
           if (_busy) const LinearProgressIndicator(),
         ],
       )),

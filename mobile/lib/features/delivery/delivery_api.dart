@@ -77,6 +77,19 @@ class DeliveryApi {
         await auth.authorizedJson(method, path) as Map<String, dynamic>,
       );
 
+  Future<(double, double)?> location(String id) async {
+    final result = await auth.authorizedJson(
+      'GET',
+      'deliveries/$id/location',
+      expected: {200, 204},
+    ) as Map<String, dynamic>?;
+    if (result == null) return null;
+    return (
+      (result['latitude'] as num).toDouble(),
+      (result['longitude'] as num).toDouble()
+    );
+  }
+
   Future<(String, DateTime)> handoffCode(String id) async {
     final data = await auth.authorizedJson(
             'POST', 'deliveries/$id/handoff-code', expected: {201})
