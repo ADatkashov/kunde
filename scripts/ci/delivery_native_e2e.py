@@ -98,6 +98,20 @@ HISTORY = ("История отправлений", "Shipment history", "Жөн�
 RETRY = ("Повторить", "Retry", "Қайталау")
 
 
+def recover_history():
+    # A connection opened before the fixture stopped can fail once more
+    # after restart. Wait for the app to offer Retry again before resubmitting.
+    android.adb("reverse", "tcp:8081", "tcp:8081")
+    for _ in range(3):
+        tap(*RETRY, clickable=True)
+        try:
+            android.find(*COMPLETED, timeout=18)
+            return
+        except RuntimeError:
+            continue
+    raise RuntimeError("Delivery history did not reload after backend restart")
+
+
 def cancel_second_delivery():
     android.adb("shell", "input", "keyevent", "4")
     android.adb("shell", "input", "keyevent", "4")
@@ -201,8 +215,7 @@ def main():
         tap(*HISTORY)
         android.find(*RETRY, timeout=35)
         process = fixture.start_backend(False)
-        tap(*RETRY, clickable=True)
-        reveal(*COMPLETED)
+        recover_history()
         cancel_second_delivery()
         fixture.completed.append("android_network_recovery_and_cancellation")
 
@@ -216,6 +229,11 @@ def main():
         fixture.write_report("PASSED", "complete")
     except Exception:
         fixture.write_report("FAILED", phase)
+        if phase in ("network_recovery_and_cancellation", "disabled_intake"):
+            try:
+                android.screenshot(f"failed-{phase}")
+            except (RuntimeError, subprocess.SubprocessError):
+                pass
         raise
     finally:
         if process is not None:
