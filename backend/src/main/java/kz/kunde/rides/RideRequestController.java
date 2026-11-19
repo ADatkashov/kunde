@@ -7,7 +7,10 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.UUID;
 import kz.kunde.identity.ConsumerIdentityService;
+import kz.kunde.rides.RideMatching.RideClass;
+import kz.kunde.rides.RideQuoteService.Quote;
 import kz.kunde.rides.RideRequestService.RideView;
+import kz.kunde.rides.RideRoutingController.Coordinates;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
@@ -32,9 +35,18 @@ public class RideRequestController {
     private final ConsumerIdentityService identity;
     private final RideRequestService rides;
 
-    public RideRequestController(ConsumerIdentityService identity, RideRequestService rides) {
+    private final RideQuoteService quotes;
+
+    public RideRequestController(ConsumerIdentityService identity, RideRequestService rides, RideQuoteService quotes) {
         this.identity = identity;
         this.rides = rides;
+        this.quotes = quotes;
+    }
+
+    @PostMapping("/quotes")
+    public ResponseEntity<Quote> quote(@AuthenticationPrincipal Jwt principal, @Valid @RequestBody CreateQuote request) {
+        return noStore(HttpStatus.CREATED, quotes.issue(identity.get(principal).id(), request.rideClass(),
+                request.pickup(), request.destination()));
     }
 
     @PostMapping
@@ -65,6 +77,9 @@ public class RideRequestController {
     private static <T> ResponseEntity<T> noStore(HttpStatus status, T body) {
         return ResponseEntity.status(status).cacheControl(CacheControl.noStore()).body(body);
     }
+
+    public record CreateQuote(@NotNull RideClass rideClass, @NotNull @Valid Coordinates pickup,
+            @NotNull @Valid Coordinates destination) {}
 
     public record CreateRide(@NotNull UUID quoteId) {}
 }

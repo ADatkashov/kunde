@@ -121,6 +121,35 @@ paths:
         '404': { description: Ride not found for caller }
         '409': { description: Ride can no longer be cancelled }
         '429': { $ref: '#/components/responses/RateLimited' }
+  /rides/quotes:
+    post:
+      operationId: issueRideQuote
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rideClass, pickup, destination]
+              properties:
+                rideClass: { type: string, enum: [ECONOMY, COMFORT, BUSINESS] }
+                pickup: { $ref: '#/components/schemas/RidePoint' }
+                destination: { $ref: '#/components/schemas/RidePoint' }
+      responses:
+        '201':
+          description: Server-priced quote scoped to the authenticated customer.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RideQuote' }
+        '400': { description: Invalid quote request }
+        '401': { description: Authentication required }
+        '403': { description: Consumer access denied }
+        '404': { description: New rides unavailable }
+        '422': { description: Tariff unavailable or route cannot be quoted }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { description: Routing adapter unavailable }
   /rides/address-search:
     post:
       operationId: searchRideAddresses
@@ -540,6 +569,18 @@ components:
           schema:
             $ref: '#/components/schemas/ApiError'
   schemas:
+    RideQuote:
+      type: object
+      required: [id, rideClass, tariffVersion, estimateKzt, currency, distanceMeters, durationSeconds, expiresAt]
+      properties:
+        id: { type: string, format: uuid }
+        rideClass: { type: string, enum: [ECONOMY, COMFORT, BUSINESS] }
+        tariffVersion: { type: string }
+        estimateKzt: { type: number, minimum: 0 }
+        currency: { const: KZT }
+        distanceMeters: { type: integer, minimum: 1 }
+        durationSeconds: { type: integer, minimum: 1 }
+        expiresAt: { type: string, format: date-time }
     RideRequest:
       type: object
       required: [id, quoteId, status, rideClass, tariffVersion, estimateKzt, currency, distanceMeters, durationSeconds, createdAt]
