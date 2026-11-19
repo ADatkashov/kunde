@@ -1,5 +1,19 @@
 name: Android Release APK (DEV)
 on:
+  workflow_call:
+    inputs:
+      executor:
+        type: boolean
+        default: false
+    secrets:
+      ANDROID_KEYSTORE_BASE64:
+        required: true
+      ANDROID_KEYSTORE_PASSWORD:
+        required: true
+      ANDROID_KEY_ALIAS:
+        required: true
+      ANDROID_KEY_PASSWORD:
+        required: true
   workflow_dispatch:
     inputs:
       executor:
@@ -111,6 +125,8 @@ jobs:
           if grep -rqaE "localhost:8080|10\.0\.2\.2" x/lib x/assets 2>/dev/null; then echo "::error::local URL in APK"; exit 1; fi
           if grep -rqaE "BEGIN (RSA |EC )?PRIVATE KEY|client_secret" x/lib x/assets 2>/dev/null; then echo "::error::secret marker in APK"; exit 1; fi
           (cd dist && sha256sum "$APK_BASENAME.apk" | tee "$APK_BASENAME.apk.sha256")
+          git rev-parse HEAD > dist/commit.txt
+          head -n 1 dist/badging.txt > dist/version.txt
           ls -l "$apk"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -119,4 +135,6 @@ jobs:
             dist/${{ env.APK_BASENAME }}.apk
             dist/${{ env.APK_BASENAME }}.apk.sha256
             dist/signing.txt
+            dist/commit.txt
+            dist/version.txt
           retention-days: 14
