@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -291,8 +292,24 @@ class DeliveryApiIntegrationTest {
         http.perform(get(adminPath).with(scopedAdmin)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1)).andExpect(jsonPath("$[0].id").value(id));
         http.perform(get(adminPath + "/" + id + "/audit").with(scopedAdmin)).andExpect(status().isOk());
+        var createdAt = db.queryForObject("select created_at from transactions.deliveries where id = ?",
+                OffsetDateTime.class, UUID.fromString(id));
+        var report = get(adminPath + "/summary").param("from", createdAt.toString())
+                .param("to", createdAt.plusDays(1).toString());
+        http.perform(report.with(scopedAdmin)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.byStatus[0].status").value("CREATED"))
+                .andExpect(jsonPath("$.byStatus[0].shipments").value(1));
+        http.perform(get(adminPath + "/summary").param("from", createdAt.minusDays(1).toString())
+                        .param("to", createdAt.toString()).with(scopedAdmin))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.total").value(0));
+        http.perform(get(adminPath + "/summary").param("from", createdAt.toString())
+                        .param("to", createdAt.plusDays(32).toString()).with(scopedAdmin))
+                .andExpect(status().isBadRequest());
         http.perform(post(adminPath + "/" + id + "/return").with(scopedAdmin)).andExpect(status().isForbidden());
         db.update("update identity.admin_role_assignments set organization_id = ? where id = ?", second, assignment);
+        http.perform(report.with(scopedAdmin)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(0)).andExpect(jsonPath("$.byStatus").isEmpty());
         http.perform(get(adminPath).with(scopedAdmin)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
         http.perform(get(adminPath + "/" + id + "/audit").with(scopedAdmin)).andExpect(status().isNotFound());

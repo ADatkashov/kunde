@@ -6,11 +6,13 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import kz.kunde.admin.AdminGrants;
 import kz.kunde.identity.ConsumerIdentityService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -67,6 +69,13 @@ public class DeliveryAdminController {
     @GetMapping
     public ResponseEntity<List<DeliveryOperations.Shipment>> shipments(@AuthenticationPrincipal Jwt principal) {
         return noStore(operations.shipments(identity.get(principal).id()));
+    }
+
+    @GetMapping("/summary")
+    public ResponseEntity<DeliveryOperations.ShipmentSummary> summary(@AuthenticationPrincipal Jwt principal,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to) {
+        return noStore(operations.summary(identity.get(principal).id(), from, to));
     }
 
     @GetMapping("/{id}/audit")

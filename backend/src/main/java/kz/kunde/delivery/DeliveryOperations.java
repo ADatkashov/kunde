@@ -1,5 +1,6 @@
 package kz.kunde.delivery;
 
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -49,6 +50,22 @@ public class DeliveryOperations {
                 rs.getObject("id", UUID.class), DeliveryState.valueOf(rs.getString("status")),
                 rs.getObject("courier_id", UUID.class), rs.getObject("partner_id", UUID.class),
                 rs.getObject("created_at", OffsetDateTime.class), rs.getBoolean("synthetic_route")), actor);
+    }
+
+    public ShipmentSummary summary(UUID actor, OffsetDateTime from, OffsetDateTime to) {
+        requireDeliveryAccess(actor);
+        if (!from.isBefore(to) || Duration.between(from, to).compareTo(Duration.ofDays(31)) > 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_DELIVERY_PERIOD",
+                    "Delivery reporting period must be positive and at most 31 days");
+        }
+        var counts = db.query("""
+                select d.status, count(*) as shipments
+                from transactions.deliveries d
+                where d.created_at >= ? and d.created_at < ? and %s
+                group by d.status order by d.status
+                """.formatted(VISIBLE_DELIVERY), (rs, row) -> new ShipmentCount(
+                DeliveryState.valueOf(rs.getString("status")), rs.getLong("shipments")), from, to, actor);
+        return new ShipmentSummary(from, to, counts.stream().mapToLong(ShipmentCount::shipments).sum(), counts);
     }
 
     public List<Event> audit(UUID actor, UUID delivery) {
@@ -104,6 +121,8 @@ public class DeliveryOperations {
 
     public record Shipment(UUID id, DeliveryState status, UUID courierId, UUID partnerId, OffsetDateTime createdAt,
             boolean syntheticRoute) {}
+    public record ShipmentSummary(OffsetDateTime from, OffsetDateTime to, long total, List<ShipmentCount> byStatus) {}
+    public record ShipmentCount(DeliveryState status, long shipments) {}
     public record Event(DeliveryState status, UUID actorId, String reason, OffsetDateTime occurredAt) {}
     public record Complaint(UUID id, UUID deliveryId, String category, String message, String status,
             OffsetDateTime createdAt) {}
