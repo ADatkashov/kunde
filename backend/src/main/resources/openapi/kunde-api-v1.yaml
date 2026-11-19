@@ -42,6 +42,113 @@ paths:
                   marketplaceEnabled: { type: boolean, example: false }
                   oidcIssuerConfigured: { type: boolean, example: false }
                   aiEnabled: { type: boolean, example: false }
+                  deliveryEnabled: { type: boolean, example: false }
+  /deliveries/quotes:
+    post:
+      operationId: createDeliveryQuote
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [parcelType, weightGrams, lengthCm, widthCm, heightCm, pickup, destination]
+              properties:
+                parcelType: { type: string, enum: [DOCUMENTS, SMALL_PARCEL, MEDIUM_PARCEL, PERSONAL_ITEMS, OTHER_ALLOWED_GOODS] }
+                weightGrams: { type: integer, minimum: 1, maximum: 50000 }
+                lengthCm: { type: integer, minimum: 1, maximum: 200 }
+                widthCm: { type: integer, minimum: 1, maximum: 200 }
+                heightCm: { type: integer, minimum: 1, maximum: 200 }
+                pickup: { $ref: '#/components/schemas/DeliveryPoint' }
+                destination: { $ref: '#/components/schemas/DeliveryPoint' }
+      responses:
+        '201':
+          description: Server-priced, owner-bound quote in KZT.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string, format: uuid }
+                  tariffVersion: { type: string }
+                  amountKzt: { type: number }
+                  currency: { type: string, const: KZT }
+                  distanceMeters: { type: integer }
+                  durationSeconds: { type: integer }
+                  syntheticRoute: { type: boolean }
+                  createdAt: { type: string, format: date-time }
+                  expiresAt: { type: string, format: date-time }
+        '404': { description: Delivery intake is disabled. }
+        '422': { description: Route or parcel cannot be served. }
+        '503': { description: Routing is unavailable. }
+  /deliveries:
+    post:
+      operationId: createDelivery
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, pattern: '^[A-Za-z0-9_-]{16,64}$' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/DeliveryDetails'
+                - type: object
+                  required: [allowedGoodsConfirmed]
+                  properties:
+                    allowedGoodsConfirmed: { type: boolean, const: true }
+      responses:
+        '201': { $ref: '#/components/responses/PersonalDelivery' }
+        '200': { $ref: '#/components/responses/PersonalDelivery' }
+        '404': { description: Delivery intake is disabled. }
+        '409': { description: Quote is unavailable or key was already used for a different request. }
+    get:
+      operationId: listDeliveries
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 30 }
+        - name: offset
+          in: query
+          schema: { type: integer, minimum: 0, maximum: 10000, default: 0 }
+      responses:
+        '200':
+          description: Shipments belonging to the caller.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PersonalDelivery' }
+  /deliveries/{deliveryId}:
+    get:
+      operationId: getDelivery
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: deliveryId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { $ref: '#/components/responses/PersonalDelivery' }
+        '404': { description: Delivery was not found for this caller. }
+  /deliveries/{deliveryId}/cancel:
+    post:
+      operationId: cancelDelivery
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: deliveryId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { $ref: '#/components/responses/PersonalDelivery' }
+        '404': { description: Delivery was not found for this caller. }
   /rides:
     post:
       operationId: createRide
@@ -720,6 +827,11 @@ components:
       scheme: bearer
       bearerFormat: JWT
   responses:
+    PersonalDelivery:
+      description: Shipment details visible to the owner. Cache-Control is no-store.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/PersonalDelivery' }
     RideReturned:
       description: Current state of the caller-owned ride request.
       content:
@@ -747,6 +859,36 @@ components:
           schema:
             $ref: '#/components/schemas/ApiError'
   schemas:
+    DeliveryPoint:
+      type: object
+      required: [latitude, longitude]
+      properties:
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+    DeliveryDetails:
+      type: object
+      required: [quoteId, pickupAddress, destinationAddress, recipientName, recipientPhone, description]
+      properties:
+        quoteId: { type: string, format: uuid }
+        pickupAddress: { type: string, minLength: 1, maxLength: 240 }
+        destinationAddress: { type: string, minLength: 1, maxLength: 240 }
+        recipientName: { type: string, minLength: 1, maxLength: 120 }
+        recipientPhone: { type: string, pattern: '^[+][1-9][0-9]{7,14}$' }
+        description: { type: string, minLength: 1, maxLength: 300 }
+        courierNote: { type: [string, 'null'], maxLength: 300 }
+    PersonalDelivery:
+      allOf:
+        - $ref: '#/components/schemas/DeliveryDetails'
+        - type: object
+          required: [id, status, parcelType, amountKzt, currency, syntheticRoute, createdAt]
+          properties:
+            id: { type: string, format: uuid }
+            status: { type: string, enum: [CREATED, CANCELLED_BY_CUSTOMER] }
+            parcelType: { type: string }
+            amountKzt: { type: number }
+            currency: { type: string, const: KZT }
+            syntheticRoute: { type: boolean }
+            createdAt: { type: string, format: date-time }
     RideQuote:
       type: object
       required: [id, rideClass, tariffVersion, estimateKzt, currency, distanceMeters, durationSeconds, expiresAt]
