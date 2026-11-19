@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.UUID;
 import kz.kunde.identity.ConsumerIdentityService;
+import kz.kunde.rides.RideDispatchService.DriverLocation;
 import kz.kunde.rides.RideMatching.RideClass;
 import kz.kunde.rides.RideQuoteService.Quote;
 import kz.kunde.rides.RideRequestService.RideView;
@@ -37,10 +38,14 @@ public class RideRequestController {
 
     private final RideQuoteService quotes;
 
-    public RideRequestController(ConsumerIdentityService identity, RideRequestService rides, RideQuoteService quotes) {
+    private final RideDispatchService dispatch;
+
+    public RideRequestController(ConsumerIdentityService identity, RideRequestService rides, RideQuoteService quotes,
+            RideDispatchService dispatch) {
         this.identity = identity;
         this.rides = rides;
         this.quotes = quotes;
+        this.dispatch = dispatch;
     }
 
     @PostMapping("/quotes")
@@ -67,6 +72,20 @@ public class RideRequestController {
     @GetMapping("/{rideId}")
     public ResponseEntity<RideView> detail(@AuthenticationPrincipal Jwt principal, @PathVariable UUID rideId) {
         return noStore(HttpStatus.OK, rides.get(identity.get(principal).id(), rideId));
+    }
+
+    @GetMapping("/{rideId}/location")
+    public ResponseEntity<DriverLocation> location(@AuthenticationPrincipal Jwt principal, @PathVariable UUID rideId) {
+        return dispatch.driverLocation(identity.get(principal).id(), rideId)
+                .map(location -> noStore(HttpStatus.OK, location))
+                .orElseGet(() -> ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build());
+    }
+
+    @PostMapping("/{rideId}/dispatch")
+    public ResponseEntity<RideView> dispatch(@AuthenticationPrincipal Jwt principal, @PathVariable UUID rideId) {
+        var customer = identity.get(principal).id();
+        dispatch.search(customer, rideId);
+        return noStore(HttpStatus.OK, rides.get(customer, rideId));
     }
 
     @PostMapping("/{rideId}/cancel")
