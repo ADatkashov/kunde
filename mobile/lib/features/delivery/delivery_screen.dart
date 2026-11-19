@@ -27,6 +27,16 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
     'PERSONAL_ITEMS',
     'OTHER_ALLOWED_GOODS',
   ];
+  static const _fieldIds = [
+    'delivery-weight',
+    'delivery-length',
+    'delivery-width',
+    'delivery-height',
+    'delivery-recipient',
+    'delivery-phone',
+    'delivery-description',
+    'delivery-note',
+  ];
   final _form = GlobalKey<FormState>();
   final _fields = List.generate(8, (_) => TextEditingController());
   RideAddress? _pickup;
@@ -241,18 +251,21 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
             for (var index = 0; index < _fields.length; index++)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
-                child: TextFormField(
-                  enabled: !locked,
-                  controller: _fields[index],
-                  decoration: InputDecoration(labelText: labels[index]),
-                  keyboardType: index < 4
-                      ? TextInputType.number
-                      : index == 5
-                          ? TextInputType.phone
-                          : TextInputType.text,
-                  maxLength: [5, 3, 3, 3, 120, 16, 300, 300][index],
-                  validator: (value) =>
-                      _validate(s, index, value?.trim() ?? ''),
+                child: Semantics(
+                  identifier: _fieldIds[index],
+                  child: TextFormField(
+                    enabled: !locked,
+                    controller: _fields[index],
+                    decoration: InputDecoration(labelText: labels[index]),
+                    keyboardType: index < 4
+                        ? TextInputType.number
+                        : index == 5
+                            ? TextInputType.phone
+                            : TextInputType.text,
+                    maxLength: [5, 3, 3, 3, 120, 16, 300, 300][index],
+                    validator: (value) =>
+                        _validate(s, index, value?.trim() ?? ''),
+                  ),
                 ),
               ),
             CheckboxListTile(
