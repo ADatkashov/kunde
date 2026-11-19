@@ -28,7 +28,11 @@ class _BusinessDeliveryScreenState extends State<BusinessDeliveryScreen> {
         totals: await widget.ops.shipmentTotals(),
       );
 
-  void _refresh() => setState(() => _data = _fetch());
+  void _refresh() {
+    setState(() {
+      _data = _fetch();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

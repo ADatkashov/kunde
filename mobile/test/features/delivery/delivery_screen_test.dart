@@ -14,6 +14,11 @@ class _Session implements AuthRepository {
 }
 
 class _HistorySession extends _Session {
+  _HistorySession({this.failFirst = false});
+
+  final bool failFirst;
+  int reads = 0;
+
   @override
   Future<dynamic> authorizedJson(
     String method,
@@ -23,11 +28,30 @@ class _HistorySession extends _Session {
     Map<String, String>? headers,
   }) async {
     expect((method, path), ('GET', 'deliveries'));
+    if (reads++ == 0 && failFirst) throw StateError('Fixture offline');
     return <Map<String, dynamic>>[];
   }
 }
 
 void main() {
+  testWidgets('retries failed shipment history after reconnecting',
+      (tester) async {
+    final session = _HistorySession(failFirst: true);
+    await tester.pumpWidget(MaterialApp(
+      locale: const Locale('en'),
+      supportedLocales: KundeLocalizations.supportedLocales,
+      localizationsDelegates: KundeLocalizations.localizationsDelegates,
+      home: DeliveryScreen(
+          api: DeliveryApi(session), synthetic: false, intakeEnabled: false),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('No shipments yet.'), findsOneWidget);
+    expect(session.reads, 2);
+  });
+
   testWidgets('disabled intake keeps history accessible with no create actions',
       (tester) async {
     await tester.pumpWidget(MaterialApp(

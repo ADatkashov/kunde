@@ -72,6 +72,12 @@ class DeliveryApi {
   Future<DeliveryOrder> cancel(String id) =>
       _order('POST', 'deliveries/$id/cancel');
 
+  Future<DeliveryOrder> rate(String id, int stars) async =>
+      DeliveryOrder.fromJson(
+        await auth.authorizedJson('POST', 'deliveries/$id/rating',
+            body: {'stars': stars}) as Map<String, dynamic>,
+      );
+
   Future<DeliveryOrder> _order(String method, String path) async =>
       DeliveryOrder.fromJson(
         await auth.authorizedJson(method, path) as Map<String, dynamic>,
@@ -121,7 +127,16 @@ class DeliveryOrder {
         amount = data['amountKzt'] as num,
         synthetic = data['syntheticRoute'] == true,
         courier =
-            (data['courier'] as Map<String, dynamic>?)?['name'] as String?;
+            (data['courier'] as Map<String, dynamic>?)?['name'] as String?,
+        stars = data['stars'] as int?,
+        parcel = data['parcel'] as Map<String, dynamic>?,
+        pickupPoint = data['pickupPoint'] as Map<String, dynamic>?,
+        destinationPoint = data['destinationPoint'] as Map<String, dynamic>?,
+        parcelType = data['parcelType'] as String?,
+        recipientName = data['recipientName'] as String?,
+        recipientPhone = data['recipientPhone'] as String?,
+        description = data['description'] as String?,
+        courierNote = data['courierNote'] as String?;
 
   final String id;
   final String status;
@@ -130,6 +145,18 @@ class DeliveryOrder {
   final num amount;
   final bool synthetic;
   final String? courier;
+  final int? stars;
+  final Map<String, dynamic>? parcel;
+  final Map<String, dynamic>? pickupPoint;
+  final Map<String, dynamic>? destinationPoint;
+  final String? parcelType;
+  final String? recipientName;
+  final String? recipientPhone;
+  final String? description;
+  final String? courierNote;
+
+  bool get repeatable =>
+      parcel != null && pickupPoint != null && destinationPoint != null;
 
   bool get active => const {
         'CREATED',

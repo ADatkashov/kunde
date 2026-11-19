@@ -3,9 +3,9 @@ package kz.kunde.delivery;
 import static kz.kunde.delivery.DeliveryState.Action.*;
 import static kz.kunde.delivery.DeliveryState.Actor.*;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.security.SecureRandom;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
@@ -41,7 +41,6 @@ public class DeliveryDispatch {
     private final JdbcTemplate db;
     private final DeliveryProperties flags;
     private final byte[] handoffKey;
-    private final SecureRandom random = new SecureRandom();
 
     public DeliveryDispatch(JdbcTemplate db, DeliveryProperties flags,
             @Value("${DELIVERY_HANDOFF_KEY:}") String handoffKey) {
@@ -218,16 +217,27 @@ public class DeliveryDispatch {
         if (trip.state() != DeliveryState.IN_TRANSIT || handoffKey.length < 32) {
             throw conflict("DELIVERY_HANDOFF_UNAVAILABLE");
         }
-        String code = String.format(Locale.ROOT, "%08d", random.nextInt(100_000_000));
-        var expires = db.query("""
-                insert into transactions.delivery_handoff_codes(delivery_id, token_hash, expires_at)
-                values (?, ?, statement_timestamp() + interval '15 minutes') on conflict do nothing
-                returning expires_at
-                """, (rs, row) -> rs.getObject(1, OffsetDateTime.class), id, digest(id, code));
-        if (expires.isEmpty()) {
-            throw conflict("DELIVERY_HANDOFF_ALREADY_ISSUED");
-        }
-        return new HandoffCode(code, expires.getFirst(), true);
+        UUID nonce = UUID.randomUUID();
+        String code = handoffCode(id, nonce);
+        db.update("""
+                insert into transactions.delivery_handoff_codes(delivery_id, token_hash, nonce, expires_at)
+                values (?, ?, ?, statement_timestamp() + interval '15 minutes')
+                on conflict (delivery_id) do update set token_hash = excluded.token_hash,
+                    nonce = excluded.nonce, expires_at = excluded.expires_at, failed_attempts = 0
+                where transactions.delivery_handoff_codes.used_at is null
+                  and transactions.delivery_handoff_codes.expires_at <= statement_timestamp()
+                """, id, digest(id + ":" + code), nonce);
+        return db.query("""
+                select nonce, expires_at from transactions.delivery_handoff_codes where delivery_id = ?
+                and nonce is not null and used_at is null and failed_attempts < 5 and expires_at > statement_timestamp()
+                """, (rs, row) -> new HandoffCode(handoffCode(id, rs.getObject("nonce", UUID.class)),
+                        rs.getObject("expires_at", OffsetDateTime.class), true), id)
+                .stream().findFirst().orElseThrow(() -> conflict("DELIVERY_HANDOFF_UNAVAILABLE"));
+    }
+
+    private String handoffCode(UUID id, UUID nonce) {
+        long entropy = ByteBuffer.wrap(digest("issue:" + id + ":" + nonce)).getLong();
+        return String.format(Locale.ROOT, "%08d", Long.remainderUnsigned(entropy, 100_000_000L));
     }
 
     @Transactional
@@ -246,7 +256,7 @@ public class DeliveryDispatch {
         if (valid.isEmpty()) {
             return false;
         }
-        if (!MessageDigest.isEqual(valid.getFirst(), digest(id, code))) {
+        if (!MessageDigest.isEqual(valid.getFirst(), digest(id + ":" + code))) {
             db.update("update transactions.delivery_handoff_codes set failed_attempts = failed_attempts + 1 where delivery_id = ?", id);
             return false;
         }
@@ -255,11 +265,11 @@ public class DeliveryDispatch {
         return true;
     }
 
-    private byte[] digest(UUID id, String code) {
+    private byte[] digest(String value) {
         try {
             var mac = Mac.getInstance("HmacSHA256");
             mac.init(new SecretKeySpec(handoffKey, "HmacSHA256"));
-            return mac.doFinal((id + ":" + code).getBytes(StandardCharsets.UTF_8));
+            return mac.doFinal(value.getBytes(StandardCharsets.UTF_8));
         } catch (java.security.GeneralSecurityException failure) {
             throw new IllegalStateException("Delivery handoff algorithm unavailable", failure);
         }

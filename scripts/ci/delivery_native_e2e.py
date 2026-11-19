@@ -68,7 +68,7 @@ def seed_courier():
     ], check=True, stdout=subprocess.DEVNULL)
 
 
-def create_delivery():
+def create_delivery(*, capture_quote=True):
     tap("Доставка", "Delivery", "Жеткізу")
     tap(*PICKUP)
     tap("[DEV/TEST] Отправитель", "[DEV/TEST] Pickup", "[DEV/TEST] Жіберуші")
@@ -89,8 +89,52 @@ def create_delivery():
         "Жөнелтілімде тыйым салынған немесе қауіпті заттар жоқ")
     tap("Рассчитать стоимость", "Get a quote", "Бағасын есептеу")
     reveal("DEV/TEST · тестовый маршрут", "DEV/TEST · synthetic route", "DEV/TEST · сынақ бағыты")
-    android.screenshot("consumer-quote")
+    if capture_quote:
+        android.screenshot("consumer-quote")
     tap("Подтвердить доставку", "Confirm delivery", "Жеткізуді растау")
+
+
+HISTORY = ("История отправлений", "Shipment history", "Жөнелтілімдер тарихы")
+RETRY = ("Повторить", "Retry", "Қайталау")
+
+
+def recover_history():
+    # A connection opened before the fixture stopped can fail once more
+    # after restart. Wait for the app to offer Retry again before resubmitting.
+    android.adb("reverse", "tcp:8081", "tcp:8081")
+    for _ in range(3):
+        tap(*RETRY, clickable=True)
+        try:
+            android.find(*COMPLETED, timeout=18)
+            return
+        except RuntimeError:
+            continue
+    raise RuntimeError("Delivery history did not reload after backend restart")
+
+
+def cancel_second_delivery():
+    android.adb("shell", "input", "keyevent", "4")
+    android.adb("shell", "input", "keyevent", "4")
+    create_delivery(capture_quote=False)
+    android.find("Ищем курьера", "Finding a courier", "Курьер ізделуде")
+    cancel = ("Отменить доставку", "Cancel delivery", "Жеткізуден бас тарту")
+    tap(*cancel, clickable=True)
+    tap(*cancel, clickable=True)
+    reveal("Отменено", "Cancelled", "Бас тартылды")
+    android.screenshot("consumer-cancelled-after-reconnect")
+
+
+def confirm_disabled_intake():
+    if fixture.call("GET", "capabilities")["deliveryEnabled"]:
+        raise RuntimeError("Delivery intake remained enabled in the disabled fixture")
+    android.adb("shell", "am", "force-stop", fixture.CONSUMER)
+    fixture.launch(fixture.CONSUMER)
+    android.find("Алматы", "Almaty", timeout=60)
+    try:
+        android.find("Доставка", "Delivery", "Жеткізу", timeout=8)
+    except RuntimeError:
+        return
+    raise RuntimeError("Delivery entry remained visible after both active shipments were closed")
 
 
 def main():
@@ -163,9 +207,33 @@ def main():
         reveal(*COMPLETED)
         android.screenshot("consumer-history")
         fixture.completed.append("consumer_history")
+
+        phase = "network_recovery_and_cancellation"
+        android.adb("shell", "input", "keyevent", "4")
+        fixture.stop_backend(process)
+        process = None
+        tap(*HISTORY)
+        android.find(*RETRY, timeout=35)
+        process = fixture.start_backend(False)
+        recover_history()
+        cancel_second_delivery()
+        fixture.completed.append("android_network_recovery_and_cancellation")
+
+        phase = "disabled_intake"
+        fixture.stop_backend(process)
+        process = None
+        os.environ["DELIVERY_ENABLED"] = "false"
+        process = fixture.start_backend(False)
+        confirm_disabled_intake()
+        fixture.completed.append("android_disabled_intake")
         fixture.write_report("PASSED", "complete")
     except Exception:
         fixture.write_report("FAILED", phase)
+        if phase in ("network_recovery_and_cancellation", "disabled_intake"):
+            try:
+                android.screenshot(f"failed-{phase}")
+            except (RuntimeError, subprocess.SubprocessError):
+                pass
         raise
     finally:
         if process is not None:

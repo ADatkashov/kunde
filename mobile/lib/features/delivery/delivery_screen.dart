@@ -15,11 +15,13 @@ class DeliveryScreen extends StatefulWidget {
       {required this.api,
       required this.synthetic,
       this.intakeEnabled = true,
+      this.draft,
       super.key});
 
   final DeliveryApi api;
   final bool synthetic;
   final bool intakeEnabled;
+  final DeliveryOrder? draft;
 
   @override
   State<DeliveryScreen> createState() => _DeliveryScreenState();
@@ -54,6 +56,30 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
   bool _error = false;
   DeliveryQuote? _quote;
   String? _key;
+
+  @override
+  void initState() {
+    super.initState();
+    final draft = widget.draft;
+    if (draft == null || !draft.repeatable) return;
+    _pickup = RideAddress(draft.pickup, draft.pickupPoint!);
+    _destination = RideAddress(draft.destination, draft.destinationPoint!);
+    if (types.contains(draft.parcelType)) _type = draft.parcelType!;
+    final parcel = draft.parcel!;
+    final values = [
+      parcel['weightGrams'],
+      parcel['lengthCm'],
+      parcel['widthCm'],
+      parcel['heightCm'],
+      draft.recipientName,
+      draft.recipientPhone,
+      draft.description,
+      draft.courierNote
+    ];
+    for (var i = 0; i < _fields.length; i++) {
+      _fields[i].text = values[i]?.toString() ?? '';
+    }
+  }
 
   @override
   void dispose() {
@@ -174,7 +200,10 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
       await Navigator.push<void>(
           context,
           MaterialPageRoute(
-              builder: (_) => _Details(api: widget.api, initial: order)));
+              builder: (_) => _Details(
+                  api: widget.api,
+                  initial: order,
+                  syntheticRouting: widget.synthetic)));
     } on IdentityApiError catch (error) {
       if (!mounted) return;
       setState(() {
@@ -217,8 +246,12 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
           icon: const Icon(Icons.history_rounded),
           onPressed: _busy
               ? null
-              : () => Navigator.push<void>(context,
-                  MaterialPageRoute(builder: (_) => _History(api: widget.api))),
+              : () => Navigator.push<void>(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => _History(
+                          api: widget.api,
+                          syntheticRouting: widget.synthetic))),
         ),
       ]),
       body: SafeArea(
@@ -360,9 +393,13 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
 }
 
 class _History extends StatefulWidget {
-  const _History({required this.api, this.allowDispatch = true});
+  const _History(
+      {required this.api,
+      this.allowDispatch = true,
+      this.syntheticRouting = false});
   final DeliveryApi api;
   final bool allowDispatch;
+  final bool syntheticRouting;
 
   @override
   State<_History> createState() => _HistoryState();
@@ -370,6 +407,12 @@ class _History extends StatefulWidget {
 
 class _HistoryState extends State<_History> {
   late Future<List<DeliveryOrder>> _history = widget.api.history();
+
+  void _reloadHistory() {
+    setState(() {
+      _history = widget.api.history();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -386,7 +429,7 @@ class _HistoryState extends State<_History> {
           if (snapshot.hasError) {
             return Center(
                 child: TextButton(
-              onPressed: () => setState(() => _history = widget.api.history()),
+              onPressed: _reloadHistory,
               child: Text(s.retry),
             ));
           }
@@ -408,8 +451,9 @@ class _HistoryState extends State<_History> {
                           builder: (_) => _Details(
                               api: widget.api,
                               initial: order,
-                              allowDispatch: widget.allowDispatch)));
-                  if (mounted) setState(() => _history = widget.api.history());
+                              allowDispatch: widget.allowDispatch,
+                              syntheticRouting: widget.syntheticRouting)));
+                  if (mounted) _reloadHistory();
                 },
               ),
           ]);
@@ -421,10 +465,14 @@ class _HistoryState extends State<_History> {
 
 class _Details extends StatefulWidget {
   const _Details(
-      {required this.api, required this.initial, this.allowDispatch = true});
+      {required this.api,
+      required this.initial,
+      this.allowDispatch = true,
+      this.syntheticRouting = false});
   final DeliveryApi api;
   final DeliveryOrder initial;
   final bool allowDispatch;
+  final bool syntheticRouting;
 
   @override
   State<_Details> createState() => _DetailsState();
@@ -529,10 +577,31 @@ class _DetailsState extends State<_Details> {
     });
   }
 
+  Future<void> _rate(DeliveryStrings s) async {
+    final rating = await showDialog<int>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: Text(s.t('Оценить курьера', 'Курьерді бағалау', 'Rate courier')),
+        children: [
+          for (final stars in [5, 4, 3, 2, 1])
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, stars),
+              child: Text('$stars / 5'),
+            ),
+        ],
+      ),
+    );
+    if (!mounted || rating == null) return;
+    await _change(() async {
+      final rated = await widget.api.rate(_order.id, rating);
+      if (mounted) setState(() => _order = rated);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = DeliveryStrings(context);
-    final code = _code;
+    final code = _code?.$2.isAfter(DateTime.now()) == true ? _code : null;
     return Scaffold(
       appBar: AppBar(title: Text(s.title)),
       body: SafeArea(
@@ -563,6 +632,42 @@ class _DetailsState extends State<_Details> {
                   '${point.$1.toStringAsFixed(5)}, ${point.$2.toStringAsFixed(5)}'),
             ),
           Text('${_order.amount} ₸'),
+          if (_order.parcel case final parcel?)
+            ListTile(
+              title: Text(s.parcel(_order.parcelType ?? 'OTHER_ALLOWED_GOODS')),
+              subtitle: Text(s.t('${parcel['weightGrams']} г',
+                  '${parcel['weightGrams']} г', '${parcel['weightGrams']} g')),
+            ),
+          if (_order.status == 'COMPLETED') ...[
+            if (_order.stars case final rating?)
+              ListTile(
+                  leading: const Icon(Icons.star_outline),
+                  title: Text(
+                      s.t('Оценка курьера', 'Курьер бағасы', 'Courier rating')),
+                  subtitle: Text('$rating / 5')),
+            if (_order.stars == null)
+              OutlinedButton(
+                  onPressed: _busy ? null : () => _rate(s),
+                  child: Text(s.t(
+                      'Оценить курьера', 'Курьерді бағалау', 'Rate courier'))),
+          ],
+          if (widget.allowDispatch &&
+              !_order.active &&
+              _order.repeatable &&
+              (!_order.synthetic || widget.syntheticRouting))
+            OutlinedButton(
+              onPressed: _busy
+                  ? null
+                  : () => Navigator.push<void>(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => DeliveryScreen(
+                              api: widget.api,
+                              synthetic: widget.syntheticRouting,
+                              draft: _order))),
+              child: Text(s.t('Повторить отправление', 'Жөнелтілімді қайталау',
+                  'Repeat shipment')),
+            ),
           if (_order.status == 'IN_TRANSIT')
             if (code != null) ...[
               Text(s.t(

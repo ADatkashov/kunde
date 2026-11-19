@@ -85,6 +85,8 @@ jobs:
           if grep -rqaE "localhost:8080|10\.0\.2\.2" x/lib x/assets 2>/dev/null; then echo "::error::local URL in APK"; exit 1; fi
           if grep -rqaE "BEGIN (RSA |EC )?PRIVATE KEY|client_secret" x/lib x/assets 2>/dev/null; then echo "::error::secret marker in APK"; exit 1; fi
           (cd dist && sha256sum KUNDE-Partner-dev-release.apk | tee KUNDE-Partner-dev-release.apk.sha256)
+          git rev-parse HEAD > dist/commit.txt
+          head -n 1 dist/badging.txt > dist/version.txt
           ls -l "$apk"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -93,5 +95,7 @@ jobs:
             dist/KUNDE-Partner-dev-release.apk
             dist/KUNDE-Partner-dev-release.apk.sha256
             dist/signing.txt
+            dist/commit.txt
+            dist/version.txt
           retention-days: 14
           if-no-files-found: error

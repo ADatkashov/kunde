@@ -181,10 +181,18 @@ class DeliveryApiIntegrationTest {
                 .andExpect(status().isCreated()).andExpect(header().string("Cache-Control", "no-store"))
                 .andReturn().getResponse().getContentAsString();
         String code = JsonPath.read(issued, "$.code");
+        http.perform(post(PATH + "/" + id + "/handoff-code").with(owner))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.code").value(code));
         String handoff = executor + "/" + id + "/handoff";
         String body = "{\"code\":\"%s\"}".formatted(code);
         http.perform(post(handoff).with(owner).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isNotFound());
+        String wrongCode = "00000000".equals(code) ? "99999999" : "00000000";
+        http.perform(post(handoff).with(courier).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"%s\"}".formatted(wrongCode)))
+                .andExpect(status().isUnprocessableEntity());
+        assertThat(db.queryForObject("select failed_attempts from transactions.delivery_handoff_codes where delivery_id = ?",
+                Integer.class, UUID.fromString(id))).isEqualTo(1);
         http.perform(post(handoff).with(courier).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isNoContent());
         http.perform(post(handoff).with(courier).contentType(MediaType.APPLICATION_JSON).content(body))
@@ -195,6 +203,14 @@ class DeliveryApiIntegrationTest {
         http.perform(get(PATH + "/" + id).with(owner)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("COMPLETED"));
 
+        String rating = PATH + "/" + id + "/rating";
+        for (int attempt = 0; attempt < 2; attempt++) {
+            http.perform(post(rating).with(owner).contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"stars\":5}"))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.stars").value(5));
+        }
+        http.perform(post(rating).with(courier).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"stars\":5}")).andExpect(status().isNotFound());
         http.perform(get(trackingPath).with(owner)).andExpect(status().isNoContent());
         http.perform(put(courierLocation).with(courier).contentType(MediaType.APPLICATION_JSON).content(location))
                 .andExpect(status().isNotFound());
