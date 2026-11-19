@@ -775,6 +775,14 @@ components:
         estimateKzt: { type: number, minimum: 0 }
         currency: { const: KZT }
         synthetic: { type: boolean, description: Internal synthetic routing fixture }
+        driver:
+          type: [object, 'null']
+          description: Assigned driver visible only to the owner of an active trip.
+          required: [name]
+          properties:
+            name: { type: string }
+            vehicle: { type: [string, 'null'] }
+            plate: { type: [string, 'null'] }
         distanceMeters: { type: integer, minimum: 1 }
         durationSeconds: { type: integer, minimum: 1 }
         createdAt: { type: string, format: date-time }

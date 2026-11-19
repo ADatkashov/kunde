@@ -140,6 +140,11 @@ class RideQuoteApiIntegrationTest {
         http.perform(post(accept).with(driverJwt).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"accept\":true}")).andExpect(status().isNoContent());
 
+        http.perform(get("/api/v1/rides/" + rideId).with(passengerJwt))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.driver.name").value("Synthetic Driver"))
+                .andExpect(jsonPath("$.driver.plate").value("TEST23"));
+        http.perform(get("/api/v1/rides/" + rideId).with(customer("stranger")))
+                .andExpect(status().isNotFound());
         String location = "/api/v1/rides/" + rideId + "/location";
         http.perform(get(location).with(customer("stranger"))).andExpect(status().isNotFound());
         http.perform(get(location).with(passengerJwt))
@@ -153,6 +158,8 @@ class RideQuoteApiIntegrationTest {
         http.perform(get("/api/v1/rides").with(passengerJwt))
                 .andExpect(status().isOk()).andExpect(jsonPath("$[0].status").value("COMPLETED"));
         http.perform(get(location).with(passengerJwt)).andExpect(status().isNoContent());
+        http.perform(get("/api/v1/rides/" + rideId).with(passengerJwt))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.driver").doesNotExist());
         http.perform(get(base + "/trips").with(driverJwt))
                 .andExpect(status().isOk()).andExpect(jsonPath("$[0].status").value("COMPLETED"));
     }

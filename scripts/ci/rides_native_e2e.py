@@ -208,6 +208,8 @@ def main():
         launch(CONSUMER)
         android.find("Водитель назначен", "Driver assigned", "Жүргізуші тағайындалды")
         android.find("Местоположение водителя", "Driver location", "Жүргізушінің орналасуы")
+        android.find("Synthetic driver")
+        android.find("Synthetic vehicle · UITEST1")
         android.screenshot("consumer-assigned")
         completed.append("consumer_driver_position")
 
