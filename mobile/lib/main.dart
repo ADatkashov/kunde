@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'core/localization/kunde_localizations.dart';
+import 'features/auto/auto_services.dart';
+import 'features/auto/data/auto_api.dart';
 import 'features/booking/booking_services.dart';
 import 'features/booking/data/booking_api.dart';
 import 'features/food/data/cart_controller.dart';
@@ -69,6 +71,15 @@ void main() {
                 timeout: const Duration(
                     seconds: apiTimeoutSeconds < 20 ? 20 : apiTimeoutSeconds)),
             auth: auth),
+    auto: auth == null
+        ? null
+        : AutoServices(
+            api: AutoApi(
+                baseUri: Uri.parse(apiBaseUrl),
+                auth: auth,
+                timeout: const Duration(
+                    seconds: apiTimeoutSeconds < 20 ? 20 : apiTimeoutSeconds)),
+            auth: auth),
     identityPocEnabled: const bool.fromEnvironment('IDENTITY_POC_ENABLED'),
     devOtpHint: const bool.fromEnvironment('DEV_OTP_HINT'),
     partnerEnabled: const bool.fromEnvironment('PARTNER_FEATURES_ENABLED'),
@@ -86,6 +97,7 @@ class KundeApp extends StatefulWidget {
       this.partnerApplyEnabled = true,
       this.food,
       this.booking,
+      this.auto,
       super.key});
 
   final KundeApi api;
@@ -102,6 +114,7 @@ class KundeApp extends StatefulWidget {
   final bool partnerApplyEnabled;
   final FoodServices? food;
   final BookingServices? booking;
+  final AutoServices? auto;
 
   @override
   State<KundeApp> createState() => _KundeAppState();
@@ -162,6 +175,7 @@ class _KundeAppState extends State<KundeApp> {
                 partnerApplyEnabled: widget.partnerApplyEnabled,
                 food: widget.food,
                 booking: widget.booking,
+                auto: widget.auto,
                 onTheme: _setTheme,
                 onLocale: (locale) => setState(() => _locale = locale))
             : widget.identityPocEnabled

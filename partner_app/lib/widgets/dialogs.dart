@@ -106,6 +106,67 @@ class _ReasonDialogState extends State<_ReasonDialog> {
   }
 }
 
+/// Asks for an amount in tenge (0..1 000 000); returns tiyn, or null when dismissed.
+Future<int?> amountDialog(BuildContext context,
+    {required String title, String? hint}) {
+  return showDialog<int>(
+      context: context,
+      builder: (_) => _AmountDialog(title: title, hint: hint));
+}
+
+class _AmountDialog extends StatefulWidget {
+  const _AmountDialog({required this.title, this.hint});
+  final String title;
+  final String? hint;
+  @override
+  State<_AmountDialog> createState() => _AmountDialogState();
+}
+
+class _AmountDialogState extends State<_AmountDialog> {
+  final _c = TextEditingController();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  int? get _tiyn {
+    final v = int.tryParse(_c.text.trim());
+    return v == null || v < 0 || v > 1000000 ? null : v * 100;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return AlertDialog(
+      title: Text(widget.title),
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        if (widget.hint != null) Text(widget.hint!),
+        const SizedBox(height: Gap.md),
+        TextField(
+          controller: _c,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          onChanged: (_) => setState(() {}),
+          decoration: InputDecoration(
+              labelText: widget.title,
+              errorText:
+                  _c.text.isNotEmpty && _tiyn == null ? s.priceInvalid : null),
+        ),
+      ]),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(context), child: Text(s.back)),
+        FilledButton(
+            onPressed:
+                _tiyn == null ? null : () => Navigator.pop(context, _tiyn),
+            child: Text(s.confirm)),
+      ],
+    );
+  }
+}
+
 /// Shows a short feedback message; replaces any message already visible.
 void showToast(BuildContext context, String message, {bool error = false}) {
   final messenger = ScaffoldMessenger.of(context);

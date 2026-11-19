@@ -445,4 +445,45 @@ class AutoApiIntegrationTest {
         assertThat(monitor).doesNotContain("userId").doesNotContain("user_id").doesNotContain("123ABC02");
         assertThat(db.queryForObject("select count(*) from marketplace.auto_admin_events", Integer.class)).isEqualTo(3);
     }
+
+    @Test
+    void partnerManagesServicesAndPostsWithIsolationAndValidation() throws Exception {
+        linkStoToPartner();
+        String base = "/api/v1/partner/partners/" + partnerA + "/booking/venues/" + sto;
+        UUID oil = service(sto, "Замена масла");
+        // another partner and a plain customer cannot touch it
+        send("PUT", base + "/services/" + oil, ownerB, "{\"priceMinor\":1}", null).andExpect(status().isNotFound());
+        send("PUT", base + "/services/" + oil, alice, "{\"priceMinor\":1}", null).andExpect(status().isForbidden());
+        // validation
+        send("PUT", base + "/services/" + oil, ownerA, "{\"priceMinor\":-5}", null).andExpect(status().isBadRequest());
+        send("PUT", base + "/services/" + oil, ownerA, "{\"durationMinutes\":50}", null).andExpect(status().isBadRequest());
+        send("PUT", base + "/services/" + oil, ownerA, "{\"priceKind\":\"FREE\"}", null).andExpect(status().isBadRequest());
+        // a price change applies to new quotes; an already booked price stays
+        String car = vehicle(alice);
+        List<String> free = slots(sto, oil, workday());
+        String booking = booked(alice, sto, oil, car, free.get(0), "alice-book-key-0000060");
+        send("PUT", base + "/services/" + oil, ownerA, "{\"priceMinor\":1500000,\"durationMinutes\":60,\"conditions\":\"Фильтр включён\"}", null)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.priceMinor").value(1500000)).andExpect(jsonPath("$.durationMinutes").value(60));
+        assertThat((Integer) JsonPath.read(body(send("GET", "/api/v1/auto/bookings/" + booking, alice, null, null)), "$.priceMinor")).isEqualTo(1200000);
+        String q = quote(alice, sto, oil, car, slots(sto, oil, workday()).get(8));
+        assertThat((Integer) JsonPath.read(q, "$.priceMinor")).isEqualTo(1500000);
+        assertThat((Integer) JsonPath.read(q, "$.durationMinutes")).isEqualTo(60);
+        // a quote made before the price changed is refused as stale
+        String stale = quoteId(alice, sto, oil, car, slots(sto, oil, workday()).get(9));
+        send("PUT", base + "/services/" + oil, ownerA, "{\"priceMinor\":1600000}", null).andExpect(status().isOk());
+        book(alice, stale, "alice-book-key-0000061").andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("QUOTE_STALE"));
+        // new service and new post
+        String created = body(send("POST", base + "/services", ownerA, "{\"name\":\"Развал-схождение\",\"autoCategory\":\"MAINTENANCE\",\"durationMinutes\":60,"
+                + "\"priceMinor\":700000,\"priceKind\":\"FIXED\"}", null).andExpect(status().isOk()));
+        UUID newService = UUID.fromString(JsonPath.read(created, "$.id"));
+        send("POST", base + "/services", ownerA, "{\"name\":\"X\",\"autoCategory\":\"NOPE\",\"durationMinutes\":60,\"priceMinor\":1}", null).andExpect(status().isBadRequest());
+        send("POST", base + "/masters", ownerB, "{\"name\":\"Пост Б\"}", null).andExpect(status().isNotFound());
+        send("POST", base + "/masters", ownerA, "{\"name\":\"Пост Б\"}", null).andExpect(status().isOk()).andExpect(jsonPath("$.hours.length()").value(6));
+        assertThat(slots(sto, newService, workday())).isNotEmpty();
+        // a non-automotive venue cannot get automotive services
+        UUID barber = db.queryForObject("select id from marketplace.booking_venues where slug = 'partner-salon-demo'", UUID.class);
+        send("POST", "/api/v1/partner/partners/" + partnerA + "/booking/venues/" + barber + "/services", ownerA,
+                "{\"name\":\"X\",\"autoCategory\":\"MAINTENANCE\",\"durationMinutes\":60,\"priceMinor\":1}", null).andExpect(status().isConflict());
+        assertThat(db.queryForObject("select count(*) from marketplace.partner_catalog_events where partner_id = ?", Integer.class, partnerA)).isGreaterThanOrEqualTo(4);
+    }
 }

@@ -51,6 +51,7 @@ class PartnerApi {
       _send('PATCH', path, body: body);
   Future<Object?> putJson(String path, Map<String, dynamic> body) =>
       _send('PUT', path, body: body);
+  Future<Object?> deleteJson(String path) => _send('DELETE', path);
 
   /// GET that must return a top-level JSON array of objects.
   Future<List<Map<String, dynamic>>> getList(String path) async {
@@ -63,9 +64,10 @@ class PartnerApi {
 
   Future<Map<String, dynamic>> getMap(String path) async =>
       _asMap(await getJson(path));
-  Future<Map<String, dynamic>> postMap(
-          String path, Map<String, dynamic> body, {String? idempotencyKey}) async =>
-      _asMap(await _send('POST', path, body: body, idempotencyKey: idempotencyKey));
+  Future<Map<String, dynamic>> postMap(String path, Map<String, dynamic> body,
+          {String? idempotencyKey}) async =>
+      _asMap(await _send('POST', path,
+          body: body, idempotencyKey: idempotencyKey));
   Future<Map<String, dynamic>> putMap(
           String path, Map<String, dynamic> body) async =>
       _asMap(await putJson(path, body));
@@ -85,7 +87,8 @@ class PartnerApi {
     for (var attempt = 0; attempt < maxAttempts; attempt++) {
       if (attempt > 0) await Future<void>.delayed(retryDelay * attempt);
       try {
-        return await _once(method, path, body: body, idempotencyKey: idempotencyKey);
+        return await _once(method, path,
+            body: body, idempotencyKey: idempotencyKey);
       } on PartnerApiException catch (e) {
         last = e;
         // A timeout is not retried: the server is slow, not unreachable, and
@@ -101,7 +104,9 @@ class PartnerApi {
   }
 
   Future<Object?> _once(String method, String path,
-      {Map<String, dynamic>? body, String? idempotencyKey, bool replayed = false}) async {
+      {Map<String, dynamic>? body,
+      String? idempotencyKey,
+      bool replayed = false}) async {
     final token = await accessToken();
     if (token == null || token.isEmpty) {
       throw const PartnerApiException(401, 'AUTH_REQUIRED');
@@ -129,7 +134,8 @@ class PartnerApi {
     if (response.statusCode == 401 && !replayed && forceRefresh != null) {
       final fresh = await forceRefresh!();
       if (fresh != null && fresh.isNotEmpty) {
-        return _once(method, path, body: body, idempotencyKey: idempotencyKey, replayed: true);
+        return _once(method, path,
+            body: body, idempotencyKey: idempotencyKey, replayed: true);
       }
     }
     Object? decoded;

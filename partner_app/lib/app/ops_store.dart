@@ -239,11 +239,12 @@ class OpsStore extends ChangeNotifier {
   }
 
   Future<PartnerBooking?> changeBooking(String id, String action,
-      {String? reason}) async {
+      {String? reason, int? finalPriceMinor}) async {
     if (!_busy.add(id)) return null;
     _notify();
     try {
-      final updated = await ops.bookingAction(id, action, reason: reason);
+      final updated = await ops.bookingAction(id, action,
+          reason: reason, finalPriceMinor: finalPriceMinor);
       await Future.wait([
         refreshBookingRequests(),
         refreshBookingUpcoming(),

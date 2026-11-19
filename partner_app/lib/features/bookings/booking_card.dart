@@ -104,6 +104,11 @@ class BookingCard extends StatelessWidget {
                         ?.copyWith(fontWeight: FontWeight.w600)),
               ),
             ]),
+            if (booking.vehicle != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text('${s.vehicleLabel}: ${booking.vehicle}'),
+              ),
             if (booking.masterName != null)
               Padding(
                 padding: const EdgeInsets.only(top: 4),

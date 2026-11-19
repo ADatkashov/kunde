@@ -16,7 +16,12 @@ Future<bool> performBookingAction(
 ) async {
   final s = S.of(context);
   String? reason;
-  if (action == 'REJECT' || action == 'CANCEL') {
+  int? finalPriceMinor;
+  if (action == 'PROPOSE_PRICE') {
+    finalPriceMinor = await amountDialog(context,
+        title: s.proposePriceTitle, hint: s.proposePriceHint);
+    if (finalPriceMinor == null) return false;
+  } else if (action == 'REJECT' || action == 'CANCEL') {
     reason = await reasonDialog(
       context,
       title: action == 'REJECT' ? s.rejectBookingTitle : s.cancelBookingTitle,
@@ -29,8 +34,8 @@ Future<bool> performBookingAction(
   }
   if (!context.mounted) return false;
   try {
-    final result =
-        await store.changeBooking(booking.id, action, reason: reason);
+    final result = await store.changeBooking(booking.id, action,
+        reason: reason, finalPriceMinor: finalPriceMinor);
     if (result == null) return false;
     if (context.mounted) showToast(context, s.bookingToast);
     return true;

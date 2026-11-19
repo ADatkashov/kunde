@@ -61,8 +61,8 @@ Tone orderTone(String status) => switch (status) {
 
 Tone bookingTone(String status) => switch (status) {
       'PENDING' || 'REQUESTED' => Tone.attention,
-      'CONFIRMED' => Tone.progress,
+      'CONFIRMED' || 'CHECKED_IN' || 'IN_PROGRESS' => Tone.progress,
       'COMPLETED' => Tone.success,
-      'CANCELLED' || 'REJECTED' => Tone.danger,
+      'CANCELLED' || 'REJECTED' || 'NO_SHOW' => Tone.danger,
       _ => Tone.neutral,
     };

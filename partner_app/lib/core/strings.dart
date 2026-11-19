@@ -229,6 +229,12 @@ class S {
         return _t('Ждёт ответа', 'Жауап күтеді', 'Awaiting reply');
       case 'CONFIRMED':
         return _t('Подтверждена', 'Расталды', 'Confirmed');
+      case 'CHECKED_IN':
+        return _t('Автомобиль принят', 'Көлік қабылданды', 'Car checked in');
+      case 'IN_PROGRESS':
+        return _t('В работе', 'Жұмыста', 'In progress');
+      case 'NO_SHOW':
+        return _t('Клиент не явился', 'Клиент келмеді', 'No-show');
       case 'COMPLETED':
         return _t('Завершена', 'Аяқталды', 'Completed');
       case 'CANCELLED':
@@ -301,6 +307,16 @@ class S {
         return _t('Отменить запись', 'Жазылудан бас тарту', 'Cancel booking');
       case 'COMPLETE':
         return _t('Услуга оказана', 'Қызмет көрсетілді', 'Service done');
+      case 'CHECK_IN':
+        return _t('Принять автомобиль', 'Көлікті қабылдау', 'Check in the car');
+      case 'START':
+        return _t('Начать работы', 'Жұмысты бастау', 'Start work');
+      case 'NO_SHOW':
+        return _t(
+            'Клиент не явился', 'Клиент келмеді', 'Customer did not come');
+      case 'PROPOSE_PRICE':
+        return _t('Предложить итоговую цену', 'Түпкілікті бағаны ұсыну',
+            'Propose final price');
       default:
         return dash;
     }
@@ -313,6 +329,19 @@ class S {
             'Подтвердить запись? Клиент увидит новый статус.',
             'Жазылуды растайсыз ба? Клиент жаңа мәртебені көреді.',
             'Confirm the booking? The customer will see the new status.');
+      case 'CHECK_IN':
+        return _t(
+            'Принять автомобиль клиента?',
+            'Клиенттің көлігін қабылдайсыз ба?',
+            'Check in the customer\'s car?');
+      case 'START':
+        return _t('Начать выполнение работ?', 'Жұмысты бастайсыз ба?',
+            'Start the work?');
+      case 'NO_SHOW':
+        return _t(
+            'Отметить, что клиент не пришёл?',
+            'Клиент келмеді деп белгілейсіз бе?',
+            'Mark the customer as a no-show?');
       case 'COMPLETE':
         return _t(
             'Отметить услугу как оказанную?',
@@ -322,6 +351,80 @@ class S {
         return confirm;
     }
   }
+
+  String get vehicleLabel => _t('Автомобиль', 'Көлік', 'Car');
+  String get priceKindLabel => _t('Вид цены', 'Баға түрі', 'Price type');
+  String priceKind(String kind) => switch (kind) {
+        'FROM' => _t(
+            'От, итог после осмотра',
+            'Бастап, қорытынды тексеруден кейін',
+            'From, final after inspection'),
+        'DIAGNOSTIC' => _t('Диагностика, работы отдельно',
+            'Диагностика, жұмыс бөлек', 'Diagnostics, work separate'),
+        _ => _t('Итоговая', 'Түпкілікті', 'Final'),
+      };
+  String get finalPriceLabel =>
+      _t('Итоговая цена', 'Түпкілікті баға', 'Final price');
+  String priceApproval(String code) => switch (code) {
+        'PENDING' => _t('ждёт согласия клиента', 'клиенттің келісімін күтеді',
+            'waiting for the customer'),
+        'APPROVED' => _t('согласована клиентом', 'клиент келісті',
+            'approved by the customer'),
+        'DECLINED' => _t(
+            'клиент отклонил', 'клиент бас тартты', 'declined by the customer'),
+        _ => code,
+      };
+  String get proposePriceTitle =>
+      _t('Итоговая цена, ₸', 'Түпкілікті баға, ₸', 'Final price, ₸');
+  String get proposePriceHint => _t(
+      'Клиент должен согласовать цену до завершения.',
+      'Аяқтамас бұрын клиент бағамен келісуі керек.',
+      'The customer must approve the price before completion.');
+  String get priceInvalid => _t(
+      'Введите сумму от 0 до 1 000 000 ₸',
+      '0–1 000 000 ₸ сомасын енгізіңіз',
+      'Enter an amount from 0 to 1,000,000 ₸');
+  String get timeOffTitle =>
+      _t('Недоступные периоды', 'Қолжетімсіз кезеңдер', 'Unavailable periods');
+  String get timeOffEmpty => _t('Недоступных периодов нет',
+      'Қолжетімсіз кезеңдер жоқ', 'No unavailable periods');
+  String get timeOffAdd => _t('Добавить период', 'Кезең қосу', 'Add a period');
+  String get timeOffAllPosts => _t('Все посты', 'Барлық бекеттер', 'All posts');
+  String get timeOffFrom => _t('Начало', 'Басы', 'Start');
+  String get timeOffTo => _t('Конец', 'Соңы', 'End');
+  String get timeOffReason => _t(
+      'Причина (необязательно)', 'Себебі (міндетті емес)', 'Reason (optional)');
+  String get timeOffRemove =>
+      _t('Удалить период', 'Кезеңді жою', 'Remove period');
+  String get timeOffOrderInvalid => _t('Конец должен быть позже начала',
+      'Соңы басынан кеш болуы керек', 'The end must be after the start');
+  String get editService =>
+      _t('Изменить услугу', 'Қызметті өзгерту', 'Edit service');
+  String get addService => _t('Добавить услугу', 'Қызмет қосу', 'Add service');
+  String get addPost => _t('Добавить пост', 'Бекет қосу', 'Add post');
+  String get postName => _t('Название поста', 'Бекет атауы', 'Post name');
+  String get serviceDuration => _t('Длительность, мин (кратно 15)',
+      'Ұзақтығы, мин (15-ке еселі)', 'Duration, min (multiple of 15)');
+  String get serviceDurationInvalid => _t('15–240 минут, шаг 15',
+      '15–240 минут, қадамы 15', '15–240 minutes, step 15');
+  String get serviceConditions => _t('Условия (необязательно)',
+      'Шарттар (міндетті емес)', 'Conditions (optional)');
+  String get serviceCategory => _t('Категория', 'Санат', 'Category');
+  String get autoCategoriesNote => _t(
+      'Изменение цены не затрагивает уже созданные записи.',
+      'Бағаның өзгеруі жасалған жазылуларға әсер етпейді.',
+      'A price change does not affect existing bookings.');
+  String autoCategory(String code) => switch (code) {
+        'CAR_WASH' => _t('Автомойка', 'Көлік жуу', 'Car wash'),
+        'TIRE' => _t('Шиномонтаж', 'Шина орнату', 'Tire service'),
+        'OIL_CHANGE' => _t('Замена масла', 'Май ауыстыру', 'Oil change'),
+        'DIAGNOSTICS' => _t('Диагностика', 'Диагностика', 'Diagnostics'),
+        'MAINTENANCE' => _t('Техобслуживание', 'Техқызмет', 'Maintenance'),
+        'REPAIR' => _t('Ремонт', 'Жөндеу', 'Repair'),
+        'ROADSIDE' =>
+          _t('Выездная помощь', 'Жолдағы көмек', 'Roadside assistance'),
+        _ => _t('Другое', 'Басқа', 'Other'),
+      };
 
   String get rejectBookingTitle =>
       _t('Отклонить заявку', 'Өтінімнен бас тарту', 'Reject request');

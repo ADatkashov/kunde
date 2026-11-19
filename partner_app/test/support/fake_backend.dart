@@ -90,6 +90,7 @@ Map<String, dynamic> bookingJson({
   String status = 'PENDING',
   List<String> allowedActions = const ['CONFIRM', 'REJECT'],
   DateTime? startsAt,
+  Map<String, dynamic> extra = const {},
 }) {
   final start = startsAt ?? DateTime.now().add(const Duration(days: 1));
   return {
@@ -116,6 +117,7 @@ Map<String, dynamic> bookingJson({
         'actor': 'CUSTOMER'
       },
     ],
+    ...extra,
   };
 }
 
@@ -159,6 +161,9 @@ class FakeBackend {
       'open': true
     },
   ];
+
+  List<Map<String, dynamic>> timeOff = [];
+  Map<String, dynamic>? lastBookingAction;
 
   List<Map<String, dynamic>> dishes = [
     {
@@ -307,8 +312,12 @@ class FakeBackend {
           RegExp(r'booking/bookings/([^/]+)/action').firstMatch(rest);
       if (booking != null && r.method == 'POST') {
         final body = jsonDecode(r.body) as Map<String, dynamic>;
+        lastBookingAction = body;
         final status = switch (body['action']) {
           'CONFIRM' => 'CONFIRMED',
+          'CHECK_IN' => 'CHECKED_IN',
+          'START' || 'PROPOSE_PRICE' => 'IN_PROGRESS',
+          'NO_SHOW' => 'NO_SHOW',
           'COMPLETE' => 'COMPLETED',
           _ => 'CANCELLED',
         };
@@ -332,7 +341,61 @@ class FakeBackend {
       if (RegExp(r'^booking/venues/[^/]+/masters$').hasMatch(rest)) {
         return json(masters);
       }
+      if (RegExp(r'^booking/venues/[^/]+/time-off$').hasMatch(rest)) {
+        return json(timeOff);
+      }
       return null;
+    }
+    if (RegExp(r'^booking/venues/[^/]+/time-off$').hasMatch(rest) &&
+        r.method == 'POST') {
+      if (operatorRole) return forbidden;
+      final created = {'id': 'off-${timeOff.length + 1}', ...body()};
+      timeOff = [...timeOff, created];
+      return json(created);
+    }
+    var off =
+        RegExp(r'^booking/venues/[^/]+/time-off/([^/]+)$').firstMatch(rest);
+    if (off != null && r.method == 'DELETE') {
+      timeOff = [
+        for (final t in timeOff)
+          if (t['id'] != off.group(1)) t
+      ];
+      return http.Response('', 204);
+    }
+    if (RegExp(r'^booking/venues/[^/]+/services$').hasMatch(rest) &&
+        r.method == 'POST') {
+      if (operatorRole) return forbidden;
+      final created = {
+        'id': 'svc-new',
+        'available': true,
+        'priceKind': 'FIXED',
+        'conditions': '',
+        ...body()
+      };
+      services = [...services, created];
+      return json(created);
+    }
+    if (RegExp(r'^booking/venues/[^/]+/masters$').hasMatch(rest) &&
+        r.method == 'POST') {
+      if (operatorRole) return forbidden;
+      final created = {
+        'id': 'post-new',
+        'active': true,
+        'hours': [],
+        'name': body()['name']
+      };
+      masters = [...masters, created];
+      return json(created);
+    }
+    var svc =
+        RegExp(r'^booking/venues/[^/]+/services/([^/]+)$').firstMatch(rest);
+    if (svc != null && r.method == 'PUT') {
+      if (operatorRole) return forbidden;
+      services = [
+        for (final x in services)
+          x['id'] == svc.group(1) ? {...x, ...body()} : x
+      ];
+      return json(services.firstWhere((x) => x['id'] == svc.group(1)));
     }
     var m = RegExp(r'^food/restaurants/([^/]+)$').firstMatch(rest);
     if (m != null && r.method == 'PATCH') {

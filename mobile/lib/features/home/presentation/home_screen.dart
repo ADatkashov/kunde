@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import '../../assistant/assistant_screen.dart';
+import '../../auto/auto_services.dart';
+import '../../auto/presentation/auto_home_screen.dart';
 import '../../booking/booking_services.dart';
 import '../../booking/presentation/category_screens.dart';
 import '../../delivery/delivery_api.dart';
@@ -28,6 +30,7 @@ class HomeScreen extends StatefulWidget {
     this.onOpenAssistant,
     this.food,
     this.booking,
+    this.auto,
     this.rides,
     this.delivery,
     super.key,
@@ -44,6 +47,9 @@ class HomeScreen extends StatefulWidget {
 
   /// Service booking (barbershops); shown when the server enables it.
   final BookingServices? booking;
+
+  /// KUNDE Auto; shown when the server enables it.
+  final AutoServices? auto;
   final RideApi? rides;
   final DeliveryApi? delivery;
 
@@ -169,8 +175,9 @@ class _HomeScreenState extends State<HomeScreen> {
     bool foodEnabled,
     bool bookingEnabled,
     bool ridesEnabled,
-    bool deliveryEnabled,
-  ) =>
+    bool deliveryEnabled, {
+    bool autoEnabled = false,
+  }) =>
       [
         ServiceCategory(
           icon: Icons.ramen_dining_rounded,
@@ -223,6 +230,7 @@ class _HomeScreenState extends State<HomeScreen> {
           icon: Icons.directions_car_rounded,
           label: s.catAuto,
           color: const Color(0xFF1769AA),
+          enabled: autoEnabled && widget.auto != null,
         ),
         ServiceCategory(
           icon: Icons.confirmation_number_rounded,
@@ -268,6 +276,12 @@ class _HomeScreenState extends State<HomeScreen> {
       Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => HomeServicesCategoryScreen(services: widget.booking!),
+        ),
+      );
+    } else if (c.label == s.catAuto && c.enabled && widget.auto != null) {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => AutoHomeScreen(services: widget.auto!),
         ),
       );
     } else if (c.label == s.catGroceries &&
@@ -363,6 +377,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   snapshot?.bookingEnabled ?? false,
                   snapshot?.ridesEnabled ?? false,
                   (snapshot?.deliveryEnabled ?? false) || _deliveryResume,
+                  autoEnabled: snapshot?.autoEnabled ?? false,
                 );
                 final visibleCategories = [
                   for (final label in [
