@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../admin_employees/admin_employee_screen.dart';
 import '../auto_admin/auto_admin_screen.dart';
 import '../delivery_admin/delivery_admin_screen.dart';
 import '../identity/auth_repository.dart';
@@ -235,6 +236,19 @@ class _RideAdminScreenState extends State<RideAdminScreen> {
                 ),
               ),
             ),
+        if (permissions.contains('ADMIN_GRANTS'))
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.badge_outlined),
+              title: Text(s.t('Сотрудники', 'Қызметкерлер', 'Employees')),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push<void>(
+                MaterialPageRoute(
+                  builder: (_) => AdminEmployeeScreen(auth: widget.auth),
+                ),
+              ),
+            ),
+          ),
       ];
 }
 
