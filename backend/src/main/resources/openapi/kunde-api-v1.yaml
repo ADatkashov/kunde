@@ -442,8 +442,11 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [permissions]
+                required: [permissions, deliveryShipmentRead]
                 properties:
+                  deliveryShipmentRead:
+                    type: boolean
+                    description: The caller can read the Delivery shipment queue within their effective scope.
                   permissions:
                     type: array
                     uniqueItems: true

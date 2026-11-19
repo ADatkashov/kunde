@@ -71,9 +71,13 @@ public class DeliveryOperations {
         return events.stream().filter(Objects::nonNull).toList();
     }
 
+    public boolean canReadShipments(UUID actor) {
+        return Boolean.TRUE.equals(db.queryForObject("select exists (select 1 " + DELIVERY_GRANTS + ")",
+                Boolean.class, actor));
+    }
+
     private void requireDeliveryAccess(UUID actor) {
-        if (!Boolean.TRUE.equals(db.queryForObject("select exists (select 1 " + DELIVERY_GRANTS + ")",
-                Boolean.class, actor))) {
+        if (!canReadShipments(actor)) {
             throw new ApiException(HttpStatus.FORBIDDEN, "ADMIN_FORBIDDEN", "Administrator permission is required");
         }
     }

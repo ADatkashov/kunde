@@ -5,6 +5,10 @@ import 'package:kunde_mobile/features/identity/auth_repository.dart';
 import 'package:kunde_mobile/features/rides_admin/ride_admin_screen.dart';
 
 class _AdminSession implements AuthRepository {
+  _AdminSession({this.scoped = false});
+
+  final bool scoped;
+
   @override
   Future<dynamic> authorizedJson(
     String method,
@@ -13,9 +17,15 @@ class _AdminSession implements AuthRepository {
     Set<int> expected = const {200},
     Map<String, String>? headers,
   }) async {
+    if (scoped && (method, path) == ('GET', 'admin/deliveries')) {
+      return [
+        <String, dynamic>{'id': 'shipment-1', 'status': 'DELIVERY_FAILED'},
+      ];
+    }
     expect((method, path), ('GET', 'admin/me/capabilities'));
     return <String, dynamic>{
-      'permissions': ['DELIVERY_OPERATIONS'],
+      'permissions': [if (!scoped) 'DELIVERY_OPERATIONS'],
+      'deliveryShipmentRead': scoped,
     };
   }
 
@@ -27,6 +37,24 @@ class _AdminSession implements AuthRepository {
 }
 
 void main() {
+  testWidgets('scoped Delivery reader sees only shipments and audit',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      locale: const Locale('en'),
+      supportedLocales: KundeLocalizations.supportedLocales,
+      localizationsDelegates: KundeLocalizations.localizationsDelegates,
+      home: RideAdminScreen(auth: _AdminSession(scoped: true)),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('Couriers'), findsNothing);
+    expect(find.text('Delivery complaints'), findsNothing);
+    await tester.tap(find.text('Shipments'));
+    await tester.pumpAndSettle();
+    expect(find.text('shipment-1'), findsOneWidget);
+    expect(find.text('Audit trail'), findsOneWidget);
+    expect(find.text('Request return'), findsNothing);
+  });
+
   for (final width in [320.0, 390.0, 600.0, 840.0, 1280.0, 1920.0]) {
     testWidgets('shows authorized queues at width $width with 200% text', (
       tester,

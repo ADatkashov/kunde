@@ -2,6 +2,7 @@ package kz.kunde.admin;
 
 import java.util.List;
 import kz.kunde.admin.AdminGrants.Permission;
+import kz.kunde.delivery.DeliveryOperations;
 import kz.kunde.partner.PartnerAccessPolicy;
 import kz.kunde.platform.ApiException;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -21,8 +22,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminCapabilitiesController {
     private final AdminGrants grants;
 
-    public AdminCapabilitiesController(AdminGrants grants) {
+    private final DeliveryOperations delivery;
+
+    public AdminCapabilitiesController(AdminGrants grants, DeliveryOperations delivery) {
         this.grants = grants;
+        this.delivery = delivery;
     }
 
     @GetMapping("/api/v1/admin/me/capabilities")
@@ -30,8 +34,8 @@ public class AdminCapabilitiesController {
         var userId = PartnerAccessPolicy.userId(principal)
                 .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN", "Access is not allowed"));
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())
-                .body(new Capabilities(grants.activePermissions(userId)));
+                .body(new Capabilities(grants.activePermissions(userId), delivery.canReadShipments(userId)));
     }
 
-    public record Capabilities(List<Permission> permissions) {}
+    public record Capabilities(List<Permission> permissions, boolean deliveryShipmentRead) {}
 }

@@ -15,16 +15,18 @@ class RideAdminScreen extends StatefulWidget {
 }
 
 class _RideAdminScreenState extends State<RideAdminScreen> {
-  late Future<Set<String>> _permissions = _loadPermissions();
+  late Future<(Set<String>, bool)> _permissions = _loadPermissions();
 
-  Future<Set<String>> _loadPermissions() async {
+  Future<(Set<String>, bool)> _loadPermissions() async {
     final response = await widget.auth.authorizedJson(
       'GET',
       'admin/me/capabilities',
     );
-    return ((response as Map<String, dynamic>)['permissions'] as List<dynamic>)
-        .cast<String>()
-        .toSet();
+    final capabilities = response as Map<String, dynamic>;
+    return (
+      (capabilities['permissions'] as List<dynamic>).cast<String>().toSet(),
+      capabilities['deliveryShipmentRead'] == true,
+    );
   }
 
   @override
@@ -41,7 +43,7 @@ class _RideAdminScreenState extends State<RideAdminScreen> {
           ),
         ],
       ),
-      body: FutureBuilder<Set<String>>(
+      body: FutureBuilder<(Set<String>, bool)>(
         future: _permissions,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
@@ -71,8 +73,9 @@ class _RideAdminScreenState extends State<RideAdminScreen> {
               ),
             );
           }
-          final permissions = snapshot.requireData;
-          final workspaces = _workspaces(context, s, permissions);
+          final (permissions, deliveryShipmentRead) = snapshot.requireData;
+          final workspaces =
+              _workspaces(context, s, permissions, deliveryShipmentRead);
           if (workspaces.isEmpty) {
             return Center(
               child: Padding(
@@ -118,9 +121,10 @@ class _RideAdminScreenState extends State<RideAdminScreen> {
     BuildContext context,
     RideStrings s,
     Set<String> permissions,
+    bool deliveryShipmentRead,
   ) =>
       [
-        if (permissions.contains('DELIVERY_OPERATIONS'))
+        if (deliveryShipmentRead || permissions.contains('DELIVERY_OPERATIONS'))
           for (final (area, label, icon) in [
             (
               DeliveryAdminArea.couriers,
@@ -139,19 +143,25 @@ class _RideAdminScreenState extends State<RideAdminScreen> {
               Icons.flag_outlined,
             ),
           ])
-            Card(
-              child: ListTile(
-                leading: Icon(icon),
-                title: Text(label),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.of(context).push<void>(
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        DeliveryAdminScreen(auth: widget.auth, area: area),
+            if (area == DeliveryAdminArea.shipments ||
+                permissions.contains('DELIVERY_OPERATIONS'))
+              Card(
+                child: ListTile(
+                  leading: Icon(icon),
+                  title: Text(label),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push<void>(
+                    MaterialPageRoute(
+                      builder: (_) => DeliveryAdminScreen(
+                        auth: widget.auth,
+                        area: area,
+                        canRequestReturn:
+                            permissions.contains('DELIVERY_OPERATIONS'),
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
         if (permissions.contains('AUTO_OPERATIONS'))
           for (final (area, label, icon) in [
             (
