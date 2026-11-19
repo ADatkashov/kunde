@@ -6,12 +6,11 @@ import 'package:kunde_mobile/features/identity/auth_repository.dart';
 
 /// In-memory AUTO_SPECIALIST backend behind the AuthRepository seam.
 class _SpecialistSession implements AuthRepository {
-  _SpecialistSession(
-      {this.savedProfile, this.kind = 'APPROVED', this.online = true});
+  _SpecialistSession({this.kind = 'APPROVED'});
 
   Map<String, dynamic>? savedProfile;
   String kind;
-  bool online;
+  bool online = true;
   final calls = <String>[];
   final bodies = <Map<String, dynamic>?>[];
   Map<String, dynamic>? job;
