@@ -58,6 +58,8 @@ class AutoVenue {
       required this.open,
       required this.synthetic,
       required this.categories,
+      this.rating,
+      this.reviews = 0,
       this.fromPriceMinor});
 
   final String id;
@@ -68,6 +70,8 @@ class AutoVenue {
   final bool synthetic;
   final int? fromPriceMinor;
   final List<String> categories;
+  final double? rating;
+  final int reviews;
 
   factory AutoVenue.fromJson(Map<String, dynamic> j) => AutoVenue(
           id: _str(j, 'id'),
@@ -77,6 +81,8 @@ class AutoVenue {
           open: j['open'] == true,
           synthetic: j['synthetic'] == true,
           fromPriceMinor: j['fromPriceMinor'] as int?,
+          rating: (j['rating'] as num?)?.toDouble(),
+          reviews: j['reviews'] as int? ?? 0,
           categories: [
             for (final c in (j['categories'] as List<dynamic>? ?? const []))
               c as String

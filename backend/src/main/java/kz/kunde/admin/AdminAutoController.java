@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.*;
 @PreAuthorize("@adminAccessPolicy.allowed(authentication)")
 @ConditionalOnProperty(name = {"app.booking.enabled", "app.identity.consumer-enabled", "app.auth.phone.enabled"}, havingValue = "true")
 public class AdminAutoController {
-    public record CategoryView(String code, String nameRu, boolean enabled) {}
+    public record CategoryView(String code, String nameRu, boolean enabled, boolean mobile) {}
 
     public record BookingRow(String id, String venueName, String serviceName, String status, OffsetDateTime startsAt, long priceMinor, String priceKind) {}
 
@@ -39,11 +39,13 @@ public class AdminAutoController {
     private final JdbcTemplate db;
     private final AdminGrants grants;
     private final kz.kunde.auto.AutoJobService jobs;
+    private final kz.kunde.auto.AutoFeedbackService feedback;
 
-    public AdminAutoController(JdbcTemplate db, AdminGrants grants, kz.kunde.auto.AutoJobService jobs) {
+    public AdminAutoController(JdbcTemplate db, AdminGrants grants, kz.kunde.auto.AutoJobService jobs, kz.kunde.auto.AutoFeedbackService feedback) {
         this.db = db;
         this.grants = grants;
         this.jobs = jobs;
+        this.feedback = feedback;
     }
 
     private UUID admin(Jwt principal) {
@@ -59,8 +61,8 @@ public class AdminAutoController {
     @GetMapping("/categories")
     ResponseEntity<List<CategoryView>> categories(@AuthenticationPrincipal Jwt principal) {
         admin(principal);
-        return ok(db.query("select code, name_ru, enabled from marketplace.auto_service_categories order by sort_order",
-                (rs, n) -> new CategoryView(rs.getString(1), rs.getString(2), rs.getBoolean(3))));
+        return ok(db.query("select code, name_ru, enabled, mobile from marketplace.auto_service_categories order by sort_order",
+                (rs, n) -> new CategoryView(rs.getString(1), rs.getString(2), rs.getBoolean(3), rs.getBoolean(4))));
     }
 
     @Transactional
@@ -71,8 +73,8 @@ public class AdminAutoController {
             throw new ApiException(HttpStatus.NOT_FOUND, "CATEGORY_NOT_FOUND", "Category not found");
         }
         audit(admin, "CATEGORY_" + (body.enabled() ? "ENABLED" : "DISABLED"), code);
-        return ok(db.query("select code, name_ru, enabled from marketplace.auto_service_categories where code = ?",
-                (rs, n) -> new CategoryView(rs.getString(1), rs.getString(2), rs.getBoolean(3)), code).get(0));
+        return ok(db.query("select code, name_ru, enabled, mobile from marketplace.auto_service_categories where code = ?",
+                (rs, n) -> new CategoryView(rs.getString(1), rs.getString(2), rs.getBoolean(3), rs.getBoolean(4)), code).get(0));
     }
 
     /** Blocking hides a venue from the catalog and slots; existing bookings stay and can be cancelled or completed. */
@@ -105,6 +107,28 @@ public class AdminAutoController {
             @Valid @RequestBody SpecialistDecision body) {
         UUID admin = admin(principal);
         return ok(jobs.review(admin, id, body.approve(), body.categories(), body.reason()));
+    }
+
+    public record ResolveBody(@jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(max = 300) String resolution) {}
+
+    @GetMapping("/complaints")
+    ResponseEntity<List<kz.kunde.auto.AutoFeedbackService.Complaint>> complaints(@AuthenticationPrincipal Jwt principal,
+            @RequestParam(defaultValue = "false") boolean includeResolved) {
+        admin(principal);
+        return ok(feedback.queue(includeResolved));
+    }
+
+    @PostMapping("/complaints/{id}/resolve")
+    ResponseEntity<kz.kunde.auto.AutoFeedbackService.Complaint> resolve(@AuthenticationPrincipal Jwt principal, @PathVariable UUID id, @Valid @RequestBody ResolveBody body) {
+        UUID admin = admin(principal);
+        return ok(feedback.resolve(admin, id, body.resolution()));
+    }
+
+    @GetMapping("/venues")
+    ResponseEntity<List<VenueView>> venueList(@AuthenticationPrincipal Jwt principal) {
+        admin(principal);
+        return ok(db.query("select id, name, is_open from marketplace.booking_venues where category = 'AUTO' order by name",
+                (rs, n) -> new VenueView(rs.getString(1), rs.getString(2), rs.getBoolean(3))));
     }
 
     public record JobRow(String id, String category, String status, String specialist, long priceMinor, OffsetDateTime createdAt) {}

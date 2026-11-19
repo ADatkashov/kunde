@@ -197,6 +197,9 @@ class _VenueCard extends StatelessWidget {
               Text(venue.name, style: theme.textTheme.titleLarge),
               const SizedBox(height: 2),
               Text(venue.addressText, style: theme.textTheme.bodyMedium),
+              if (venue.rating != null)
+                Text(s.auRating(
+                    venue.rating!.toStringAsFixed(1), venue.reviews)),
               if (venue.fromPriceMinor != null) ...[
                 const SizedBox(height: 8),
                 Text(s.auFrom(formatTenge(venue.fromPriceMinor!)),

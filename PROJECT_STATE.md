@@ -3,8 +3,8 @@
 ## KUNDE Auto 1.0 — backend slice (в работе)
 
 - Backend Auto (Flyway V34) построен на Booking Engine: автомобили, серверные котировки, идемпотентная запись, защита от двойной записи и буфер, перенос/отмена, жизненный цикл партнёра с согласованием цены, недоступные периоды, Admin и флаг `AUTO_ENABLED` (выключен). `mvn verify` на PostgreSQL 16: 316 тестов, 0 ошибок. Детали и ограничения: [auto](docs/product/auto.md).
-- Consumer Flutter Auto (PR 2): экраны и тесты есть, `flutter analyze --fatal-infos` чисто, `flutter test` 234 прошли локально; на устройстве не проверено.
-- **Не готово:** Flutter Partner/Executor/Admin, Android E2E, APK, платёжный DEV-контракт, жалобы/отзывы. Статус Functional DEV/TEST Ready **не** заявлен.
+- В `main`: backend (#149), Consumer + Partner + backend Executor (#150), Executor Flutter (#151). Далее: Admin, жалобы и отзывы (V36), локально `mvn verify` 325, Flutter 244 теста, `flutter analyze --fatal-infos` чисто; на устройстве не проверено.
+- **Не готово:** Android E2E, APK, платёжный DEV-контракт, жалобы/отзывы. Статус Functional DEV/TEST Ready **не** заявлен.
 
 ## KUNDE Delivery 1.0
 

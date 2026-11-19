@@ -20,6 +20,7 @@ enum AutoFailure {
   rescheduleLimit,
   unavailable,
   versionConflict,
+  alreadyDone,
   invalid,
   notFound,
   other
@@ -88,6 +89,8 @@ class AutoApi {
         'RESCHEDULE_LIMIT' => AutoFailure.rescheduleLimit,
         'AUTO_DISABLED' || 'AUTO_CATEGORY_DISABLED' => AutoFailure.unavailable,
         'VEHICLE_VERSION_CONFLICT' => AutoFailure.versionConflict,
+        'REVIEW_EXISTS' || 'COMPLAINT_ALREADY_OPEN' => AutoFailure.alreadyDone,
+        'REVIEW_NOT_ALLOWED' => AutoFailure.notReschedulable,
         'VEHICLE_INVALID' ||
         'VEHICLE_YEAR_INVALID' ||
         'PLATE_INVALID' =>
@@ -225,6 +228,33 @@ class AutoApi {
       _guard(() async => AutoBookingRecord.fromJson((await auth.authorizedJson(
           'POST', 'auto/bookings/$id/price-decision',
           body: {'approve': approve})) as Map<String, dynamic>));
+
+  /// One review per completed booking; the server refuses a second one.
+  Future<void> review(String bookingId,
+          {required int rating, String text = ''}) =>
+      _guard(() async {
+        await auth.authorizedJson('POST', 'auto/bookings/$bookingId/review',
+            body: {
+              'rating': rating,
+              if (text.trim().isNotEmpty) 'text': text.trim()
+            },
+            expected: const {
+              201
+            });
+      });
+
+  /// [kind]: QUALITY, PRICE, BEHAVIOR, NO_SHOW or OTHER. Only one open complaint per booking.
+  Future<void> complain(String bookingId,
+          {required String kind, required String description}) =>
+      _guard(() async {
+        await auth.authorizedJson('POST', 'auto/complaints', body: {
+          'bookingId': bookingId,
+          'kind': kind,
+          'description': description.trim()
+        }, expected: const {
+          201
+        });
+      });
 
   static String newIdempotencyKey() {
     final random = Random.secure();

@@ -28,6 +28,7 @@ class _AutoBookingDetailScreenState extends State<AutoBookingDetailScreen> {
   AutoBookingRecord? _record;
   AutoFailure? _loadError;
   String? _error;
+  String? _notice;
   bool _busy = false;
 
   @override
@@ -100,6 +101,45 @@ class _AutoBookingDetailScreenState extends State<AutoBookingDetailScreen> {
             ));
     if (ok == true) {
       await _run(() => widget.services.api.cancel(widget.bookingId));
+    }
+  }
+
+  Future<void> _review() async {
+    final s = auL10n(context);
+    final result = await showDialog<(int, String)>(
+        context: context, builder: (_) => const _ReviewDialog());
+    if (result == null) return;
+    await _feedback(
+        () => widget.services.api
+            .review(widget.bookingId, rating: result.$1, text: result.$2),
+        s.auReviewThanks);
+  }
+
+  Future<void> _complain() async {
+    final s = auL10n(context);
+    final result = await showDialog<(String, String)>(
+        context: context, builder: (_) => const _ComplaintDialog());
+    if (result == null) return;
+    await _feedback(
+        () => widget.services.api.complain(widget.bookingId,
+            kind: result.$1, description: result.$2),
+        s.auComplaintSent);
+  }
+
+  Future<void> _feedback(Future<void> Function() action, String done) async {
+    final s = auL10n(context);
+    setState(() {
+      _busy = true;
+      _error = null;
+      _notice = null;
+    });
+    try {
+      await action();
+      if (mounted) setState(() => _notice = done);
+    } on AutoException catch (e) {
+      if (mounted) setState(() => _error = s.auError(e.failure));
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -204,6 +244,11 @@ class _AutoBookingDetailScreenState extends State<AutoBookingDetailScreen> {
                     ),
                   ],
                   if (b.cancelReason == 'LATE_CANCEL') Text(s.auLateCancel),
+                  if (_notice != null)
+                    Semantics(
+                        liveRegion: true,
+                        child:
+                            Text(_notice!, style: theme.textTheme.titleSmall)),
                   if (_error != null) ...[
                     const SizedBox(height: 12),
                     AutoErrorBanner(_error!),
@@ -220,6 +265,16 @@ class _AutoBookingDetailScreenState extends State<AutoBookingDetailScreen> {
                         onPressed: _busy ? null : _cancel,
                         child: Text(s.auCancelBooking)),
                   ],
+                  if (b.status == 'COMPLETED')
+                    OutlinedButton(
+                        onPressed: _busy ? null : _review,
+                        child: Text(s.auReview)),
+                  if (!b.active && b.status != 'CANCELLED') ...[
+                    const SizedBox(height: 8),
+                    OutlinedButton(
+                        onPressed: _busy ? null : _complain,
+                        child: Text(s.auComplain)),
+                  ],
                   if (!b.active && b.serviceId.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     FilledButton(
@@ -235,6 +290,121 @@ class _AutoBookingDetailScreenState extends State<AutoBookingDetailScreen> {
                 ]),
               ),
             ),
+    );
+  }
+}
+
+/// Owns its controller so it is disposed only after the dialog route has closed.
+class _ReviewDialog extends StatefulWidget {
+  const _ReviewDialog();
+  @override
+  State<_ReviewDialog> createState() => _ReviewDialogState();
+}
+
+class _ReviewDialogState extends State<_ReviewDialog> {
+  final _text = TextEditingController();
+  int _rating = 0;
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = auL10n(context);
+    return AlertDialog(
+      title: Text(s.auReviewTitle),
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        Wrap(children: [
+          for (var i = 1; i <= 5; i++)
+            IconButton(
+              tooltip: '$i',
+              icon: Icon(i <= _rating
+                  ? Icons.star_rounded
+                  : Icons.star_outline_rounded),
+              onPressed: () => setState(() => _rating = i),
+            ),
+        ]),
+        TextField(
+            controller: _text,
+            maxLength: 500,
+            decoration: InputDecoration(labelText: s.auReviewText)),
+      ]),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(s.auCancelAction)),
+        FilledButton(
+            onPressed: _rating == 0
+                ? null
+                : () => Navigator.pop(context, (_rating, _text.text)),
+            child: Text(s.auSend)),
+      ],
+    );
+  }
+}
+
+class _ComplaintDialog extends StatefulWidget {
+  const _ComplaintDialog();
+  @override
+  State<_ComplaintDialog> createState() => _ComplaintDialogState();
+}
+
+class _ComplaintDialogState extends State<_ComplaintDialog> {
+  final _text = TextEditingController();
+  String _kind = 'QUALITY';
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = auL10n(context);
+    return AlertDialog(
+      title: Text(s.auComplaintTitle),
+      content: SingleChildScrollView(
+        child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(spacing: 8, children: [
+                for (final k in const [
+                  'QUALITY',
+                  'PRICE',
+                  'BEHAVIOR',
+                  'NO_SHOW',
+                  'OTHER'
+                ])
+                  ChoiceChip(
+                      label: Text(s.auComplaintKind(k)),
+                      selected: _kind == k,
+                      onSelected: (_) => setState(() => _kind = k)),
+              ]),
+              TextField(
+                controller: _text,
+                maxLength: 500,
+                minLines: 2,
+                maxLines: 4,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(labelText: s.auComplaintText),
+              ),
+            ]),
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(s.auCancelAction)),
+        FilledButton(
+            onPressed: _text.text.trim().length < 5
+                ? null
+                : () => Navigator.pop(context, (_kind, _text.text)),
+            child: Text(s.auSend)),
+      ],
     );
   }
 }
