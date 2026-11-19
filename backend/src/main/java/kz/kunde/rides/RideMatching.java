@@ -48,7 +48,7 @@ public final class RideMatching {
     }
 
     // Geographic proximity is used only to rank drivers. Road distance belongs to a routing provider.
-    private static double distanceMeters(Point from, Point to) {
+    public static double distanceMeters(Point from, Point to) {
         double latitude = Math.toRadians(to.latitude() - from.latitude());
         double longitude = Math.toRadians(to.longitude() - from.longitude());
         double haversine = Math.pow(Math.sin(latitude / 2), 2)

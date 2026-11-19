@@ -25,9 +25,10 @@ public class DeliveryService {
     private static final RideRouting TEST_ROUTING = new SyntheticRideRouting();
     private static final Pattern REQUEST_KEY = Pattern.compile("[A-Za-z0-9_-]{16,64}");
     private static final String ORDERS = """
-            select d.*, q.parcel_type, q.amount_kzt, q.synthetic_route
+            select d.*, q.parcel_type, q.amount_kzt, q.synthetic_route, c.display_name as courier_name, c.vehicle
             from transactions.deliveries d
             join transactions.delivery_quotes q on q.id = d.quote_id
+            left join transactions.delivery_couriers c on c.user_id = d.courier_id
             """;
     private final JdbcTemplate db;
     private final DeliveryProperties settings;
@@ -118,7 +119,7 @@ public class DeliveryService {
                     "Quote is unavailable for this request");
         }
         UUID id = inserted.getFirst();
-        recordState(id, user, Status.CREATED);
+        recordState(id, user, DeliveryState.CREATED);
         return new Creation(get(user, id), true);
     }
 
@@ -156,30 +157,31 @@ public class DeliveryService {
     public Order cancel(UUID user, UUID id) {
         int changed = db.update("""
                 update transactions.deliveries set status = 'CANCELLED_BY_CUSTOMER'
-                where id = ? and user_id = ? and status = 'CREATED'
+                where id = ? and user_id = ? and status in ('CREATED', 'SEARCHING_COURIER', 'COURIER_ASSIGNED', 'COURIER_ARRIVING', 'COURIER_ARRIVED')
                 """, id, user);
         if (changed == 1) {
-            recordState(id, user, Status.CANCELLED_BY_CUSTOMER);
+            recordState(id, user, DeliveryState.CANCELLED_BY_CUSTOMER);
         }
         var order = get(user, id);
-        if (order.status() != Status.CANCELLED_BY_CUSTOMER) {
+        if (order.status() != DeliveryState.CANCELLED_BY_CUSTOMER) {
             throw new ApiException(HttpStatus.CONFLICT, "DELIVERY_CANNOT_CANCEL", "Delivery cannot be cancelled");
         }
         return order;
     }
 
-    private void recordState(UUID id, UUID user, Status status) {
-        db.update("insert into transactions.delivery_events (delivery_id, actor_id, status) values (?, ?, ?)",
+    private void recordState(UUID id, UUID user, DeliveryState status) {
+        db.update("insert into transactions.delivery_events (delivery_id, actor_id, status) values (?, ?, cast(? as transactions.delivery_state))",
                 id, user, status.name());
     }
 
     private static Order readOrder(ResultSet rs, int row) throws SQLException {
         return new Order(rs.getObject("id", UUID.class), rs.getObject("quote_id", UUID.class),
-                Status.valueOf(rs.getString("status")), rs.getString("parcel_type"),
+                DeliveryState.valueOf(rs.getString("status")), rs.getString("parcel_type"),
                 rs.getString("pickup_address"), rs.getString("destination_address"), rs.getString("recipient_name"),
                 rs.getString("recipient_phone"), rs.getString("description"), rs.getString("courier_note"),
                 rs.getBigDecimal("amount_kzt"), "KZT", rs.getBoolean("synthetic_route"),
-                rs.getObject("created_at", OffsetDateTime.class));
+                rs.getObject("created_at", OffsetDateTime.class), rs.getString("courier_name") == null ? null
+                        : new AssignedCourier(rs.getString("courier_name"), rs.getString("vehicle")));
     }
 
     private void requireIntake() {
@@ -193,15 +195,15 @@ public class DeliveryService {
                 "Delivery routing is unavailable");
     }
 
-    public enum Status { CREATED, CANCELLED_BY_CUSTOMER }
-
     public record Quote(UUID id, String tariffVersion, BigDecimal amountKzt, String currency, int distanceMeters,
             int durationSeconds, boolean syntheticRoute, OffsetDateTime createdAt, OffsetDateTime expiresAt) {}
 
-    public record Order(UUID id, UUID quoteId, Status status, String parcelType, String pickupAddress,
+    public record Order(UUID id, UUID quoteId, DeliveryState status, String parcelType, String pickupAddress,
             String destinationAddress, String recipientName, String recipientPhone, String description,
             String courierNote, BigDecimal amountKzt, String currency, boolean syntheticRoute,
-            OffsetDateTime createdAt) {}
+            OffsetDateTime createdAt, AssignedCourier courier) {}
+
+    public record AssignedCourier(String name, String vehicle) {}
 
     public record Creation(Order order, boolean created) {}
 }

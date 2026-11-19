@@ -7,6 +7,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import kz.kunde.delivery.DeliveryDispatch;
 import kz.kunde.platform.ApiException;
 import kz.kunde.rides.RideMatching.Candidate;
 import kz.kunde.rides.RideMatching.Point;
@@ -121,11 +122,16 @@ public class RideDispatchService {
             db.update("update transactions.ride_offers set state = 'REJECTED' where id = ?", offerId);
             return;
         }
+        db.queryForObject("select id from identity.users where id = ? for no key update", UUID.class, driver);
         db.queryForObject("select user_id from transactions.ride_drivers where user_id = ? for update", UUID.class, driver);
         if (!exists("""
                 select exists(select 1 from transactions.ride_drivers d
                     join transactions.ride_vehicles v on v.driver_id = d.user_id
                     where d.user_id = ? and d.status = 'APPROVED' and d.online
+                        and not exists (select 1 from transactions.deliveries active where active.courier_id = d.user_id
+                            and active.status in
+                """ + DeliveryDispatch.ACTIVE_DELIVERY_STATES + """
+                        )
                         and d.observed_at > statement_timestamp() - interval '2 minutes'
                         and v.status = 'APPROVED' and v.ride_class = ?
                         and not exists(select 1 from transactions.rides r where r.driver_id = d.user_id

@@ -1,7 +1,9 @@
-# Следующая проверка KUNDE Rides 1.3
+# Следующая задача KUNDE Delivery 1.0
 
-На интегрированном `main` проверить [Android E2E](docs/product/rides-transport.md#нативный-e2e) и два [подписанных DEV APK](docs/infrastructure/android-release-apk.md). В `status.json` должен быть `PASSED`; для каждого APK сверить пакет, версию, SHA исходников, SHA-256 файла и сертификата. Маршрут только тестовый. E2E использует изолированную БД и отключённые платежи.
+Подключить Consumer и Executor к персональным отправлениям, используя текущие сессии, платформенные capabilities и компоненты Premium UI 2.1. Проверить сценарий от котировки и назначения до подтверждения вручения, завершения и истории в обоих приложениях на PostgreSQL. Для DEV/TEST можно использовать зафиксированные тестовые точки и ручную передачу кода с явной маркировкой.
 
-После проверки DEV остаются согласованный дорожный провайдер, платёжный цикл и проверка файлов водительских документов. Публичная активация выполняется отдельно по решению владельца.
+Запустить `flutter analyze`, `flutter test` и Android E2E на обоих приложениях. Сохранить evidence по отмене, отказу, таймауту и возврату. Partner Delivery и Admin UI остаются критериями готовности продукта.
 
-[Статус проекта](PROJECT_STATE.md) · [Linear ADA-44](https://linear.app/adatkashov/issue/ADA-44/feat-013-provider-dispatch)
+[Контракт Delivery и ограничения](docs/product/delivery.md) · [Linear ADA-18](https://linear.app/adatkashov/issue/ADA-18/ep-014-delivery-and-logistics)
+
+[Оставшиеся проверки Rides 1.3](docs/product/rides-transport.md#нативный-e2e)

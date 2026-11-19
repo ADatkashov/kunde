@@ -81,6 +81,8 @@ app:
   delivery:
     enabled: ${DELIVERY_ENABLED:false}
     consumer-enabled: ${DELIVERY_CONSUMER_ENABLED:false}
+    executor-enabled: ${DELIVERY_EXECUTOR_ENABLED:false}
+    dispatch-enabled: ${DELIVERY_DISPATCH_ENABLED:false}
     payments-enabled: ${DELIVERY_PAYMENTS_ENABLED:false}
     synthetic-routing-enabled: ${DELIVERY_SYNTHETIC_ROUTING_ENABLED:false}
     quote-lifetime-seconds: ${DELIVERY_QUOTE_LIFETIME_SECONDS:300}
