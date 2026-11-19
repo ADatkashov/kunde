@@ -32,7 +32,8 @@ public class PlatformController {
     public PlatformCapabilities capabilities() {
         return new PlatformCapabilities("FOUNDATION", foodEnabled, oidcConfigured, false, bookingEnabled, rides.consumerAvailable(),
                 rides.partnerAvailable(), delivery.consumerAvailable(),
-                delivery.consumerAvailable() && delivery.syntheticRoutingEnabled());
+                delivery.enabled() && delivery.partnerEnabled(),
+                delivery.enabled() && delivery.syntheticRoutingEnabled());
     }
 
     public record PlatformCapabilities(
@@ -41,5 +42,6 @@ public class PlatformController {
             boolean oidcIssuerConfigured,
             boolean aiEnabled,
             boolean bookingEnabled,
-            boolean ridesEnabled, boolean ridesFleetEnabled, boolean deliveryEnabled, boolean deliverySyntheticRouting) {}
+            boolean ridesEnabled, boolean ridesFleetEnabled, boolean deliveryEnabled, boolean deliveryPartnerEnabled,
+            boolean deliverySyntheticRouting) {}
 }

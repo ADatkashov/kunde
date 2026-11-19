@@ -23,6 +23,29 @@ class PartnerOperations {
       api.putMap('$_root/rides/fleet/drivers/${Uri.encodeComponent(driver)}',
           {'attach': attach});
 
+  Future<Map<String, dynamic>> capabilities() => api.getMap('capabilities');
+
+  Future<List<Map<String, dynamic>>> shipments() =>
+      api.getList('$_root/deliveries');
+
+  Future<Map<String, dynamic>> shipment(String id) =>
+      api.getMap('$_root/deliveries/${Uri.encodeComponent(id)}');
+
+  Future<List<Map<String, dynamic>>> shipmentTotals() =>
+      api.getList('$_root/deliveries/totals');
+
+  Future<Map<String, dynamic>> shipmentQuote(Map<String, dynamic> body) =>
+      api.postMap('$_root/deliveries/quotes', body);
+
+  Future<Map<String, dynamic>> createShipment(
+    Map<String, dynamic> body,
+    String key,
+  ) =>
+      api.postMap('$_root/deliveries', body, idempotencyKey: key);
+
+  Future<Map<String, dynamic>> shipmentAction(String id, String action) =>
+      api.postMap('$_root/deliveries/${Uri.encodeComponent(id)}/$action', {});
+
   // ── Food orders ───────────────────────────────────────────────────
   Future<List<PartnerOrder>> orders(
       {required bool history, int limit = 30, int offset = 0}) async {
