@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../identity/auth_repository.dart';
+import '../identity/support_panel.dart';
 import 'ride_api.dart';
 import 'ride_strings.dart';
 
@@ -496,6 +497,28 @@ class _RideDetailsState extends State<_RideDetails> {
                 onPressed: _pending ? null : _confirmCancellation,
                 child: Text(s.cancel),
               ),
+            TextButton.icon(
+              icon: const Icon(Icons.support_agent),
+              onPressed: () => Navigator.of(context).push<void>(
+                MaterialPageRoute(
+                    builder: (_) => Scaffold(
+                          appBar: AppBar(
+                              title: Text(s.t('Поддержка поездки',
+                                  'Сапар бойынша қолдау', 'Ride support'))),
+                          body: SafeArea(
+                            child: ListView(
+                              padding: const EdgeInsets.all(16),
+                              children: [
+                                SupportPanel(
+                                    auth: widget.api.auth, rideId: _trip.id)
+                              ],
+                            ),
+                          ),
+                        )),
+              ),
+              label: Text(s.t('Сообщить о проблеме', 'Мәселе туралы хабарлау',
+                  'Report a problem')),
+            ),
             if (_pending) const LinearProgressIndicator(),
           ],
         ),

@@ -6,8 +6,9 @@ import 'auth_repository.dart';
 /// Consumer support cases (SUP-001). Cases are not linked to orders yet and no
 /// response time is promised: the server records the request, nothing more.
 class SupportPanel extends StatefulWidget {
-  const SupportPanel({required this.auth, super.key});
+  const SupportPanel({required this.auth, this.rideId, super.key});
   final AuthRepository auth;
+  final String? rideId;
 
   @override
   State<SupportPanel> createState() => _SupportPanelState();
@@ -16,6 +17,7 @@ class SupportPanel extends StatefulWidget {
 class _SupportPanelState extends State<SupportPanel> {
   late Future<List<Map<String, dynamic>>> _cases;
   String? _pending;
+  ({String category, String message, String key})? _lastSubmission;
 
   @override
   void initState() {
@@ -25,7 +27,9 @@ class _SupportPanelState extends State<SupportPanel> {
 
   // Block body: an arrow would return the Future and make setState(_reload) throw.
   void _reload() {
-    _cases = widget.auth.supportCases();
+    _cases = widget.auth.supportCases().then((cases) => widget.rideId == null
+        ? cases
+        : cases.where((c) => c['rideId'] == widget.rideId).toList());
   }
 
   String _t(String ru, String kk, String en) {
@@ -45,10 +49,12 @@ class _SupportPanelState extends State<SupportPanel> {
         _ => _t('Общий вопрос', 'Жалпы сұрақ', 'General question'),
       };
 
-  String _status(String code) => code == 'ESCALATION_REQUESTED'
-      ? _t('Запрос на эскалацию отправлен', 'Эскалацияға сұрау жіберілді',
-          'Escalation requested')
-      : _t('Открыто', 'Ашық', 'Open');
+  String _status(String code) => switch (code) {
+        'ESCALATION_REQUESTED' => _t('Запрос на эскалацию отправлен',
+            'Эскалацияға сұрау жіберілді', 'Escalation requested'),
+        'RESOLVED' => _t('Закрыто', 'Жабылды', 'Resolved'),
+        _ => _t('Открыто', 'Ашық', 'Open'),
+      };
 
   void _toast(String text) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
@@ -67,13 +73,21 @@ class _SupportPanelState extends State<SupportPanel> {
     );
     if (draft == null || !mounted) return;
     // One key per submission: a retry after a timeout must not duplicate it.
-    final key = _newKey();
+    final previous = _lastSubmission;
+    final key = previous?.category == draft.category &&
+            previous?.message == draft.message
+        ? previous!.key
+        : _newKey();
+    _lastSubmission =
+        (category: draft.category, message: draft.message, key: key);
     setState(() => _pending = 'new');
     try {
       await widget.auth.openSupportCase(
           category: draft.category,
           message: draft.message,
-          idempotencyKey: key);
+          idempotencyKey: key,
+          rideId: widget.rideId);
+      _lastSubmission = null;
       if (mounted) setState(_reload);
     } catch (error) {
       _failure(

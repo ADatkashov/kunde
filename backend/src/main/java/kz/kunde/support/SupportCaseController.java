@@ -27,7 +27,7 @@ public class SupportCaseController {
     }
 
     public record OpenCaseRequest(@NotNull SupportCaseService.Category category,
-                                  @NotBlank @Size(max = 2000) String message) {}
+                                  @NotBlank @Size(max = 2000) String message, UUID rideId) {}
 
     @PostMapping
     ResponseEntity<SupportCaseService.CaseView> open(
@@ -35,7 +35,7 @@ public class SupportCaseController {
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @Valid @RequestBody OpenCaseRequest request) {
         SupportCaseService.Created result =
-                cases.open(principal, idempotencyKey, request.category(), request.message());
+                cases.open(principal, idempotencyKey, request.category(), request.message(), request.rideId());
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .cacheControl(CacheControl.noStore()).body(result.view());
     }

@@ -91,14 +91,14 @@ public class RideDriverService {
         }
     }
 
-    public List<UUID> pendingDrivers() {
+    public List<UUID> reviewDrivers(boolean includeReviewed) {
         requireExecutor();
         return db.queryForList("""
                 select d.user_id from transactions.ride_drivers d
-                where d.status = 'PENDING' or exists (
+                where ? or d.status = 'PENDING' or exists (
                     select 1 from transactions.ride_vehicles v where v.driver_id = d.user_id and v.status = 'PENDING')
-                order by d.user_id limit 100
-                """, UUID.class);
+                order by (d.status = 'PENDING') desc, d.user_id limit 100
+                """, UUID.class, includeReviewed);
     }
 
     @Transactional
