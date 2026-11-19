@@ -180,6 +180,36 @@ class AdminPartnerApiIntegrationTest {
     }
 
     @Test
+    void directoryRequiresCurrentPlatformAccessManagerPermission() throws Exception {
+        String path = "/api/v1/admin/employees";
+        String ordinary = login("+77000000114");
+        String reviewer = login("+77000000115");
+        String manager = login("+77000000116");
+        fetch(path, JsonPath.read(ordinary, "$.accessToken")).andExpect(status().isForbidden());
+        String reviewerToken = adminToken(reviewer, "PARTNER_VERIFICATION");
+        String managerToken = adminToken(manager, "ADMIN_GRANTS");
+        fetch(path, reviewerToken).andExpect(status().isForbidden());
+        fetch(path + "?limit=101", managerToken).andExpect(status().isBadRequest());
+
+        var page = fetch(path + "?limit=1", managerToken).andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.employees.length()").value(1))
+                .andReturn().getResponse().getContentAsString();
+        String cursor = JsonPath.read(page, "$.next");
+        var last = fetch(path + "?limit=1&after=" + cursor, managerToken).andExpect(status().isOk())
+                .andExpect(jsonPath("$.employees.length()").value(1))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(java.util.Set.of(UUID.fromString(cursor),
+                UUID.fromString(JsonPath.read(last, "$.employees[0].id"))))
+                .containsExactlyInAnyOrder(user(reviewer), user(manager));
+
+        UUID managerId = user(manager);
+        db.update("update identity.admin_grants set revoked_at = now(), revoked_by_user_id = ? where user_id = ?",
+                managerId, managerId);
+        fetch(path, managerToken).andExpect(status().isForbidden());
+    }
+
+    @Test
     void scopedAssignmentsRequireAllResourceAttributesAndRevokeImmediately() throws Exception {
         String employeeLogin = login("+77000000114");
         String ownerLogin = login("+77000000115");
