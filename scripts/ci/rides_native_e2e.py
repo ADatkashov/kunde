@@ -18,6 +18,7 @@ CONSUMER = "com.example.kunde_mobile"
 EXECUTOR = "com.kunde.executor"
 API = "http://127.0.0.1:8081/api/v1/"
 completed = []
+FIXTURE_AUTH_KEY = secrets.token_urlsafe(48)
 
 
 def write_report(status, phase):
@@ -53,7 +54,7 @@ def start_backend(enabled):
     if not enabled:
         env["RIDES_ENABLED"] = "false"
         env["RIDES_SYNTHETIC_ROUTING_ENABLED"] = "false"
-    env["AUTH_PHONE_SECRET"] = secrets.token_urlsafe(48)
+    env["AUTH_PHONE_SECRET"] = FIXTURE_AUTH_KEY
     args = [
         "java", "-jar", "backend/target/kunde-api-0.1.0-SNAPSHOT.jar",
         "--server.address=127.0.0.1", "--server.port=8081",
@@ -230,10 +231,10 @@ def main():
 
         phase = "network_retry_and_cancellation"
         android.adb("shell", "input", "keyevent", "4")
-        android.adb("reverse", "--remove", "tcp:8081")
+        stop_backend(process)
         android.tap("История", "History", "Тарих")
         android.find("Повторить", "Retry", "Қайталау", timeout=30)
-        android.adb("reverse", "tcp:8081", "tcp:8081")
+        process = start_backend(True)
         android.tap("Повторить", "Retry", "Қайталау")
         find_completed()
         completed.append("consumer_network_retry")
