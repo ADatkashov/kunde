@@ -100,7 +100,7 @@ public class RideRoutingController {
     public record Coordinates(
             @NotNull @DecimalMin("-90") @DecimalMax("90") BigDecimal latitude,
             @NotNull @DecimalMin("-180") @DecimalMax("180") BigDecimal longitude) {
-        Point point() {
+        public Point point() {
             return new Point(latitude.doubleValue(), longitude.doubleValue());
         }
     }

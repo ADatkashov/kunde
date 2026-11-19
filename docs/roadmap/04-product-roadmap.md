@@ -16,3 +16,4 @@ Stages are sequential gates, not dated commitments. Exact scope is recorded in [
 
 For every stage: backend scope maps to domain modules and adapter contracts; mobile scope maps to design and API contracts; web scope is limited to partner/admin tools justified by operations; infrastructure is environment promotion and observability. No calendar estimate is approved because team capacity and vendor lead times are unknown.
 
+Внутренний этап [KUNDE Delivery 1.0](../product/delivery.md) относится к EP-014. Готовность определяется работающими приложениями и операционными сценариями, Android E2E и подписанными DEV APK. Публичная активация Delivery остаётся самостоятельным решением владельца.

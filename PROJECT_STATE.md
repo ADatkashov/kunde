@@ -1,5 +1,10 @@
 # KUNDE project state
 
+## KUNDE Delivery 1.0
+
+- Первый этап персональных отправлений покрывает котировку в KZT, запись в PostgreSQL, идемпотентный повтор, историю владельца и отмену с аудитом. Приём новых отправлений по умолчанию отключён.
+- **Functional DEV/TEST Ready** ещё не достигнут. **External Integration Pending** и **Production Launch Blocked** остаются открытыми. [Аудит, API и конфигурация](docs/product/delivery.md).
+
 ## Rides & Transport 1.3
 
 - Backend поездок, Consumer, Executor, тестовая маршрутизация, Partner Fleet и Admin вошли в `main` через [#131](https://github.com/ADatkashov/kunde/pull/131)–[#137](https://github.com/ADatkashov/kunde/pull/137). Продолжение интеграции — [#138](https://github.com/ADatkashov/kunde/pull/138) и [#139](https://github.com/ADatkashov/kunde/pull/139).

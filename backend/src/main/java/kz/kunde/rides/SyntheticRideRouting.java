@@ -6,7 +6,7 @@ import java.util.Optional;
 import kz.kunde.rides.RideMatching.Point;
 
 /** Deterministic route fixture for internal environments. */
-final class SyntheticRideRouting implements RideRouting {
+public final class SyntheticRideRouting implements RideRouting {
     private static final Point PICKUP = new Point(43.24, 76.92);
     private static final Point DESTINATION = new Point(43.25, 76.94);
     private static final Place START = new Place("[TEST] Synthetic pickup", PICKUP);
