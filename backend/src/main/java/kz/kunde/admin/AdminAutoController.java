@@ -38,10 +38,12 @@ public class AdminAutoController {
 
     private final JdbcTemplate db;
     private final AdminGrants grants;
+    private final kz.kunde.auto.AutoJobService jobs;
 
-    public AdminAutoController(JdbcTemplate db, AdminGrants grants) {
+    public AdminAutoController(JdbcTemplate db, AdminGrants grants, kz.kunde.auto.AutoJobService jobs) {
         this.db = db;
         this.grants = grants;
+        this.jobs = jobs;
     }
 
     private UUID admin(Jwt principal) {
@@ -87,6 +89,36 @@ public class AdminAutoController {
     }
 
     public record OpenBody(@NotNull Boolean open) {}
+
+    public record SpecialistDecision(@NotNull Boolean approve, List<String> categories, @jakarta.validation.constraints.NotBlank
+            @jakarta.validation.constraints.Size(max = 200) String reason) {}
+
+    @GetMapping("/specialists")
+    ResponseEntity<List<kz.kunde.auto.AutoJobService.Reviewed>> specialists(@AuthenticationPrincipal Jwt principal,
+            @RequestParam(defaultValue = "false") boolean includeReviewed) {
+        admin(principal);
+        return ok(jobs.specialistsForReview(includeReviewed));
+    }
+
+    @PostMapping("/specialists/{id}/decision")
+    ResponseEntity<kz.kunde.auto.AutoJobService.Reviewed> decide(@AuthenticationPrincipal Jwt principal, @PathVariable UUID id,
+            @Valid @RequestBody SpecialistDecision body) {
+        UUID admin = admin(principal);
+        return ok(jobs.review(admin, id, body.approve(), body.categories(), body.reason()));
+    }
+
+    public record JobRow(String id, String category, String status, String specialist, long priceMinor, OffsetDateTime createdAt) {}
+
+    @GetMapping("/jobs")
+    ResponseEntity<List<JobRow>> jobRows(@AuthenticationPrincipal Jwt principal, @RequestParam(required = false) String status) {
+        admin(principal);
+        return ok(db.query("""
+                select j.id, j.category, j.status, s.display_name, j.price_minor, j.created_at from transactions.auto_jobs j
+                left join transactions.auto_specialists s on s.user_id = j.specialist_id where (?::text is null or j.status = ?::text)
+                order by j.created_at desc limit 100
+                """, (rs, n) -> new JobRow(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getLong(5),
+                rs.getObject(6, OffsetDateTime.class)), status, status));
+    }
 
     @GetMapping("/bookings")
     ResponseEntity<List<BookingRow>> bookings(@AuthenticationPrincipal Jwt principal, @RequestParam(required = false) String status,
