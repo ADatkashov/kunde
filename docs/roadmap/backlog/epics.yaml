@@ -145,7 +145,7 @@
   {
     "id": "EP-014",
     "name": "Delivery and logistics",
-    "objective": "Deliver delivery and logistics capability within approved release scope.",
+    "objective": "Develop standalone KUNDE Delivery for internal Almaty testing, with separate release gates and a future integration path for marketplace fulfillment.",
     "priority": "P1",
     "release": "REL-0",
     "area": "backend",

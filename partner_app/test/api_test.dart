@@ -86,6 +86,23 @@ void main() {
     expect(calls, 2);
   });
 
+  test('preserves the shipment idempotency key across an auth refresh', () async {
+    const key = 'synthetic-shipment-request-1';
+    final seen = <String?>[];
+    final client = MockClient((request) async {
+      expect(request.method, 'POST');
+      seen.add(request.headers['Idempotency-Key']);
+      return seen.length == 1
+          ? http.Response('{}', 401)
+          : http.Response('{"id":"shipment"}', 201);
+    });
+    final result = await api(client, refresh: () async => 'new').postMap(
+        'partner/partners/test/deliveries', {'quoteId': 'quote'},
+        idempotencyKey: key);
+    expect(result['id'], 'shipment');
+    expect(seen, [key, key]);
+  });
+
   test('a persistent 401 is not replayed forever', () async {
     var calls = 0;
     final client = MockClient((_) async {
