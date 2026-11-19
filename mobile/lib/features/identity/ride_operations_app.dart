@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/localization/kunde_localizations.dart';
@@ -11,7 +12,11 @@ void runRideOperations(String title, Widget Function(AuthRepository) home) {
   WidgetsFlutterBinding.ensureInitialized();
   const endpoint = String.fromEnvironment('API_BASE_URL');
   final base = Uri.tryParse(endpoint);
-  if (base == null || base.scheme != 'https' || !base.hasAuthority) {
+  final debugLoopback =
+      kDebugMode && base?.scheme == 'http' && base?.host == 'localhost';
+  if (base == null ||
+      !base.hasAuthority ||
+      (base.scheme != 'https' && !debugLoopback)) {
     runApp(MaterialApp(
       title: title,
       home:

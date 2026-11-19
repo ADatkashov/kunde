@@ -18,7 +18,7 @@ android {
     val executor = providers.environmentVariable("KUNDE_EXECUTOR_BUILD").orNull == "true"
     if (executor) {
         sourceSets.getByName("release").manifest.srcFile("src/executor/AndroidManifest.xml")
-        sourceSets.getByName("debug").manifest.srcFile("src/executor/AndroidManifest.xml")
+        sourceSets.getByName("debug").manifest.srcFile("src/executorDebug/AndroidManifest.xml")
     }
 
     defaultConfig {
