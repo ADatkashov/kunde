@@ -17,7 +17,50 @@ class _IdleAuth implements AuthRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+class _FlakyHistory extends _IdleAuth {
+  int reads = 0;
+
+  @override
+  Future<dynamic> authorizedJson(
+    String method,
+    String path, {
+    Map<String, dynamic>? body,
+    Set<int> expected = const {200},
+    Map<String, String>? headers,
+  }) async {
+    expect((method, path), ('GET', 'rides'));
+    if (reads++ == 0) throw IdentityUnavailable();
+    return [
+      {
+        'id': 'test-ride',
+        'estimateKzt': 460,
+        'status': 'COMPLETED',
+        'createdAt': '2026-11-19T03:00:00Z',
+      },
+    ];
+  }
+}
+
 void main() {
+  testWidgets('retries history after a network failure', (tester) async {
+    final session = _FlakyHistory();
+    await tester.pumpWidget(MaterialApp(
+      locale: const Locale('en'),
+      supportedLocales: KundeLocalizations.supportedLocales,
+      localizationsDelegates: KundeLocalizations.localizationsDelegates,
+      home: RidesScreen(api: RideApi(session)),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('History'));
+    await tester.pumpAndSettle();
+    expect(find.text('Retry'), findsOneWidget);
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('Ride complete'), findsOneWidget);
+    expect(session.reads, 2);
+  });
+
   testWidgets('shows a safe starting screen with no fare until addresses exist',
       (tester) async {
     final boundary = GlobalKey();
