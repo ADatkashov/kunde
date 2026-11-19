@@ -1,5 +1,10 @@
 # KUNDE project state
 
+## KUNDE Control Center 2.0 — DEV
+
+- [Аудит и зависимости](docs/roadmap/27-control-center-2-audit.md) приняты в [#155](https://github.com/ADatkashov/kunde/pull/155). [#156](https://github.com/ADatkashov/kunde/pull/156) добавил `GET /api/v1/admin/me/capabilities` для действующих грантов текущего сотрудника. Backend CI и Security CI прошли на PR.
+- В работе: навигация по разрешённым очередям, scoped RBAC, панели продуктов, реестры, поддержка, финансы, операции, аудит и проверка поставки на всех платформах. Functional DEV/TEST Ready ещё не подтверждён.
+
 ## KUNDE Auto 1.0 — backend slice (в работе)
 
 - Backend Auto (Flyway V34) построен на Booking Engine: автомобили, серверные котировки, идемпотентная запись, защита от двойной записи и буфер, перенос/отмена, жизненный цикл партнёра с согласованием цены, недоступные периоды, Admin и флаг `AUTO_ENABLED` (выключен). `mvn verify` на PostgreSQL 16: 316 тестов, 0 ошибок. Детали и ограничения: [auto](docs/product/auto.md).
