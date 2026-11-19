@@ -16,7 +16,30 @@ jobs:
   screenshots:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: kunde_visual
+          POSTGRES_DB: kunde_visual
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U kunde_visual" --health-interval 5s
+          --health-timeout 5s --health-retries 12
     env:
+      DB_URL: jdbc:postgresql://127.0.0.1:5432/kunde_visual
+      DB_USERNAME: kunde_visual
+      KUNDE_ENVIRONMENT: test
+      CONSUMER_IDENTITY_ENABLED: 'true'
+      AUTH_PHONE_ENABLED: 'true'
+      AUTH_DEV_OTP_ENABLED: 'true'
+      AUTH_DEV_OTP_SKIP_THROTTLE: 'true'
+      AUTH_DEV_OTP_ALLOWED_PHONES: '+77000000001'
+      FOOD_ENABLED: 'true'
+      FOOD_SEED_DEMO: 'true'
+      BOOKING_ENABLED: 'true'
+      BOOKING_SEED_DEMO: 'true'
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -31,11 +54,16 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
         with:
           flutter-version: '3.47.9'
           channel: stable
           cache: false
+      - name: Package isolated visual backend
+        working-directory: backend
+        run: mvn -B -ntp -DskipTests package
       - name: Build before and after x86_64 debug APKs
         run: |
           git worktree add --detach "$RUNNER_TEMP/kunde-before" "$BASE_SHA"
@@ -44,7 +72,7 @@ jobs:
             cd "$1/mobile"
             flutter pub get --enforce-lockfile
             flutter build apk --debug --target-platform android-x64 \
-              --dart-define=API_BASE_URL=https://kunde-backend-ty81.onrender.com/api/v1/ \
+              --dart-define=API_BASE_URL=http://localhost:8081/api/v1/ \
               --dart-define=API_TIMEOUT_SECONDS=90 \
               --dart-define=PHONE_AUTH_ENABLED=true \
               --dart-define=DEV_OTP_HINT=true
@@ -61,7 +89,7 @@ jobs:
           target: google_apis
           disable-animations: true
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -memory 1536 -cores 2
-          script: python3 scripts/ci/capture_android_visual.py
+          script: python3 scripts/ci/run_android_visual.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

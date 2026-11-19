@@ -3,5 +3,5 @@ import 'features/identity/ride_operations_app.dart';
 
 void main() => runRideOperations(
       'KUNDE Executor',
-      (auth) => ExecutorScreen(auth: auth),
+      (auth) => ExecutorScreen(auth: auth, checkDeliveryMode: true),
     );

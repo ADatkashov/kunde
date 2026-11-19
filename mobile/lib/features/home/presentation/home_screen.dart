@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import '../../assistant/assistant_screen.dart';
 import '../../booking/booking_services.dart';
 import '../../booking/presentation/category_screens.dart';
+import '../../delivery/delivery_api.dart';
+import '../../delivery/delivery_screen.dart';
 import '../../food/food_services.dart';
 import '../../food/presentation/food_home_screen.dart';
 import '../../rides/ride_api.dart';
@@ -25,6 +29,7 @@ class HomeScreen extends StatefulWidget {
     this.food,
     this.booking,
     this.rides,
+    this.delivery,
     super.key,
   });
 
@@ -40,6 +45,7 @@ class HomeScreen extends StatefulWidget {
   /// Service booking (barbershops); shown when the server enables it.
   final BookingServices? booking;
   final RideApi? rides;
+  final DeliveryApi? delivery;
 
   /// Opens the Orders tab when the host has one.
   final VoidCallback? onOpenOrders;
@@ -98,6 +104,17 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
 
+  Future<void> _openDelivery() async {
+    final snapshot = await _snapshot;
+    if (!mounted || !snapshot.deliveryEnabled) return;
+    await Navigator.of(context).push<void>(MaterialPageRoute(
+      builder: (_) => DeliveryScreen(
+        api: widget.delivery!,
+        synthetic: snapshot.deliverySyntheticRouting,
+      ),
+    ));
+  }
+
   void _openSearch() {
     if (widget.onOpenSearch != null) {
       widget.onOpenSearch!();
@@ -129,6 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
     bool foodEnabled,
     bool bookingEnabled,
     bool ridesEnabled,
+    bool deliveryEnabled,
   ) =>
       [
         ServiceCategory(
@@ -159,6 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
           icon: Icons.inventory_2_rounded,
           label: s.catDelivery,
           color: const Color(0xFFA0522D),
+          enabled: deliveryEnabled && widget.delivery != null,
         ),
         ServiceCategory(
           icon: Icons.home_rounded,
@@ -208,6 +227,10 @@ class _HomeScreenState extends State<HomeScreen> {
       Navigator.of(context).push<void>(
         MaterialPageRoute(builder: (_) => RidesScreen(api: widget.rides!)),
       );
+    } else if (c.label == s.catDelivery &&
+        c.enabled &&
+        widget.delivery != null) {
+      unawaited(_openDelivery());
     } else if (c.label == s.catBeauty &&
         bookingEnabled &&
         widget.booking != null) {
@@ -316,6 +339,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   marketplace,
                   snapshot?.bookingEnabled ?? false,
                   snapshot?.ridesEnabled ?? false,
+                  snapshot?.deliveryEnabled ?? false,
                 );
                 final visibleCategories = [
                   for (final label in [
@@ -323,6 +347,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     s.catGroceries,
                     if (snapshot?.ridesEnabled == true && widget.rides != null)
                       s.catRides,
+                    if (snapshot?.deliveryEnabled == true &&
+                        widget.delivery != null)
+                      s.catDelivery,
                     s.catHome,
                     s.catBeauty,
                     s.catAuto,
