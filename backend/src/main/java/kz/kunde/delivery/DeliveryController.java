@@ -35,10 +35,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class DeliveryController {
     private final ConsumerIdentityService identity;
     private final DeliveryService service;
+    private final DeliveryDispatch dispatch;
 
-    public DeliveryController(ConsumerIdentityService identity, DeliveryService service) {
+    public DeliveryController(ConsumerIdentityService identity, DeliveryService service, DeliveryDispatch dispatch) {
         this.identity = identity;
         this.service = service;
+        this.dispatch = dispatch;
     }
 
     @PostMapping("/quotes")
@@ -70,6 +72,19 @@ public class DeliveryController {
     @PostMapping("/{id}/cancel")
     public ResponseEntity<DeliveryService.Order> cancel(@AuthenticationPrincipal Jwt principal, @PathVariable("id") UUID id) {
         return response(HttpStatus.OK, service.cancel(identity.get(principal).id(), id));
+    }
+
+    @PostMapping("/{id}/dispatch")
+    public ResponseEntity<DeliveryService.Order> dispatch(@AuthenticationPrincipal Jwt principal, @PathVariable UUID id) {
+        UUID sender = identity.get(principal).id();
+        dispatch.search(sender, id);
+        return response(HttpStatus.OK, service.get(sender, id));
+    }
+
+    @PostMapping("/{id}/handoff-code")
+    public ResponseEntity<DeliveryDispatch.HandoffCode> handoffCode(@AuthenticationPrincipal Jwt principal,
+            @PathVariable UUID id) {
+        return response(HttpStatus.CREATED, dispatch.issueCode(identity.get(principal).id(), id));
     }
 
     private static <T> ResponseEntity<T> response(HttpStatus status, T body) {

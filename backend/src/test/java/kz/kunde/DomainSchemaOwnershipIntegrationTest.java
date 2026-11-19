@@ -55,6 +55,8 @@ class DomainSchemaOwnershipIntegrationTest {
             "transactions.ride_fare_quotes -> identity.users",
             "transactions.delivery_quotes -> identity.users",
             "transactions.delivery_events -> identity.users",
+            "transactions.delivery_couriers -> identity.users",
+            "transactions.delivery_courier_reviews -> identity.users",
             "transactions.ride_drivers -> identity.users",
             "transactions.ride_fleets -> marketplace.partners",
             "transactions.ride_fleet_events -> identity.users",

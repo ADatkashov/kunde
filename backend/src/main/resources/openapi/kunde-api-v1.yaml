@@ -883,7 +883,7 @@ components:
           required: [id, status, parcelType, amountKzt, currency, syntheticRoute, createdAt]
           properties:
             id: { type: string, format: uuid }
-            status: { type: string, enum: [CREATED, CANCELLED_BY_CUSTOMER] }
+            status: { type: string, enum: [CREATED, SEARCHING_COURIER, COURIER_ASSIGNED, COURIER_ARRIVING, COURIER_ARRIVED, PICKED_UP, IN_TRANSIT, DELIVERED, COMPLETED, CANCELLED_BY_CUSTOMER, CANCELLED_BY_COURIER, CANCELLED_BY_SYSTEM, NO_COURIER_AVAILABLE, PICKUP_FAILED, DELIVERY_FAILED, RETURN_REQUESTED, RETURNING, RETURNED_TO_SENDER, DISPUTED] }
             parcelType: { type: string }
             amountKzt: { type: number }
             currency: { type: string, const: KZT }

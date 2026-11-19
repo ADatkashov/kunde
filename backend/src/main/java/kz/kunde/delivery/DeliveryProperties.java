@@ -13,13 +13,17 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties("app.delivery")
 public record DeliveryProperties(boolean enabled, boolean consumerEnabled, boolean paymentsEnabled,
-        boolean syntheticRoutingEnabled, @Min(1) @Max(3600) int quoteLifetimeSeconds,
+        boolean syntheticRoutingEnabled, boolean executorEnabled, boolean dispatchEnabled, @Min(1) @Max(3600) int quoteLifetimeSeconds,
         @Min(1) @Max(50000) int maxWeightGrams, @Min(1) @Max(200) int maxSideCm,
         @NotBlank @Size(max = 64) String tariffVersion,
         @NotNull @DecimalMin("0") BigDecimal baseKzt,
         @NotNull @DecimalMin("0") BigDecimal perKmKzt,
         @NotNull @DecimalMin("0") BigDecimal perKgKzt,
         @NotNull @DecimalMin("0") BigDecimal minimumKzt) {
+
+    public boolean dispatchAvailable() {
+        return enabled && executorEnabled && dispatchEnabled;
+    }
 
     public boolean consumerAvailable() {
         return enabled && consumerEnabled;
