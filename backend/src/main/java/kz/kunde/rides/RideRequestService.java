@@ -19,7 +19,7 @@ public class RideRequestService {
     private static final Pattern REQUEST_KEY = Pattern.compile("^[A-Za-z0-9_-]{16,64}$");
     private static final String VIEW = """
             select r.id, r.quote_id, r.status, q.ride_class, q.tariff_version, q.estimate_kzt,
-                   q.distance_meters, q.duration_seconds, r.created_at
+                   q.distance_meters, q.duration_seconds, r.created_at, q.synthetic
             from transactions.rides r join transactions.ride_fare_quotes q on q.id = r.quote_id
             where r.user_id = ?
             """;
@@ -60,9 +60,9 @@ public class RideRequestService {
         UUID rideId = db.query("""
                 insert into transactions.rides (user_id, quote_id, request_key, status)
                 select user_id, id, ?, 'REQUESTED' from transactions.ride_fare_quotes
-                where user_id = ? and id = ? and expires_at > statement_timestamp()
+                where user_id = ? and id = ? and expires_at > statement_timestamp() and (not synthetic or ?)
                 on conflict (quote_id) do nothing returning id
-                """, (rs, row) -> rs.getObject("id", UUID.class), requestKey, customer, quoteId)
+                """, (rs, row) -> rs.getObject("id", UUID.class), requestKey, customer, quoteId, flags.syntheticRoutingEnabled())
                 .stream().findFirst().orElseThrow(() -> conflict("RIDE_QUOTE_UNAVAILABLE", "Ride quote is unavailable"));
         event(rideId, RideState.REQUESTED);
         return new Requested(get(customer, rideId), true);
@@ -103,7 +103,7 @@ public class RideRequestService {
                 RideState.valueOf(rs.getString("status")), RideClass.valueOf(rs.getString("ride_class")),
                 rs.getString("tariff_version"), rs.getBigDecimal("estimate_kzt"), "KZT",
                 rs.getInt("distance_meters"), rs.getInt("duration_seconds"),
-                rs.getObject("created_at", OffsetDateTime.class));
+                rs.getObject("created_at", OffsetDateTime.class), rs.getBoolean("synthetic"));
     }
 
     private static ApiException conflict(String code, String message) {
@@ -111,7 +111,7 @@ public class RideRequestService {
     }
 
     public record RideView(UUID id, UUID quoteId, RideState status, RideClass rideClass, String tariffVersion,
-            BigDecimal estimateKzt, String currency, int distanceMeters, int durationSeconds, OffsetDateTime createdAt) {}
+            BigDecimal estimateKzt, String currency, int distanceMeters, int durationSeconds, OffsetDateTime createdAt, boolean synthetic) {}
 
     public record Requested(RideView ride, boolean created) {}
 }

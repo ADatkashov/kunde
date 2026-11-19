@@ -77,21 +77,25 @@ class ExecutorProfile {
 class ExecutorOffer {
   ExecutorOffer(Map<String, dynamic> json)
       : id = json['id'] as String,
-        expiresAt = DateTime.parse(json['expiresAt'] as String);
+        expiresAt = DateTime.parse(json['expiresAt'] as String),
+        synthetic = json['synthetic'] == true;
 
   final String id;
   final DateTime expiresAt;
+  final bool synthetic;
 }
 
 class ExecutorTrip {
   ExecutorTrip(Map<String, dynamic> json)
       : id = json['id'] as String,
         status = json['status'] as String,
-        createdAt = DateTime.parse(json['createdAt'] as String);
+        createdAt = DateTime.parse(json['createdAt'] as String),
+        synthetic = json['synthetic'] == true;
 
   final String id;
   final String status;
   final DateTime createdAt;
+  final bool synthetic;
 
   String? get nextStep => switch (status) {
         'DRIVER_ASSIGNED' => 'DEPART',

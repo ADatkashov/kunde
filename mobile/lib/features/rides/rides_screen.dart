@@ -157,6 +157,11 @@ class _RidesScreenState extends State<RidesScreen> {
                         _invalidateQuote();
                       }),
             ),
+            if (quote?.synthetic == true)
+              ListTile(
+                leading: const Icon(Icons.science_outlined),
+                title: Text(s.synthetic),
+              ),
             if (quote != null)
               Card(
                 child: ListTile(
@@ -330,7 +335,9 @@ class _RideHistoryState extends State<_RideHistory> {
                 for (final trip in trips)
                   Card(
                     child: ListTile(
-                      title: Text(s.status(trip.status)),
+                      title: Text(trip.synthetic
+                          ? '${s.synthetic} · ${s.status(trip.status)}'
+                          : s.status(trip.status)),
                       subtitle: Text(
                         MaterialLocalizations.of(context)
                             .formatShortDate(trip.createdAt.toLocal()),
@@ -469,6 +476,10 @@ class _RideDetailsState extends State<_RideDetails> {
                 subtitle: Text('${_trip.fare} KZT'),
               ),
             ),
+            if (_trip.synthetic)
+              ListTile(
+                  leading: const Icon(Icons.science_outlined),
+                  title: Text(s.synthetic)),
             if (_driverLocation case final location?)
               ListTile(
                 leading: const Icon(Icons.my_location),

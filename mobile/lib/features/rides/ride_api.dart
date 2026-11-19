@@ -36,6 +36,7 @@ class RideApi {
       data['estimateKzt'] as num,
       data['distanceMeters'] as int,
       data['durationSeconds'] as int,
+      data['synthetic'] == true,
     );
   }
 
@@ -105,28 +106,33 @@ class RideQuote {
     this.fare,
     this.distanceMeters,
     this.durationSeconds,
+    this.synthetic,
   );
 
   final String id;
   final num fare;
   final int distanceMeters;
   final int durationSeconds;
+  final bool synthetic;
 }
 
 class RideTrip {
-  const RideTrip(this.id, this.status, this.fare, this.createdAt);
+  const RideTrip(
+      this.id, this.status, this.fare, this.createdAt, this.synthetic);
 
   factory RideTrip.fromJson(Map<String, dynamic> data) => RideTrip(
         data['id'] as String,
         data['status'] as String,
         data['estimateKzt'] as num,
         DateTime.parse(data['createdAt'] as String),
+        data['synthetic'] == true,
       );
 
   final String id;
   final String status;
   final num fare;
   final DateTime createdAt;
+  final bool synthetic;
 
   bool get searching => status == 'REQUESTED' || status == 'SEARCHING_DRIVER';
 

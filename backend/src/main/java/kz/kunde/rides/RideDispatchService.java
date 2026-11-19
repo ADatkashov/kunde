@@ -87,16 +87,18 @@ public class RideDispatchService {
             return List.of();
         }
         return db.query("""
-                select o.id, o.ride_id, o.state, o.expires_at
+                select o.id, o.ride_id, o.state, o.expires_at, q.synthetic
                 from transactions.ride_offers o
                 join transactions.rides r on r.id = o.ride_id
+                join transactions.ride_fare_quotes q on q.id = r.quote_id
                 join transactions.ride_drivers d on d.user_id = o.driver_id
                 join transactions.ride_vehicles v on v.driver_id = d.user_id
                 where o.driver_id = ? and o.state = 'PENDING' and o.expires_at > statement_timestamp()
                     and r.status = 'SEARCHING_DRIVER' and d.online and d.status = 'APPROVED' and v.status = 'APPROVED'
                 order by o.expires_at, o.id limit 30
                 """, (rs, row) -> new Offer(rs.getObject("id", UUID.class), rs.getObject("ride_id", UUID.class),
-                        rs.getString("state"), rs.getObject("expires_at", OffsetDateTime.class)), driver);
+                        rs.getString("state"), rs.getObject("expires_at", OffsetDateTime.class),
+                        rs.getBoolean("synthetic")), driver);
     }
 
     @Transactional
@@ -173,11 +175,11 @@ public class RideDispatchService {
 
     public List<DriverTrip> history(UUID driver) {
         return db.query("""
-                select r.id, r.status, q.ride_class, r.created_at
+                select r.id, r.status, q.ride_class, r.created_at, q.synthetic
                 from transactions.rides r join transactions.ride_fare_quotes q on q.id = r.quote_id
                 where r.driver_id = ? order by r.created_at desc, r.id desc limit 50
                 """, (rs, row) -> new DriverTrip(rs.getObject(1, UUID.class), RideState.valueOf(rs.getString(2)),
-                        RideClass.valueOf(rs.getString(3)), rs.getObject(4, OffsetDateTime.class)), driver);
+                        RideClass.valueOf(rs.getString(3)), rs.getObject(4, OffsetDateTime.class), rs.getBoolean(5)), driver);
     }
 
     private static final String SELECT = """
@@ -214,6 +216,6 @@ public class RideDispatchService {
 
     private record Trip(UUID id, UUID customerId, UUID driverId, RideState status, RideClass rideClass, Point pickup) {}
     public record DriverLocation(Point point, OffsetDateTime observedAt) {}
-    public record DriverTrip(UUID id, RideState status, RideClass rideClass, OffsetDateTime createdAt) {}
-    public record Offer(UUID id, UUID rideId, String state, OffsetDateTime expiresAt) {}
+    public record DriverTrip(UUID id, RideState status, RideClass rideClass, OffsetDateTime createdAt, boolean synthetic) {}
+    public record Offer(UUID id, UUID rideId, String state, OffsetDateTime expiresAt, boolean synthetic) {}
 }

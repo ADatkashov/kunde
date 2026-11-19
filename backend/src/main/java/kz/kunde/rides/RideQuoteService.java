@@ -54,14 +54,15 @@ public class RideQuoteService {
         return db.queryForObject("""
                 insert into transactions.ride_fare_quotes
                     (user_id, ride_class, tariff_version, estimate_kzt, distance_meters, duration_seconds,
-                     pickup_latitude, pickup_longitude, destination_latitude, destination_longitude, expires_at)
-                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, statement_timestamp() + (? * interval '1 second'))
+                     pickup_latitude, pickup_longitude, destination_latitude, destination_longitude, expires_at, synthetic)
+                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, statement_timestamp() + (? * interval '1 second'), ?)
                 returning id, expires_at
                 """, (rs, row) -> new Quote(rs.getObject("id", UUID.class), rideClass, tariff.version(), fare, "KZT",
-                        route.distanceMeters(), route.durationSeconds(), rs.getObject("expires_at", OffsetDateTime.class)),
+                        route.distanceMeters(), route.durationSeconds(), rs.getObject("expires_at", OffsetDateTime.class),
+                        route.synthetic()),
                 customer, rideClass.name(), tariff.version(), fare, route.distanceMeters(), route.durationSeconds(),
                 pickup.latitude(), pickup.longitude(), destination.latitude(), destination.longitude(),
-                pricing.quoteLifetimeSeconds());
+                pricing.quoteLifetimeSeconds(), route.synthetic());
     }
 
     private static ApiException routingUnavailable() {
@@ -70,5 +71,5 @@ public class RideQuoteService {
     }
 
     public record Quote(UUID id, RideClass rideClass, String tariffVersion, BigDecimal estimateKzt, String currency,
-            int distanceMeters, int durationSeconds, OffsetDateTime expiresAt) {}
+            int distanceMeters, int durationSeconds, OffsetDateTime expiresAt, boolean synthetic) {}
 }

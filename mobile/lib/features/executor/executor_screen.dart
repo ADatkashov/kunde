@@ -374,8 +374,10 @@ class _ExecutorScreenState extends State<ExecutorScreen>
                 .where((offer) => offer.expiresAt.isAfter(DateTime.now())))
               Card(
                 child: ListTile(
-                  title: Text(s.t(
-                      'Предложение поездки', 'Сапар ұсынысы', 'Ride offer')),
+                  title: Text(offer.synthetic
+                      ? s.synthetic
+                      : s.t('Предложение поездки', 'Сапар ұсынысы',
+                          'Ride offer')),
                   subtitle: Wrap(
                     spacing: 8,
                     children: [
@@ -398,7 +400,9 @@ class _ExecutorScreenState extends State<ExecutorScreen>
             for (final trip in active)
               Card(
                 child: ListTile(
-                  title: Text(s.status(trip.status)),
+                  title: Text(trip.synthetic
+                      ? '${s.synthetic} · ${s.status(trip.status)}'
+                      : s.status(trip.status)),
                   subtitle: FilledButton(
                     onPressed: _busy
                         ? null
@@ -412,7 +416,9 @@ class _ExecutorScreenState extends State<ExecutorScreen>
               Text(s.history, style: Theme.of(context).textTheme.titleLarge),
             for (final trip in _trips.where((trip) => trip.nextStep == null))
               ListTile(
-                title: Text(s.status(trip.status)),
+                title: Text(trip.synthetic
+                    ? '${s.synthetic} · ${s.status(trip.status)}'
+                    : s.status(trip.status)),
                 subtitle: Text(MaterialLocalizations.of(context)
                     .formatShortDate(trip.createdAt.toLocal())),
               ),

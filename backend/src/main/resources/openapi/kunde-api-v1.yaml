@@ -756,6 +756,7 @@ components:
         tariffVersion: { type: string }
         estimateKzt: { type: number, minimum: 0 }
         currency: { const: KZT }
+        synthetic: { type: boolean, description: Internal synthetic routing fixture }
         distanceMeters: { type: integer, minimum: 1 }
         durationSeconds: { type: integer, minimum: 1 }
         expiresAt: { type: string, format: date-time }
@@ -773,6 +774,7 @@ components:
         tariffVersion: { type: string }
         estimateKzt: { type: number, minimum: 0 }
         currency: { const: KZT }
+        synthetic: { type: boolean, description: Internal synthetic routing fixture }
         distanceMeters: { type: integer, minimum: 1 }
         durationSeconds: { type: integer, minimum: 1 }
         createdAt: { type: string, format: date-time }
