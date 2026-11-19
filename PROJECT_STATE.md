@@ -1,12 +1,14 @@
 # KUNDE project state
 
-## KUNDE Control Center 2.0 — DEV
+## KUNDE Control Center 3.0 — DEV
 
 - [Аудит и зависимости](docs/roadmap/27-control-center-2-audit.md) приняты в [#155](https://github.com/ADatkashov/kunde/pull/155). [#156](https://github.com/ADatkashov/kunde/pull/156) добавил `GET /api/v1/admin/me/capabilities` для действующих грантов текущего сотрудника. Backend CI и Security CI прошли на PR.
 - [#157](https://github.com/ADatkashov/kunde/pull/157) добавил навигацию по разрешённым очередям Rides, Delivery и Auto.
 - [#160](https://github.com/ADatkashov/kunde/pull/160) добавил назначения ролей с областью, сроком действия и отзывом. [#161](https://github.com/ADatkashov/kunde/pull/161) применяет область к списку отправлений Delivery и аудиту. [#162](https://github.com/ADatkashov/kunde/pull/162) открывает эти два сценария во Flutter для scoped-оператора.
 - [#164](https://github.com/ADatkashov/kunde/pull/164) добавил серверный реестр сотрудников с постраничной выдачей под действующим платформенным `ADMIN_GRANTS`. Управление назначениями и D-14 остаются открытыми.
 - [#165](https://github.com/ADatkashov/kunde/pull/165) добавил Flutter-реестр сотрудников. [#163](https://github.com/ADatkashov/kunde/pull/163) и [#166](https://github.com/ADatkashov/kunde/pull/166) добавили scoped-сводку Delivery и выбор периода.
+- [#168](https://github.com/ADatkashov/kunde/pull/168) добавил адаптивный обзор со scoped-метриками Delivery и действующими разрешениями. Flutter Analyze и 253 локальных теста прошли на `6252018`. Дополнительно проверены 18 сочетаний ширины, языка и темы с текстом 200%, загрузкой, ошибкой, повтором и пустым результатом.
+- Поставка открыта: Web [#159](https://github.com/ADatkashov/kunde/pull/159) → [#152](https://github.com/ADatkashov/kunde/pull/152) после авторизованного DEV E2E. Подписанный Admin APK актуального main и Admin Android E2E ещё не подтверждены. Порядок проверки описан в [NEXT_TASK.md](NEXT_TASK.md).
 - В работе: scoped RBAC, панели продуктов, реестры, поддержка, финансы, операции, аудит и проверка поставки на всех платформах. Functional DEV/TEST Ready ещё не подтверждён.
 
 ## KUNDE Auto 1.0 — backend slice (в работе)
