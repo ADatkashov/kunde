@@ -89,18 +89,7 @@ jobs:
           target: google_apis
           disable-animations: true
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -memory 1536 -cores 2
-          script: |
-            PYTHONPATH=scripts/ci python3 - <<'PY'
-            import capture_android_visual as visual
-            import rides_native_e2e as fixture
-
-            process = fixture.start_backend(False)
-            try:
-                visual.adb("reverse", "tcp:8081", "tcp:8081")
-                visual.main()
-            finally:
-                fixture.stop_backend(process)
-            PY
+          script: python3 scripts/ci/run_android_visual.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
