@@ -39,3 +39,7 @@ The manual workflow has inputs `partner-features` and `partner-apply` (both defa
 Consumer и Executor собираются существующим workflow Android Release APK (DEV). Для Executor включите вход `executor` при запуске workflow. Standalone Partner собирается workflow Partner Android Release APK (DEV). Для отчёта сохраните SHA исходников, ссылки на artifacts, хэш файла APK и SHA-256 сертификата из отчёта проверки подписи.
 
 После распаковки скачанного артефакта установите нужный подписанный APK через `adb install -r <apk>`. Успешная установка не активирует Delivery. Сессия и допуск проверяются обычным способом, а наличие разделов зависит от capabilities выбранного DEV backend. [Флаги, синтетический маршрут и сценарий Android E2E](../product/delivery.md).
+
+## KUNDE Admin DEV
+
+В Android Release APK (DEV) включите `admin` и оставьте `executor` выключенным. Артефакт `KUNDE-admin-dev-release` содержит подписанный APK для arm64. Приложение `com.kunde.admin` устанавливается рядом с Consumer и Executor. Для разделов Delivery войдите под DEV-аккаунтом с разрешением `DELIVERY_OPERATIONS`.
