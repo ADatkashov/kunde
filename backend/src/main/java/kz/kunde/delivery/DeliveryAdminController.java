@@ -66,15 +66,13 @@ public class DeliveryAdminController {
 
     @GetMapping
     public ResponseEntity<List<DeliveryOperations.Shipment>> shipments(@AuthenticationPrincipal Jwt principal) {
-        reviewer(principal);
-        return noStore(operations.shipments());
+        return noStore(operations.shipments(identity.get(principal).id()));
     }
 
     @GetMapping("/{id}/audit")
     public ResponseEntity<List<DeliveryOperations.Event>> audit(@AuthenticationPrincipal Jwt principal,
             @PathVariable UUID id) {
-        reviewer(principal);
-        return noStore(operations.audit(id));
+        return noStore(operations.audit(identity.get(principal).id(), id));
     }
 
     @GetMapping("/complaints")

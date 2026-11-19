@@ -2,6 +2,7 @@ package kz.kunde.delivery;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import kz.kunde.platform.ApiException;
 import org.springframework.http.HttpStatus;
@@ -12,6 +13,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class DeliveryOperations {
+    // Delivery currently persists organization and resource identity, but has no canonical region.
+    private static final String DELIVERY_GRANTS = """
+            from identity.effective_admin_permissions g
+            where g.user_id = ? and g.permission = 'DELIVERY_OPERATIONS'
+              and (g.product_code is null or g.product_code = 'DELIVERY')
+              and g.region_code is null
+            """;
+    private static final String VISIBLE_DELIVERY = "exists (select 1 " + DELIVERY_GRANTS + """
+              and (g.organization_id is null or g.organization_id = d.partner_id)
+              and (g.resource_id is null or g.resource_id = d.id))
+            """;
     private static final String COMPLAINTS = """
             select id, delivery_id, category, message, status, created_at
             from support.cases where delivery_id is not null
@@ -26,28 +38,44 @@ public class DeliveryOperations {
         this.db = db;
     }
 
-    public List<Shipment> shipments() {
+    public List<Shipment> shipments(UUID actor) {
+        requireDeliveryAccess(actor);
         return db.query("""
                 select d.id, d.status, d.courier_id, d.partner_id, d.created_at, q.synthetic_route
                 from transactions.deliveries d join transactions.delivery_quotes q on q.id = d.quote_id
+                where %s
                 order by (d.status in %s or d.status = 'SEARCHING_COURIER') desc, d.created_at desc, d.id desc limit 100
-                """.formatted(DeliveryDispatch.ACTIVE_DELIVERY_STATES), (rs, row) -> new Shipment(
+                """.formatted(VISIBLE_DELIVERY, DeliveryDispatch.ACTIVE_DELIVERY_STATES), (rs, row) -> new Shipment(
                 rs.getObject("id", UUID.class), DeliveryState.valueOf(rs.getString("status")),
                 rs.getObject("courier_id", UUID.class), rs.getObject("partner_id", UUID.class),
-                rs.getObject("created_at", OffsetDateTime.class), rs.getBoolean("synthetic_route")));
+                rs.getObject("created_at", OffsetDateTime.class), rs.getBoolean("synthetic_route")), actor);
     }
 
-    public List<Event> audit(UUID delivery) {
-        if (!Boolean.TRUE.equals(db.queryForObject("select exists (select 1 from transactions.deliveries where id = ?)",
-                Boolean.class, delivery))) {
+    public List<Event> audit(UUID actor, UUID delivery) {
+        requireDeliveryAccess(actor);
+        var events = db.query("""
+                select e.status, e.actor_id, e.reason, e.occurred_at
+                from transactions.deliveries d
+                left join transactions.delivery_events e on e.delivery_id = d.id
+                where d.id = ? and %s
+                order by e.id
+                """.formatted(VISIBLE_DELIVERY), (rs, row) -> {
+                    String status = rs.getString("status");
+                    return status == null ? null : new Event(DeliveryState.valueOf(status),
+                            rs.getObject("actor_id", UUID.class), rs.getString("reason"),
+                            rs.getObject("occurred_at", OffsetDateTime.class));
+                }, delivery, actor);
+        if (events.isEmpty()) {
             throw new ApiException(HttpStatus.NOT_FOUND, "DELIVERY_NOT_FOUND", "Delivery was not found");
         }
-        return db.query("""
-                select status, actor_id, reason, occurred_at from transactions.delivery_events
-                where delivery_id = ? order by id
-                """, (rs, row) -> new Event(DeliveryState.valueOf(rs.getString("status")),
-                rs.getObject("actor_id", UUID.class), rs.getString("reason"),
-                rs.getObject("occurred_at", OffsetDateTime.class)), delivery);
+        return events.stream().filter(Objects::nonNull).toList();
+    }
+
+    private void requireDeliveryAccess(UUID actor) {
+        if (!Boolean.TRUE.equals(db.queryForObject("select exists (select 1 " + DELIVERY_GRANTS + ")",
+                Boolean.class, actor))) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "ADMIN_FORBIDDEN", "Administrator permission is required");
+        }
     }
 
     public List<Complaint> complaints() {
