@@ -94,24 +94,17 @@ def create_delivery(*, capture_quote=True):
     tap("Подтвердить доставку", "Confirm delivery", "Жеткізуді растау")
 
 
-def cancel_after_reconnect():
+HISTORY = ("История отправлений", "Shipment history", "Жөнелтілімдер тарихы")
+RETRY = ("Повторить", "Retry", "Қайталау")
+
+
+def cancel_second_delivery():
     android.adb("shell", "input", "keyevent", "4")
     android.adb("shell", "input", "keyevent", "4")
     create_delivery(capture_quote=False)
     android.find("Ищем курьера", "Finding a courier", "Курьер ізделуде")
-    android.adb("reverse", "--remove", "tcp:8081")
-    try:
-        android.find(
-            "Не удалось выполнить запрос. Повторите попытку.",
-            "The request failed. Try again.",
-            "Сұрауды орындау мүмкін болмады. Қайталап көріңіз.",
-            timeout=35,
-        )
-    finally:
-        android.adb("reverse", "tcp:8081", "tcp:8081")
-    android.find("Ищем курьера", "Finding a courier", "Курьер ізделуде")
     cancel = ("Отменить доставку", "Cancel delivery", "Жеткізуден бас тарту")
-    tap(*cancel)
+    tap(*cancel, clickable=True)
     tap(*cancel, clickable=True)
     reveal("Отменено", "Cancelled", "Бас тартылды")
     android.screenshot("consumer-cancelled-after-reconnect")
@@ -202,7 +195,15 @@ def main():
         fixture.completed.append("consumer_history")
 
         phase = "network_recovery_and_cancellation"
-        cancel_after_reconnect()
+        android.adb("shell", "input", "keyevent", "4")
+        fixture.stop_backend(process)
+        process = None
+        tap(*HISTORY)
+        android.find(*RETRY, timeout=35)
+        process = fixture.start_backend(False)
+        tap(*RETRY, clickable=True)
+        reveal(*COMPLETED)
+        cancel_second_delivery()
         fixture.completed.append("android_network_recovery_and_cancellation")
 
         phase = "disabled_intake"
