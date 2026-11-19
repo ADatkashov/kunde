@@ -188,6 +188,28 @@ paths:
       responses:
         '200': { description: 'Read the last fresh coordinate shared for an owned delivery.' }
         '204': { description: No fresh coordinate is shared. }
+  /deliveries/{deliveryId}/rating:
+    post:
+      operationId: rateDeliveryCourier
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: deliveryId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [stars]
+              properties:
+                stars: { type: integer, minimum: 1, maximum: 5 }
+      responses:
+        '200': { $ref: '#/components/responses/PersonalDelivery' }
+        '404': { description: Shipment is unavailable to the caller. }
+        '409': { description: Shipment cannot be rated or already has a different rating. }
   /executor/deliveries/profile:
     get:
       operationId: getDeliveryCourier
@@ -1207,6 +1229,9 @@ components:
             currency: { type: string, const: KZT }
             syntheticRoute: { type: boolean }
             createdAt: { type: string, format: date-time }
+            stars: { type: [integer, 'null'], minimum: 1, maximum: 5 }
+            pickupPoint: { $ref: '#/components/schemas/DeliveryPoint' }
+            destinationPoint: { $ref: '#/components/schemas/DeliveryPoint' }
     RideQuote:
       type: object
       required: [id, rideClass, tariffVersion, estimateKzt, currency, distanceMeters, durationSeconds, expiresAt]

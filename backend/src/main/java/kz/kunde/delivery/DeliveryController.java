@@ -97,6 +97,14 @@ public class DeliveryController {
         return response(HttpStatus.CREATED, dispatch.issueCode(identity.get(principal).id(), null, id));
     }
 
+    @PostMapping("/{id}/rating")
+    public ResponseEntity<DeliveryService.Order> rating(@AuthenticationPrincipal Jwt principal, @PathVariable UUID id,
+            @Valid @RequestBody Rating request) {
+        return response(HttpStatus.OK, service.rate(identity.get(principal).id(), id, request.stars()));
+    }
+
+    public record Rating(@Min(1) @Max(5) int stars) {}
+
     private static <T> ResponseEntity<T> response(HttpStatus status, T body) {
         return ResponseEntity.status(status).cacheControl(CacheControl.noStore()).body(body);
     }

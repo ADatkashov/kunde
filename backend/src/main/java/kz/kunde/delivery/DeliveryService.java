@@ -14,6 +14,7 @@ import kz.kunde.delivery.DeliveryController.QuoteRequest;
 import kz.kunde.platform.ApiException;
 import kz.kunde.rides.RideRouting;
 import kz.kunde.rides.SyntheticRideRouting;
+import kz.kunde.rides.RideRoutingController.Coordinates;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -25,10 +26,13 @@ public class DeliveryService {
     private static final RideRouting TEST_ROUTING = new SyntheticRideRouting();
     private static final Pattern REQUEST_KEY = Pattern.compile("[A-Za-z0-9_-]{16,64}");
     private static final String ORDERS = """
-            select d.*, q.parcel_type, q.amount_kzt, q.synthetic_route, c.display_name as courier_name, c.vehicle
+            select d.*, q.parcel_type, q.amount_kzt, q.synthetic_route, q.weight_grams, q.length_cm,
+                   q.width_cm, q.height_cm, q.pickup_latitude, q.pickup_longitude,
+                   q.destination_latitude, q.destination_longitude, c.display_name as courier_name, c.vehicle, rating.stars
             from transactions.deliveries d
             join transactions.delivery_quotes q on q.id = d.quote_id
             left join transactions.delivery_couriers c on c.user_id = d.courier_id
+            left join transactions.delivery_courier_ratings rating on rating.delivery_id = d.id
             """;
     private final JdbcTemplate db;
     private final DeliveryProperties settings;
@@ -171,6 +175,23 @@ public class DeliveryService {
         return order;
     }
 
+    @Transactional
+    public Order rate(UUID user, UUID delivery, int stars) {
+        var order = get(user, null, delivery);
+        if (order.status() != DeliveryState.COMPLETED || order.courier() == null) {
+            throw new ApiException(HttpStatus.CONFLICT, "DELIVERY_RATING_UNAVAILABLE", "Delivery cannot be rated yet");
+        }
+        db.update("""
+                insert into transactions.delivery_courier_ratings(delivery_id, stars) values (?, ?)
+                on conflict (delivery_id) do nothing
+                """, delivery, stars);
+        var rated = get(user, null, delivery);
+        if (!Objects.equals(rated.stars(), stars)) {
+            throw new ApiException(HttpStatus.CONFLICT, "DELIVERY_ALREADY_RATED", "Delivery already has a rating");
+        }
+        return rated;
+    }
+
     public List<ShipmentTotal> totals(UUID partner) {
         return db.query("""
                 select d.status, count(*) shipment_count, sum(q.amount_kzt) quoted_total_kzt
@@ -196,7 +217,12 @@ public class DeliveryService {
                 rs.getString("recipient_phone"), rs.getString("description"), rs.getString("courier_note"),
                 rs.getBigDecimal("amount_kzt"), "KZT", rs.getBoolean("synthetic_route"),
                 rs.getObject("created_at", OffsetDateTime.class), rs.getString("courier_name") == null ? null
-                        : new AssignedCourier(rs.getString("courier_name"), rs.getString("vehicle")));
+                        : new AssignedCourier(rs.getString("courier_name"), rs.getString("vehicle")),
+                new ParcelDetails(rs.getInt("weight_grams"), rs.getInt("length_cm"), rs.getInt("width_cm"),
+                        rs.getInt("height_cm")),
+                new Coordinates(rs.getBigDecimal("pickup_latitude"), rs.getBigDecimal("pickup_longitude")),
+                new Coordinates(rs.getBigDecimal("destination_latitude"), rs.getBigDecimal("destination_longitude")),
+                rs.getObject("stars", Integer.class));
     }
 
     private void requireIntake(UUID partner) {
@@ -216,7 +242,10 @@ public class DeliveryService {
     public record Order(UUID id, UUID quoteId, DeliveryState status, String parcelType, String pickupAddress,
             String destinationAddress, String recipientName, String recipientPhone, String description,
             String courierNote, BigDecimal amountKzt, String currency, boolean syntheticRoute,
-            OffsetDateTime createdAt, AssignedCourier courier) {}
+            OffsetDateTime createdAt, AssignedCourier courier, ParcelDetails parcel,
+            Coordinates pickupPoint, Coordinates destinationPoint, Integer stars) {}
+
+    public record ParcelDetails(int weightGrams, int lengthCm, int widthCm, int heightCm) {}
 
     public record AssignedCourier(String name, String vehicle) {}
 
