@@ -176,7 +176,8 @@ def mine(token, booking_id):
 # --- setup ----------------------------------------------------------------------------------------------------------
 
 def setup():
-    world.consumer = fixture.session(CONSUMER_PHONE)
+    if API_ONLY:  # with the app, this number signs in through the app first so its code request is never throttled
+        world.consumer = fixture.session(CONSUMER_PHONE)
     world.partner_token = fixture.session(PARTNER_PHONE)
     world.other = fixture.session(OTHER_PHONE)
     world.third = fixture.session(THIRD_PHONE)
@@ -567,6 +568,7 @@ def main():
             android.adb("install", APKS / "consumer.apk")
             relaunch()
             fixture.login("7000000001", "Алматы", "Almaty")
+            world.consumer = fixture.session(CONSUMER_PHONE)
             completed.append("consumer_sign_in")
             phase = "consumer_flows"
             ui_main_flow()
@@ -581,6 +583,11 @@ def main():
         report("PASSED", "complete")
     except Exception:
         report("FAILED", phase)
+        try:  # the backend log helps to tell an app problem from a server problem
+            log = Path(os.environ.get("RUNNER_TEMP", "/tmp"), "auto-backend.log")
+            (REPORT / "backend-tail.log").write_text("\n".join(log.read_text(errors="replace").splitlines()[-150:]) + "\n")
+        except OSError:
+            pass
         if not API_ONLY:
             try:
                 android.screenshot(f"failed-{phase}")
