@@ -307,32 +307,51 @@ def money(minor):
     return grouped + " ₸"
 
 
+HOME_TITLE = ("Досуг и развлечения", "Leisure and entertainment")
+LEISURE = ("Досуг", "Leisure")
+MY_TICKETS = ("Мои билеты", "My tickets")
+CINEMAS = ("Кинотеатры", "Cinemas")
+SCHEDULE = ("Расписание", "Schedule")
+SEATS_TITLE = ("Выбор мест", "Choose seats")
+CONTINUE = ("Продолжить", "Continue")
+BOOKING = ("Бронирование", "Booking")
+PAYMENT = ("Оплата", "Payment")
+MY_TICKET = ("Мой билет", "My ticket")
+UPCOMING = ("Предстоящие", "Upcoming")
+COMPLETED = ("Завершённые", "Completed")
+WRITE_REVIEW = ("Оставить отзыв", "Write a review")
+SEND = ("Отправить", "Send")
+THANKS = ("Спасибо за отзыв", "Thanks for your review")
+
+
 def ui_purchase():
     std = next(t for t in world.detail["ticketTypes"] if t["zone"] == "STANDARD")
-    tap("Досуг", "Leisure")
-    android.find("Досуг и развлечения", timeout=40)
+    price = money(world.detail["ticketTypes"][0]["priceMinor"])
+    tap(*LEISURE)
+    android.find(*HOME_TITLE, timeout=40)
     android.screenshot("consumer-leisure-home")
     completed.append("consumer_leisure_home")
-    tap("Кинотеатры")
+    tap(*CINEMAS)
     tap(world.event["title"])
-    android.find("Расписание", timeout=30)
+    android.find(*SCHEDULE, timeout=30)
     time.sleep(1)
     android.screenshot("consumer-event")
     tap(clock(world.session["startsAt"]))
-    tap("Выбрать места · от " + money(std["priceMinor"]), "Выбрать места · от " + money(world.detail["ticketTypes"][0]["priceMinor"]))
-    android.find("Выбор мест", timeout=30)
+    tap("Выбрать места · от " + price, "Choose seats · from " + price)
+    android.find(*SEATS_TITLE, timeout=30)
     for seat in (world.seat_a, world.seat_b):
-        tap(f"Место {seat['row']}{seat['number']}")
+        tap(f"Место {seat['row']}{seat['number']}", f"Seat {seat['row']}{seat['number']}")
     android.screenshot("consumer-seats")
-    tap("Продолжить", clickable=True)
-    android.find("Бронирование", timeout=30)
+    tap(*CONTINUE, clickable=True)
+    android.find(*BOOKING, timeout=30)
     android.screenshot("consumer-booking")
-    tap("Подтверждаю, что всем гостям не меньше 12 лет")
-    tap("Продолжить", clickable=True)
-    android.find("Оплата", timeout=30)
+    tap("Подтверждаю, что всем гостям не меньше 12 лет", "I confirm every guest is at least 12 years old")
+    tap(*CONTINUE, clickable=True)
+    android.find(*PAYMENT, timeout=30)
     android.screenshot("consumer-payment")
-    tap("Оплатить " + money(2 * std["priceMinor"]), clickable=True)
-    android.find("Мой билет", timeout=60)
+    total = money(2 * std["priceMinor"])
+    tap("Оплатить " + total, "Pay " + total, clickable=True)
+    android.find(*MY_TICKET, timeout=60)
     time.sleep(2)
     android.screenshot("consumer-ticket")
     order = latest_order(world.consumer)
@@ -342,22 +361,23 @@ def ui_purchase():
 
 def ui_after_scan():
     relaunch()
-    tap("Досуг", "Leisure")
-    tap("Мои билеты")
-    android.find("Предстоящие", timeout=30)
+    tap(*LEISURE)
+    tap(*MY_TICKETS)
+    android.find(*UPCOMING, timeout=30)
     tap(world.event["title"])
-    android.find("Использован", "Использован · " + f"{world.seat_a['row']}{world.seat_a['number']}", timeout=40)
+    seat = f"{world.seat_a['row']}{world.seat_a['number']}"
+    android.find("Использован · " + seat, "Used · " + seat, "Использован", "Used", timeout=40)
     android.screenshot("consumer-ticket-used")
     completed.append("consumer_ticket_shows_used_after_gate_scan")
     # the session is over: the order moves to completed and can be reviewed
     sql("update marketplace.leisure_sessions set starts_at = now() - interval '3 hours', ends_at = now() - interval '1 hour' where id = '" + world.session["id"] + "'")
     back(2)
-    tap("Завершённые")
+    tap(*COMPLETED)
     tap(world.event["title"])
-    tap("Оставить отзыв", clickable=True)
+    tap(*WRITE_REVIEW, clickable=True)
     tap("5")
-    tap("Отправить", clickable=True)
-    android.find("Спасибо за отзыв", timeout=30)
+    tap(*SEND, clickable=True)
+    android.find(*THANKS, timeout=30)
     android.screenshot("consumer-review")
     detail = fixture.call("GET", "leisure/events/" + world.event["id"])
     check(detail["reviewCount"] == 1 and detail["rating"] == 5.0, detail)
@@ -366,10 +386,10 @@ def ui_after_scan():
 
 def ui_network_recovery(process):
     relaunch()
-    tap("Досуг", "Leisure")
-    android.find("Досуг и развлечения", timeout=40)
+    tap(*LEISURE)
+    android.find(*HOME_TITLE, timeout=40)
     fixture.stop_backend(process)
-    tap("Мои билеты")
+    tap(*MY_TICKETS)
     android.find("Повторить", "Retry", timeout=40)
     android.screenshot("consumer-offline")
     process = start_backend(True)
@@ -377,7 +397,7 @@ def ui_network_recovery(process):
     for _ in range(3):
         tap("Повторить", "Retry", clickable=True)
         try:
-            android.find("Предстоящие", timeout=20)
+            android.find(*UPCOMING, timeout=20)
             completed.append("consumer_network_loss_and_retry")
             return process
         except RuntimeError:
@@ -388,8 +408,8 @@ def ui_network_recovery(process):
 def ui_flag_off():
     relaunch()
     try:
-        tap("Досуг", "Leisure")
-        android.find("Досуг и развлечения", timeout=8)
+        tap(*LEISURE)
+        android.find(*HOME_TITLE, timeout=8)
     except RuntimeError:
         completed.append("consumer_leisure_unavailable_when_flag_off")
         return
