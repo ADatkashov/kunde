@@ -393,6 +393,13 @@ def enter(identifier, value):
     android.adb("shell", "input", "keyevent", "4")
 
 
+def relaunch():
+    """A fresh start on the home screen (the saved session is restored), not the screen the app was left on."""
+    android.adb("shell", "am", "force-stop", fixture.CONSUMER)
+    fixture.launch(fixture.CONSUMER)
+    android.find("Алматы", "Almaty", timeout=60)
+
+
 def back(times=1):
     for _ in range(times):
         android.adb("shell", "input", "keyevent", "4")
@@ -461,7 +468,7 @@ def ui_main_flow():
     check(mine(world.consumer, first)["payment"]["status"] == "TEST_HELD", "the test hold is created with the booking")
     finish_wash({"id": first})
     completed.append("consumer_add_car_catalog_slot_quote_book_pending")
-    fixture.launch(fixture.CONSUMER)
+    relaunch()
     tap(*AUTO)
     tap(*MY_BOOKINGS)
     reveal(*HISTORY)
@@ -473,11 +480,11 @@ def ui_main_flow():
     android.screenshot("consumer-review")
     completed.append("consumer_history_and_review")
 
-    fixture.launch(fixture.CONSUMER)
+    relaunch()
     ui_book("Тестовое СТО «Демо»", oil_index, oil_day, with_car=False, test_card=True)
     second = newest_booking_id(world.consumer, "PENDING")
     price_approval_lifecycle({"id": second})
-    fixture.launch(fixture.CONSUMER)
+    relaunch()
     tap(*AUTO)
     tap(*MY_BOOKINGS)
     reveal(*APPROVE)
@@ -487,7 +494,7 @@ def ui_main_flow():
     finish_after_approval({"id": second})
     completed.append("consumer_price_approval_and_test_payment")
 
-    fixture.launch(fixture.CONSUMER)
+    relaunch()
     ui_book("Тестовая автомойка «Демо»", wash_index, third_day, with_car=False, test_card=False)
     third = newest_booking_id(world.consumer, "PENDING")
     tap(*RESCHEDULE, clickable=True)
@@ -504,7 +511,7 @@ def ui_main_flow():
 
 
 def ui_network_recovery(process):
-    fixture.launch(fixture.CONSUMER)
+    relaunch()
     tap(*AUTO)
     android.find(*MY_BOOKINGS, timeout=30)
     fixture.stop_backend(process)
@@ -525,7 +532,7 @@ def ui_network_recovery(process):
 
 
 def ui_flag_off():
-    fixture.launch(fixture.CONSUMER)
+    relaunch()
     android.find("Алматы", "Almaty", timeout=60)
     try:
         tap(*AUTO)
@@ -558,7 +565,7 @@ def main():
             android.adb("shell", "wm", "size", "390x844")
             android.adb("shell", "wm", "density", "160")
             android.adb("install", APKS / "consumer.apk")
-            fixture.launch(fixture.CONSUMER)
+            relaunch()
             fixture.login("7000000001", "Алматы", "Almaty")
             completed.append("consumer_sign_in")
             phase = "consumer_flows"
