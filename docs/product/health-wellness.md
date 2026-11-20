@@ -49,6 +49,8 @@ V41 добавляет направление услуги, состояние �
 | Executor | `a805bc471fe7a5886535f209506d9a8a3bdfd00af831beecddf9b67357b50c88` | [Release APK](https://github.com/ADatkashov/kunde/actions/runs/44804671777/artifacts/14662228329) |
 | Admin | `34aa577bacb9b11555a2c13de3b16842b38ac1be00408dfd9bb4488e8d3d8fed` | [Release APK](https://github.com/ADatkashov/kunde/actions/runs/44804997291/artifacts/14663216127) |
 
+Обновлённый [Consumer APK](https://github.com/ADatkashov/kunde/actions/runs/44808543705/artifacts/14663303814) собран из `4f3510b144ddbf774bb7dffb5b9d6daad319630e` и включает профиль специалиста и визуальные правки. Его SHA-256 — `727d57cd0f491b21f31696339e22ea733de13211fab76bf734539d58d0aabe13`.
+
 Обновлённый [Partner APK](https://github.com/ADatkashov/kunde/actions/runs/44806471675/artifacts/14663521838) собран из `fb910f79ad704be9672370851f60c24082a7bdd6`. Его SHA-256 — `0585775664624b8558c8b3f99193934f8dc5315493bbaf96d6b789aaf9c5f9ea`.
 
 ## Приватность и угрозы
