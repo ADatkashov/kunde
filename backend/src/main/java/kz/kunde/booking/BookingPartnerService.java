@@ -54,11 +54,13 @@ public class BookingPartnerService {
     private final JdbcTemplate db;
     private final BookingService bookings;
     private final PartnerService partners;
+    private final kz.kunde.auto.AutoPayments payments;
 
-    public BookingPartnerService(JdbcTemplate db, BookingService bookings, PartnerService partners) {
+    public BookingPartnerService(JdbcTemplate db, BookingService bookings, PartnerService partners, kz.kunde.auto.AutoPayments payments) {
         this.db = db;
         this.bookings = bookings;
         this.partners = partners;
+        this.payments = payments;
     }
 
     // ---- bookings ------------------------------------------------------------------------------
@@ -140,6 +142,10 @@ public class BookingPartnerService {
                                 when category = 'AUTO' then price_minor else final_price_minor end where id = ?
                         """, bookingId);
                 bookings.event(bookingId, "COMPLETED", "PARTNER", actor, null);
+                if (auto) {
+                    Long amount = db.queryForObject("select coalesce(final_price_minor, price_minor) from transactions.bookings where id = ?", Long.class, bookingId);
+                    payments.capture(bookingId, null, amount == null ? 0 : amount, "PARTNER", actor);
+                }
             }
             case CHECK_IN -> {
                 if ("CHECKED_IN".equals(status)) { break; }
@@ -158,6 +164,7 @@ public class BookingPartnerService {
                 require("CONFIRMED".equals(status) && !future && "AUTO".equals(row[3]), action, status);
                 db.update("update transactions.bookings set status = 'NO_SHOW', updated_at = now(), version = version + 1 where id = ?", bookingId);
                 bookings.event(bookingId, "NO_SHOW", "PARTNER", actor, null);
+                payments.voidHold(bookingId, null, "PARTNER", actor, "NO_SHOW");
             }
             case PROPOSE_PRICE -> {
                 require("IN_PROGRESS".equals(status) && "AUTO".equals(row[3]) && !"FIXED".equals(row[4]), action, status);
@@ -180,6 +187,7 @@ public class BookingPartnerService {
                     cancel_reason = ?, updated_at = now(), version = version + 1 where id = ?
                 """, reason, bookingId);
         bookings.event(bookingId, "CANCELLED", "PARTNER", actor, reason);
+        payments.voidHold(bookingId, null, "PARTNER", actor, reason);
     }
 
     private static void require(boolean allowed, Action action, String status) {

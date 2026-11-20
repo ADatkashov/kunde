@@ -238,6 +238,7 @@ class AutoBookingRecord {
       required this.serviceId,
       this.finalPriceMinor,
       this.priceApproval,
+      this.payment,
       this.cancelReason});
 
   final String id;
@@ -252,6 +253,7 @@ class AutoBookingRecord {
   final String priceKind;
   final int? finalPriceMinor;
   final String? priceApproval;
+  final AutoPayment? payment;
   final String status;
   final bool cancellable;
   final bool reschedulable;
@@ -280,6 +282,9 @@ class AutoBookingRecord {
           priceKind: _str(j, 'priceKind'),
           finalPriceMinor: j['finalPriceMinor'] as int?,
           priceApproval: j['priceApproval'] as String?,
+          payment: j['payment'] is Map<String, dynamic>
+              ? AutoPayment.fromJson(j['payment'] as Map<String, dynamic>)
+              : null,
           status: _str(j, 'status'),
           cancellable: j['cancellable'] == true,
           reschedulable: j['reschedulable'] == true,
@@ -289,4 +294,29 @@ class AutoBookingRecord {
             for (final t in (j['timeline'] as List<dynamic>? ?? const []))
               AutoTimelineEntry.fromJson(t as Map<String, dynamic>)
           ]);
+}
+
+/// DEV/TEST payment record of a booking: a ledger entry only, nothing is ever charged.
+class AutoPayment {
+  const AutoPayment(
+      {required this.method,
+      required this.status,
+      required this.heldMinor,
+      required this.capturedMinor,
+      required this.refundedMinor});
+
+  final String method;
+  final String status;
+  final int heldMinor;
+  final int capturedMinor;
+  final int refundedMinor;
+
+  bool get isTest => method == 'TEST_CARD';
+
+  factory AutoPayment.fromJson(Map<String, dynamic> j) => AutoPayment(
+      method: j['method'] as String? ?? 'PAY_ON_SITE',
+      status: j['status'] as String? ?? '',
+      heldMinor: (j['heldMinor'] as num?)?.toInt() ?? 0,
+      capturedMinor: (j['capturedMinor'] as num?)?.toInt() ?? 0,
+      refundedMinor: (j['refundedMinor'] as num?)?.toInt() ?? 0);
 }

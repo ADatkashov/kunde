@@ -58,18 +58,20 @@ public class AutoService {
             int durationMinutes, String vehicleId, String vehicle, OffsetDateTime startsAt, OffsetDateTime endsAt,
             long priceMinor, String priceKind, Long finalPriceMinor, String priceApproval, String currency, String status,
             boolean cancellable, boolean reschedulable, int rescheduleCount, OffsetDateTime createdAt, String cancelledBy,
-            String cancelReason, List<TimelineEntry> timeline, String serviceId) {}
+            String cancelReason, List<TimelineEntry> timeline, String serviceId, AutoPayments.PaymentView payment) {}
 
     public record Booked(AutoBooking booking, boolean created) {}
 
     private final JdbcTemplate db;
     private final BookingSlots slots;
     private final AutoProperties props;
+    private final AutoPayments payments;
 
-    public AutoService(JdbcTemplate db, BookingSlots slots, AutoProperties props) {
+    public AutoService(JdbcTemplate db, BookingSlots slots, AutoProperties props, AutoPayments payments) {
         this.db = db;
         this.slots = slots;
         this.props = props;
+        this.payments = payments;
     }
 
     // ---- vehicles ------------------------------------------------------------------------------
@@ -185,6 +187,11 @@ public class AutoService {
 
     @Transactional
     public Booked book(UUID user, UUID quoteId, String idempotencyKey) {
+        return book(user, quoteId, idempotencyKey, null);
+    }
+
+    @Transactional
+    public Booked book(UUID user, UUID quoteId, String idempotencyKey, String paymentMethod) {
         if (idempotencyKey == null || !KEY.matcher(idempotencyKey).matches()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "IDEMPOTENCY_KEY_INVALID",
                     "Idempotency-Key must be 16-64 characters: letters, digits, '-' or '_'");
@@ -204,6 +211,7 @@ public class AutoService {
             return new Booked(view(user, (UUID) existing.get()[0]), false);
         }
         requireEnabled();
+        String method = payments.method(paymentMethod);
         var q = db.query("""
                 select venue_id, service_id, vehicle_id, master_id, starts_at, duration_minutes, price_minor, price_kind,
                        expires_at > now(), consumed_at is not null
@@ -267,6 +275,7 @@ public class AutoService {
                     (int) q[5], Timestamp.from(start), Timestamp.from(end), (long) q[6], idempotencyKey,
                     partnerManaged ? "PENDING" : "CONFIRMED", partnerManaged ? "PARTNER" : "DEV_MOCK", vehicleId, label, q[7]);
             db.update("update transactions.auto_quotes set consumed_at = now() where id = ?", quoteId);
+            payments.open(user, id, null, method, (long) q[6]);
             event(id, partnerManaged ? "PENDING" : "CONFIRMED", partnerManaged ? "CUSTOMER" : "SYSTEM", user, null);
             return new Booked(view(user, id), true);
         } catch (DataIntegrityViolationException conflict) {
@@ -307,6 +316,7 @@ public class AutoService {
         db.update("update transactions.bookings set status = 'CANCELLED', cancelled_at = now(), cancelled_by = 'CUSTOMER', cancel_reason = ?, "
                 + "updated_at = now(), version = version + 1 where id = ?", reason, id);
         event(id, "CANCELLED", "CUSTOMER", user, reason);
+        payments.voidHold(id, null, "CUSTOMER", user, "CANCELLED");
         return view(user, id);
     }
 
@@ -411,6 +421,7 @@ public class AutoService {
             db.update("update transactions.bookings set status = 'CANCELLED', cancelled_at = now(), cancelled_by = 'SYSTEM', "
                     + "cancel_reason = 'NOT_ANSWERED', updated_at = now(), version = version + 1 where id = ?", id);
             event(id, "CANCELLED", "SYSTEM", null, "NOT_ANSWERED");
+            payments.voidHold(id, null, "SYSTEM", null, "NOT_ANSWERED");
         }
     }
 
@@ -439,7 +450,7 @@ public class AutoService {
                 rs.getLong("price_minor"), rs.getString("price_kind"), rs.getObject("final_price_minor", Long.class), rs.getString("price_approval"),
                 rs.getString("currency"), rs.getString("status"), rs.getBoolean("cancellable"), rs.getBoolean("reschedulable"),
                 rs.getInt("reschedule_count"), rs.getObject("created_at", OffsetDateTime.class), rs.getString("cancelled_by"),
-                rs.getString("cancel_reason"), List.of(), rs.getString("service_id")), MIN_RESCHEDULE_HOURS, MAX_RESCHEDULES, user, id, id, limit, offset);
+                rs.getString("cancel_reason"), List.of(), rs.getString("service_id"), null), MIN_RESCHEDULE_HOURS, MAX_RESCHEDULES, user, id, id, limit, offset);
         List<AutoBooking> out = new ArrayList<>();
         for (AutoBooking b : rows) {
             List<TimelineEntry> timeline = db.query("select status, occurred_at, actor_type, reason from transactions.booking_events where booking_id = ? order by id",
@@ -447,7 +458,7 @@ public class AutoService {
                     UUID.fromString(b.id()));
             out.add(new AutoBooking(b.id(), b.venueId(), b.venueName(), b.venueAddress(), b.serviceName(), b.durationMinutes(), b.vehicleId(),
                     b.vehicle(), b.startsAt(), b.endsAt(), b.priceMinor(), b.priceKind(), b.finalPriceMinor(), b.priceApproval(), b.currency(),
-                    b.status(), b.cancellable(), b.reschedulable(), b.rescheduleCount(), b.createdAt(), b.cancelledBy(), b.cancelReason(), timeline, b.serviceId()));
+                    b.status(), b.cancellable(), b.reschedulable(), b.rescheduleCount(), b.createdAt(), b.cancelledBy(), b.cancelReason(), timeline, b.serviceId(), payments.ofBooking(UUID.fromString(b.id()))));
         }
         return out;
     }

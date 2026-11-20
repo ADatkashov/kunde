@@ -42,9 +42,13 @@
 
 Backend: `auto_complaints` (жалоба на свою запись или выездное задание, один открытый запрос на объект, закрытие администратором с обязательным решением, запись в журнал `auto_admin_events`, админ не закрывает собственную жалобу) и `auto_reviews` (оценка 1–5 один раз на завершённую запись владельца, рейтинг и число отзывов в каталоге). API: клиент `POST/GET /api/v1/auto/complaints`, `POST/GET /api/v1/auto/bookings/{id}/review`; админ `/api/v1/admin/auto/{complaints,complaints/{id}/resolve,venues,specialists,categories,bookings,jobs}`. В выдаче админа нет данных клиента. Flutter: экраны администратора (специалисты с допуском по категориям, СТО/мойки с блокировкой, категории, записи, выездные заявки, жалобы) открываются из существующего приложения Admin; в Consumer на завершённой записи «Оценить» и «Пожаловаться». Тесты: `mvn verify` 325, Flutter 244, 0 ошибок локально. Не проверено: устройство, TalkBack. Модерация самих организаций идёт через существующий `/api/v1/admin/partners`.
 
+## Платёжный DEV-контракт (V38)
+
+Только учёт в БД (`transactions.auto_payments`, append-only `auto_payment_events`), KZT в минорных единицах, **реальных списаний нет**. Методы: `PAY_ON_SITE` (по умолчанию, без записи в учёте сумм) и `TEST_CARD` — принимается только при `app.environment` ∈ {dev, local, test}, иначе `422 PAYMENT_METHOD_UNSUPPORTED`. Жизненный цикл: запись создаёт `TEST_HELD` (hold на цену котировки) → завершение партнёром `TEST_CAPTURED` (по `final_price_minor`, если есть) → возврат администратором `POST /api/v1/admin/auto/payments/{id}/refund` (не больше captured−refunded, обязательная причина, `TEST_PART_REFUNDED`/`TEST_REFUNDED`, событие `PAYMENT_REFUNDED`). Отмена клиентом, отказ/неявка/отмена партнёром и истечение PENDING снимают hold (`TEST_VOIDED`). Успешный платёж в обычном режиме не имитируется. Flutter Consumer: выбор способа оплаты с пометкой «реальных списаний нет» и статус платежа в записи. Admin API: `GET /api/v1/admin/auto/payments` (экран во Flutter не сделан). Тесты: `AutoPaymentsTest`, `AutoPaymentsApiIntegrationTest`; `mvn verify` 334, Flutter 244 — 0 ошибок локально. Выездные задания (`job_id`) используют те же методы на backend, UI для них не добавлялся.
+
 ## Не реализовано (следующие PR)
 
-Платёжный DEV-контракт (возвраты); Android E2E и подписанные APK; синхронизация Linear (задач Auto в рабочем пространстве нет, дубли не создавались); перенос записи партнёром, экран сотрудников и статистики Partner.
+Экран платежей в Admin; Android E2E и подписанные APK; синхронизация Linear (задач Auto в рабочем пространстве нет, дубли не создавались); перенос записи партнёром, экран сотрудников и статистики Partner.
 
 ## Проверка
 

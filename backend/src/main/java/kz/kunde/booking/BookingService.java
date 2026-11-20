@@ -44,10 +44,12 @@ public class BookingService {
 
     private final JdbcTemplate db;
     private final BookingSlots slots;
+    private final kz.kunde.auto.AutoPayments payments;
 
-    public BookingService(JdbcTemplate db, BookingSlots slots) {
+    public BookingService(JdbcTemplate db, BookingSlots slots, kz.kunde.auto.AutoPayments payments) {
         this.db = db;
         this.slots = slots;
+        this.payments = payments;
     }
 
     @Transactional
@@ -191,6 +193,7 @@ public class BookingService {
                         cancel_reason = 'NOT_ANSWERED', updated_at = now(), version = version + 1 where id = ?
                     """, id);
             event(id, "CANCELLED", "SYSTEM", null, "NOT_ANSWERED");
+            if (payments != null) { payments.voidHold(id, null, "SYSTEM", null, "NOT_ANSWERED"); }
         }
     }
 

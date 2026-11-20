@@ -161,7 +161,16 @@ class _FakeAuto {
       if (keys.containsKey(key)) {
         return _json(bookings.firstWhere((b) => b['id'] == keys[key]));
       }
+      final method = (jsonDecode(request.body)
+          as Map<String, dynamic>)['paymentMethod'] as String?;
       final record = {
+        'payment': {
+          'method': method ?? 'PAY_ON_SITE',
+          'status': method == 'TEST_CARD' ? 'TEST_HELD' : 'PAY_ON_SITE',
+          'heldMinor': method == 'TEST_CARD' ? 1200000 : 0,
+          'capturedMinor': 0,
+          'refundedMinor': 0
+        },
         'id': 'b-${bookings.length + 1}',
         'venueId': _venueId,
         'serviceId': _serviceId,
@@ -290,6 +299,16 @@ void main() {
     final again = await services.api.book(quoteId: q.id, idempotencyKey: key);
     expect(again.id, first.id);
     expect(backend.bookings, hasLength(1));
+    expect(first.payment!.isTest, isFalse);
+    final paid = await services.api.book(
+        quoteId: q.id,
+        idempotencyKey: 'au-test-card-aaaa-bbbb-cccc',
+        paymentMethod: 'TEST_CARD');
+    expect(paid.payment!.isTest, isTrue);
+    expect(paid.payment!.status, 'TEST_HELD');
+    expect(paid.payment!.heldMinor, 1200000);
+    expect(backend.bookings, hasLength(2));
+    backend.bookings.removeLast();
     backend.slotTakenOnQuote = true;
     await expectLater(
         services.api.quote(

@@ -39,7 +39,7 @@ public class AutoJobController {
     }
 
     public record JobBody(@NotNull UUID vehicleId, @NotBlank String category, @Size(max = 300) String description,
-            @NotBlank @Size(max = 300) String addressText, @NotNull BigDecimal latitude, @NotNull BigDecimal longitude) {}
+            @NotBlank @Size(max = 300) String addressText, @NotNull BigDecimal latitude, @NotNull BigDecimal longitude, String paymentMethod) {}
 
     public record DecisionBody(@NotNull Boolean approve) {}
 
@@ -56,7 +56,7 @@ public class AutoJobController {
     public ResponseEntity<JobView> request(@AuthenticationPrincipal Jwt p, @RequestHeader(value = "Idempotency-Key", required = false) String key,
             @Valid @RequestBody JobBody b) {
         return ok(HttpStatus.CREATED, jobs.request(user(p), new AutoJobService.JobRequest(b.vehicleId(), b.category(), b.description(), b.addressText(),
-                b.latitude(), b.longitude()), key));
+                b.latitude(), b.longitude(), b.paymentMethod()), key));
     }
 
     @GetMapping("/api/v1/auto/jobs")

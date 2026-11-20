@@ -18,6 +18,7 @@ enum AutoFailure {
   notCancellable,
   notReschedulable,
   rescheduleLimit,
+  paymentUnsupported,
   unavailable,
   versionConflict,
   alreadyDone,
@@ -87,6 +88,7 @@ class AutoApi {
         'BOOKING_NOT_CANCELLABLE' => AutoFailure.notCancellable,
         'BOOKING_NOT_RESCHEDULABLE' => AutoFailure.notReschedulable,
         'RESCHEDULE_LIMIT' => AutoFailure.rescheduleLimit,
+        'PAYMENT_METHOD_UNSUPPORTED' => AutoFailure.paymentUnsupported,
         'AUTO_DISABLED' || 'AUTO_CATEGORY_DISABLED' => AutoFailure.unavailable,
         'VEHICLE_VERSION_CONFLICT' => AutoFailure.versionConflict,
         'REVIEW_EXISTS' || 'COMPLAINT_ALREADY_OPEN' => AutoFailure.alreadyDone,
@@ -198,10 +200,12 @@ class AutoApi {
 
   /// The idempotency key is created once per booking attempt so a retry after a lost response never books twice.
   Future<AutoBookingRecord> book(
-          {required String quoteId, required String idempotencyKey}) =>
+          {required String quoteId,
+          required String idempotencyKey,
+          String paymentMethod = 'PAY_ON_SITE'}) =>
       _guard(() async => AutoBookingRecord.fromJson((await auth.authorizedJson(
               'POST', 'auto/bookings',
-              body: {'quoteId': quoteId},
+              body: {'quoteId': quoteId, 'paymentMethod': paymentMethod},
               expected: const {200, 201},
               headers: {'Idempotency-Key': idempotencyKey}))
           as Map<String, dynamic>));
