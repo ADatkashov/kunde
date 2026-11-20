@@ -245,9 +245,7 @@ class _HealthHomeScreenState extends State<HealthHomeScreen> {
                 child: OutlinedButton.icon(
                   icon: const Icon(Icons.tune),
                   onPressed: _showFilters,
-                  label: Text(
-                    s.healthText('Фильтры', 'Сүзгілер', 'Filters'),
-                  ),
+                  label: Text(s.healthText('Фильтры', 'Сүзгілер', 'Filters')),
                 ),
               ),
               const SizedBox(height: 24),
@@ -414,14 +412,25 @@ class _HealthFiltersSheetState extends State<_HealthFiltersSheet> {
       'service': s.healthText('Услуга', 'Қызмет', 'Service'),
       'specialist': s.healthText('Специалист', 'Маман', 'Specialist'),
       'specialty': s.healthText('Специальность', 'Мамандық', 'Specialty'),
-      'minPriceMinor': s.healthText('Цена от, ₸', 'Ең төменгі баға, ₸', 'Min price, ₸'),
-      'maxPriceMinor': s.healthText('Цена до, ₸', 'Ең жоғары баға, ₸', 'Max price, ₸'),
+      'minPriceMinor': s.healthText(
+        'Цена от, ₸',
+        'Ең төменгі баға, ₸',
+        'Min price, ₸',
+      ),
+      'maxPriceMinor': s.healthText(
+        'Цена до, ₸',
+        'Ең жоғары баға, ₸',
+        'Max price, ₸',
+      ),
     };
     return SafeArea(
       top: false,
       child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
-          24, 0, 24, 24 + MediaQuery.viewInsetsOf(context).bottom,
+          24,
+          0,
+          24,
+          24 + MediaQuery.viewInsetsOf(context).bottom,
         ),
         child: Form(
           key: _form,
@@ -457,7 +466,9 @@ class _HealthFiltersSheetState extends State<_HealthFiltersSheet> {
                           'Enter a whole amount in tenge',
                         );
                       }
-                      final min = int.tryParse(_fields['minPriceMinor']!.text.trim());
+                      final min = int.tryParse(
+                        _fields['minPriceMinor']!.text.trim(),
+                      );
                       if (entry.key == 'maxPriceMinor' &&
                           min != null &&
                           min > int.parse(value)) {
