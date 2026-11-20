@@ -121,7 +121,8 @@ def clock(iso):
 
 
 def setup():
-    world.consumer = fixture.session(CONSUMER_PHONE) if API_ONLY else None
+    if API_ONLY:  # with the app, this number signs in through the app first (its token is set by main)
+        world.consumer = fixture.session(CONSUMER_PHONE)
     world.partner_token = fixture.session(PARTNER_PHONE)
     world.other = fixture.session(OTHER_PHONE)
     world.partner = None
