@@ -191,6 +191,8 @@ def after_purchase(order):
 
 
 def api_checks():
+    # the review step moved the session into the past; reopen sales to test the sold seat
+    sql("update marketplace.leisure_sessions set starts_at = now() + interval '1 day', ends_at = now() + interval '1 day 2 hours' where id = '" + world.session["id"] + "'")
     std = next(t for t in world.detail["ticketTypes"] if t["zone"] == "STANDARD")
     # a seat taken by someone else is refused for everyone else
     status, body = raw("POST", f"leisure/sessions/{world.session['id']}/holds", token=world.other,
