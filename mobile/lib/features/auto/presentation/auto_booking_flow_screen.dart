@@ -169,14 +169,16 @@ class _AutoBookingFlowScreenState extends State<AutoBookingFlowScreen> {
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
                 itemBuilder: (_, i) {
                   final d = _today.add(Duration(days: i));
-                  return ChoiceChip(
-                    label: Text(formatDay(d)),
-                    selected: d == _date,
-                    onSelected: (_) => setState(() {
-                      _date = d;
-                      _loadSlots();
-                    }),
-                  );
+                  return Semantics(
+                      identifier: 'auto-day-$i',
+                      child: ChoiceChip(
+                        label: Text(formatDay(d)),
+                        selected: d == _date,
+                        onSelected: (_) => setState(() {
+                          _date = d;
+                          _loadSlots();
+                        }),
+                      ));
                 },
               ),
             ),
@@ -202,11 +204,13 @@ class _AutoBookingFlowScreenState extends State<AutoBookingFlowScreen> {
                 final slots = snap.data!;
                 if (slots.isEmpty) return Text(s.auNoSlots);
                 return Wrap(spacing: 8, runSpacing: 8, children: [
-                  for (final sl in slots)
-                    ChoiceChip(
-                        label: Text(formatClock(sl.time)),
-                        selected: _slot?.startsAtIso == sl.startsAtIso,
-                        onSelected: _busy ? null : (_) => _pickSlot(sl)),
+                  for (final (index, sl) in slots.indexed)
+                    Semantics(
+                        identifier: 'auto-slot-$index',
+                        child: ChoiceChip(
+                            label: Text(formatClock(sl.time)),
+                            selected: _slot?.startsAtIso == sl.startsAtIso,
+                            onSelected: _busy ? null : (_) => _pickSlot(sl))),
                 ]);
               },
             ),
@@ -303,16 +307,18 @@ class _AutoBookingFlowScreenState extends State<AutoBookingFlowScreen> {
             Text(s.auChooseVehicle, style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
             Wrap(spacing: 8, runSpacing: 4, children: [
-              for (final v in list)
-                ChoiceChip(
-                    label: Text(v.label),
-                    selected: _vehicle?.id == v.id,
-                    onSelected: (_) {
-                      setState(() {
-                        _vehicle = v;
-                      });
-                      if (_slot != null) _requestQuote();
-                    }),
+              for (final (index, v) in list.indexed)
+                Semantics(
+                    identifier: 'auto-vehicle-$index',
+                    child: ChoiceChip(
+                        label: Text(v.label),
+                        selected: _vehicle?.id == v.id,
+                        onSelected: (_) {
+                          setState(() {
+                            _vehicle = v;
+                          });
+                          if (_slot != null) _requestQuote();
+                        })),
             ]),
           ]),
         );

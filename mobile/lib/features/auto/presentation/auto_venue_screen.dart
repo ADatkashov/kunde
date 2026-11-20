@@ -94,18 +94,21 @@ class _AutoVenueScreenState extends State<AutoVenueScreen> {
                             const SizedBox(height: 8),
                             Align(
                                 alignment: Alignment.centerRight,
-                                child: FilledButton(
-                                    onPressed: d.venue.open
-                                        ? () => Navigator.of(context).push(
-                                            MaterialPageRoute<void>(
-                                                builder: (_) =>
-                                                    AutoBookingFlowScreen(
-                                                        services:
-                                                            widget.services,
-                                                        venue: d.venue,
-                                                        service: svc)))
-                                        : null,
-                                    child: Text(s.auBook))),
+                                child: Semantics(
+                                    identifier:
+                                        'auto-book-${d.services.indexOf(svc)}',
+                                    child: FilledButton(
+                                        onPressed: d.venue.open
+                                            ? () => Navigator.of(context).push(
+                                                MaterialPageRoute<void>(
+                                                    builder: (_) =>
+                                                        AutoBookingFlowScreen(
+                                                            services:
+                                                                widget.services,
+                                                            venue: d.venue,
+                                                            service: svc)))
+                                            : null,
+                                        child: Text(s.auBook)))),
                           ]),
                     ),
                   ),
