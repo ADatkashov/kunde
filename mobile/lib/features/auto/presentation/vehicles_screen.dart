@@ -189,40 +189,50 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
           child: Form(
             key: _form,
             child: ListView(padding: const EdgeInsets.all(16), children: [
-              TextFormField(
-                  controller: _make,
-                  maxLength: 40,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: InputDecoration(labelText: s.auMake),
-                  validator: required),
-              TextFormField(
-                  controller: _model,
-                  maxLength: 40,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: InputDecoration(labelText: s.auModel),
-                  validator: required),
-              TextFormField(
-                  controller: _year,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(labelText: s.auYear),
-                  validator: (v) {
-                    final y = int.tryParse((v ?? '').trim());
-                    return y == null || y < 1950 || y > DateTime.now().year + 1
-                        ? s.auYearInvalid
-                        : null;
-                  }),
-              TextFormField(
-                  controller: _plate,
-                  maxLength: 16,
-                  textCapitalization: TextCapitalization.characters,
-                  decoration: InputDecoration(labelText: s.auPlate),
-                  validator: (v) {
-                    final t = (v ?? '').replaceAll(RegExp(r'[\s-]'), '');
-                    return t.isEmpty ||
-                            RegExp(r'^[A-Za-z0-9]{3,12}$').hasMatch(t)
-                        ? null
-                        : s.auPlateInvalid;
-                  }),
+              Semantics(
+                  identifier: 'auto-make',
+                  child: TextFormField(
+                      controller: _make,
+                      maxLength: 40,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: InputDecoration(labelText: s.auMake),
+                      validator: required)),
+              Semantics(
+                  identifier: 'auto-model',
+                  child: TextFormField(
+                      controller: _model,
+                      maxLength: 40,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: InputDecoration(labelText: s.auModel),
+                      validator: required)),
+              Semantics(
+                  identifier: 'auto-year',
+                  child: TextFormField(
+                      controller: _year,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(labelText: s.auYear),
+                      validator: (v) {
+                        final y = int.tryParse((v ?? '').trim());
+                        return y == null ||
+                                y < 1950 ||
+                                y > DateTime.now().year + 1
+                            ? s.auYearInvalid
+                            : null;
+                      })),
+              Semantics(
+                  identifier: 'auto-plate',
+                  child: TextFormField(
+                      controller: _plate,
+                      maxLength: 16,
+                      textCapitalization: TextCapitalization.characters,
+                      decoration: InputDecoration(labelText: s.auPlate),
+                      validator: (v) {
+                        final t = (v ?? '').replaceAll(RegExp(r'[\s-]'), '');
+                        return t.isEmpty ||
+                                RegExp(r'^[A-Za-z0-9]{3,12}$').hasMatch(t)
+                            ? null
+                            : s.auPlateInvalid;
+                      })),
               if (_error != null) ...[
                 const SizedBox(height: 8),
                 AutoErrorBanner(_error!),
