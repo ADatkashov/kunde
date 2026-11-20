@@ -70,6 +70,10 @@ app:
   auto:
     enabled: ${AUTO_ENABLED:false}
     seed-demo: ${AUTO_SEED_DEMO:false}
+  # KUNDE Leisure (cinemas, bowling, concerts, tours...). Empty = follows the environment: on in local/dev/test, off in production.
+  leisure:
+    enabled: ${LEISURE_ENABLED:}
+    seed-demo: ${LEISURE_SEED_DEMO:false}
   health:
     seed-demo: ${HEALTH_SEED_DEMO:false}
   # Partner Operations DEV pilot: loads two synthetic partners and links them to demo assets; dev/local/test only.

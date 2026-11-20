@@ -129,7 +129,9 @@ public class PhoneAuthConfiguration {
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/food/restaurants",
                                 "/api/v1/food/restaurants/*", "/api/v1/food/search", "/api/v1/food/dishes/*/alternatives", "/api/v1/booking/venues",
                                 "/api/v1/booking/venues/*", "/api/v1/booking/slots", "/api/v1/booking/health/venues", "/api/v1/auto/categories", "/api/v1/auto/venues",
-                                "/api/v1/auto/venues/*", "/api/v1/auto/slots")
+                                "/api/v1/auto/venues/*", "/api/v1/auto/slots",
+                                "/api/v1/leisure/categories", "/api/v1/leisure/home", "/api/v1/leisure/events", "/api/v1/leisure/events/*",
+                                "/api/v1/leisure/events/*/sessions", "/api/v1/leisure/events/*/reviews", "/api/v1/leisure/sessions/*/seats")
                         .permitAll()
                         .requestMatchers("/api/v1/health", "/api/v1/capabilities", "/api/v1/categories",
                                 "/api/v1/categories/*/offerings", "/api/v1/offerings/*", "/api/v1/partners/*", "/api/v1/search",

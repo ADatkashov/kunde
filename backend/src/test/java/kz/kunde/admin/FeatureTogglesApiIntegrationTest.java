@@ -92,6 +92,19 @@ class FeatureTogglesApiIntegrationTest {
     }
 
     @Test
+    void healthSwitchBlocksPublicIntakeAndLeavesOwnHistoryAvailable() throws Exception {
+        send("GET", "/api/v1/booking/health/venues", null, null).andExpect(status().isOk());
+        send("GET", "/api/v1/admin/health", consumer, null).andExpect(status().isForbidden());
+        send("GET", "/api/v1/admin/health", otherAdmin, null).andExpect(status().isForbidden());
+        send("PUT", "/api/v1/admin/features/HEALTH", admin,
+                "{\"enabled\":false,\"reason\":\"pause synthetic intake\"}").andExpect(status().isOk());
+        send("GET", "/api/v1/capabilities", null, null)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.healthEnabled").value(false));
+        send("GET", "/api/v1/booking/health/venues", null, null).andExpect(status().isNotFound());
+        send("GET", "/api/v1/booking/bookings?healthOnly=true", consumer, null).andExpect(status().isOk());
+    }
+
+    @Test
     void onlyTheAdminGrantHolderCanSeeAndSwitchFeatures() throws Exception {
         send("GET", "/api/v1/admin/features", null, null).andExpect(status().isUnauthorized());
         send("GET", "/api/v1/admin/features", consumer, null).andExpect(status().isForbidden());
@@ -100,7 +113,9 @@ class FeatureTogglesApiIntegrationTest {
         assertThat(toggles.enabled(FeatureToggles.Feature.AUTO)).isTrue();
 
         send("GET", "/api/v1/admin/features", admin, null).andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(4))
+                .andExpect(jsonPath("$.length()").value(5))
+                .andExpect(jsonPath("$[?(@.feature=='LEISURE')].effective").value(true))
+                .andExpect(jsonPath("$[?(@.feature=='HEALTH')].effective").value(true))
                 .andExpect(jsonPath("$[?(@.feature=='AUTO')].effective").value(true))
                 .andExpect(jsonPath("$[?(@.feature=='AUTO')].allowedByEnvironment").value(true))
                 .andExpect(jsonPath("$[?(@.feature=='RIDES')].allowedByEnvironment").value(false))

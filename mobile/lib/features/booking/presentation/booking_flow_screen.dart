@@ -295,8 +295,9 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                           onSelected: _selectionLocked
                               ? null
                               : (selected) {
-                                  if (selected)
+                                  if (selected) {
                                     setState(() => _paymentMethod = method);
+                                  }
                                 },
                         ),
                     ]),

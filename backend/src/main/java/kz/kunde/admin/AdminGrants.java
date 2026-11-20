@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class AdminGrants {
-    public enum Permission { PARTNER_VERIFICATION, ADMIN_GRANTS, RIDE_VERIFICATION, RIDE_OPERATIONS, DELIVERY_OPERATIONS, AUTO_OPERATIONS, HEALTH_OPERATIONS }
+    public enum Permission { PARTNER_VERIFICATION, ADMIN_GRANTS, RIDE_VERIFICATION, RIDE_OPERATIONS, DELIVERY_OPERATIONS, AUTO_OPERATIONS, LEISURE_OPERATIONS, HEALTH_OPERATIONS }
 
     /**
      * Server-resolved resource attributes. A missing attribute matches only an unrestricted grant on that

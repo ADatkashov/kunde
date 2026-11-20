@@ -10,10 +10,10 @@ ALTER TABLE transactions.bookings ADD CONSTRAINT health_booking_no_free_text
 
 ALTER TABLE identity.feature_toggles DROP CONSTRAINT feature_toggles_feature_check;
 ALTER TABLE identity.feature_toggles ADD CONSTRAINT feature_toggles_feature_check
-    CHECK (feature IN ('AUTO', 'RIDES', 'DELIVERY', 'HEALTH'));
+    CHECK (feature IN ('AUTO', 'RIDES', 'DELIVERY', 'LEISURE', 'HEALTH'));
 ALTER TABLE identity.feature_toggle_events DROP CONSTRAINT feature_toggle_events_feature_check;
 ALTER TABLE identity.feature_toggle_events ADD CONSTRAINT feature_toggle_events_feature_check
-    CHECK (feature IN ('AUTO', 'RIDES', 'DELIVERY', 'HEALTH'));
+    CHECK (feature IN ('AUTO', 'RIDES', 'DELIVERY', 'LEISURE', 'HEALTH'));
 
 CREATE TABLE marketplace.health_categories (
     code varchar(24) PRIMARY KEY,
@@ -39,7 +39,7 @@ CREATE INDEX booking_services_health_category_idx
 
 ALTER TABLE identity.admin_grants DROP CONSTRAINT admin_grants_permission_check;
 ALTER TABLE identity.admin_grants ADD CONSTRAINT admin_grants_permission_check CHECK (permission IN
-    ('PARTNER_VERIFICATION', 'ADMIN_GRANTS', 'RIDE_VERIFICATION', 'RIDE_OPERATIONS', 'DELIVERY_OPERATIONS', 'AUTO_OPERATIONS', 'HEALTH_OPERATIONS'));
+    ('PARTNER_VERIFICATION', 'ADMIN_GRANTS', 'RIDE_VERIFICATION', 'RIDE_OPERATIONS', 'DELIVERY_OPERATIONS', 'AUTO_OPERATIONS', 'LEISURE_OPERATIONS', 'HEALTH_OPERATIONS'));
 
 CREATE TABLE marketplace.health_moderation_events (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

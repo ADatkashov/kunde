@@ -141,6 +141,14 @@ class BookingApiIntegrationTest {
                 .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("IDEMPOTENCY_KEY_REUSED"));
         send("POST", path, other, request, key).andExpect(status().isConflict());
         send("GET", path + "/" + id, other, null, null).andExpect(status().isNotFound());
+        String alternate = (String) slots(slug, service, master, date.toString()).getLast().get("startsAt");
+        String move = "{\"expectedStartsAt\":\"" + start + "\",\"startsAt\":\"" + alternate + "\"}";
+        send("POST", path + "/" + id + "/reschedule", other, move, null).andExpect(status().isNotFound());
+        send("POST", path + "/" + id + "/reschedule", token, move, null)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.startsAt").value(alternate));
+        send("POST", path + "/" + id + "/reschedule", token, move, null)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.paymentStatus").value("TEST_HELD"));
+        send("POST", path, token, request, key).andExpect(status().isOk()).andExpect(jsonPath("$.id").value(id));
         send("POST", path + "/" + id + "/cancel", token, null, null)
                 .andExpect(status().isOk()).andExpect(jsonPath("$.paymentStatus").value("TEST_VOIDED"));
         send("POST", path, other, request, key).andExpect(status().isCreated());

@@ -11,6 +11,7 @@ import 'package:kunde_mobile/features/booking/presentation/bookings_list.dart';
 import 'package:kunde_mobile/features/booking/presentation/category_screens.dart';
 import 'package:kunde_mobile/features/booking/presentation/services_home_screen.dart';
 import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
+import 'package:kunde_mobile/features/health/health_home_screen.dart';
 import 'package:kunde_mobile/features/home/data/kunde_api.dart';
 import 'package:kunde_mobile/features/home/data/platform_snapshot.dart';
 import 'package:kunde_mobile/features/home/presentation/home_screen.dart';
@@ -81,6 +82,7 @@ class _FakeBackend {
   bool offline = false;
   bool slotTakenOnBook = false;
   int slotRequests = 0;
+  Uri? lastHealthSearch;
   Map<String, dynamic>? lastCleaningRequest;
 
   http.Response _json(Object body, [int status = 200]) =>
@@ -93,6 +95,12 @@ class _FakeBackend {
     final body = request.body.isEmpty
         ? null
         : jsonDecode(request.body) as Map<String, dynamic>;
+    if (path == 'booking/health/venues') {
+      lastHealthSearch = request.url;
+      return _json([
+        {..._venue, 'category': 'HEALTH', 'name': 'ДЕМО · Контур'},
+      ]);
+    }
     if (path == 'booking/venues') {
       return _json(request.url.queryParameters['category'] == 'CLEANING'
           ? [_cleanVenue]
@@ -302,6 +310,24 @@ void main() {
         PlatformSnapshot.fromJson({...base, 'bookingEnabled': true})
             .bookingEnabled,
         isTrue);
+  });
+
+  testWidgets(
+      'Health directions and text search reach the real client contract',
+      (tester) async {
+    final backend = _FakeBackend();
+    final services = await _services(backend);
+    await _show(tester, HealthHomeScreen(services: services));
+
+    await tester.tap(find.text('Врачи'));
+    await tester.pumpAndSettle();
+    expect(backend.lastHealthSearch?.queryParameters['direction'], 'DOCTORS');
+
+    await tester.enterText(find.byType(TextField), 'Контур');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+    expect(backend.lastHealthSearch?.queryParameters['q'], 'Контур');
+    expect(find.text('ДЕМО · Контур'), findsOneWidget);
   });
 
   testWidgets('customer books a barber, sees it after a restart and cancels it',
