@@ -171,7 +171,11 @@ class _HealthHomeScreenState extends State<HealthHomeScreen> {
                 maxLength: 100,
                 onSubmitted: (_) => _refresh(),
                 decoration: InputDecoration(
-                  border: const OutlineInputBorder(),
+                  counterText: '',
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(22),
+                  ),
                   hintText: s.healthText(
                     'Организация или услуга',
                     'Ұйым немесе қызмет',

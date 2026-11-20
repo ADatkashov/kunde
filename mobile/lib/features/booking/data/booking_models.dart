@@ -275,6 +275,7 @@ class BookingRecord {
   final bool reschedulable;
 
   bool get isCleaning => category == 'CLEANING';
+  bool get isHealth => category == 'HEALTH';
 
   factory BookingRecord.fromJson(Map<String, dynamic> json) => BookingRecord(
         id: json['id'] as String,
