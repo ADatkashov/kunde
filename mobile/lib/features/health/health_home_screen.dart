@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../core/localization/kunde_localizations.dart';
 import '../booking/booking_services.dart';
 import '../booking/data/booking_models.dart';
 import '../booking/presentation/booking_strings.dart';
@@ -45,7 +44,7 @@ class _HealthHomeScreenState extends State<HealthHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final s = KundeLocalizations.of(context);
+    final s = bkL10n(context);
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final title = s.healthText(
