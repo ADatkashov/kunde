@@ -440,7 +440,7 @@ def ui_book(prefix, service_index, day_index, *, with_car, test_card):
     tap(resource_id="auto-vehicle-0")
     tap(resource_id=f"auto-day-{day_index}")
     tap(resource_id="auto-slot-0")
-    android.find("Предварительная стоимость", "Алдын ала құны", "Estimated cost", timeout=30)
+    reveal("Предварительная стоимость", "Алдын ала құны", "Estimated cost")
     if test_card:
         tap(*TEST_CARD)
     tap(*CONFIRM)
