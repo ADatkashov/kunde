@@ -1,5 +1,11 @@
 # KUNDE project state
 
+## KUNDE Leisure & Entertainment 1.0 — DEV (2026-11-20)
+
+- Backend в `main` ([#175](https://github.com/ADatkashov/kunde/pull/175), Flyway V40): общая модель на 5 типов бронирования и 16 категорий, каталог/поиск, удержание мест, идемпотентные заказы, QR-билеты с серверной проверкой, `TEST_CARD`/`PAY_ON_SITE`, возвраты, модерация, аудит, Executor-назначения, флаг `LEISURE_ENABLED` (включён в local/dev/test, выключен в production). Flutter-интерфейс Consumer/Partner/Admin/Executor — [#177](https://github.com/ADatkashov/kunde/pull/177).
+- **DEV:** `kunde-backend-ty81` развёрнут из `e0039ce`, `LEISURE_ENABLED=true`, `LEISURE_SEED_DEMO=true`, `scripts/dev/leisure_smoke.py` → `SMOKE OK`. PROD не менялся.
+- **Не подтверждено:** нативный E2E на эмуляторе, скриншоты, TalkBack, карта, фото, push, реальные платежи, Linear. Подробности: [leisure](docs/product/leisure.md).
+
 ## KUNDE Control Center 3.0 — DEV
 
 - [Аудит и зависимости](docs/roadmap/27-control-center-2-audit.md) приняты в [#155](https://github.com/ADatkashov/kunde/pull/155). [#156](https://github.com/ADatkashov/kunde/pull/156) добавил `GET /api/v1/admin/me/capabilities` для действующих грантов текущего сотрудника. Backend CI и Security CI прошли на PR.
