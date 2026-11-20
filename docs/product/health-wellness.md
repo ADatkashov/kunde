@@ -31,14 +31,14 @@ V41 добавляет направление услуги, состояние �
 
 ## Подтверждённое развёртывание
 
-- Render DEV `dep-dc0a4hd6e07s73c56f40` перешёл в live на `e3edb329d4771c0b291ef04f777c65c7c960fa24`. Заданы `HEALTH_ENABLED=true` и `HEALTH_SEED_DEMO=true`. Публичная capability подтвердила `healthEnabled: true`, а Neon DEV — успешные миграции V39, V40 и V41. [Render](https://dashboard.render.com/web/srv-dbsb8ct6e07s739c3t7g/deploys/dep-dc0a4hd6e07s73c56f40)
+- Render DEV `dep-dc0a4hd6e07s73c56f40` перешёл в live на первоначальном коммите `e3edb329d4771c0b291ef04f777c65c7c960fa24`. Текущий backend `fb910f79ad704be9672370851f60c24082a7bdd6` прошёл повторную проверку обоих способов оплаты и создания скрытых черновиков Partner. [Повторный deploy](https://dashboard.render.com/web/srv-dbsb8ct6e07s739c3t7g/deploys/dep-dc0aakc0916s73d4q53g). Заданы `HEALTH_ENABLED=true` и `HEALTH_SEED_DEMO=true`. Публичная capability подтвердила `healthEnabled: true`, а Neon DEV — успешные миграции V39, V40 и V41. [Render](https://dashboard.render.com/web/srv-dbsb8ct6e07s739c3t7g/deploys/dep-dc0a4hd6e07s73c56f40)
 - `python3 scripts/dev/health_smoke.py https://kunde-backend-ty81.onrender.com` прошёл на DEV с `TEST_CARD` и `PAY_ON_SITE`. Проверены каталог, отклонение подменённой цены, запись, идемпотентный повтор, история, перенос и освобождение тестового удержания.
 - На локальном PostgreSQL 16.12 прошли 351 backend-тест. HTTP также подтвердил подтверждение и отмену партнёром, запрет другому tenant, проверку Admin-гранта и модерацию. В Neon DEV у синтетических аккаунтов пока нет `HEALTH_OPERATIONS`.
 - GitHub Actions проверил Backend, Flutter, Partner Flutter и Android, а также зависимости, контейнеры и секреты. Нативный Health E2E и визуальные артефакты отслеживаются в [#178](https://github.com/ADatkashov/kunde/pull/178). [Checks #176](https://github.com/ADatkashov/kunde/pull/176/checks)
 
 ## Android и подписанные сборки
 
-Нативный Consumer E2E на Android 35 прошёл на синтетических данных. Прогон открыл каталог, организацию и профиль специалиста, создал ожидающую подтверждения запись с TEST_CARD, отменил её и подтвердил снятие удержания через API. Скриншоты сохранены в восьми PNG. [GitHub Actions](https://github.com/ADatkashov/kunde/actions/runs/44804241960/artifacts/14663726127)
+Нативный Consumer E2E на Android 35 прошёл на синтетических данных. Прогон открыл каталог, организацию и профиль специалиста, создал ожидающую подтверждения запись с TEST_CARD, отменил её и подтвердил снятие удержания через API. Скриншоты после визуальных исправлений сохранены в восьми PNG. [Повторный Android E2E](https://github.com/ADatkashov/kunde/actions/runs/44806501062/artifacts/14662504983)
 
 Подписанные DEV Release APK собраны из `e3edb329d4771c0b291ef04f777c65c7c960fa24`. CI проверил имя пакета, подпись v2, SHA-256, arm64, DEV URL и отсутствие признака debuggable. Нативный E2E использовал отдельную отладочную сборку для loopback.
 
@@ -48,6 +48,8 @@ V41 добавляет направление услуги, состояние �
 | Partner | `4f8875dbc5ba2f53e71cfa8a8027846c88d03a44b515f7f7d35f8420e729c515` | [Release APK](https://github.com/ADatkashov/kunde/actions/runs/44805001720/artifacts/14662562676) |
 | Executor | `a805bc471fe7a5886535f209506d9a8a3bdfd00af831beecddf9b67357b50c88` | [Release APK](https://github.com/ADatkashov/kunde/actions/runs/44804671777/artifacts/14662228329) |
 | Admin | `34aa577bacb9b11555a2c13de3b16842b38ac1be00408dfd9bb4488e8d3d8fed` | [Release APK](https://github.com/ADatkashov/kunde/actions/runs/44804997291/artifacts/14663216127) |
+
+Обновлённый [Partner APK](https://github.com/ADatkashov/kunde/actions/runs/44806471675/artifacts/14663521838) собран из `fb910f79ad704be9672370851f60c24082a7bdd6`. Его SHA-256 — `0585775664624b8558c8b3f99193934f8dc5315493bbaf96d6b789aaf9c5f9ea`.
 
 ## Приватность и угрозы
 
