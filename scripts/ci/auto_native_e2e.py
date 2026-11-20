@@ -16,6 +16,7 @@ import time
 import urllib.error
 import urllib.request
 import uuid
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import rides_native_e2e as fixture
@@ -400,10 +401,29 @@ def tap_day(index):
     raise RuntimeError(f"Could not bring the day chip {index} into view")
 
 
+def field_text(identifier):
+    """The current text of a field, read from the accessibility tree."""
+    android.adb("shell", "uiautomator", "dump", "/sdcard/kunde-field.xml")
+    tree = ET.fromstring(android.adb("exec-out", "cat", "/sdcard/kunde-field.xml"))
+    for node in tree.iter("node"):
+        if node.get("package") == fixture.CONSUMER and node.get("resource-id", "").rsplit("/", 1)[-1] == identifier:
+            return node.get("text", "")
+    return None
+
+
 def enter(identifier, value):
-    tap(resource_id=identifier)
-    android.adb("shell", "input", "text", value)
-    android.adb("shell", "input", "keyevent", "4")
+    """Type slowly and verify: the emulator sometimes drops the first characters of fast input."""
+    for _ in range(4):
+        tap(resource_id=identifier)
+        for _ in range(len(value) + 6):
+            android.adb("shell", "input", "keyevent", "KEYCODE_DEL")
+        for character in value:
+            android.adb("shell", "input", "text", character)
+        typed = field_text(identifier) or ""
+        if typed.replace(" ", "") == value.replace(" ", ""):
+            android.adb("shell", "input", "keyevent", "4")
+            return
+    raise RuntimeError(f"Could not type {identifier!r} reliably (last read {typed!r})")
 
 
 def sign_in(phone, *signed_in_labels):
