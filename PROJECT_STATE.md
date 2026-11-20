@@ -4,8 +4,8 @@
 
 - Стартовый аудит сверил `origin/main` `30f4bc5`, открытый Leisure [#175](https://github.com/ADatkashov/kunde/pull/175) и [последний Security CI на main](https://github.com/ADatkashov/kunde/actions/runs/44784856492). Linear доступен, отдельный Health-тикет поиском не найден.
 - В main через [#176](https://github.com/ADatkashov/kunde/pull/176): V41, синтетический каталог, общий Booking Engine и тестовый ledger, Consumer, управление площадкой через Partner и модерация Admin. Реестр возможностей, проверок и ограничений — в [Health PRD](docs/product/health-wellness.md).
-- В Render DEV развёрнут коммит `e3edb329d4771c0b291ef04f777c65c7c960fa24`. Флаг включён, V41 применена на Neon, Health HTTP smoke прошёл.
-- Полная приёмка DEV/TEST открыта. Профиль специалиста и Android E2E объединены в [#178](https://github.com/ADatkashov/kunde/pull/178), создание услуг и специалистов Partner объединено в [#179](https://github.com/ADatkashov/kunde/pull/179).
+- В Render DEV развёрнут backend `fb910f79ad704be9672370851f60c24082a7bdd6`. V41 применена на Neon. Флаг включён, HTTP smoke и проверка черновиков Partner прошли.
+- Полная приёмка DEV/TEST открыта. Профиль специалиста и Android E2E объединены в [#178](https://github.com/ADatkashov/kunde/pull/178), создание услуг и специалистов Partner объединено в [#179](https://github.com/ADatkashov/kunde/pull/179). Повторный Android E2E после визуальных исправлений [#181](https://github.com/ADatkashov/kunde/pull/181) прошёл. Результаты сверены с Linear ADA-66.
 
 ## KUNDE Control Center 3.0 — DEV
 
@@ -15,7 +15,7 @@
 - [#164](https://github.com/ADatkashov/kunde/pull/164) добавил серверный реестр сотрудников с постраничной выдачей под действующим платформенным `ADMIN_GRANTS`. Управление назначениями и D-14 остаются открытыми.
 - [#165](https://github.com/ADatkashov/kunde/pull/165) добавил Flutter-реестр сотрудников. [#163](https://github.com/ADatkashov/kunde/pull/163) и [#166](https://github.com/ADatkashov/kunde/pull/166) добавили scoped-сводку Delivery и выбор периода.
 - [#168](https://github.com/ADatkashov/kunde/pull/168) добавил адаптивный обзор со scoped-метриками Delivery и действующими разрешениями. Flutter Analyze и 253 локальных теста прошли на `6252018`. Дополнительно проверены 18 сочетаний ширины, языка и темы с текстом 200%, загрузкой, ошибкой, повтором и пустым результатом.
-- Поставка открыта: Web [#159](https://github.com/ADatkashov/kunde/pull/159) → [#152](https://github.com/ADatkashov/kunde/pull/152) после авторизованного DEV E2E. Подписанный Admin APK актуального main и Admin Android E2E ещё не подтверждены. Порядок проверки описан в [NEXT_TASK.md](NEXT_TASK.md).
+- Web PR [#159](https://github.com/ADatkashov/kunde/pull/159) и [#152](https://github.com/ADatkashov/kunde/pull/152) объединены. Выпущен проверенный подписанный [Admin DEV APK](https://github.com/ADatkashov/kunde/actions/runs/44804997291/artifacts/14663216127). Нативный авторизованный Admin E2E остаётся открытым.
 - В работе: scoped RBAC, панели продуктов, реестры, поддержка, финансы, операции, аудит и проверка поставки на всех платформах. Functional DEV/TEST Ready ещё не подтверждён.
 
 ## KUNDE Auto 1.0 — backend slice (в работе)
