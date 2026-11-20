@@ -411,7 +411,12 @@ def ui_network_recovery(process):
 
 
 def ui_flag_off():
-    relaunch()
+    android.adb("reverse", "tcp:8081", "tcp:8081")
+    try:
+        relaunch()
+    except RuntimeError:
+        android.screenshot("flag-off-relaunch-failed")
+        raise
     try:
         tap(*LEISURE)
         android.find(*HOME_TITLE, timeout=8)
