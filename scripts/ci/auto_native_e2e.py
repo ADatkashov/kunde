@@ -388,6 +388,18 @@ def tap(*labels, **options):
     android.adb("shell", "input", "tap", *reveal(*labels, **options))
 
 
+def tap_day(index):
+    """The day chips scroll sideways: bring the wanted one into view first (stations are closed on Sundays, so it can be far)."""
+    identifier = f"auto-day-{index}"
+    for _ in range(10):
+        try:
+            android.adb("shell", "input", "tap", *android.find(resource_id=identifier, timeout=3))
+            return
+        except RuntimeError:
+            android.adb("shell", "input", "swipe", "330", "288", "60", "288", "250")
+    raise RuntimeError(f"Could not bring the day chip {index} into view")
+
+
 def enter(identifier, value):
     tap(resource_id=identifier)
     android.adb("shell", "input", "text", value)
@@ -467,7 +479,7 @@ def ui_book(prefix, service_index, day_index, *, with_car, test_card):
             enter(identifier, value)
         tap(*SAVE)
     tap(resource_id="auto-vehicle-0")
-    tap(resource_id=f"auto-day-{day_index}")
+    tap_day(day_index)
     tap(resource_id="auto-slot-0")
     reveal("Предварительная стоимость", "Алдын ала құны", "Estimated cost")
     if test_card:
@@ -520,7 +532,7 @@ def ui_main_flow():
     ui_book("Тестовая автомойка «Демо»", wash_index, third_day, with_car=False, test_card=False)
     third = newest_booking_id(world.consumer, "PENDING")
     tap(*RESCHEDULE, clickable=True)
-    tap(resource_id=f"auto-day-{moved_day}")
+    tap_day(moved_day)
     tap(resource_id="auto-slot-0")
     tap(*RESCHEDULE, clickable=True)
     android.find(*PENDING_LABEL, timeout=30)
