@@ -587,7 +587,7 @@ def main():
             android.adb("shell", "wm", "size", "390x844")
             android.adb("shell", "wm", "density", "160")
             android.adb("install", APKS / "consumer.apk")
-            relaunch()
+            fixture.launch(fixture.CONSUMER)
             sign_in("7000000001", "Алматы", "Almaty")
             world.consumer = fixture.session(CONSUMER_PHONE)
             completed.append("consumer_sign_in")
