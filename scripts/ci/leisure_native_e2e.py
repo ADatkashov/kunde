@@ -455,10 +455,11 @@ def main():
             ui_purchase()
             phase = "after_scan"
             ui_after_scan()
-            phase = "network_recovery"
-            process = ui_network_recovery(process)
         phase = "backend_scenarios"
         api_checks()
+        if not API_ONLY:
+            phase = "network_recovery"
+            process = ui_network_recovery(process)
         phase = "flag_off"
         process = flag_off_checks(process)
         if not API_ONLY:
