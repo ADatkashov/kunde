@@ -29,3 +29,5 @@ contains Almaty only; no unsupported city can be selected. Services checks
 `bookingEnabled` before mounting the booking catalog, including entry from the catalog. AI, favorites, promos and Pay retain explanatory unavailable states.
 The theme changes presentation only; order creation, quote, stock, cancellation,
 substitution consent and session transitions retain their existing owners.
+
+| Health booking | BookingApi / BookingFlowScreen | Каталог следует capability. Цена и условия показываются до записи. После неопределённого результата повтор использует тот же ключ. Перенос и отмена используют серверный статус. | Widget Health, BookingApiIntegrationTest, health_native_e2e.py |
