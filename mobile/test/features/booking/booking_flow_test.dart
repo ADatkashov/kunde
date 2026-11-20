@@ -356,11 +356,13 @@ void main() {
     ));
     await tester.pumpAndSettle();
     final venue = find.text('ДЕМО · Контур');
-    await tester.scrollUntilVisible(venue, 280);
+    await tester.scrollUntilVisible(venue, 280,
+        scrollable: find.byType(Scrollable).first);
     await tester.tap(venue);
     await tester.pumpAndSettle();
     final specialist = find.text('Арман');
-    await tester.scrollUntilVisible(specialist, 200);
+    await tester.scrollUntilVisible(specialist, 200,
+        scrollable: find.byType(Scrollable).first);
     await tester.tap(specialist);
     await tester.pumpAndSettle();
     expect(find.text('Specialist'), findsOneWidget);
