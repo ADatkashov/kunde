@@ -15,6 +15,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("base")
     parser.add_argument("--phone", default="+77000000001")
+    parser.add_argument("--method", choices=("TEST_CARD", "PAY_ON_SITE"), default="TEST_CARD")
     args = parser.parse_args()
     if not args.phone.startswith("+7700000"):
         parser.error("use an allowlisted synthetic number")
@@ -68,26 +69,28 @@ def main():
     body = {
         "venueId": venues[0]["id"], "serviceId": service["id"], "masterId": master["id"],
         "startsAt": slots[0]["startsAt"], "expectedPriceMinor": service["priceMinor"],
-        "paymentMethod": "TEST_CARD", "acceptsTerms": True,
+        "paymentMethod": args.method, "acceptsTerms": True,
     }
     key = str(uuid.uuid4())
     call("POST", path, {**body, "expectedPriceMinor": body["expectedPriceMinor"] + 1},
          token, key, expected=409)
     booked = call("POST", path, body, token, key, expected=201)
     item = path + "/" + booked["id"]
+    open_status = "TEST_HELD" if args.method == "TEST_CARD" else "PAY_ON_SITE"
+    cancel_status = "TEST_VOIDED" if args.method == "TEST_CARD" else "PAY_ON_SITE"
     try:
-        assert booked["paymentStatus"] == "TEST_HELD"
+        assert booked["paymentStatus"] == open_status
         assert call("POST", path, body, token, key)["id"] == booked["id"]
         assert any(row["id"] == booked["id"] for row in call("GET", path + "?healthOnly=true", token=token))
         move = {"expectedStartsAt": booked["startsAt"], "startsAt": slots[-1]["startsAt"]}
         moved = call("POST", item + "/reschedule", move, token)
-        assert moved["startsAt"] == move["startsAt"] and moved["paymentStatus"] == "TEST_HELD"
+        assert moved["startsAt"] == move["startsAt"] and moved["paymentStatus"] == open_status
         assert call("POST", item + "/reschedule", move, token)["startsAt"] == moved["startsAt"]
         assert call("POST", path, body, token, key)["id"] == booked["id"]
     finally:
         cancelled = call("POST", item + "/cancel", token=token)
-        assert cancelled["status"] == "CANCELLED" and cancelled["paymentStatus"] == "TEST_VOIDED"
-    print("Health smoke passed: capability, synthetic catalog, quote check, booking, replay, history, move, cancellation")
+        assert cancelled["status"] == "CANCELLED" and cancelled["paymentStatus"] == cancel_status
+    print(f"Health {args.method} smoke passed: catalog, price, booking, replay, history, move, cancellation")
 
 
 if __name__ == "__main__":
