@@ -73,7 +73,7 @@ jobs:
           cache-disabled: true
       - name: Package a local test backend
         working-directory: backend
-        run: mvn -B -ntp -DskipTests package
+        run: mvn -B -U -ntp -DskipTests package
       - name: Build the local-fixture debug Consumer APK
         working-directory: mobile
         run: |
