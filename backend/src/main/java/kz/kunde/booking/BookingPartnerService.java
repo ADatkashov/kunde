@@ -111,6 +111,9 @@ public class BookingPartnerService {
         if ((action == Action.REJECT || action == Action.CANCEL) && (clean == null || clean.length() < 3 || clean.length() > 300)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "REASON_REQUIRED", "A reason of 3-300 characters is required");
         }
+        if ("HEALTH".equals(row[3]) && (action == Action.REJECT || action == Action.CANCEL)) {
+            clean = "PARTNER_UNAVAILABLE";
+        }
         switch (action) {
             case CONFIRM -> {
                 if ("CONFIRMED".equals(status)) { break; }
@@ -142,7 +145,7 @@ public class BookingPartnerService {
                                 when category = 'AUTO' then price_minor else final_price_minor end where id = ?
                         """, bookingId);
                 bookings.event(bookingId, "COMPLETED", "PARTNER", actor, null);
-                if (auto) {
+                if (auto || "HEALTH".equals(row[3])) {
                     Long amount = db.queryForObject("select coalesce(final_price_minor, price_minor) from transactions.bookings where id = ?", Long.class, bookingId);
                     payments.capture(bookingId, null, amount == null ? 0 : amount, "PARTNER", actor);
                 }

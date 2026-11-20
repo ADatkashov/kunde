@@ -11,6 +11,8 @@ extension BookingStrings on KundeLocalizations {
         _ => ru,
       };
 
+  String healthText(String ru, String kk, String en) => _t(ru, kk, en);
+
   // Categories and services
   String get bkBeautyTitle => _t('Красота', 'Сұлулық', 'Beauty');
   String get bkBeautySubtitle => _t(

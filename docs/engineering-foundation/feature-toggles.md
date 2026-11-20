@@ -1,6 +1,6 @@
 # Переключатели функций из админки
 
-Состояние: реализовано для **Auto, Rides, Delivery** (Flyway V39). Booking и Food пока управляются только переменными окружения: их контроллеры создаются на старте по `app.*.enabled`, и для переключения на лету их нужно отдельно переделать.
+Состояние: реализовано для **Auto, Rides, Delivery и Health** (Flyway V39/V41). Booking и Food пока управляются только переменными окружения: их контроллеры создаются на старте по `app.*.enabled`, и для переключения на лету их нужно отдельно переделать.
 
 ## Принцип
 
@@ -14,8 +14,8 @@
 
 Нужен грант `ADMIN_GRANTS`, проверка на каждый запрос.
 
-- `GET` — три функции: `allowedByEnvironment`, `enabled` (выбор админа), `effective`, `version`, `reason`, `updatedAt`.
-- `PUT /{AUTO|RIDES|DELIVERY}` — тело `{enabled, reason (3–200 символов), version?}`. `version` защищает от одновременной правки (`409 VERSION_CONFLICT`). Каждое изменение пишется в неизменяемый журнал `identity.feature_toggle_events` (кто, когда, было, стало, причина).
+- `GET` — функции: `allowedByEnvironment`, `enabled` (выбор админа), `effective`, `version`, `reason`, `updatedAt`.
+- `PUT /{AUTO|RIDES|DELIVERY|HEALTH}` — тело `{enabled, reason (3–200 символов), version?}`. `version` защищает от одновременной правки (`409 VERSION_CONFLICT`). Каждое изменение пишется в неизменяемый журнал `identity.feature_toggle_events` (кто, когда, было, стало, причина).
 - `GET /api/v1/capabilities` отражает действующее состояние.
 
 Кэш чтения 5 секунд (запись обновляет кэш сразу); для нескольких экземпляров сервиса задержка до 5 секунд.
@@ -27,3 +27,5 @@ Control Center → «Функции» (виден при `ADMIN_GRANTS`): пер
 ## Проверка
 
 `FeatureTogglesApiIntegrationTest` (грант, потолок окружения, версии, немедленный эффект на `/capabilities` и каталог Auto, неизменяемость журнала), `admin_features_screen_test.dart`. Terraform: переменные окружения остаются в конфигурации; выбор админа хранится в БД и `terraform apply` его не затирает.
+
+Health разрешён по умолчанию в LOCAL/DEV/TEST при включённом Booking. `HEALTH_ENABLED` задаёт потолок. `HEALTH_SEED_DEMO` управляет только синтетическим seed. Медицинские интеграции в пилоте отсутствуют и основным переключателем не активируются.

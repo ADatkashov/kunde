@@ -310,6 +310,7 @@ class Venue {
   final String category;
 
   bool get isAuto => category == 'AUTO';
+  bool get isHealth => category == 'HEALTH';
 }
 
 class VenueService {

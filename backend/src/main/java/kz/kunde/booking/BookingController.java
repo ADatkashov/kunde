@@ -3,6 +3,8 @@ package kz.kunde.booking;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import kz.kunde.booking.BookingService.BookRequest;
@@ -54,9 +56,10 @@ public class BookingController {
 
     @GetMapping
     public ResponseEntity<List<BookingView>> list(@AuthenticationPrincipal Jwt principal,
+            @RequestParam(defaultValue = "false") boolean healthOnly,
             @RequestParam(defaultValue = "30") @Min(1) @Max(100) int limit,
             @RequestParam(defaultValue = "0") @Min(0) @Max(10000) int offset) {
-        return noStore(HttpStatus.OK, bookings.list(identity.get(principal).id(), limit, offset));
+        return noStore(HttpStatus.OK, bookings.list(identity.get(principal).id(), healthOnly, limit, offset));
     }
 
     @GetMapping("/{id}")
@@ -67,5 +70,12 @@ public class BookingController {
     @PostMapping("/{id}/cancel")
     public ResponseEntity<BookingView> cancel(@AuthenticationPrincipal Jwt principal, @PathVariable UUID id) {
         return noStore(HttpStatus.OK, bookings.cancel(identity.get(principal).id(), id));
+    }
+    public record MoveRequest(@NotNull OffsetDateTime startsAt, @NotNull OffsetDateTime expectedStartsAt) {}
+
+    @PostMapping("/{id}/reschedule")
+    public ResponseEntity<BookingView> reschedule(@AuthenticationPrincipal Jwt principal, @PathVariable UUID id,
+            @Valid @RequestBody MoveRequest request) {
+        return noStore(HttpStatus.OK, bookings.rescheduleHealth(identity.get(principal).id(), id, request.startsAt(), request.expectedStartsAt()));
     }
 }

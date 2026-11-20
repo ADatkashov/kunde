@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import kz.kunde.platform.ApiException;
+import kz.kunde.platform.FeatureToggles;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -38,7 +39,22 @@ public class BookingSlots {
 
     private final JdbcTemplate db;
 
-    public BookingSlots(JdbcTemplate db) { this.db = db; }
+    private final FeatureToggles toggles;
+
+    public BookingSlots(JdbcTemplate db, FeatureToggles toggles) {
+        this.db = db;
+        this.toggles = toggles;
+    }
+
+    boolean healthEnabled() {
+        return toggles.enabled(FeatureToggles.Feature.HEALTH);
+    }
+
+    void requireHealthCatalog() {
+        if (!healthEnabled()) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "HEALTH_DISABLED", "Health catalog is unavailable");
+        }
+    }
 
     public record Service(UUID id, String name, int durationMinutes, long priceMinor, long pricePerSqmMinor, Integer minAreaSqm,
             Integer maxAreaSqm) {
@@ -48,7 +64,7 @@ public class BookingSlots {
     public record Venue(UUID id, String category, String name, String address, ZoneId zone, int bufferMinutes) {}
 
     public Venue venue(UUID venueId) {
-        return db.query("select id, category, name, address_text, timezone, buffer_minutes from marketplace.booking_venues where id = ? and is_open",
+        return db.query("select id, category, name, address_text, timezone, buffer_minutes from marketplace.booking_venues where id = ? and is_open and (category <> 'HEALTH' or (is_synthetic and health_published))",
                 (rs, row) -> new Venue(rs.getObject(1, UUID.class), rs.getString(2), rs.getString(3), rs.getString(4),
                         ZoneId.of(rs.getString(5)), rs.getInt(6)),
                 venueId).stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "VENUE_NOT_FOUND",
@@ -72,6 +88,7 @@ public class BookingSlots {
     /** {@code ignoreBooking}: a booking being moved does not block its own new time. */
     public List<Slot> freeSlots(UUID venueId, UUID serviceId, UUID masterId, LocalDate date, UUID ignoreBooking) {
         Venue venue = venue(venueId);
+        if ("HEALTH".equals(venue.category())) { requireHealthCatalog(); }
         Service service = service(venueId, serviceId);
         ZonedDateTime now = ZonedDateTime.now(venue.zone());
         LocalDate today = now.toLocalDate();

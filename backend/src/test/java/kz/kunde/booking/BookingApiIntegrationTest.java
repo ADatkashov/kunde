@@ -89,7 +89,9 @@ class BookingApiIntegrationTest {
                 + "where v.slug = ? and m.name = ?", String.class, slug, name);
     }
 
-    private static String tomorrow() { return LocalDate.now(ALMATY).plusDays(1).toString(); }
+    private static String tomorrow() {
+        return LocalDate.now(ALMATY).with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY)).toString();
+    }
 
     private List<Map<String, Object>> slots(String slug, String service, String master, String date) throws Exception {
         String path = "/api/v1/booking/slots?venueId=" + venueId(slug) + "&serviceId=" + serviceId(slug, service)
@@ -100,6 +102,56 @@ class BookingApiIntegrationTest {
     private String book(String slug, String service, String master, String startsAt, String comment) {
         return "{\"venueId\":\"" + venueId(slug) + "\",\"serviceId\":\"" + serviceId(slug, service) + "\",\"masterId\":\""
                 + masterId(slug, master) + "\",\"startsAt\":\"" + startsAt + "\"" + (comment == null ? "" : ",\"comment\":\"" + comment + "\"") + "}";
+    }
+
+    @Test
+    void healthCatalogAndSyntheticBookingKeepPriceAndPaymentConsistent() throws Exception {
+        try (var in = new ClassPathResource("health/demo-venues.json").getInputStream()) {
+            assertThat(new BookingDemoSeeder(db).seed(new ObjectMapper().readTree(in))).isEqualTo(6);
+        }
+        try (var in = new ClassPathResource("health/demo-venues.json").getInputStream()) {
+            assertThat(new BookingDemoSeeder(db).seed(new ObjectMapper().readTree(in))).isZero();
+        }
+        send("GET", "/api/v1/capabilities", null, null, null)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.healthEnabled").value(true));
+        send("GET", "/api/v1/booking/health/venues?direction=DOCTORS&limit=1", null, null, null)
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].synthetic").value(true));
+        var date = LocalDate.now(ALMATY).plusDays(1);
+        if (date.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) { date = date.plusDays(1); }
+        String slug = "health-demo-clinic";
+        String service = "Приём терапевта";
+        String master = "Профиль М-01";
+        String start = (String) slots(slug, service, master, date.toString()).getFirst().get("startsAt");
+        String token = login("+77000000301");
+        String other = login("+77000000302");
+        String path = "/api/v1/booking/bookings";
+        String key = "health-booking-test-001";
+        String request = book(slug, service, master, start, null).replace("}",
+                ",\"expectedPriceMinor\":850000,\"paymentMethod\":\"TEST_CARD\",\"acceptsTerms\":true}");
+        send("POST", path, token, request.replace("850000", "1"), key)
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("BOOKING_PRICE_CHANGED"));
+        send("POST", path, token, request.replace("}", ",\"comment\":\"private\"}"), key)
+                .andExpect(status().isBadRequest());
+        String id = JsonPath.read(body(send("POST", path, token, request, key).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.confirmation").value("DEV_MOCK"))
+                .andExpect(jsonPath("$.paymentStatus").value("TEST_HELD"))), "$.id");
+        send("POST", path, token, request, key).andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id));
+        send("POST", path, token, request.replace("TEST_CARD", "PAY_ON_SITE"), key)
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("IDEMPOTENCY_KEY_REUSED"));
+        send("POST", path, other, request, key).andExpect(status().isConflict());
+        send("GET", path + "/" + id, other, null, null).andExpect(status().isNotFound());
+        String alternate = (String) slots(slug, service, master, date.toString()).getLast().get("startsAt");
+        String move = "{\"expectedStartsAt\":\"" + start + "\",\"startsAt\":\"" + alternate + "\"}";
+        send("POST", path + "/" + id + "/reschedule", other, move, null).andExpect(status().isNotFound());
+        send("POST", path + "/" + id + "/reschedule", token, move, null)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.startsAt").value(alternate));
+        send("POST", path + "/" + id + "/reschedule", token, move, null)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.paymentStatus").value("TEST_HELD"));
+        send("POST", path, token, request, key).andExpect(status().isOk()).andExpect(jsonPath("$.id").value(id));
+        send("POST", path + "/" + id + "/cancel", token, null, null)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.paymentStatus").value("TEST_VOIDED"));
+        send("POST", path, other, request, key).andExpect(status().isCreated());
     }
 
     @Test
@@ -210,7 +262,7 @@ class BookingApiIntegrationTest {
         // Off the 15-minute grid, in the past, outside the working hours, wrong master for the service.
         send("POST", "/api/v1/booking/bookings", token, book("barber-alatau", "Мужская стрижка", "Арман", start.plusMinutes(7).toString(), null),
                 "booking-key-000000011").andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("SLOT_UNAVAILABLE"));
-        send("POST", "/api/v1/booking/bookings", token, book("barber-alatau", "Мужская стрижка", "Арман", start.minusDays(2).toString(), null),
+        send("POST", "/api/v1/booking/bookings", token, book("barber-alatau", "Мужская стрижка", "Арман", OffsetDateTime.now(ALMATY).minusDays(2).toString(), null),
                 "booking-key-000000012").andExpect(status().isBadRequest());
         send("POST", "/api/v1/booking/bookings", token, book("barber-alatau", "Мужская стрижка", "Арман", start.withHour(3).toString(), null),
                 "booking-key-000000013").andExpect(status().isConflict());

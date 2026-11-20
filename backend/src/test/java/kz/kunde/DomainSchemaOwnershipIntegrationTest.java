@@ -104,6 +104,7 @@ class DomainSchemaOwnershipIntegrationTest {
             "transactions.auto_quotes -> marketplace.booking_masters",
             "marketplace.booking_time_off -> identity.users",
             "marketplace.auto_admin_events -> identity.users",
+            "marketplace.health_moderation_events -> identity.users",
             "transactions.auto_specialists -> identity.users",
             "transactions.auto_specialist_categories -> marketplace.auto_service_categories",
             "transactions.auto_specialist_reviews -> identity.users",

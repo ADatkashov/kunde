@@ -9,6 +9,7 @@ import java.util.UUID;
 import kz.kunde.auto.AutoProperties;
 import kz.kunde.delivery.DeliveryProperties;
 import kz.kunde.leisure.LeisureFlags;
+import kz.kunde.health.HealthSettings;
 import kz.kunde.rides.RidesFlags;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -22,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class FeatureToggles {
-    public enum Feature { AUTO, RIDES, DELIVERY, LEISURE }
+    public enum Feature { AUTO, RIDES, DELIVERY, LEISURE, HEALTH }
 
     public record Toggle(boolean enabled, long version, String reason, UUID updatedBy, OffsetDateTime updatedAt) {}
 
@@ -36,16 +37,18 @@ public class FeatureToggles {
     private final RidesFlags rides;
     private final DeliveryProperties delivery;
     private final LeisureFlags leisure;
+    private final HealthSettings health;
     private final Clock clock;
     private volatile Map<Feature, Toggle> cache;
     private volatile long loadedAt;
 
-    public FeatureToggles(JdbcTemplate db, AutoProperties auto, RidesFlags rides, DeliveryProperties delivery, LeisureFlags leisure) {
+    public FeatureToggles(JdbcTemplate db, AutoProperties auto, RidesFlags rides, DeliveryProperties delivery, LeisureFlags leisure, HealthSettings health) {
         this.db = db;
         this.auto = auto;
         this.rides = rides;
         this.delivery = delivery;
         this.leisure = leisure;
+        this.health = health;
         this.clock = Clock.systemUTC();
     }
 
@@ -55,6 +58,7 @@ public class FeatureToggles {
             case RIDES -> rides.enabled();
             case DELIVERY -> delivery.enabled();
             case LEISURE -> leisure.allowedByEnvironment();
+            case HEALTH -> health.enabled();
         };
     }
 
