@@ -367,7 +367,9 @@ def ui_after_scan():
     android.find(*UPCOMING, timeout=30)
     tap(world.event["title"])
     seat = f"{world.seat_a['row']}{world.seat_a['number']}"
-    android.find("Использован · " + seat, "Used · " + seat, "Использован", "Used", timeout=40)
+    seat_b = f"{world.seat_b['row']}{world.seat_b['number']}"
+    android.find("Использован · " + seat, "Used · " + seat, "Использован · " + seat_b, "Used · " + seat_b,
+                 "Использован", "Used", timeout=40)
     android.screenshot("consumer-ticket-used")
     completed.append("consumer_ticket_shows_used_after_gate_scan")
     # the session is over: the order moves to completed and can be reviewed
