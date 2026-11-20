@@ -194,21 +194,18 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                           child: ListTile(
                             leading: const Icon(Icons.check_circle_rounded),
                             title: Text(b.isCleaning ||
-                                    (b.category == 'HEALTH' &&
-                                        b.status == 'PENDING')
+                                    (b.isHealth && b.status == 'PENDING')
                                 ? s.bkRequestPlacedTitle
                                 : s.bkBookedTitle),
                             subtitle: Text(b.isCleaning ||
-                                    (b.category == 'HEALTH' &&
-                                        b.status == 'PENDING') ||
-                                    (b.category == 'HEALTH' &&
-                                        b.status == 'PENDING')
+                                    (b.isHealth && b.status == 'PENDING') ||
+                                    (b.isHealth && b.status == 'PENDING')
                                 ? s.bkRequestPlacedBody
                                 : s.bkBookedBody),
                           ),
                         ),
                       _StatusBanner(booking: b),
-                      if (b.category == 'HEALTH')
+                      if (b.isHealth)
                         SelectableText(b.id, style: theme.textTheme.bodySmall),
                       const SizedBox(height: 12),
                       Text(b.venueName, style: theme.textTheme.headlineSmall),
@@ -217,11 +214,13 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                               color: theme.colorScheme.onSurfaceVariant)),
                       const Divider(height: 32),
                       _row(Icons.event_rounded,
-                          '${b.category == 'HEALTH' ? MaterialLocalizations.of(context).formatMediumDate(b.start) : formatDay(b.start)}, ${formatClock(b.start)}–${formatClock(b.end)}'),
+                          '${b.isHealth ? MaterialLocalizations.of(context).formatMediumDate(b.start) : formatDay(b.start)}, ${formatClock(b.start)}–${formatClock(b.end)}'),
                       _row(
-                          b.isCleaning
-                              ? Icons.cleaning_services_rounded
-                              : Icons.content_cut_rounded,
+                          switch (b.category) {
+                            'HEALTH' => Icons.health_and_safety_outlined,
+                            'CLEANING' => Icons.cleaning_services_rounded,
+                            _ => Icons.content_cut_rounded,
+                          },
                           '${s.bkCatalogName(b.serviceName)} · ${formatDuration(b.durationMinutes)}'),
                       if (b.isCleaning && b.addressText != null)
                         _row(Icons.location_on_outlined, b.addressText!),
@@ -232,7 +231,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                           Icons.person_outline_rounded,
                           b.isCleaning
                               ? '${s.bkCrew}: ${b.masterName}'
-                              : s.bkMasterLine(b.masterName)),
+                              : b.isHealth
+                                  ? s.healthSpecialistLine(b.masterName)
+                                  : s.bkMasterLine(b.masterName)),
                       _row(
                           Icons.payments_outlined,
                           b.paymentMethod == 'TEST_CARD'
@@ -263,7 +264,13 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                               : s.bkCancelBooking),
                         ),
                       const SizedBox(height: 12),
-                      Text(s.bkDetailDevNote,
+                      Text(
+                          b.isHealth
+                              ? s.healthText(
+                                  'Синтетическая запись для проверки сервиса',
+                                  'Сервисті тексеруге арналған синтетикалық жазба',
+                                  'Synthetic appointment for testing the service')
+                              : s.bkDetailDevNote,
                           style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant)),
                     ],

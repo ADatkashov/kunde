@@ -17,6 +17,24 @@ class S {
       'Денсаулық және әл-ауқат', 'Health & Wellness');
   String get healthSpecialists => _t('Специалисты', 'Мамандар', 'Specialists');
 
+  String get addHealthSpecialist =>
+      _t('Добавить специалиста', 'Маман қосу', 'Add specialist');
+  String get healthSpecialistName =>
+      _t('Имя демо-специалиста', 'Демо маманның аты', 'Demo specialist name');
+  String get healthSelectSpecialist =>
+      _t('Выберите специалиста', 'Маманды таңдаңыз', 'Select a specialist');
+  String healthDirection(String code) => switch (code) {
+        'DOCTORS' => _t('Врачи', 'Дәрігерлер', 'Doctors'),
+        'CLINICS' => _t('Клиники', 'Клиникалар', 'Clinics'),
+        'DENTISTRY' => _t('Стоматология', 'Стоматология', 'Dentistry'),
+        'DIAGNOSTICS' => _t('Диагностика', 'Диагностика', 'Diagnostics'),
+        'LABS' => _t('Анализы', 'Талдаулар', 'Lab tests'),
+        'FITNESS' => _t('Фитнес', 'Фитнес', 'Fitness'),
+        'SPA' => _t('SPA и массаж', 'SPA және массаж', 'Spa & massage'),
+        'WELLNESS' => _t('Другие услуги', 'Басқа қызметтер', 'Other services'),
+        _ => code,
+      };
+
   String _t(String ru, String kk, String en) {
     switch (locale.languageCode) {
       case 'kk':

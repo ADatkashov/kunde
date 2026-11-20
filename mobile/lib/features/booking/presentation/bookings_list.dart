@@ -154,9 +154,11 @@ class _BookingCard extends StatelessWidget {
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 Icon(
-                    booking.isCleaning
-                        ? Icons.cleaning_services_outlined
-                        : Icons.content_cut,
+                    switch (booking.category) {
+                      'HEALTH' => Icons.health_and_safety_outlined,
+                      'CLEANING' => Icons.cleaning_services_outlined,
+                      _ => Icons.content_cut,
+                    },
                     color: colors.primary,
                     size: 20),
                 const SizedBox(width: 8),

@@ -9,6 +9,7 @@
 | Feedback | AuthScreen semantic live region | Loading indicator, inline failure/retry, save success, partial provider logout warning | auth_screen_test.dart |
 | CRUD | /me API and AuthScreen | Own profile only; version required; 409 preserves draft and requires explicit reload; cancellation/route changes ask to discard dirty edits | ConsumerIdentityIntegrationTest; auth_screen_test.dart |
 | Scrollbar | Flutter Material ScrollBehavior | Platform-owned scrolling and scrollbars; safe areas and keyboard resizing | widget layout checks |
+| Health booking | BookingApi / BookingFlowScreen | Каталог следует capability. Цена и условия показываются до записи. После неопределённого результата повтор использует тот же ключ. Перенос и отмена используют серверный статус. | Widget Health, BookingApiIntegrationTest, health_native_e2e.py |
 
 No billing, deletion, phone verification, legal consent or session administration
 UI is introduced. Production readiness gates in ADR-015 remain separate from

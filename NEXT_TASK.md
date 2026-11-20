@@ -8,7 +8,7 @@
 
 ## Health & Wellness
 
-На интегрированном коммите прогнать Backend/Flutter/Security CI и синтетический сценарий Health в существующем DEV. Подтвердить эффективный флаг, слот, повтор команды, тестовый ledger, перенос, отмену и отказ другому пользователю. Проверить интеграцию Partner и Admin, затем зафиксировать нативные проверки Android и подписанные DEV APK. [Контракт и границы пилота](docs/product/health-wellness.md).
+Закрыть многоролевую приёмку синтетического Health в DEV. Выполнить нативные сценарии Partner и Admin, проверить утверждённый аккаунт с `HEALTH_OPERATIONS`, установку подписанных APK, TalkBack и полный RU/KK/EN. Consumer Android уже прошёл сценарий каталога, записи с тестовой картой и отмены. Результаты и оставшиеся продуктовые сценарии ведутся в [Health PRD](docs/product/health-wellness.md).
 
 ## KUNDE Control Center
 
