@@ -150,14 +150,16 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                 style: theme.textTheme.titleLarge,
               ),
               const SizedBox(height: 20),
-              Text(s.bkMaster, style: theme.textTheme.titleMedium),
+              Text(_health ? s.healthSpecialist : s.bkMaster,
+                  style: theme.textTheme.titleMedium),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: [
                   ChoiceChip(
-                    label: Text(s.bkAnyMaster),
+                    label:
+                        Text(_health ? s.anyHealthSpecialist : s.bkAnyMaster),
                     selected: _masterId == null,
                     onSelected: _selectionLocked
                         ? null
@@ -307,7 +309,9 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                           '${dateLabel(_slot!.start)}, ${formatClock(_slot!.start)}',
                           style: theme.textTheme.titleLarge,
                         ),
-                        Text(s.bkMasterLine(_slot!.masterName)),
+                        Text(_health
+                            ? s.healthSpecialistLine(_slot!.masterName)
+                            : s.bkMasterLine(_slot!.masterName)),
                         Text(
                           '${s.bkCatalogName(service.name)} · ${formatDuration(service.durationMinutes)}',
                         ),

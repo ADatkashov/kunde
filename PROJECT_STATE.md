@@ -5,7 +5,7 @@
 - Стартовый аудит сверил `origin/main` `30f4bc5`, открытый Leisure [#175](https://github.com/ADatkashov/kunde/pull/175) и [последний Security CI на main](https://github.com/ADatkashov/kunde/actions/runs/44784856492). Linear доступен, отдельный Health-тикет поиском не найден.
 - В main через [#176](https://github.com/ADatkashov/kunde/pull/176): V41, синтетический каталог, общий Booking Engine и тестовый ledger, Consumer, управление площадкой через Partner и модерация Admin. Реестр возможностей, проверок и ограничений — в [Health PRD](docs/product/health-wellness.md).
 - В Render DEV развёрнут коммит `e3edb329d4771c0b291ef04f777c65c7c960fa24`. Флаг включён, V41 применена на Neon, Health HTTP smoke прошёл.
-- Полная приёмка DEV/TEST открыта. Профиль специалиста и Android E2E — [#178](https://github.com/ADatkashov/kunde/pull/178), создание услуг и специалистов Partner — [#179](https://github.com/ADatkashov/kunde/pull/179).
+- Полная приёмка DEV/TEST открыта. Профиль специалиста и Android E2E объединены в [#178](https://github.com/ADatkashov/kunde/pull/178), создание услуг и специалистов Partner объединено в [#179](https://github.com/ADatkashov/kunde/pull/179).
 
 ## KUNDE Control Center 3.0 — DEV
 

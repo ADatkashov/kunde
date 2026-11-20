@@ -13,6 +13,11 @@ extension BookingStrings on KundeLocalizations {
 
   String healthText(String ru, String kk, String en) => _t(ru, kk, en);
 
+  String get healthSpecialist => _t('Специалист', 'Маман', 'Specialist');
+  String get anyHealthSpecialist =>
+      _t('Любой специалист', 'Кез келген маман', 'Any specialist');
+  String healthSpecialistLine(String name) => '$healthSpecialist · $name';
+
   // Categories and services
   String get bkBeautyTitle => _t('Красота', 'Сұлулық', 'Beauty');
   String get bkBeautySubtitle => _t(
