@@ -52,11 +52,11 @@ class PartnerMembership {
 class TimelineEntry {
   const TimelineEntry({required this.status, this.at, this.actor, this.reason});
   factory TimelineEntry.fromJson(Map<String, dynamic> j) => TimelineEntry(
-    status: _str(j['status']) ?? '',
-    at: _time(j['at']),
-    actor: _str(j['actor']),
-    reason: _str(j['reason']),
-  );
+        status: _str(j['status']) ?? '',
+        at: _time(j['at']),
+        actor: _str(j['actor']),
+        reason: _str(j['reason']),
+      );
   final String status;
   final DateTime? at;
   final String? actor;
@@ -72,12 +72,12 @@ class OrderLine {
     this.unit,
   });
   factory OrderLine.fromJson(Map<String, dynamic> j) => OrderLine(
-    name: _str(j['name']) ?? '',
-    quantity: _int(j['quantity']),
-    lineTotalMinor: _int(j['finalLineTotalMinor'] ?? j['lineTotalMinor']),
-    optionsText: _str(j['optionsText']),
-    unit: _str(j['unit']),
-  );
+        name: _str(j['name']) ?? '',
+        quantity: _int(j['quantity']),
+        lineTotalMinor: _int(j['finalLineTotalMinor'] ?? j['lineTotalMinor']),
+        optionsText: _str(j['optionsText']),
+        unit: _str(j['unit']),
+      );
   final String name;
   final int quantity;
   final int lineTotalMinor;
@@ -200,30 +200,29 @@ class PartnerBooking {
   });
 
   factory PartnerBooking.fromJson(Map<String, dynamic> j) => PartnerBooking(
-    id: _id(j, 'booking'),
-    status: _str(j['status']) ?? '',
-    venueName: _str(j['venueName']) ?? '',
-    serviceName: _str(j['serviceName']) ?? '',
-    durationMinutes: _int(j['durationMinutes']),
-    priceMinor: _int(j['priceMinor']),
-    currency: _str(j['currency']) ?? 'KZT',
-    allowedActions: _strings(j['allowedActions']),
-    timeline: _list(j['timeline'], TimelineEntry.fromJson),
-    masterName: _str(j['masterName']),
-    startsAt: _time(j['startsAt']),
-    endsAt: _time(j['endsAt']),
-    comment: _str(j['comment']),
-    addressText: _str(j['addressText']),
-    createdAt: _time(j['createdAt']),
-    cancelledBy: _str(j['cancelledBy']),
-    cancelReason: _str(j['cancelReason']),
-    vehicle: _str(j['vehicle']),
-    priceKind: _str(j['priceKind']),
-    finalPriceMinor: j['finalPriceMinor'] is int
-        ? j['finalPriceMinor'] as int
-        : null,
-    priceApproval: _str(j['priceApproval']),
-  );
+        id: _id(j, 'booking'),
+        status: _str(j['status']) ?? '',
+        venueName: _str(j['venueName']) ?? '',
+        serviceName: _str(j['serviceName']) ?? '',
+        durationMinutes: _int(j['durationMinutes']),
+        priceMinor: _int(j['priceMinor']),
+        currency: _str(j['currency']) ?? 'KZT',
+        allowedActions: _strings(j['allowedActions']),
+        timeline: _list(j['timeline'], TimelineEntry.fromJson),
+        masterName: _str(j['masterName']),
+        startsAt: _time(j['startsAt']),
+        endsAt: _time(j['endsAt']),
+        comment: _str(j['comment']),
+        addressText: _str(j['addressText']),
+        createdAt: _time(j['createdAt']),
+        cancelledBy: _str(j['cancelledBy']),
+        cancelReason: _str(j['cancelReason']),
+        vehicle: _str(j['vehicle']),
+        priceKind: _str(j['priceKind']),
+        finalPriceMinor:
+            j['finalPriceMinor'] is int ? j['finalPriceMinor'] as int : null,
+        priceApproval: _str(j['priceApproval']),
+      );
 
   final String id;
   final String status;
@@ -255,10 +254,9 @@ class PartnerBooking {
 class Restaurant {
   const Restaurant({required this.id, required this.name, required this.open});
   factory Restaurant.fromJson(Map<String, dynamic> j) => Restaurant(
-    id: _id(j, 'restaurant'),
-    name: _str(j['name']) ?? '',
-    open: _bool(j['open']),
-  );
+      id: _id(j, 'restaurant'),
+      name: _str(j['name']) ?? '',
+      open: _bool(j['open']));
   final String id;
   final String name;
   final bool open;
@@ -276,15 +274,15 @@ class Dish {
     this.description,
   });
   factory Dish.fromJson(Map<String, dynamic> j) => Dish(
-    id: _id(j, 'dish'),
-    name: _str(j['name']) ?? '',
-    section: _str(j['section']) ?? '',
-    sectionId: _str(j['sectionId']),
-    priceMinor: _int(j['priceMinor']),
-    available: _bool(j['available']),
-    stockQty: j['stockQty'] is num ? (j['stockQty'] as num).toInt() : null,
-    description: _str(j['description']),
-  );
+        id: _id(j, 'dish'),
+        name: _str(j['name']) ?? '',
+        section: _str(j['section']) ?? '',
+        sectionId: _str(j['sectionId']),
+        priceMinor: _int(j['priceMinor']),
+        available: _bool(j['available']),
+        stockQty: j['stockQty'] is num ? (j['stockQty'] as num).toInt() : null,
+        description: _str(j['description']),
+      );
   final String id;
   final String name;
   final String section;
@@ -296,18 +294,16 @@ class Dish {
 }
 
 class Venue {
-  const Venue({
-    required this.id,
-    required this.name,
-    required this.open,
-    this.category = '',
-  });
+  const Venue(
+      {required this.id,
+      required this.name,
+      required this.open,
+      this.category = ''});
   factory Venue.fromJson(Map<String, dynamic> j) => Venue(
-    id: _id(j, 'venue'),
-    name: _str(j['name']) ?? '',
-    open: _bool(j['open']),
-    category: _str(j['category']) ?? '',
-  );
+      id: _id(j, 'venue'),
+      name: _str(j['name']) ?? '',
+      open: _bool(j['open']),
+      category: _str(j['category']) ?? '');
   final String id;
   final String name;
   final bool open;
@@ -329,15 +325,15 @@ class VenueService {
     this.conditions = '',
   });
   factory VenueService.fromJson(Map<String, dynamic> j) => VenueService(
-    id: _id(j, 'service'),
-    name: _str(j['name']) ?? '',
-    durationMinutes: _int(j['durationMinutes']),
-    priceMinor: _int(j['priceMinor']),
-    available: _bool(j['available']),
-    priceKind: _str(j['priceKind']) ?? 'FIXED',
-    autoCategory: _str(j['autoCategory']),
-    conditions: _str(j['conditions']) ?? '',
-  );
+        id: _id(j, 'service'),
+        name: _str(j['name']) ?? '',
+        durationMinutes: _int(j['durationMinutes']),
+        priceMinor: _int(j['priceMinor']),
+        available: _bool(j['available']),
+        priceKind: _str(j['priceKind']) ?? 'FIXED',
+        autoCategory: _str(j['autoCategory']),
+        conditions: _str(j['conditions']) ?? '',
+      );
   final String id;
   final String name;
   final int durationMinutes;
@@ -357,20 +353,20 @@ class WorkingHours {
     this.breakTo,
   });
   factory WorkingHours.fromJson(Map<String, dynamic> j) => WorkingHours(
-    day: _int(j['day']),
-    from: _str(j['from']) ?? '',
-    to: _str(j['to']) ?? '',
-    breakFrom: _str(j['breakFrom']),
-    breakTo: _str(j['breakTo']),
-  );
+        day: _int(j['day']),
+        from: _str(j['from']) ?? '',
+        to: _str(j['to']) ?? '',
+        breakFrom: _str(j['breakFrom']),
+        breakTo: _str(j['breakTo']),
+      );
 
   Map<String, dynamic> toJson() => {
-    'day': day,
-    'from': from,
-    'to': to,
-    if (breakFrom != null) 'breakFrom': breakFrom,
-    if (breakTo != null) 'breakTo': breakTo,
-  };
+        'day': day,
+        'from': from,
+        'to': to,
+        if (breakFrom != null) 'breakFrom': breakFrom,
+        if (breakTo != null) 'breakTo': breakTo,
+      };
 
   /// ISO weekday 1 (Mon) … 7 (Sun).
   final int day;
@@ -381,18 +377,17 @@ class WorkingHours {
 }
 
 class Master {
-  const Master({
-    required this.id,
-    required this.name,
-    required this.active,
-    required this.hours,
-  });
+  const Master(
+      {required this.id,
+      required this.name,
+      required this.active,
+      required this.hours});
   factory Master.fromJson(Map<String, dynamic> j) => Master(
-    id: _id(j, 'master'),
-    name: _str(j['name']) ?? '',
-    active: _bool(j['active']),
-    hours: _list(j['hours'], WorkingHours.fromJson),
-  );
+        id: _id(j, 'master'),
+        name: _str(j['name']) ?? '',
+        active: _bool(j['active']),
+        hours: _list(j['hours'], WorkingHours.fromJson),
+      );
   final String id;
   final String name;
   final bool active;
@@ -401,20 +396,19 @@ class Master {
 
 /// An unavailable period of a venue (all posts) or of one post.
 class TimeOff {
-  const TimeOff({
-    required this.id,
-    required this.startsAt,
-    required this.endsAt,
-    required this.reason,
-    this.masterId,
-  });
+  const TimeOff(
+      {required this.id,
+      required this.startsAt,
+      required this.endsAt,
+      required this.reason,
+      this.masterId});
   factory TimeOff.fromJson(Map<String, dynamic> j) => TimeOff(
-    id: _id(j, 'time off'),
-    masterId: _str(j['masterId']),
-    startsAt: _time(j['startsAt']) ?? DateTime.now(),
-    endsAt: _time(j['endsAt']) ?? DateTime.now(),
-    reason: _str(j['reason']) ?? '',
-  );
+        id: _id(j, 'time off'),
+        masterId: _str(j['masterId']),
+        startsAt: _time(j['startsAt']) ?? DateTime.now(),
+        endsAt: _time(j['endsAt']) ?? DateTime.now(),
+        reason: _str(j['reason']) ?? '',
+      );
   final String id;
   final String? masterId;
   final DateTime startsAt;

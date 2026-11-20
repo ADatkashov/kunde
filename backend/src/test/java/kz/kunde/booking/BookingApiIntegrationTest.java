@@ -254,7 +254,7 @@ class BookingApiIntegrationTest {
         // Off the 15-minute grid, in the past, outside the working hours, wrong master for the service.
         send("POST", "/api/v1/booking/bookings", token, book("barber-alatau", "Мужская стрижка", "Арман", start.plusMinutes(7).toString(), null),
                 "booking-key-000000011").andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("SLOT_UNAVAILABLE"));
-        send("POST", "/api/v1/booking/bookings", token, book("barber-alatau", "Мужская стрижка", "Арман", start.minusDays(2).toString(), null),
+        send("POST", "/api/v1/booking/bookings", token, book("barber-alatau", "Мужская стрижка", "Арман", OffsetDateTime.now(ALMATY).minusDays(2).toString(), null),
                 "booking-key-000000012").andExpect(status().isBadRequest());
         send("POST", "/api/v1/booking/bookings", token, book("barber-alatau", "Мужская стрижка", "Арман", start.withHour(3).toString(), null),
                 "booking-key-000000013").andExpect(status().isConflict());

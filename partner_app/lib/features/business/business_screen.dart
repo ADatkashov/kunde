@@ -14,12 +14,11 @@ import 'venue_page.dart';
 /// Business tab: the partner's restaurants and service venues with their open
 /// state, leading to menu/price and service/schedule management.
 class BusinessScreen extends StatelessWidget {
-  const BusinessScreen({
-    required this.store,
-    required this.canManage,
-    this.fleetAction,
-    super.key,
-  });
+  const BusinessScreen(
+      {required this.store,
+      required this.canManage,
+      this.fleetAction,
+      super.key});
   final OpsStore store;
   final Widget? fleetAction;
 
@@ -31,9 +30,8 @@ class BusinessScreen extends StatelessWidget {
     final s = S.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(s.navBusiness),
-        actions: [if (fleetAction != null) fleetAction!],
-      ),
+          title: Text(s.navBusiness),
+          actions: [if (fleetAction != null) fleetAction!]),
       body: ListenableBuilder(
         listenable: store,
         builder: (context, _) {
@@ -64,26 +62,17 @@ class BusinessScreen extends StatelessWidget {
                     openLabel: s.openForOrders,
                     canManage: canManage,
                     onToggle: (v) => _toggle(
-                      context,
-                      () => store.ops.setRestaurantOpen(x.id, v),
-                    ),
+                        context, () => store.ops.setRestaurantOpen(x.id, v)),
                     onOpen: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => RestaurantPage(
-                          store: store,
-                          restaurant: x,
-                          canManage: canManage,
-                        ),
-                      ),
-                    ),
+                        MaterialPageRoute<void>(
+                            builder: (_) => RestaurantPage(
+                                store: store,
+                                restaurant: x,
+                                canManage: canManage))),
                   ),
                 for (final (title, group, icon) in [
                   (s.venuesTitle, serviceVenues, Icons.content_cut_rounded),
-                  (
-                    s.healthTitle,
-                    healthVenues,
-                    Icons.health_and_safety_outlined,
-                  ),
+                  (s.healthTitle, healthVenues, Icons.health_and_safety_outlined),
                 ]) ...[
                   if (group.isNotEmpty) _Section(title),
                   for (final venue in group)
@@ -94,28 +83,20 @@ class BusinessScreen extends StatelessWidget {
                       openLabel: s.openForBookings,
                       canManage: canManage,
                       onToggle: (open) => _toggle(
-                        context,
-                        () => store.ops.setVenueOpen(venue.id, open),
-                      ),
+                          context, () => store.ops.setVenueOpen(venue.id, open)),
                       onOpen: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => VenuePage(
-                            store: store,
-                            venue: venue,
-                            canManage: canManage,
-                          ),
-                        ),
-                      ),
+                          MaterialPageRoute<void>(
+                              builder: (_) => VenuePage(
+                                  store: store, venue: venue, canManage: canManage))),
                     ),
                 ],
                 if (restaurants.isEmpty && venues.isEmpty)
                   SizedBox(
                     height: 360,
                     child: MessageView(
-                      icon: Icons.storefront_outlined,
-                      title: s.businessEmptyTitle,
-                      body: s.businessEmptyBody,
-                    ),
+                        icon: Icons.storefront_outlined,
+                        title: s.businessEmptyTitle,
+                        body: s.businessEmptyBody),
                   ),
               ],
             ),
@@ -126,9 +107,7 @@ class BusinessScreen extends StatelessWidget {
   }
 
   Future<void> _toggle(
-    BuildContext context,
-    Future<Object?> Function() call,
-  ) async {
+      BuildContext context, Future<Object?> Function() call) async {
     final s = S.of(context);
     try {
       await call();
@@ -144,12 +123,10 @@ class _Section extends StatelessWidget {
   final String title;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: Gap.sm, bottom: Gap.md),
-    child: Semantics(
-      header: true,
-      child: Text(title, style: context.text.titleMedium),
-    ),
-  );
+        padding: const EdgeInsets.only(top: Gap.sm, bottom: Gap.md),
+        child: Semantics(
+            header: true, child: Text(title, style: context.text.titleMedium)),
+      );
 }
 
 class _Tile extends StatefulWidget {
@@ -187,47 +164,41 @@ class _TileState extends State<_Tile> {
           onTap: widget.onOpen,
           child: Padding(
             padding: const EdgeInsets.all(Gap.lg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(widget.icon, color: context.colors.primary),
-                    const SizedBox(width: Gap.md),
-                    Expanded(
-                      child: Text(widget.name, style: context.text.titleMedium),
-                    ),
-                    const Icon(Icons.chevron_right_rounded),
-                  ],
-                ),
-                const SizedBox(height: Gap.sm),
-                if (widget.canManage)
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(widget.openLabel),
-                    subtitle: Text(widget.open ? s.openNow : s.closedNow),
-                    value: widget.open,
-                    onChanged: _busy
-                        ? null
-                        : (v) async {
-                            setState(() => _busy = true);
-                            try {
-                              await widget.onToggle(v);
-                            } finally {
-                              if (mounted) setState(() => _busy = false);
-                            }
-                          },
-                  )
-                else
-                  Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: StatusChip(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Icon(widget.icon, color: context.colors.primary),
+                const SizedBox(width: Gap.md),
+                Expanded(
+                    child: Text(widget.name, style: context.text.titleMedium)),
+                const Icon(Icons.chevron_right_rounded),
+              ]),
+              const SizedBox(height: Gap.sm),
+              if (widget.canManage)
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(widget.openLabel),
+                  subtitle: Text(widget.open ? s.openNow : s.closedNow),
+                  value: widget.open,
+                  onChanged: _busy
+                      ? null
+                      : (v) async {
+                          setState(() => _busy = true);
+                          try {
+                            await widget.onToggle(v);
+                          } finally {
+                            if (mounted) setState(() => _busy = false);
+                          }
+                        },
+                )
+              else
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: StatusChip(
                       label: widget.open ? s.openNow : s.closedNow,
-                      tone: widget.open ? Tone.success : Tone.neutral,
-                    ),
-                  ),
-              ],
-            ),
+                      tone: widget.open ? Tone.success : Tone.neutral),
+                ),
+            ]),
           ),
         ),
       ),
