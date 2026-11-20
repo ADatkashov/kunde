@@ -1,5 +1,6 @@
 package kz.kunde.rides;
 
+import kz.kunde.platform.FeatureToggles;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -14,20 +15,20 @@ import org.springframework.stereotype.Service;
 @Service
 public class RideQuoteService {
     private final JdbcTemplate db;
-    private final RidesFlags flags;
+    private final FeatureToggles toggles;
     private final RidePricingProperties pricing;
     private final ObjectProvider<RideRouting> routing;
 
-    public RideQuoteService(JdbcTemplate db, RidesFlags flags, RidePricingProperties pricing,
+    public RideQuoteService(JdbcTemplate db, FeatureToggles toggles, RidePricingProperties pricing,
             ObjectProvider<RideRouting> routing) {
         this.db = db;
-        this.flags = flags;
+        this.toggles = toggles;
         this.pricing = pricing;
         this.routing = routing;
     }
 
     public Quote issue(UUID customer, RideClass rideClass, Coordinates pickup, Coordinates destination) {
-        if (!flags.consumerAvailable()) {
+        if (!toggles.rides().consumerAvailable()) {
             throw new ApiException(HttpStatus.NOT_FOUND, "RIDES_UNAVAILABLE", "New rides are currently unavailable");
         }
         var tariff = pricing.tariffs().get(rideClass);

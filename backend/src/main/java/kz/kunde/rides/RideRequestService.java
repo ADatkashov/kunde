@@ -1,5 +1,6 @@
 package kz.kunde.rides;
 
+import kz.kunde.platform.FeatureToggles;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -29,11 +30,11 @@ public class RideRequestService {
             """;
 
     private final JdbcTemplate db;
-    private final RidesFlags flags;
+    private final FeatureToggles toggles;
 
-    public RideRequestService(JdbcTemplate db, RidesFlags flags) {
+    public RideRequestService(JdbcTemplate db, FeatureToggles toggles) {
         this.db = db;
-        this.flags = flags;
+        this.toggles = toggles;
     }
 
     @Transactional
@@ -52,7 +53,7 @@ public class RideRequestService {
             }
             return new Requested(previous.get(), false);
         }
-        if (!flags.consumerAvailable()) {
+        if (!toggles.rides().consumerAvailable()) {
             throw new ApiException(HttpStatus.NOT_FOUND, "RIDES_UNAVAILABLE", "New rides are currently unavailable");
         }
         if (Boolean.TRUE.equals(db.queryForObject("""
@@ -66,7 +67,7 @@ public class RideRequestService {
                 select user_id, id, ?, 'REQUESTED' from transactions.ride_fare_quotes
                 where user_id = ? and id = ? and expires_at > statement_timestamp() and (not synthetic or ?)
                 on conflict (quote_id) do nothing returning id
-                """, (rs, row) -> rs.getObject("id", UUID.class), requestKey, customer, quoteId, flags.syntheticRoutingEnabled())
+                """, (rs, row) -> rs.getObject("id", UUID.class), requestKey, customer, quoteId, toggles.rides().syntheticRoutingEnabled())
                 .stream().findFirst().orElseThrow(() -> conflict("RIDE_QUOTE_UNAVAILABLE", "Ride quote is unavailable"));
         event(rideId, RideState.REQUESTED);
         return new Requested(get(customer, rideId), true);

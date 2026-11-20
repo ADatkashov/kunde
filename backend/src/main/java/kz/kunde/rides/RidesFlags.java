@@ -15,6 +15,12 @@ public record RidesFlags(boolean enabled, boolean consumerEnabled, boolean execu
         this(enabled, consumerEnabled, executorEnabled, partnerEnabled, dispatchEnabled, paymentsEnabled, false);
     }
 
+    /** A copy with the master switch replaced (used by the runtime feature switches). */
+    public RidesFlags withEnabled(boolean master) {
+        return new RidesFlags(master, consumerEnabled, executorEnabled, partnerEnabled, dispatchEnabled, paymentsEnabled,
+                syntheticRoutingEnabled);
+    }
+
     public boolean consumerAvailable() {
         return enabled && consumerEnabled;
     }

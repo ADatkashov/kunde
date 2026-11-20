@@ -1,5 +1,6 @@
 package kz.kunde.delivery;
 
+import kz.kunde.platform.FeatureToggles;
 import java.util.List;
 import java.util.UUID;
 import kz.kunde.platform.ApiException;
@@ -16,11 +17,11 @@ public class DeliveryCouriers {
             from transactions.delivery_couriers
             """;
     private final JdbcTemplate db;
-    private final DeliveryProperties flags;
+    private final FeatureToggles toggles;
 
-    public DeliveryCouriers(JdbcTemplate db, DeliveryProperties flags) {
+    public DeliveryCouriers(JdbcTemplate db, FeatureToggles toggles) {
         this.db = db;
-        this.flags = flags;
+        this.toggles = toggles;
     }
 
     @Transactional
@@ -101,7 +102,7 @@ public class DeliveryCouriers {
     }
 
     private void requireEnrollment() {
-        if (!flags.enabled() || !flags.executorEnabled()) {
+        if (!toggles.delivery().enabled() || !toggles.delivery().executorEnabled()) {
             throw new ApiException(HttpStatus.NOT_FOUND, "DELIVERY_EXECUTOR_UNAVAILABLE", "Courier enrollment unavailable");
         }
     }

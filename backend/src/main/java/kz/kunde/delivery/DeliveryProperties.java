@@ -21,6 +21,12 @@ public record DeliveryProperties(boolean enabled, boolean consumerEnabled, boole
         @NotNull @DecimalMin("0") BigDecimal perKgKzt,
         @NotNull @DecimalMin("0") BigDecimal minimumKzt) {
 
+    /** A copy with the master switch replaced (used by the runtime feature switches). */
+    public DeliveryProperties withEnabled(boolean master) {
+        return new DeliveryProperties(master, consumerEnabled, paymentsEnabled, syntheticRoutingEnabled, executorEnabled, dispatchEnabled,
+                partnerEnabled, quoteLifetimeSeconds, maxWeightGrams, maxSideCm, tariffVersion, baseKzt, perKmKzt, perKgKzt, minimumKzt);
+    }
+
     public boolean dispatchAvailable() {
         return enabled && executorEnabled && dispatchEnabled;
     }

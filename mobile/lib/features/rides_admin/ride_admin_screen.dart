@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../admin_employees/admin_employee_screen.dart';
+import '../admin_features/admin_features_screen.dart';
 import '../auto_admin/auto_admin_screen.dart';
 import '../delivery_admin/delivery_admin_screen.dart';
 import '../identity/auth_repository.dart';
@@ -218,6 +219,20 @@ class _RideAdminScreenState extends State<RideAdminScreen> {
                                     .push<void>(MaterialPageRoute(
                                   builder: (_) =>
                                       AdminEmployeeScreen(auth: widget.auth),
+                                )),
+                              ),
+                            if (permissions.contains('ADMIN_GRANTS'))
+                              ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                textColor: Colors.white,
+                                iconColor: Colors.white,
+                                leading: const Icon(Icons.toggle_on_outlined),
+                                title: Text(
+                                    s.t('Функции', 'Функциялар', 'Features')),
+                                onTap: () => Navigator.of(context)
+                                    .push<void>(MaterialPageRoute(
+                                  builder: (_) =>
+                                      AdminFeaturesScreen(auth: widget.auth),
                                 )),
                               ),
                           ],

@@ -1,5 +1,6 @@
 package kz.kunde.auto;
 
+import kz.kunde.platform.FeatureToggles;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -64,13 +65,13 @@ public class AutoService {
 
     private final JdbcTemplate db;
     private final BookingSlots slots;
-    private final AutoProperties props;
+    private final FeatureToggles toggles;
     private final AutoPayments payments;
 
-    public AutoService(JdbcTemplate db, BookingSlots slots, AutoProperties props, AutoPayments payments) {
+    public AutoService(JdbcTemplate db, BookingSlots slots, FeatureToggles toggles, AutoPayments payments) {
         this.db = db;
         this.slots = slots;
-        this.props = props;
+        this.toggles = toggles;
         this.payments = payments;
     }
 
@@ -405,7 +406,7 @@ public class AutoService {
 
     /** Feature flag: no new quote, booking or move while Auto is off; reads, cancellation and price decisions keep working. */
     private void requireEnabled() {
-        if (!props.enabled()) {
+        if (!toggles.enabled(FeatureToggles.Feature.AUTO)) {
             throw new ApiException(HttpStatus.CONFLICT, "AUTO_DISABLED", "KUNDE Auto is not available right now");
         }
     }

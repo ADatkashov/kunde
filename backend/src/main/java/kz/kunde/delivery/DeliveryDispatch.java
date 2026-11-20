@@ -1,5 +1,6 @@
 package kz.kunde.delivery;
 
+import kz.kunde.platform.FeatureToggles;
 import static kz.kunde.delivery.DeliveryState.Action.*;
 import static kz.kunde.delivery.DeliveryState.Actor.*;
 
@@ -39,15 +40,15 @@ public class DeliveryDispatch {
                 and active.status in """ + " " + ACTIVE_DELIVERY_STATES + ") ";
 
     private final JdbcTemplate db;
-    private final DeliveryProperties flags;
+    private final FeatureToggles toggles;
     private final byte[] handoffKey;
 
-    public DeliveryDispatch(JdbcTemplate db, DeliveryProperties flags,
+    public DeliveryDispatch(JdbcTemplate db, FeatureToggles toggles,
             @Value("${DELIVERY_HANDOFF_KEY:}") String handoffKey) {
         this.db = db;
-        this.flags = flags;
+        this.toggles = toggles;
         this.handoffKey = handoffKey.getBytes(StandardCharsets.UTF_8);
-        if (flags.dispatchAvailable() && this.handoffKey.length < 32) {
+        if (toggles.delivery().dispatchAvailable() && this.handoffKey.length < 32) {
             throw new IllegalStateException("Delivery dispatch requires a configured handoff secret");
         }
     }
@@ -108,7 +109,7 @@ public class DeliveryDispatch {
     }
 
     public List<Offer> offers(UUID courier) {
-        if (!flags.dispatchAvailable()) {
+        if (!toggles.delivery().dispatchAvailable()) {
             return List.of();
         }
         return db.query("""
@@ -321,7 +322,7 @@ public class DeliveryDispatch {
     }
 
     private void requireDispatch() {
-        if (!flags.dispatchAvailable()) {
+        if (!toggles.delivery().dispatchAvailable()) {
             throw missing();
         }
     }

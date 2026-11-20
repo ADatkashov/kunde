@@ -1,5 +1,6 @@
 package kz.kunde.auto;
 
+import kz.kunde.platform.FeatureToggles;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
@@ -51,12 +52,12 @@ public class AutoJobService {
     public record Reviewed(String userId, String name, String status, boolean online, List<String> categories) {}
 
     private final JdbcTemplate db;
-    private final AutoProperties props;
+    private final FeatureToggles toggles;
     private final AutoPayments payments;
 
-    public AutoJobService(JdbcTemplate db, AutoProperties props, AutoPayments payments) {
+    public AutoJobService(JdbcTemplate db, FeatureToggles toggles, AutoPayments payments) {
         this.db = db;
-        this.props = props;
+        this.toggles = toggles;
         this.payments = payments;
     }
 
@@ -398,7 +399,7 @@ public class AutoJobService {
     // ---- internals -----------------------------------------------------------------------------
 
     private void requireEnabled() {
-        if (!props.enabled()) {
+        if (!toggles.enabled(FeatureToggles.Feature.AUTO)) {
             throw new ApiException(HttpStatus.CONFLICT, "AUTO_DISABLED", "KUNDE Auto is not available right now");
         }
     }

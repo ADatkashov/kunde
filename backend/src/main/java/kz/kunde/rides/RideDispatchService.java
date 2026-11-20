@@ -1,5 +1,6 @@
 package kz.kunde.rides;
 
+import kz.kunde.platform.FeatureToggles;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -22,16 +23,16 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class RideDispatchService {
     private final JdbcTemplate db;
-    private final RidesFlags flags;
+    private final FeatureToggles toggles;
 
-    public RideDispatchService(JdbcTemplate db, RidesFlags flags) {
+    public RideDispatchService(JdbcTemplate db, FeatureToggles toggles) {
         this.db = db;
-        this.flags = flags;
+        this.toggles = toggles;
     }
 
     @Transactional
     public void search(UUID customer, UUID ride) {
-        if (!flags.consumerAvailable() || !flags.dispatchAvailable()) {
+        if (!toggles.rides().consumerAvailable() || !toggles.rides().dispatchAvailable()) {
             throw missing("RIDE_DISPATCH_UNAVAILABLE");
         }
         var trip = lockTrip(ride);
@@ -74,7 +75,7 @@ public class RideDispatchService {
                         RideClass.valueOf(rs.getString("ride_class")), true, true, true, false,
                         new Point(rs.getDouble("latitude"), rs.getDouble("longitude")),
                         rs.getObject("observed_at", OffsetDateTime.class).toInstant()),
-                trip.rideClass().name(), customer, ride, flags.partnerAvailable());
+                trip.rideClass().name(), customer, ride, toggles.rides().partnerAvailable());
         var asOf = Objects.requireNonNull(db.queryForObject("select statement_timestamp()", OffsetDateTime.class));
         RideMatching.nearest(trip.pickup(), trip.rideClass(), candidates, Set.of(), asOf.toInstant(),
                 Duration.ofMinutes(2), 5000).ifPresent(candidate -> db.update("""
@@ -84,7 +85,7 @@ public class RideDispatchService {
     }
 
     public List<Offer> offers(UUID driver) {
-        if (!flags.dispatchAvailable()) {
+        if (!toggles.rides().dispatchAvailable()) {
             return List.of();
         }
         return db.query("""
@@ -100,7 +101,7 @@ public class RideDispatchService {
                 order by o.expires_at, o.id limit 30
                 """, (rs, row) -> new Offer(rs.getObject("id", UUID.class), rs.getObject("ride_id", UUID.class),
                         rs.getString("state"), rs.getObject("expires_at", OffsetDateTime.class),
-                        rs.getBoolean("synthetic")), driver, flags.partnerAvailable());
+                        rs.getBoolean("synthetic")), driver, toggles.rides().partnerAvailable());
     }
 
     @Transactional
@@ -114,7 +115,7 @@ public class RideDispatchService {
         if (accept && "ACCEPTED".equals(state) || !accept && "REJECTED".equals(state)) {
             return;
         }
-        if (!flags.dispatchAvailable() || trip.status() != RideState.SEARCHING_DRIVER || !"PENDING".equals(state)
+        if (!toggles.rides().dispatchAvailable() || trip.status() != RideState.SEARCHING_DRIVER || !"PENDING".equals(state)
                 || !exists("select expires_at > statement_timestamp() from transactions.ride_offers where id = ?", offerId)) {
             throw conflict("RIDE_OFFER_UNAVAILABLE");
         }
@@ -136,7 +137,7 @@ public class RideDispatchService {
                         and v.status = 'APPROVED' and v.ride_class = ?
                         and not exists(select 1 from transactions.rides r where r.driver_id = d.user_id
                             and r.status in ('DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','IN_PROGRESS'))
-                """ + ELIGIBLE_FLEET + ")", driver, trip.rideClass().name(), flags.partnerAvailable())
+                """ + ELIGIBLE_FLEET + ")", driver, trip.rideClass().name(), toggles.rides().partnerAvailable())
                 || !exists("select expires_at > statement_timestamp() from transactions.ride_offers where id = ?", offerId)) {
             throw conflict("RIDE_DRIVER_UNAVAILABLE");
         }

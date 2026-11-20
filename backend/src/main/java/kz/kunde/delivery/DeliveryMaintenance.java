@@ -1,5 +1,6 @@
 package kz.kunde.delivery;
 
+import kz.kunde.platform.FeatureToggles;
 import java.util.UUID;
 import kz.kunde.platform.ApiException;
 import org.slf4j.Logger;
@@ -17,17 +18,17 @@ class DeliveryMaintenance {
     private static final Logger LOG = LoggerFactory.getLogger(DeliveryMaintenance.class);
     private final JdbcTemplate db;
     private final DeliveryDispatch dispatch;
-    private final DeliveryProperties flags;
+    private final FeatureToggles toggles;
 
-    DeliveryMaintenance(JdbcTemplate db, DeliveryDispatch dispatch, DeliveryProperties flags) {
+    DeliveryMaintenance(JdbcTemplate db, DeliveryDispatch dispatch, FeatureToggles toggles) {
         this.db = db;
         this.dispatch = dispatch;
-        this.flags = flags;
+        this.toggles = toggles;
     }
 
     @Scheduled(fixedDelay = 5000)
     void updateSearches() {
-        if (!flags.dispatchAvailable()) {
+        if (!toggles.delivery().dispatchAvailable()) {
             return;
         }
         var pending = db.query("""

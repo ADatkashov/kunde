@@ -1,5 +1,6 @@
 package kz.kunde.rides;
 
+import kz.kunde.platform.FeatureToggles;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -28,11 +29,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/rides")
 @PreAuthorize("@consumerAccessPolicy.allowed(authentication)")
 public class RideRoutingController {
-    private final RidesFlags flags;
+    private final FeatureToggles toggles;
     private final ObjectProvider<RideRouting> routing;
 
-    public RideRoutingController(RidesFlags flags, ObjectProvider<RideRouting> routing) {
-        this.flags = flags;
+    public RideRoutingController(FeatureToggles toggles, ObjectProvider<RideRouting> routing) {
+        this.toggles = toggles;
         this.routing = routing;
     }
 
@@ -64,7 +65,7 @@ public class RideRoutingController {
     }
 
     private <T> T withRouting(Function<RideRouting, T> operation) {
-        if (!flags.consumerAvailable()) {
+        if (!toggles.rides().consumerAvailable()) {
             throw new ApiException(HttpStatus.NOT_FOUND, "RIDES_UNAVAILABLE", "Rides is currently unavailable");
         }
         var provider = routing.getIfAvailable();

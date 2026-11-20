@@ -88,7 +88,7 @@ class RideRequestIntegrationTest {
         String key = "rides-off-test-01";
         UUID ride = rides.create(customer, quote, key).ride().id();
 
-        var disabled = new RideRequestService(db, new RidesFlags(false, false, false, false, false, false));
+        var disabled = new RideRequestService(db, kz.kunde.platform.TestToggles.of(new RidesFlags(false, false, false, false, false, false)));
         new TransactionTemplate(transactions).executeWithoutResult(status -> {
             assertThat(disabled.create(customer, quote, key).ride().id()).isEqualTo(ride);
             assertThat(disabled.cancel(customer, ride).status()).isEqualTo(RideState.CANCELLED_BY_CUSTOMER);
