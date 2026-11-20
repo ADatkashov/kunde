@@ -36,6 +36,19 @@ V41 добавляет направление услуги, состояние �
 - На локальном PostgreSQL 16.12 прошли 351 backend-тест. HTTP также подтвердил подтверждение и отмену партнёром, запрет другому tenant, проверку Admin-гранта и модерацию. В Neon DEV у синтетических аккаунтов пока нет `HEALTH_OPERATIONS`.
 - GitHub Actions проверил Backend, Flutter, Partner Flutter и Android, а также зависимости, контейнеры и секреты. Нативный Health E2E и визуальные артефакты отслеживаются в [#178](https://github.com/ADatkashov/kunde/pull/178). [Checks #176](https://github.com/ADatkashov/kunde/pull/176/checks)
 
+## Android и подписанные сборки
+
+Нативный Consumer E2E на Android 35 прошёл на синтетических данных. Прогон открыл каталог, организацию и профиль специалиста, создал ожидающую подтверждения запись с TEST_CARD, отменил её и подтвердил снятие удержания через API. Скриншоты сохранены в восьми PNG. [GitHub Actions](https://github.com/ADatkashov/kunde/actions/runs/44804241960/artifacts/14663726127)
+
+Подписанные DEV Release APK собраны из `e3edb329d4771c0b291ef04f777c65c7c960fa24`. CI проверил имя пакета, подпись v2, SHA-256, arm64, DEV URL и отсутствие признака debuggable. Нативный E2E использовал отдельную отладочную сборку для loopback.
+
+| Приложение | SHA-256 APK | Артефакт |
+|---|---|---|
+| Consumer | `a3d48803ac9b90b04d25774bc84a51935c58ec937bf6ba00184d8de252fa33d5` | [Release APK](https://github.com/ADatkashov/kunde/actions/runs/44804992359/artifacts/14662189584) |
+| Partner | `4f8875dbc5ba2f53e71cfa8a8027846c88d03a44b515f7f7d35f8420e729c515` | [Release APK](https://github.com/ADatkashov/kunde/actions/runs/44805001720/artifacts/14662562676) |
+| Executor | `a805bc471fe7a5886535f209506d9a8a3bdfd00af831beecddf9b67357b50c88` | [Release APK](https://github.com/ADatkashov/kunde/actions/runs/44804671777/artifacts/14662228329) |
+| Admin | `34aa577bacb9b11555a2c13de3b16842b38ac1be00408dfd9bb4488e8d3d8fed` | [Release APK](https://github.com/ADatkashov/kunde/actions/runs/44804997291/artifacts/14663216127) |
+
 ## Приватность и угрозы
 
 | Риск | Мера пилота |
@@ -54,4 +67,4 @@ V41 добавляет направление услуги, состояние �
 
 ## Открытая приёмка
 
-Отдельные профили специалистов, расширенные фильтры, проверенные отзывы и избранное, управление Health-ролями и жалобами, возвраты Health, выездной wellness Executor, лицензии и локализованный каталог, визуальная приёмка и подписанные APK требуют дальнейшей работы. Подтверждение DEV, нативный E2E и доступность на устройстве фиксируются после фактического прогона.
+Расширенные фильтры, проверенные отзывы и избранное, управление Health-ролями и жалобами, возвраты Health, выездной wellness Executor, лицензии и локализованный каталог, визуальная приёмка всех ролей и установка подписанных APK требуют дальнейшей работы. Нативная проверка Partner, Admin, TalkBack и полного RU/KK/EN сценария остаётся открытой.
