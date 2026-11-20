@@ -107,6 +107,8 @@ class LeisureApiIntegrationTest {
         assertThat((Object) JsonPath.read(detail, "$.rating")).isNull(); // no reviews, no invented rating
         UUID session = t.firstSession(film);
         assertThat((List<?>) JsonPath.read(t.body(t.send("GET", "/api/v1/leisure/events/" + film + "/sessions?days=8", null, null, null)), "$")).isNotEmpty();
+        // instants leave the API with the venue offset, so the apps never show the server's UTC wall clock
+        assertThat((String) JsonPath.read(t.body(t.send("GET", "/api/v1/leisure/events/" + film + "/sessions?days=8", null, null, null)), "$[0].startsAt")).endsWith("+05:00");
         String seats = t.body(t.send("GET", "/api/v1/leisure/sessions/" + session + "/seats", null, null, null).andExpect(status().isOk()));
         assertThat((List<?>) JsonPath.read(seats, "$")).hasSize(60);
         t.send("GET", "/api/v1/leisure/events/" + UUID.randomUUID(), null, null, null).andExpect(status().isNotFound());

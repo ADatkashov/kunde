@@ -158,7 +158,7 @@ public class LeisureCatalogService {
         boolean hasDist = !rs.wasNull();
         return new Card(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6), rs.getString(7),
                 rs.getString(8), rs.getString(9), rs.getLong(10), "KZT", rs.getInt(11), rs.getBoolean(12), rated ? Math.round(avg * 10) / 10.0 : null,
-                rs.getInt(14), rs.getObject(15, OffsetDateTime.class), rs.getString(16), Math.max(0, rs.getInt(17)),
+                rs.getInt(14), kz.kunde.leisure.LeisureTime.local(rs, 15), rs.getString(16), Math.max(0, rs.getInt(17)),
                 hasDist ? Math.round(dist * 10) / 10.0 : null);
     }
 
@@ -226,8 +226,8 @@ public class LeisureCatalogService {
                 + "coalesce((select min(price_minor) from marketplace.leisure_ticket_types tt where tt.event_id = s.event_id and tt.active), 0) "
                 + "from marketplace.leisure_sessions s join marketplace.leisure_events e on e.id = s.event_id join marketplace.leisure_venues v on v.id = e.venue_id "
                 + "where s.event_id = ? and e.status = 'PUBLISHED' and v.status = 'APPROVED' and s.status = 'SCHEDULED' and s.starts_at > now() and s.starts_at >= ? and s.starts_at < ? "
-                + "order by s.starts_at limit 300", (rs, n) -> new SessionView(rs.getString(1), rs.getObject(2, OffsetDateTime.class),
-                rs.getObject(3, OffsetDateTime.class), rs.getInt(4), Math.max(0, rs.getInt(5)), rs.getLong(6)), eventId, from, to);
+                + "order by s.starts_at limit 300", (rs, n) -> new SessionView(rs.getString(1), kz.kunde.leisure.LeisureTime.local(rs, 2),
+                kz.kunde.leisure.LeisureTime.local(rs, 3), rs.getInt(4), Math.max(0, rs.getInt(5)), rs.getLong(6)), eventId, from, to);
     }
 
     @Transactional(readOnly = true)
@@ -249,7 +249,7 @@ public class LeisureCatalogService {
     @Transactional(readOnly = true)
     public List<ReviewView> reviews(UUID eventId, int limit, int offset) {
         return db.query("select id, rating, body, created_at from transactions.leisure_reviews where event_id = ? and status = 'PUBLISHED' order by created_at desc limit ? offset ?",
-                (rs, n) -> new ReviewView(rs.getString(1), rs.getInt(2), rs.getString(3), rs.getObject(4, OffsetDateTime.class), "Гость"),
+                (rs, n) -> new ReviewView(rs.getString(1), rs.getInt(2), rs.getString(3), kz.kunde.leisure.LeisureTime.local(rs, 4), "Гость"),
                 eventId, Math.max(1, Math.min(limit, 50)), Math.max(0, offset));
     }
 
