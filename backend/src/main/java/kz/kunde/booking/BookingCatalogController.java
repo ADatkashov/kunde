@@ -102,11 +102,11 @@ public class BookingCatalogController {
         if ("HEALTH".equals(venue.category())) { slots.requireHealthCatalog(); }
         List<ServiceItem> services = jdbc.query("""
                 select id, name, description, duration_minutes, price_minor, available, price_per_sqm_minor, min_area_sqm, max_area_sqm
-                from marketplace.booking_services where venue_id = ? order by sort_order, name
+                from marketplace.booking_services where venue_id = ? and (not ? or available) order by sort_order, name
                 """, (rs, row) -> new ServiceItem(rs.getString("id"), rs.getString("name"), rs.getString("description"),
                 rs.getInt("duration_minutes"), rs.getLong("price_minor"), rs.getBoolean("available"),
                 rs.getLong("price_per_sqm_minor"), rs.getObject("min_area_sqm", Integer.class),
-                rs.getObject("max_area_sqm", Integer.class)), venueId);
+                rs.getObject("max_area_sqm", Integer.class)), venueId, "HEALTH".equals(venue.category()));
         Map<UUID, List<String>> serviceIds = new LinkedHashMap<>();
         jdbc.query("""
                 select ms.master_id, ms.service_id from marketplace.booking_master_services ms

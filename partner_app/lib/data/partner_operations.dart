@@ -183,6 +183,24 @@ class PartnerOperations {
         'conditions': conditions,
       }));
 
+  Future<VenueService> createHealthService(String venueId,
+          {required String name,
+          required String category,
+          required String masterId,
+          required int priceMinor,
+          required int durationMinutes}) async =>
+      VenueService.fromJson(await api.postMap('${_venue(venueId)}/health/services', {
+        'name': name,
+        'category': category,
+        'masterId': masterId,
+        'priceMinor': priceMinor,
+        'durationMinutes': durationMinutes,
+      }));
+
+  Future<Master> createHealthSpecialist(String venueId, String name) async =>
+      Master.fromJson(await api.postMap(
+          '${_venue(venueId)}/health/specialists', {'name': name}));
+
   Future<Master> createPost(String venueId, String name) async =>
       Master.fromJson(
           await api.postMap('${_venue(venueId)}/masters', {'name': name}));
