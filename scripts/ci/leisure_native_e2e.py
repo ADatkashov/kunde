@@ -374,7 +374,7 @@ def ui_after_scan():
     completed.append("consumer_ticket_shows_used_after_gate_scan")
     # the session is over: the order moves to completed and can be reviewed
     sql("update marketplace.leisure_sessions set starts_at = now() - interval '3 hours', ends_at = now() - interval '1 hour' where id = '" + world.session["id"] + "'")
-    back(2)
+    back(1)
     tap(*COMPLETED)
     tap(world.event["title"])
     tap(*WRITE_REVIEW, clickable=True)
