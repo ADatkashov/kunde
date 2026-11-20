@@ -126,3 +126,16 @@ run "booking_rejected_outside_dev" {
   }
   expect_failures = [var.booking_enabled]
 }
+
+run "auto_dev_pilot_flags" {
+  command = plan
+  variables {
+    environment_name = "dev"
+    booking_enabled  = true
+    auto_enabled     = true
+  }
+  assert {
+    condition     = render_web_service.this.env_vars["AUTO_ENABLED"].value == "true" && render_web_service.this.env_vars["AUTO_SEED_DEMO"].value == "true"
+    error_message = "Auto env vars expected in dev"
+  }
+}

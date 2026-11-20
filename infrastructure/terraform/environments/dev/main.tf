@@ -40,6 +40,7 @@ module "backend" {
   environment_name            = "dev"
   food_enabled                = var.food_enabled
   booking_enabled             = var.booking_enabled
+  auto_enabled                = var.auto_enabled
   auth_phone_enabled          = tobool(var.auth_phone_enabled)
   auth_phone_secret           = var.auth_phone_secret
   auth_dev_otp_enabled        = tobool(var.auth_dev_otp_enabled)

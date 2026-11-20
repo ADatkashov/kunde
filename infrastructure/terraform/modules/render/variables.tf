@@ -114,6 +114,22 @@ variable "booking_enabled" {
   }
 }
 
+variable "auto_enabled" {
+  description = "KUNDE Auto DEV pilot (car services on the Booking engine, DEV/TEST ledger payments, synthetic demo seed). Forbidden outside dev/local/test and needs booking."
+  type        = bool
+  default     = false
+
+  validation {
+    condition     = !var.auto_enabled || contains(["dev", "local", "test"], var.environment_name)
+    error_message = "auto_enabled is only allowed when environment_name is dev, local or test."
+  }
+
+  validation {
+    condition     = !var.auto_enabled || var.booking_enabled
+    error_message = "auto_enabled needs booking_enabled."
+  }
+}
+
 variable "auth_phone_enabled" {
   description = "Own phone-OTP authentication (ADR-015, amended 2026-11-14)."
   type        = bool

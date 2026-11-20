@@ -76,6 +76,12 @@ variable "food_enabled" {
   default     = true
 }
 
+variable "auto_enabled" {
+  description = "KUNDE Auto DEV pilot on the DEV backend (synthetic stations, DEV/TEST ledger payments, no real charges). DEV environment only."
+  type        = bool
+  default     = true
+}
+
 variable "booking_enabled" {
   description = "Service booking (barbershops) DEV pilot on the DEV backend (DEV mock confirmation, synthetic venues). DEV environment only."
   type        = bool

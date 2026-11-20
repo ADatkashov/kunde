@@ -46,6 +46,10 @@ Backend: `auto_complaints` (жалоба на свою запись или вы�
 
 Только учёт в БД (`transactions.auto_payments`, append-only `auto_payment_events`), KZT в минорных единицах, **реальных списаний нет**. Методы: `PAY_ON_SITE` (по умолчанию, без записи в учёте сумм) и `TEST_CARD` — принимается только при `app.environment` ∈ {dev, local, test}, иначе `422 PAYMENT_METHOD_UNSUPPORTED`. Жизненный цикл: запись создаёт `TEST_HELD` (hold на цену котировки) → завершение партнёром `TEST_CAPTURED` (по `final_price_minor`, если есть) → возврат администратором `POST /api/v1/admin/auto/payments/{id}/refund` (не больше captured−refunded, обязательная причина, `TEST_PART_REFUNDED`/`TEST_REFUNDED`, событие `PAYMENT_REFUNDED`). Отмена клиентом, отказ/неявка/отмена партнёром и истечение PENDING снимают hold (`TEST_VOIDED`). Успешный платёж в обычном режиме не имитируется. Flutter Consumer: выбор способа оплаты с пометкой «реальных списаний нет» и статус платежа в записи. Admin API: `GET /api/v1/admin/auto/payments` (экран во Flutter не сделан). Тесты: `AutoPaymentsTest`, `AutoPaymentsApiIntegrationTest`; `mvn verify` 334, Flutter 244 — 0 ошибок локально. Выездные задания (`job_id`) используют те же методы на backend, UI для них не добавлялся.
 
+## Включение на DEV
+
+2026-11-20 по прямому указанию владельца на существующем DEV-сервисе (`kunde-backend-ty81`) заданы `AUTO_ENABLED=true` и `AUTO_SEED_DEMO=true` (Terraform: `auto_enabled`, по умолчанию `true` только в `environments/dev`, `false` в модуле; только dev/local/test и вместе с booking). `scripts/dev/auto_smoke.py BASE_URL` на DEV: каталог, авто, серверная котировка, запись с `TEST_CARD` (hold, без реальных списаний), идемпотентный повтор, история после refresh, отмена со снятием hold — пройдено; регрессия `booking_smoke.py` пройдена. PROD не затрагивался: `AutoConfiguration` не даёт включить флаг вне dev/local/test.
+
 ## Не реализовано (следующие PR)
 
 Экран платежей в Admin; Android E2E и подписанные APK; синхронизация Linear (задач Auto в рабочем пространстве нет, дубли не создавались); перенос записи партнёром, экран сотрудников и статистики Partner.
