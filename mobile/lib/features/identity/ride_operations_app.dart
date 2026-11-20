@@ -8,10 +8,13 @@ import 'auth_screen.dart';
 import 'phone_auth_gateway.dart';
 import '../../shared/theme/kunde_theme.dart';
 
-void runRideOperations(String title, Widget Function(AuthRepository) home) {
+void runRideOperations(String title, Widget Function(AuthRepository) home,
+    {bool sameOriginWeb = false}) {
   WidgetsFlutterBinding.ensureInitialized();
   const endpoint = String.fromEnvironment('API_BASE_URL');
-  final base = Uri.tryParse(endpoint);
+  final base = kIsWeb && sameOriginWeb && endpoint.isEmpty
+      ? Uri.base.resolve('/api/v1/')
+      : Uri.tryParse(endpoint);
   final debugLoopback =
       kDebugMode && base?.scheme == 'http' && base?.host == 'localhost';
   if (base == null ||
@@ -26,11 +29,29 @@ void runRideOperations(String title, Widget Function(AuthRepository) home) {
   }
   final auth = AuthRepository(
     gateway: PhoneAuthGateway(apiBase: base),
-    vault: SecureTokenVault(),
+    vault:
+        kIsWeb && sameOriginWeb ? _BrowserSessionVault() : SecureTokenVault(),
     apiBase: base,
   );
   runApp(RideOperationsApp(
       auth: auth, api: KundeApi(baseUri: base), title: title, home: home));
+}
+
+class _BrowserSessionVault implements TokenVault {
+  String? _session;
+
+  @override
+  Future<String?> read() async => _session;
+
+  @override
+  Future<void> write(String value) async {
+    _session = value;
+  }
+
+  @override
+  Future<void> clear() async {
+    _session = null;
+  }
 }
 
 class RideOperationsApp extends StatefulWidget {
