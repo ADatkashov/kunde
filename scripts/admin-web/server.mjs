@@ -8,8 +8,9 @@ import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('../../mobile/build/web', import.meta.url));
 const api = new URL('https://kunde-backend-ty81.onrender.com');
 const apiMethods = {
-  GET: /^\/api\/v1\/(capabilities|me|admin\/(rides|deliveries)(\/[^/?]+)*)$/,
-  POST: /^\/api\/v1\/(auth\/(otp\/(request|verify)|token\/refresh|logout)|admin\/(rides|deliveries)\/[^/?]+(\/[^/?]+)*)$/,
+  GET: /^\/api\/v1\/(capabilities|me|admin\/(employees|me\/capabilities|auto\/(bookings|categories|complaints|jobs|specialists|venues)|(rides|deliveries)(\/[^/?]+)*))$/,
+  POST: /^\/api\/v1\/(auth\/(otp\/(request|verify)|token\/refresh|logout)|admin\/(rides|deliveries)\/[^/?]+(\/[^/?]+)*|admin\/auto\/(specialists\/[^/?]+\/decision|complaints\/[^/?]+\/resolve))$/,
+  PATCH: /^\/api\/v1\/admin\/auto\/(categories|venues)\/[^/?]+$/,
 };
 const contentTypes = {
   '.html': 'text/html; charset=utf-8',
