@@ -442,6 +442,9 @@ def main():
             after_purchase(api_purchase())
         else:
             phase = "install_and_sign_in"
+            # stream logcat to a file so that a dying emulator still leaves its last lines behind
+            stream = open(REPORT / "logcat-stream.txt", "wb")
+            subprocess.Popen(["adb", "logcat", "-v", "time", "*:W"], stdout=stream, stderr=subprocess.STDOUT)
             android.adb("reverse", "tcp:8081", "tcp:8081")
             android.adb("shell", "wm", "size", "390x844")
             android.adb("shell", "wm", "density", "160")
