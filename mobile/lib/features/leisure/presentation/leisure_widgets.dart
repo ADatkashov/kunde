@@ -476,19 +476,22 @@ class PrimaryBar extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               height: 56,
-              child: FilledButton(
-                style: FilledButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18)),
-                    textStyle: const TextStyle(
-                        fontSize: 17, fontWeight: FontWeight.w800)),
-                onPressed: busy ? null : onPressed,
-                child: busy
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(strokeWidth: 2.5))
-                    : FittedBox(fit: BoxFit.scaleDown, child: Text(label)),
+              child: Semantics(
+                identifier: 'leisure-primary',
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18)),
+                      textStyle: const TextStyle(
+                          fontSize: 17, fontWeight: FontWeight.w800)),
+                  onPressed: busy ? null : onPressed,
+                  child: busy
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2.5))
+                      : FittedBox(fit: BoxFit.scaleDown, child: Text(label)),
+                ),
               ),
             ),
           ]),
