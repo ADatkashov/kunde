@@ -94,6 +94,23 @@ public class BookingPartnerController {
         return ok(service.createService(user(principal), partnerId, venueId, body.toInput()));
     }
 
+    public record HealthServiceBody(@NotNull @Size(min = 1, max = 120) String name,
+            @NotNull @Size(max = 24) String category, @NotNull UUID masterId,
+            @NotNull Integer durationMinutes, @NotNull Long priceMinor) {}
+
+    @PostMapping("/venues/{venueId}/health/services")
+    ResponseEntity<ServiceView> createHealthService(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
+            @PathVariable UUID venueId, @Valid @RequestBody HealthServiceBody body) {
+        return ok(service.createHealthService(user(principal), partnerId, venueId, body.masterId(),
+                body.category(), body.name(), body.durationMinutes(), body.priceMinor()));
+    }
+
+    @PostMapping("/venues/{venueId}/health/specialists")
+    ResponseEntity<MasterView> createHealthSpecialist(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
+            @PathVariable UUID venueId, @Valid @RequestBody PostBody body) {
+        return ok(service.createHealthSpecialist(user(principal), partnerId, venueId, body.name()));
+    }
+
     @PostMapping("/venues/{venueId}/masters")
     ResponseEntity<MasterView> createPost(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
             @PathVariable UUID venueId, @Valid @RequestBody PostBody body) {

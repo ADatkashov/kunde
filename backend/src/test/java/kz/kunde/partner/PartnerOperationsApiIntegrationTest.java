@@ -147,6 +147,34 @@ class PartnerOperationsApiIntegrationTest {
     // ---- access control ------------------------------------------------------------------------
 
     @Test
+    void ownerCreatesSyntheticHealthSpecialistAndServiceWhileTenantBoundariesHold() throws Exception {
+        try (var in = new ClassPathResource("health/demo-venues.json").getInputStream()) {
+            new BookingDemoSeeder(db).seed(new ObjectMapper().readTree(in));
+        }
+        UUID health = db.queryForObject("select id from marketplace.booking_venues where slug = 'health-demo-clinic'", UUID.class);
+        db.update("update marketplace.booking_venues set partner_id = ? where id = ?", partnerA, health);
+        String prefix = "/api/v1/partner/partners/" + partnerA + "/booking/venues/" + health;
+        String specialistBody = "{\"name\":\"Демо-профиль\"}";
+        send("POST", prefix + "/health/specialists", otherToken, specialistBody, null).andExpect(status().isNotFound());
+        send("POST", prefix + "/health/specialists", customer, specialistBody, null).andExpect(status().isForbidden());
+        String master = JsonPath.read(body(send("POST", prefix + "/health/specialists", ownerToken, specialistBody, null)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.active").value(false))), "$.id");
+        String serviceBody = new ObjectMapper().writeValueAsString(Map.of(
+                "name", "Демо-услуга", "category", "DOCTORS", "masterId", master, "durationMinutes", 30,
+                "priceMinor", 500_000));
+        send("POST", prefix + "/health/services", ownerToken, serviceBody.replace(master, UUID.randomUUID().toString()), null)
+                .andExpect(status().isNotFound());
+        String service = JsonPath.read(body(send("POST", prefix + "/health/services", ownerToken, serviceBody, null)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.available").value(false))), "$.id");
+        String details = "/api/v1/booking/venues/" + health;
+        send("GET", details, null, null, null).andExpect(status().isOk())
+                .andExpect(jsonPath("$.services[?(@.id=='" + service + "')]").isEmpty());
+        send("PATCH", prefix + "/services/" + service, ownerToken, "{\"available\":true}", null).andExpect(status().isOk());
+        send("GET", details, null, null, null).andExpect(status().isOk())
+                .andExpect(jsonPath("$.services[?(@.id=='" + service + "')]").isNotEmpty());
+    }
+
+    @Test
     void partnerEndpointsRejectCustomersAnonymousAndStrangers() throws Exception {
         send("GET", foodBase() + "/orders", null, null, null).andExpect(status().isUnauthorized());
         send("GET", foodBase() + "/orders", customer, null, null).andExpect(status().isForbidden());
