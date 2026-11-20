@@ -34,7 +34,7 @@ public class PlatformController {
                 rides.partnerAvailable(), delivery.consumerAvailable(),
                 delivery.enabled() && delivery.partnerEnabled(),
                 delivery.enabled() && delivery.syntheticRoutingEnabled(),
-                delivery.enabled() && delivery.executorEnabled(), autoCeiling && toggles.enabled(FeatureToggles.Feature.AUTO));
+                delivery.enabled() && delivery.executorEnabled(), autoCeiling && toggles.enabled(FeatureToggles.Feature.AUTO), toggles.enabled(FeatureToggles.Feature.LEISURE));
     }
 
     public record PlatformCapabilities(
@@ -44,5 +44,5 @@ public class PlatformController {
             boolean aiEnabled,
             boolean bookingEnabled,
             boolean ridesEnabled, boolean ridesFleetEnabled, boolean deliveryEnabled, boolean deliveryPartnerEnabled,
-            boolean deliverySyntheticRouting, boolean deliveryExecutorEnabled, boolean autoEnabled) {}
+            boolean deliverySyntheticRouting, boolean deliveryExecutorEnabled, boolean autoEnabled, boolean leisureEnabled) {}
 }
