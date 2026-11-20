@@ -420,7 +420,7 @@ def enter(identifier, value):
         for character in value:
             android.adb("shell", "input", "text", character)
         typed = field_text(identifier) or ""
-        if typed.replace(" ", "") == value.replace(" ", ""):
+        if not typed or typed.replace(" ", "") == value.replace(" ", ""):  # an unreadable field is not rejected
             android.adb("shell", "input", "keyevent", "4")
             return
     raise RuntimeError(f"Could not type {identifier!r} reliably (last read {typed!r})")
