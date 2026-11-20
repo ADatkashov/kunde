@@ -394,6 +394,27 @@ def enter(identifier, value):
     android.adb("shell", "input", "keyevent", "4")
 
 
+def sign_in(phone, *signed_in_labels):
+    """Sign in through the app; a stuck code request is retried from a clean start (screens are kept as evidence)."""
+    for attempt in range(1, 4):
+        try:
+            fixture.type_text(phone)
+            android.adb("shell", "input", "keyevent", "4")
+            time.sleep(1)
+            android.tap("Получить код", "Get code", "Код алу", clickable=True, timeout=20)
+            android.find("Введите код", "Enter the code", "Кодты енгізіңіз", timeout=45)
+            android.adb("shell", "input", "text", "123456")
+            android.find(*signed_in_labels, timeout=60)
+            return
+        except (RuntimeError, subprocess.SubprocessError):
+            android.screenshot(f"sign-in-attempt-{attempt}")
+            if attempt == 3:
+                raise
+            android.adb("shell", "am", "force-stop", fixture.CONSUMER)
+            fixture.launch(fixture.CONSUMER)
+            time.sleep(3)
+
+
 def relaunch():
     """A fresh start on the home screen (the saved session is restored), not the screen the app was left on."""
     android.adb("shell", "am", "force-stop", fixture.CONSUMER)
@@ -567,7 +588,7 @@ def main():
             android.adb("shell", "wm", "density", "160")
             android.adb("install", APKS / "consumer.apk")
             relaunch()
-            fixture.login("7000000001", "Алматы", "Almaty")
+            sign_in("7000000001", "Алматы", "Almaty")
             world.consumer = fixture.session(CONSUMER_PHONE)
             completed.append("consumer_sign_in")
             phase = "consumer_flows"
@@ -583,6 +604,11 @@ def main():
         report("PASSED", "complete")
     except Exception:
         report("FAILED", phase)
+        if not API_ONLY:
+            try:  # what the app itself reported, to tell an app problem from a server problem
+                (REPORT / "logcat.txt").write_bytes(android.adb("logcat", "-d", "-t", "400", "flutter:V", "AndroidRuntime:E", "*:S"))
+            except (OSError, subprocess.SubprocessError):
+                pass
         try:  # the backend log helps to tell an app problem from a server problem
             log = Path(os.environ.get("RUNNER_TEMP", "/tmp"), "auto-backend.log")
             (REPORT / "backend-tail.log").write_text("\n".join(log.read_text(errors="replace").splitlines()[-150:]) + "\n")
