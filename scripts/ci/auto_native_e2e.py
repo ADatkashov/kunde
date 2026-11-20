@@ -455,7 +455,7 @@ def ui_main_flow():
     third_day = pick_day(world.wash, wash_service, 3)
     moved_day = pick_day(world.wash, wash_service, 4)
 
-    ui_book("Тестовая автомойка", wash_index, first_day, with_car=True, test_card=True)
+    ui_book("Тестовая автомойка «Демо»", wash_index, first_day, with_car=True, test_card=True)
     android.screenshot("consumer-booking-pending")
     first = newest_booking_id(world.consumer)
     check(mine(world.consumer, first)["payment"]["status"] == "TEST_HELD", "the test hold is created with the booking")
@@ -474,7 +474,7 @@ def ui_main_flow():
     completed.append("consumer_history_and_review")
 
     fixture.launch(fixture.CONSUMER)
-    ui_book("Тестовое СТО", oil_index, oil_day, with_car=False, test_card=True)
+    ui_book("Тестовое СТО «Демо»", oil_index, oil_day, with_car=False, test_card=True)
     second = newest_booking_id(world.consumer, "PENDING")
     price_approval_lifecycle({"id": second})
     fixture.launch(fixture.CONSUMER)
@@ -488,7 +488,7 @@ def ui_main_flow():
     completed.append("consumer_price_approval_and_test_payment")
 
     fixture.launch(fixture.CONSUMER)
-    ui_book("Тестовая автомойка", wash_index, third_day, with_car=False, test_card=False)
+    ui_book("Тестовая автомойка «Демо»", wash_index, third_day, with_car=False, test_card=False)
     third = newest_booking_id(world.consumer, "PENDING")
     tap(*RESCHEDULE, clickable=True)
     tap(resource_id=f"auto-day-{moved_day}")
