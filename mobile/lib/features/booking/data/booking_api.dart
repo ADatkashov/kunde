@@ -127,8 +127,10 @@ class BookingApi {
     required String direction,
     required int limit,
     required int offset,
+    Map<String, String> filters = const {},
   }) async =>
       ((await _public('booking/health/venues', {
+        ...filters,
         'q': query,
         'direction': direction,
         'limit': '$limit',
