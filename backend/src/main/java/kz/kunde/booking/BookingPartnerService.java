@@ -54,13 +54,15 @@ public class BookingPartnerService {
     private final JdbcTemplate db;
     private final BookingService bookings;
     private final PartnerService partners;
+    private final BookingSlots slots;
     private final kz.kunde.auto.AutoPayments payments;
 
-    public BookingPartnerService(JdbcTemplate db, BookingService bookings, PartnerService partners, kz.kunde.auto.AutoPayments payments) {
+    public BookingPartnerService(JdbcTemplate db, BookingService bookings, PartnerService partners, kz.kunde.auto.AutoPayments payments, BookingSlots slots) {
         this.db = db;
         this.bookings = bookings;
         this.partners = partners;
         this.payments = payments;
+        this.slots = slots;
     }
 
     // ---- bookings ------------------------------------------------------------------------------
@@ -251,13 +253,16 @@ public class BookingPartnerService {
     public ServiceView updateService(UUID actor, UUID partnerId, UUID venueId, UUID serviceId, ServiceInput in) {
         partners.requireProcessing(actor, partnerId, Role.OWNER, Role.MANAGER);
         requireOwnedVenue(partnerId, venueId);
-        var old = db.query("select name, duration_minutes, price_minor, price_kind, conditions from marketplace.booking_services where id = ? and venue_id = ? for update",
-                (rs, n) -> new Object[] {rs.getString(1), rs.getInt(2), rs.getLong(3), rs.getString(4), rs.getString(5)}, serviceId, venueId)
+        var old = db.query("select name, duration_minutes, price_minor, price_kind, conditions, health_category from marketplace.booking_services where id = ? and venue_id = ? for update",
+                (rs, n) -> new Object[] {rs.getString(1), rs.getInt(2), rs.getLong(3), rs.getString(4), rs.getString(5), rs.getString(6)}, serviceId, venueId)
                 .stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "SERVICE_NOT_FOUND", "Service not found"));
         String name = in.name() == null ? (String) old[0] : cleanName(in.name());
         int duration = in.durationMinutes() == null ? (int) old[1] : validDuration(in.durationMinutes());
         long price = in.priceMinor() == null ? (long) old[2] : validPrice(in.priceMinor());
         String kind = in.priceKind() == null ? (String) old[3] : validKind(in.priceKind());
+        if (old[5] != null && (!"FIXED".equals(kind) || in.conditions() != null)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "HEALTH_SERVICE_INVALID", "Health services use fixed prices and standard booking terms");
+        }
         String conditions = in.conditions() == null ? (String) old[4] : validConditions(in.conditions());
         db.update("update marketplace.booking_services set name = ?, duration_minutes = ?, price_minor = ?, price_kind = ?, conditions = ? where id = ?",
                 name, duration, price, kind, conditions, serviceId);
@@ -297,6 +302,63 @@ public class BookingPartnerService {
         db.update("insert into marketplace.booking_master_services (master_id, service_id) select id, ? from marketplace.booking_masters where venue_id = ? and active", id, venueId);
         audit(partnerId, actor, "SERVICE", id, "created", null, cleanName(in.name()));
         return services(actor, partnerId, venueId).stream().filter(x -> x.id().equals(id.toString())).findFirst().orElseThrow();
+    }
+
+    @Transactional
+    public ServiceView createHealthService(UUID actor, UUID partnerId, UUID venueId, UUID masterId,
+            String category, String name, int durationMinutes, long priceMinor) {
+        partners.requireProcessing(actor, partnerId, Role.OWNER, Role.MANAGER);
+        requireHealthVenue(partnerId, venueId);
+        if (!Boolean.TRUE.equals(db.queryForObject("""
+                select exists (select 1 from marketplace.health_categories where code = ?)
+                """, Boolean.class, category))) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "HEALTH_CATEGORY_INVALID", "Unknown Health category");
+        }
+        if (db.queryForList("select id from marketplace.booking_masters where id = ? and venue_id = ? for share",
+                UUID.class, masterId, venueId).isEmpty()) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "MASTER_NOT_FOUND", "Specialist not found");
+        }
+        String serviceName = cleanName(name);
+        int duration = validDuration(durationMinutes);
+        long price = validPrice(priceMinor);
+        int count = db.queryForObject("select count(*) from marketplace.booking_services where venue_id = ?", Integer.class, venueId);
+        if (count >= 50) {
+            throw new ApiException(HttpStatus.CONFLICT, "TOO_MANY_SERVICES", "At most 50 services per venue");
+        }
+        UUID id = db.queryForObject("""
+                insert into marketplace.booking_services (venue_id, name, duration_minutes, price_minor, health_category, available)
+                values (?, ?, ?, ?, ?, false) returning id
+                """, UUID.class, venueId, serviceName, duration, price, category);
+        db.update("insert into marketplace.booking_master_services (master_id, service_id) values (?, ?)", masterId, id);
+        audit(partnerId, actor, "SERVICE", id, "created", null, serviceName);
+        return services(actor, partnerId, venueId).stream().filter(service -> service.id().equals(id.toString())).findFirst().orElseThrow();
+    }
+
+    @Transactional
+    public MasterView createHealthSpecialist(UUID actor, UUID partnerId, UUID venueId, String name) {
+        partners.requireProcessing(actor, partnerId, Role.OWNER, Role.MANAGER);
+        requireHealthVenue(partnerId, venueId);
+        int count = db.queryForObject("select count(*) from marketplace.booking_masters where venue_id = ?", Integer.class, venueId);
+        if (count >= 20) {
+            throw new ApiException(HttpStatus.CONFLICT, "TOO_MANY_SPECIALISTS", "At most 20 specialists per venue");
+        }
+        String profileName = cleanName(name);
+        UUID id = db.queryForObject("""
+                insert into marketplace.booking_masters (venue_id, name, emoji, tone, active)
+                values (?, ?, '👤', 'blue', false) returning id
+                """, UUID.class, venueId, profileName);
+        audit(partnerId, actor, "MASTER", id, "created", null, profileName);
+        return new MasterView(id.toString(), profileName, false, List.of());
+    }
+
+    private void requireHealthVenue(UUID partnerId, UUID venueId) {
+        slots.requireHealthCatalog();
+        if (db.queryForList("""
+                select id from marketplace.booking_venues
+                where id = ? and partner_id = ? and category = 'HEALTH' and is_synthetic for update
+                """, UUID.class, venueId, partnerId).isEmpty()) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "VENUE_NOT_FOUND", "Venue not found");
+        }
     }
 
     /** Adds a service post (bay) with default hours Mon-Sat 09:00-18:00 that performs every service of the venue. */
