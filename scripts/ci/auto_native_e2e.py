@@ -392,12 +392,13 @@ def tap(*labels, **options):
 def tap_day(index):
     """The day chips scroll sideways: bring the wanted one into view first (stations are closed on Sundays, so it can be far)."""
     identifier = f"auto-day-{index}"
+    row = android.find(resource_id="auto-day-0", timeout=10)[1]  # the row sits higher when no car has to be chosen
     for _ in range(10):
         try:
             android.adb("shell", "input", "tap", *android.find(resource_id=identifier, timeout=3))
             return
         except RuntimeError:
-            android.adb("shell", "input", "swipe", "330", "288", "60", "288", "250")
+            android.adb("shell", "input", "swipe", "330", row, "60", row, "250")
     raise RuntimeError(f"Could not bring the day chip {index} into view")
 
 
