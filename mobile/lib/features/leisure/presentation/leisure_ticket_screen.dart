@@ -37,6 +37,7 @@ class _LeisureTicketScreenState extends State<LeisureTicketScreen> {
   Timer? _poll;
   bool _busy = false;
   String? _message;
+  bool _messageIsError = false;
   final _pager = PageController();
   int _page = 0;
 
@@ -107,7 +108,10 @@ class _LeisureTicketScreenState extends State<LeisureTicketScreen> {
       await action();
     } on LeisureException catch (e) {
       if (mounted) {
-        setState(() => _message = lzL10n(context).lzError(e.failure));
+        setState(() {
+          _message = lzL10n(context).lzError(e.failure);
+          _messageIsError = true;
+        });
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -126,7 +130,12 @@ class _LeisureTicketScreenState extends State<LeisureTicketScreen> {
     await _act(() async {
       await widget.services.api.review(widget.orderId, result.$1, result.$2);
       await _load(silent: true);
-      if (mounted) setState(() => _message = s.lzReviewThanks);
+      if (mounted) {
+        setState(() {
+          _message = s.lzReviewThanks;
+          _messageIsError = false;
+        });
+      }
     });
   }
 
@@ -141,7 +150,12 @@ class _LeisureTicketScreenState extends State<LeisureTicketScreen> {
     if (text == null || text.trim().isEmpty) return;
     await _act(() async {
       await widget.services.api.complain(widget.orderId, text.trim());
-      if (mounted) setState(() => _message = s.lzComplainSent);
+      if (mounted) {
+        setState(() {
+          _message = s.lzComplainSent;
+          _messageIsError = false;
+        });
+      }
     });
   }
 
@@ -330,7 +344,11 @@ class _LeisureTicketScreenState extends State<LeisureTicketScreen> {
                         ),
                         const SizedBox(height: 12),
                         if (_message != null) ...[
-                          LeisureErrorBanner(_message!),
+                          _messageIsError
+                              ? LeisureErrorBanner(_message!)
+                              : _Banner(
+                                  icon: Icons.check_circle_outline_rounded,
+                                  text: _message!),
                           const SizedBox(height: 12)
                         ],
                         Wrap(spacing: 10, runSpacing: 10, children: [
