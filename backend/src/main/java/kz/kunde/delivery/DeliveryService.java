@@ -1,5 +1,6 @@
 package kz.kunde.delivery;
 
+import kz.kunde.platform.FeatureToggles;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.ResultSet;
@@ -36,9 +37,11 @@ public class DeliveryService {
             """;
     private final JdbcTemplate db;
     private final DeliveryProperties settings;
+    private final FeatureToggles toggles;
     private final ObjectProvider<RideRouting> routing;
 
-    public DeliveryService(JdbcTemplate db, DeliveryProperties settings, ObjectProvider<RideRouting> routing) {
+    public DeliveryService(JdbcTemplate db, DeliveryProperties settings, ObjectProvider<RideRouting> routing, FeatureToggles toggles) {
+        this.toggles = toggles;
         this.db = db;
         this.settings = settings;
         this.routing = routing;
@@ -226,7 +229,8 @@ public class DeliveryService {
     }
 
     private void requireIntake(UUID partner) {
-        if (!settings.enabled() || (partner == null ? !settings.consumerEnabled() : !settings.partnerEnabled())) {
+        var live = toggles.delivery();
+        if (!live.enabled() || (partner == null ? !live.consumerEnabled() : !live.partnerEnabled())) {
             throw new ApiException(HttpStatus.NOT_FOUND, "DELIVERY_UNAVAILABLE", "New deliveries are unavailable");
         }
     }

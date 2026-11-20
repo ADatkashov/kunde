@@ -1,5 +1,6 @@
 package kz.kunde.auto;
 
+import kz.kunde.platform.FeatureToggles;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -35,12 +36,12 @@ public class AutoCatalogController {
 
     private final JdbcTemplate db;
     private final BookingSlots slots;
-    private final AutoProperties props;
+    private final FeatureToggles toggles;
 
-    public AutoCatalogController(JdbcTemplate db, BookingSlots slots, AutoProperties props) {
+    public AutoCatalogController(JdbcTemplate db, BookingSlots slots, FeatureToggles toggles) {
         this.db = db;
         this.slots = slots;
-        this.props = props;
+        this.toggles = toggles;
     }
 
     private static <T> ResponseEntity<T> ok(T body) {
@@ -49,7 +50,7 @@ public class AutoCatalogController {
 
     @GetMapping("/categories")
     public ResponseEntity<List<Category>> categories() {
-        if (!props.enabled()) { return ok(List.of()); }
+        if (!toggles.enabled(FeatureToggles.Feature.AUTO)) { return ok(List.of()); }
         return ok(db.query("select code, name_ru, name_kk, name_en, mobile, enabled from marketplace.auto_service_categories order by sort_order",
                 (rs, n) -> new Category(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getBoolean(5), rs.getBoolean(6))));
     }
@@ -57,7 +58,7 @@ public class AutoCatalogController {
     /** {@code category}: only venues with an available service of that kind; {@code q}: name or address contains the text. */
     @GetMapping("/venues")
     public ResponseEntity<List<Venue>> venues(@RequestParam(required = false) String category, @RequestParam(required = false) String q) {
-        if (!props.enabled()) { return ok(List.of()); }
+        if (!toggles.enabled(FeatureToggles.Feature.AUTO)) { return ok(List.of()); }
         String text = q == null ? null : q.strip();
         if (text != null && text.length() > 60) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "QUERY_TOO_LONG", "q is at most 60 characters");
@@ -87,7 +88,7 @@ public class AutoCatalogController {
 
     @GetMapping("/venues/{venueId}")
     public ResponseEntity<VenueDetail> venue(@PathVariable UUID venueId) {
-        if (!props.enabled()) { throw new ApiException(HttpStatus.NOT_FOUND, "VENUE_NOT_FOUND", "Venue is not available"); }
+        if (!toggles.enabled(FeatureToggles.Feature.AUTO)) { throw new ApiException(HttpStatus.NOT_FOUND, "VENUE_NOT_FOUND", "Venue is not available"); }
         Venue venue = venues(null, null).getBody().stream().filter(v -> v.id().equals(venueId.toString())).findFirst()
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "VENUE_NOT_FOUND", "Venue is not available"));
         List<ServiceItem> services = db.query("""
@@ -102,7 +103,7 @@ public class AutoCatalogController {
     /** Free start times (venue time zone, Asia/Almaty by default) for a service on a date, any post. */
     @GetMapping("/slots")
     public ResponseEntity<List<BookingSlots.Slot>> slots(@RequestParam UUID venueId, @RequestParam UUID serviceId, @RequestParam LocalDate date) {
-        if (!props.enabled()) { return ok(List.of()); }
+        if (!toggles.enabled(FeatureToggles.Feature.AUTO)) { return ok(List.of()); }
         return ok(slots.freeSlots(venueId, serviceId, null, date));
     }
 }

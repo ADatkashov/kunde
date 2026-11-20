@@ -1,5 +1,6 @@
 package kz.kunde.rides;
 
+import kz.kunde.platform.FeatureToggles;
 import java.util.List;
 import java.time.OffsetDateTime;
 import java.util.Locale;
@@ -15,11 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class RideDriverService {
     private final JdbcTemplate db;
-    private final RidesFlags flags;
+    private final FeatureToggles toggles;
 
-    public RideDriverService(JdbcTemplate db, RidesFlags flags) {
+    public RideDriverService(JdbcTemplate db, FeatureToggles toggles) {
         this.db = db;
-        this.flags = flags;
+        this.toggles = toggles;
     }
 
     public Driver profile(UUID driver) {
@@ -147,7 +148,7 @@ public class RideDriverService {
     }
 
     private void requireExecutor() {
-        if (!flags.executorAvailable()) {
+        if (!toggles.rides().executorAvailable()) {
             throw notFound("RIDES_EXECUTOR_UNAVAILABLE", "Rides executor is unavailable");
         }
     }

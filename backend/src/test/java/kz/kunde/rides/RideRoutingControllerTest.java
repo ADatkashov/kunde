@@ -27,7 +27,7 @@ class RideRoutingControllerTest {
     @Test
     void eitherFlagDisablesRouting() {
         for (var flags : List.of(flags(false, true), flags(true, false))) {
-            var controller = new RideRoutingController(flags, provider);
+            var controller = new RideRoutingController(kz.kunde.platform.TestToggles.of(flags), provider);
             assertThatExceptionOfType(ApiException.class).isThrownBy(() -> controller.preview(request))
                     .satisfies(error -> assertThat(error.status()).isEqualTo(HttpStatus.NOT_FOUND));
         }
@@ -36,7 +36,7 @@ class RideRoutingControllerTest {
 
     @Test
     void missingProviderReturnsUnavailable() {
-        var controller = new RideRoutingController(flags(true, true), provider);
+        var controller = new RideRoutingController(kz.kunde.platform.TestToggles.of(flags(true, true)), provider);
         assertThatExceptionOfType(ApiException.class).isThrownBy(() -> controller.preview(request))
                 .satisfies(error -> assertThat(error.code()).isEqualTo("RIDES_ROUTING_UNAVAILABLE"));
     }
@@ -50,7 +50,7 @@ class RideRoutingControllerTest {
         var route = new RideRouting.Route(3000, 360, List.of(pickup, destination));
         when(adapter.route(pickup, destination)).thenReturn(Optional.of(route));
 
-        var response = new RideRoutingController(flags(true, true), provider).preview(request);
+        var response = new RideRoutingController(kz.kunde.platform.TestToggles.of(flags(true, true)), provider).preview(request);
         assertThat(response.getBody()).isEqualTo(route);
         assertThat(response.getHeaders().getCacheControl()).isEqualTo("no-store");
     }
@@ -61,7 +61,7 @@ class RideRoutingControllerTest {
         when(provider.getIfAvailable()).thenReturn(adapter);
         when(adapter.route(request.pickup().point(), request.destination().point()))
                 .thenThrow(new RideRouting.Unavailable(new java.util.concurrent.TimeoutException()));
-        var controller = new RideRoutingController(flags(true, true), provider);
+        var controller = new RideRoutingController(kz.kunde.platform.TestToggles.of(flags(true, true)), provider);
         assertThatExceptionOfType(ApiException.class).isThrownBy(() -> controller.preview(request))
                 .satisfies(error -> {
                     assertThat(error.status()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
@@ -71,7 +71,7 @@ class RideRoutingControllerTest {
 
     @Test
     void rejectsSingleCharacterAfterTrimming() {
-        var controller = new RideRoutingController(flags(true, true), provider);
+        var controller = new RideRoutingController(kz.kunde.platform.TestToggles.of(flags(true, true)), provider);
         var search = new RideRoutingController.SearchRequest(" a ", RideRoutingController.Language.en);
         assertThatExceptionOfType(ApiException.class).isThrownBy(() -> controller.search(search))
                 .satisfies(error -> assertThat(error.status()).isEqualTo(HttpStatus.BAD_REQUEST));

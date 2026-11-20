@@ -1,5 +1,6 @@
 package kz.kunde.rides;
 
+import kz.kunde.platform.FeatureToggles;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -20,11 +21,11 @@ public class RideOperationsService {
             rs.getObject(5, OffsetDateTime.class));
 
     private final JdbcTemplate db;
-    private final RidesFlags flags;
+    private final FeatureToggles toggles;
 
-    public RideOperationsService(JdbcTemplate db, RidesFlags flags) {
+    public RideOperationsService(JdbcTemplate db, FeatureToggles toggles) {
         this.db = db;
-        this.flags = flags;
+        this.toggles = toggles;
     }
 
     public List<Trip> trips() {
@@ -71,7 +72,7 @@ public class RideOperationsService {
     }
 
     private void requireEnabled() {
-        if (!flags.enabled()) {
+        if (!toggles.rides().enabled()) {
             throw new ApiException(HttpStatus.NOT_FOUND, "RIDES_UNAVAILABLE", "Rides operations are unavailable");
         }
     }

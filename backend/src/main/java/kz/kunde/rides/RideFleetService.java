@@ -1,5 +1,6 @@
 package kz.kunde.rides;
 
+import kz.kunde.platform.FeatureToggles;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -15,12 +16,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class RideFleetService {
     private final JdbcTemplate db;
-    private final RidesFlags flags;
+    private final FeatureToggles toggles;
     private final PartnerService partners;
 
-    public RideFleetService(JdbcTemplate db, RidesFlags flags, PartnerService partners) {
+    public RideFleetService(JdbcTemplate db, FeatureToggles toggles, PartnerService partners) {
         this.db = db;
-        this.flags = flags;
+        this.toggles = toggles;
         this.partners = partners;
     }
 
@@ -146,7 +147,7 @@ public class RideFleetService {
     }
 
     private void requireEnabled() {
-        if (!flags.partnerAvailable()) {
+        if (!toggles.rides().partnerAvailable()) {
             throw new ApiException(HttpStatus.NOT_FOUND, "RIDES_PARTNER_UNAVAILABLE", "Fleet service is unavailable");
         }
     }
