@@ -541,6 +541,7 @@ def ui_main_flow():
     relaunch()
     tap(*AUTO)
     tap(*MY_BOOKINGS)
+    tap("Замена масла")  # the active booking opens its detail, where the proposed price is decided
     reveal(*APPROVE)
     android.screenshot("consumer-price-approval")
     tap(*APPROVE, clickable=True)
