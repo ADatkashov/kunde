@@ -60,8 +60,8 @@ public class BookingDemoSeeder implements ApplicationRunner {
             for (JsonNode s : v.get("services")) {
                 serviceIds.put(s.get("name").asText(), db.queryForObject("""
                         insert into marketplace.booking_services (venue_id, name, description, duration_minutes, price_minor, sort_order,
-                            price_per_sqm_minor, min_area_sqm, max_area_sqm, auto_category, price_kind, conditions)
-                        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning id
+                            price_per_sqm_minor, min_area_sqm, max_area_sqm, auto_category, price_kind, conditions, health_category)
+                        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning id
                         """, UUID.class, venueId, s.get("name").asText(), s.get("description").asText(),
                         s.get("duration").asInt(), s.get("price").asLong(), serviceOrder++,
                         s.has("pricePerSqm") ? s.get("pricePerSqm").asLong() : 0L,
@@ -69,7 +69,8 @@ public class BookingDemoSeeder implements ApplicationRunner {
                         s.has("maxArea") ? s.get("maxArea").asInt() : null,
                         s.has("autoCategory") ? s.get("autoCategory").asText() : null,
                         s.has("priceKind") ? s.get("priceKind").asText() : "FIXED",
-                        s.has("conditions") ? s.get("conditions").asText() : ""));
+                        s.has("conditions") ? s.get("conditions").asText() : "",
+                        s.has("healthCategory") ? s.get("healthCategory").asText() : null));
             }
             int masterOrder = 0;
             for (JsonNode m : v.get("masters")) {

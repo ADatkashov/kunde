@@ -13,6 +13,10 @@ class S {
   static S of(BuildContext context) =>
       Localizations.of<S>(context, S) ?? const S(Locale('ru'));
 
+  String get healthTitle => _t('Здоровье и благополучие',
+      'Денсаулық және әл-ауқат', 'Health & Wellness');
+  String get healthSpecialists => _t('Специалисты', 'Мамандар', 'Specialists');
+
   String _t(String ru, String kk, String en) {
     switch (locale.languageCode) {
       case 'kk':

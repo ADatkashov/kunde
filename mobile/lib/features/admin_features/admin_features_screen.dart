@@ -57,6 +57,7 @@ class _AdminFeaturesScreenState extends State<AdminFeaturesScreen> {
   }
 
   String _title(RideStrings s, String feature) => switch (feature) {
+        'HEALTH' => s.t('Здоровье', 'Денсаулық', 'Health'),
         'AUTO' => s.t('Авто', 'Авто', 'Auto'),
         'RIDES' => s.t('Такси', 'Такси', 'Rides'),
         'DELIVERY' => s.t('Доставка', 'Жеткізу', 'Delivery'),

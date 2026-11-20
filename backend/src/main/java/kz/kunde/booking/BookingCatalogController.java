@@ -1,6 +1,9 @@
 package kz.kunde.booking;
 
 import java.time.LocalDate;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -67,11 +70,36 @@ public class BookingCatalogController {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(list);
     }
 
+    @GetMapping("/health/venues")
+    public ResponseEntity<List<Venue>> healthVenues(
+            @RequestParam(defaultValue = "") @Size(max = 100) String q,
+            @RequestParam(defaultValue = "") @Size(max = 24) String direction,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(50) int limit,
+            @RequestParam(defaultValue = "0") @Min(0) @Max(10000) int offset) {
+        slots.requireHealthCatalog();
+        String query = q.strip();
+        List<Venue> venues = jdbc.query(VENUE_SELECT + """
+                where v.category = 'HEALTH' and v.is_open and v.is_synthetic and v.health_published
+                and exists (select 1 from marketplace.booking_services s where s.venue_id = v.id and s.available
+                    and (? = '' or s.health_category = ?)
+                    and (? = '' or strpos(lower(v.name), lower(?)) > 0 or strpos(lower(v.address_text), lower(?)) > 0
+                        or strpos(lower(s.name), lower(?)) > 0
+                        or exists (select 1 from marketplace.booking_master_services ms
+                            join marketplace.booking_masters m on m.id = ms.master_id
+                            where ms.service_id = s.id and m.venue_id = v.id and m.active
+                            and (strpos(lower(m.name), lower(?)) > 0 or strpos(lower(m.bio), lower(?)) > 0))))
+                order by v.sort_order, v.id limit ? offset ?
+                """, BookingCatalogController::mapVenue, direction, direction, query, query, query, query, query, query,
+                limit, offset);
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(venues);
+    }
+
     @GetMapping("/venues/{venueId}")
     public ResponseEntity<VenueDetail> venue(@PathVariable UUID venueId) {
-        Venue venue = jdbc.query(VENUE_SELECT + " where v.id = ?", BookingCatalogController::mapVenue, venueId)
+        Venue venue = jdbc.query(VENUE_SELECT + " where v.id = ? and (v.category <> 'HEALTH' or (v.is_open and v.is_synthetic and v.health_published))", BookingCatalogController::mapVenue, venueId)
                 .stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "VENUE_NOT_FOUND",
                         "Venue is not available"));
+        if ("HEALTH".equals(venue.category())) { slots.requireHealthCatalog(); }
         List<ServiceItem> services = jdbc.query("""
                 select id, name, description, duration_minutes, price_minor, available, price_per_sqm_minor, min_area_sqm, max_area_sqm
                 from marketplace.booking_services where venue_id = ? order by sort_order, name

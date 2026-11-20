@@ -17,6 +17,7 @@ public final class TestToggles {
     public static FeatureToggles of(RidesFlags rides) {
         return new FeatureToggles(mock(JdbcTemplate.class), new AutoProperties(false, false), rides, new DeliveryProperties(false, false, false, false, false, false, false, 300, 1000, 50, "test",
                 BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO),
-                new LeisureFlags(new LeisureProperties(false, false), new org.springframework.mock.env.MockEnvironment().withProperty("app.environment", "test")));
+                new LeisureFlags(new LeisureProperties(false, false), new org.springframework.mock.env.MockEnvironment().withProperty("app.environment", "test")),
+                new kz.kunde.health.HealthSettings(new org.springframework.mock.env.MockEnvironment()));
     }
 }

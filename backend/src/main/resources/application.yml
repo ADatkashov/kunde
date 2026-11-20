@@ -74,6 +74,8 @@ app:
   leisure:
     enabled: ${LEISURE_ENABLED:}
     seed-demo: ${LEISURE_SEED_DEMO:false}
+  health:
+    seed-demo: ${HEALTH_SEED_DEMO:false}
   # Partner Operations DEV pilot: loads two synthetic partners and links them to demo assets; dev/local/test only.
   partner-ops:
     seed-demo: ${PARTNER_OPS_SEED_DEMO:false}

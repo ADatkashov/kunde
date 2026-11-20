@@ -84,7 +84,7 @@ public class AutoPayments {
         if (text.isEmpty() || text.length() > 200) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "REASON_REQUIRED", "A reason of 1-200 characters is required");
         }
-        var row = db.query("select method, status, captured_minor, refunded_minor, user_id from transactions.auto_payments where id = ? for update",
+        var row = db.query("select method, status, captured_minor, refunded_minor, user_id from transactions.auto_payments where id = ? and (job_id is not null or exists (select 1 from transactions.bookings b where b.id = booking_id and b.category = 'AUTO')) for update",
                 (rs, n) -> new Object[] {rs.getString(1), rs.getString(2), rs.getLong(3), rs.getLong(4), rs.getObject(5, UUID.class)}, paymentId).stream().findFirst()
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "PAYMENT_NOT_FOUND", "Payment not found"));
         if (!TEST_CARD.equals(row[0]) || !(("TEST_CAPTURED".equals(row[1])) || "TEST_PART_REFUNDED".equals(row[1]))) {
@@ -118,7 +118,9 @@ public class AutoPayments {
     public List<Entry> latest(boolean refundableOnly) {
         return db.query("""
                 select id, booking_id, job_id, method, status, held_minor, captured_minor, refunded_minor, updated_at from transactions.auto_payments
-                where method = 'TEST_CARD' and (not ? or status in ('TEST_CAPTURED', 'TEST_PART_REFUNDED')) order by updated_at desc limit 100
+                where method = 'TEST_CARD'
+                  and (job_id is not null or exists (select 1 from transactions.bookings b where b.id = booking_id and b.category = 'AUTO'))
+                  and (not ? or status in ('TEST_CAPTURED', 'TEST_PART_REFUNDED')) order by updated_at desc limit 100
                 """, (rs, n) -> new Entry(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getLong(6), rs.getLong(7),
                 rs.getLong(8), rs.getObject(9, OffsetDateTime.class)), refundableOnly);
     }

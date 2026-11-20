@@ -6,6 +6,7 @@ import '../auto_admin/auto_admin_screen.dart';
 import '../leisure_admin/leisure_admin_screen.dart';
 import '../delivery_admin/delivery_admin_screen.dart';
 import '../identity/auth_repository.dart';
+import '../health/health_admin_screen.dart';
 import '../rides/ride_strings.dart';
 
 class RideAdminScreen extends StatefulWidget {
@@ -308,6 +309,18 @@ class _RideAdminScreenState extends State<RideAdminScreen> {
                   builder: (_) => LeisureAdminScreen(auth: widget.auth),
                 ),
               ),
+            ),
+          ),
+        if (permissions.contains('HEALTH_OPERATIONS'))
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.health_and_safety_outlined),
+              title: Text(s.t('Здоровье и благополучие',
+                  'Денсаулық және әл-ауқат', 'Health & Wellness')),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push<void>(MaterialPageRoute(
+                builder: (_) => HealthAdminScreen(auth: widget.auth),
+              )),
             ),
           ),
         if (permissions.contains('AUTO_OPERATIONS'))

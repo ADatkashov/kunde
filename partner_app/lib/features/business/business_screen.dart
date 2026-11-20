@@ -45,6 +45,8 @@ class BusinessScreen extends StatelessWidget {
           }
           final restaurants = r.data ?? const <Restaurant>[];
           final venues = v.data ?? const <Venue>[];
+          final serviceVenues = venues.where((venue) => !venue.isHealth);
+          final healthVenues = venues.where((venue) => venue.isHealth);
           return RefreshIndicator(
             onRefresh: store.refreshModules,
             child: ListView(
@@ -68,21 +70,26 @@ class BusinessScreen extends StatelessWidget {
                                 restaurant: x,
                                 canManage: canManage))),
                   ),
-                if (venues.isNotEmpty) _Section(s.venuesTitle),
-                for (final x in venues)
-                  _Tile(
-                    icon: Icons.content_cut_rounded,
-                    name: x.name,
-                    open: x.open,
-                    openLabel: s.openForBookings,
-                    canManage: canManage,
-                    onToggle: (v) =>
-                        _toggle(context, () => store.ops.setVenueOpen(x.id, v)),
-                    onOpen: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                            builder: (_) => VenuePage(
-                                store: store, venue: x, canManage: canManage))),
-                  ),
+                for (final (title, group, icon) in [
+                  (s.venuesTitle, serviceVenues, Icons.content_cut_rounded),
+                  (s.healthTitle, healthVenues, Icons.health_and_safety_outlined),
+                ]) ...[
+                  if (group.isNotEmpty) _Section(title),
+                  for (final venue in group)
+                    _Tile(
+                      icon: icon,
+                      name: venue.name,
+                      open: venue.open,
+                      openLabel: s.openForBookings,
+                      canManage: canManage,
+                      onToggle: (open) => _toggle(
+                          context, () => store.ops.setVenueOpen(venue.id, open)),
+                      onOpen: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                              builder: (_) => VenuePage(
+                                  store: store, venue: venue, canManage: canManage))),
+                    ),
+                ],
                 if (restaurants.isEmpty && venues.isEmpty)
                   SizedBox(
                     height: 360,

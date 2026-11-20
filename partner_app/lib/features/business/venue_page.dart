@@ -189,7 +189,8 @@ class _VenuePageState extends State<VenuePage> {
                             icon: const Icon(Icons.add_rounded),
                             label: Text(s.addService))),
                   const SizedBox(height: Gap.lg),
-                  _heading(context, s.mastersTitle),
+                  _heading(context,
+                      widget.venue.isHealth ? s.healthSpecialists : s.mastersTitle),
                   if (masters.isEmpty) Text(s.mastersEmpty),
                   for (final m in masters)
                     Padding(

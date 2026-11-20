@@ -5,6 +5,11 @@
 - Backend в `main` ([#175](https://github.com/ADatkashov/kunde/pull/175), Flyway V40): общая модель на 5 типов бронирования и 16 категорий, каталог/поиск, удержание мест, идемпотентные заказы, QR-билеты с серверной проверкой, `TEST_CARD`/`PAY_ON_SITE`, возвраты, модерация, аудит, Executor-назначения, флаг `LEISURE_ENABLED` (включён в local/dev/test, выключен в production). Flutter-интерфейс Consumer/Partner/Admin/Executor — [#177](https://github.com/ADatkashov/kunde/pull/177).
 - **DEV:** `kunde-backend-ty81` развёрнут из `e0039ce`, `LEISURE_ENABLED=true`, `LEISURE_SEED_DEMO=true`, `scripts/dev/leisure_smoke.py` → `SMOKE OK`. PROD не менялся.
 - **Не подтверждено:** нативный E2E на эмуляторе, скриншоты, TalkBack, карта, фото, push, реальные платежи, Linear. Подробности: [leisure](docs/product/leisure.md).
+## KUNDE Health & Wellness 1.0 — внутренний пилот
+
+- Стартовый аудит сверил `origin/main` `30f4bc5`, открытый Leisure [#175](https://github.com/ADatkashov/kunde/pull/175) и [последний Security CI на main](https://github.com/ADatkashov/kunde/actions/runs/44784856492). Linear доступен, отдельный Health-тикет поиском не найден.
+- В рабочей ветке V41, синтетический каталог, общий Booking Engine и тестовый ledger, Consumer, управление площадкой через Partner и модерация Admin. Реестр возможностей, проверок и ограничений — в [Health PRD](docs/product/health-wellness.md).
+- Готовность DEV/TEST, нативный E2E и подписанные сборки Health пока не подтверждены.
 
 ## KUNDE Control Center 3.0 — DEV
 

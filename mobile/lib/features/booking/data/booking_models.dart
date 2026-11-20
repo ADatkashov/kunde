@@ -237,6 +237,12 @@ class BookingRecord {
     this.areaSqm,
     this.cancelledBy,
     this.cancelReason,
+    this.paymentMethod,
+    this.paymentStatus,
+    this.venueId,
+    this.serviceId,
+    this.masterId,
+    this.reschedulable = false,
   });
 
   final String id;
@@ -261,6 +267,12 @@ class BookingRecord {
   /// Who cancelled (`CUSTOMER`, `PARTNER`, `SYSTEM`) and the partner's reason, if any.
   final String? cancelledBy;
   final String? cancelReason;
+  final String? paymentMethod;
+  final String? paymentStatus;
+  final String? venueId;
+  final String? serviceId;
+  final String? masterId;
+  final bool reschedulable;
 
   bool get isCleaning => category == 'CLEANING';
 
@@ -283,5 +295,11 @@ class BookingRecord {
         areaSqm: (json['areaSqm'] as num?)?.toInt(),
         cancelledBy: json['cancelledBy'] as String?,
         cancelReason: json['cancelReason'] as String?,
+        paymentMethod: json['paymentMethod'] as String?,
+        paymentStatus: json['paymentStatus'] as String?,
+        venueId: json['venueId'] as String?,
+        serviceId: json['serviceId'] as String?,
+        masterId: json['masterId'] as String?,
+        reschedulable: json['reschedulable'] == true,
       );
 }
