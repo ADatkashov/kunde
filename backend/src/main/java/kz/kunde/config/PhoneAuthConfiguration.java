@@ -128,7 +128,7 @@ public class PhoneAuthConfiguration {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/food/restaurants",
                                 "/api/v1/food/restaurants/*", "/api/v1/food/search", "/api/v1/food/dishes/*/alternatives", "/api/v1/booking/venues",
-                                "/api/v1/booking/venues/*", "/api/v1/booking/slots", "/api/v1/auto/categories", "/api/v1/auto/venues",
+                                "/api/v1/booking/venues/*", "/api/v1/booking/slots", "/api/v1/booking/health/venues", "/api/v1/auto/categories", "/api/v1/auto/venues",
                                 "/api/v1/auto/venues/*", "/api/v1/auto/slots")
                         .permitAll()
                         .requestMatchers("/api/v1/health", "/api/v1/capabilities", "/api/v1/categories",

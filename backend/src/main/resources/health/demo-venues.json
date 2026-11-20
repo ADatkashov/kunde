@@ -1,0 +1,464 @@
+{
+  "venues": [
+    {
+      "slug": "health-demo-clinic",
+      "category": "HEALTH",
+      "name": "ДЕМО · Контур",
+      "description": "Синтетический профиль организации для проверки записи.",
+      "address": "Алматы · Бостандыкский район",
+      "emoji": "🏥",
+      "tone": "blue",
+      "open": true,
+      "services": [
+        {
+          "name": "Приём терапевта",
+          "description": "",
+          "duration": 30,
+          "price": 850000,
+          "healthCategory": "DOCTORS"
+        },
+        {
+          "name": "Профилактический осмотр",
+          "description": "",
+          "duration": 45,
+          "price": 1200000,
+          "healthCategory": "CLINICS"
+        }
+      ],
+      "masters": [
+        {
+          "name": "Профиль М-01",
+          "bio": "Терапевт",
+          "emoji": "🏥",
+          "tone": "blue",
+          "services": [
+            "Приём терапевта",
+            "Профилактический осмотр"
+          ],
+          "hours": [
+            {
+              "day": 1,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 2,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 3,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 4,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 5,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 6,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "health-demo-dental",
+      "category": "HEALTH",
+      "name": "ДЕМО · Эмаль",
+      "description": "Синтетический профиль организации для проверки записи.",
+      "address": "Алматы · Ауэзовский район",
+      "emoji": "🦷",
+      "tone": "blue",
+      "open": true,
+      "services": [
+        {
+          "name": "Консультация стоматолога",
+          "description": "",
+          "duration": 30,
+          "price": 900000,
+          "healthCategory": "DENTISTRY"
+        }
+      ],
+      "masters": [
+        {
+          "name": "Профиль М-02",
+          "bio": "Стоматолог",
+          "emoji": "🦷",
+          "tone": "blue",
+          "services": [
+            "Консультация стоматолога"
+          ],
+          "hours": [
+            {
+              "day": 1,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 2,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 3,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 4,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 5,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 6,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "health-demo-diagnostics",
+      "category": "HEALTH",
+      "name": "ДЕМО · Спектр",
+      "description": "Синтетический профиль организации для проверки записи.",
+      "address": "Алматы · Алмалинский район",
+      "emoji": "🔬",
+      "tone": "blue",
+      "open": true,
+      "services": [
+        {
+          "name": "УЗИ",
+          "description": "",
+          "duration": 30,
+          "price": 1100000,
+          "healthCategory": "DIAGNOSTICS"
+        },
+        {
+          "name": "Лабораторные анализы",
+          "description": "",
+          "duration": 15,
+          "price": 650000,
+          "healthCategory": "LABS"
+        }
+      ],
+      "masters": [
+        {
+          "name": "Профиль М-03",
+          "bio": "Диагностика",
+          "emoji": "🔬",
+          "tone": "blue",
+          "services": [
+            "УЗИ",
+            "Лабораторные анализы"
+          ],
+          "hours": [
+            {
+              "day": 1,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 2,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 3,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 4,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 5,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 6,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "health-demo-fitness",
+      "category": "HEALTH",
+      "name": "ДЕМО · Темп",
+      "description": "Синтетический профиль организации для проверки записи.",
+      "address": "Алматы · Медеуский район",
+      "emoji": "🏃",
+      "tone": "green",
+      "open": true,
+      "services": [
+        {
+          "name": "Персональная тренировка",
+          "description": "",
+          "duration": 60,
+          "price": 750000,
+          "healthCategory": "FITNESS"
+        }
+      ],
+      "masters": [
+        {
+          "name": "Профиль W-01",
+          "bio": "Фитнес",
+          "emoji": "🏃",
+          "tone": "green",
+          "services": [
+            "Персональная тренировка"
+          ],
+          "hours": [
+            {
+              "day": 1,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 2,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 3,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 4,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 5,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 6,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "health-demo-massage",
+      "category": "HEALTH",
+      "name": "ДЕМО · Пауза",
+      "description": "Синтетический профиль организации для проверки записи.",
+      "address": "Алматы · Бостандыкский район",
+      "emoji": "🌿",
+      "tone": "green",
+      "open": true,
+      "services": [
+        {
+          "name": "Расслабляющий массаж",
+          "description": "",
+          "duration": 60,
+          "price": 1300000,
+          "healthCategory": "SPA"
+        }
+      ],
+      "masters": [
+        {
+          "name": "Профиль W-02",
+          "bio": "Массаж",
+          "emoji": "🌿",
+          "tone": "green",
+          "services": [
+            "Расслабляющий массаж"
+          ],
+          "hours": [
+            {
+              "day": 1,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 2,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 3,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 4,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 5,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 6,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "health-demo-studio",
+      "category": "HEALTH",
+      "name": "ДЕМО · Ритм",
+      "description": "Синтетический профиль организации для проверки записи.",
+      "address": "Алматы · Алмалинский район",
+      "emoji": "🧘",
+      "tone": "green",
+      "open": true,
+      "services": [
+        {
+          "name": "Индивидуальная йога",
+          "description": "",
+          "duration": 45,
+          "price": 800000,
+          "healthCategory": "WELLNESS"
+        }
+      ],
+      "masters": [
+        {
+          "name": "Профиль W-03",
+          "bio": "Йога",
+          "emoji": "🧘",
+          "tone": "green",
+          "services": [
+            "Индивидуальная йога"
+          ],
+          "hours": [
+            {
+              "day": 1,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 2,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 3,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 4,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 5,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            },
+            {
+              "day": 6,
+              "from": "09:00",
+              "to": "19:00",
+              "breakFrom": "13:00",
+              "breakTo": "14:00"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

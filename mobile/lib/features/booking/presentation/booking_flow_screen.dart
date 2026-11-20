@@ -40,6 +40,12 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
   BookingSlot? _slot;
   final _comment = TextEditingController();
   bool _busy = false;
+  bool _acceptsTerms = false;
+  bool _uncertain = false;
+  String _paymentMethod = 'PAY_ON_SITE';
+
+  bool get _health => widget.detail.venue.category == 'HEALTH';
+  bool get _selectionLocked => _busy || (_health && _uncertain);
   String? _error;
   String _key = BookingApi.newIdempotencyKey();
 
@@ -81,9 +87,13 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
         serviceId: widget.service.id,
         masterId: slot.masterId,
         startsAtIso: slot.startsAtIso,
-        comment: _comment.text,
+        comment: _health ? null : _comment.text,
+        expectedPriceMinor: _health ? widget.service.priceMinor : null,
+        paymentMethod: _health ? _paymentMethod : null,
+        acceptsTerms: _health ? _acceptsTerms : null,
         idempotencyKey: _key,
       );
+      if (!mounted) return;
       // Back to the app root, then show the new booking on top.
       nav.popUntil((route) => route.isFirst);
       nav.push(MaterialPageRoute<void>(
@@ -100,6 +110,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
       }
       setState(() {
         _busy = false;
+        _uncertain = error.failure == BookingFailure.offline;
         _error = bkL10n(context).bkError(error.failure);
         if (error.failure == BookingFailure.slotTaken) _loadSlots();
       });
@@ -111,6 +122,9 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
     final theme = Theme.of(context);
     final s = bkL10n(context);
     final service = widget.service;
+    final material = MaterialLocalizations.of(context);
+    String dateLabel(DateTime date) =>
+        _health ? material.formatMediumDate(date) : formatDay(date);
     return Scaffold(
       appBar: AppBar(title: Text(s.bkBookingTitle)),
       body: Center(
@@ -131,7 +145,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                   ChoiceChip(
                     label: Text(s.bkAnyMaster),
                     selected: _masterId == null,
-                    onSelected: _busy
+                    onSelected: _selectionLocked
                         ? null
                         : (_) => setState(() {
                               _masterId = null;
@@ -143,7 +157,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                       avatar: Text(m.emoji),
                       label: Text(m.name),
                       selected: _masterId == m.id,
-                      onSelected: _busy
+                      onSelected: _selectionLocked
                           ? null
                           : (_) => setState(() {
                                 _masterId = m.id;
@@ -163,7 +177,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                     itemBuilder: (context, i) {
                       final day = _today.add(Duration(days: i));
                       final selected = day == _date;
-                      final label = formatDay(day).split(',');
+                      final label = dateLabel(day).split(',');
                       return ChoiceChip(
                         selected: selected,
                         label: Column(
@@ -176,7 +190,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                                       fontSize: 18,
                                       fontWeight: FontWeight.w700)),
                             ]),
-                        onSelected: _busy
+                        onSelected: _selectionLocked
                             ? null
                             : (_) => setState(() {
                                   _date = day;
@@ -187,7 +201,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                Text('${s.bkTime} · ${formatDay(_date)}',
+                Text('${s.bkTime} · ${dateLabel(_date)}',
                     style: theme.textTheme.titleMedium),
                 const SizedBox(height: 8),
                 FutureBuilder<List<BookingSlot>>(
@@ -224,8 +238,9 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                         ChoiceChip(
                           label: Text(formatClock(s.start)),
                           selected: _slot?.startsAtIso == s.startsAtIso,
-                          onSelected:
-                              _busy ? null : (_) => setState(() => _slot = s),
+                          onSelected: _selectionLocked
+                              ? null
+                              : (_) => setState(() => _slot = s),
                         ),
                     ]);
                   },
@@ -234,7 +249,9 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                   const SizedBox(height: 24),
                   Card(
                     margin: EdgeInsets.zero,
-                    color: toneColors('blue').background,
+                    color: _health
+                        ? theme.colorScheme.surfaceContainerHighest
+                        : toneColors('blue').background,
                     elevation: 0,
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -245,26 +262,75 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                                 style: theme.textTheme.titleMedium),
                             const SizedBox(height: 6),
                             Text(
-                                '${formatDay(_slot!.start)}, ${formatClock(_slot!.start)}',
+                                '${dateLabel(_slot!.start)}, ${formatClock(_slot!.start)}',
                                 style: theme.textTheme.titleLarge),
                             Text(s.bkMasterLine(_slot!.masterName)),
                             Text(
                                 '${s.bkCatalogName(service.name)} · ${formatDuration(service.durationMinutes)}'),
-                            Text(s
-                                .bkCostOnSite(formatTenge(service.priceMinor))),
+                            Text(_health
+                                ? formatTenge(service.priceMinor)
+                                : s.bkCostOnSite(
+                                    formatTenge(service.priceMinor))),
                           ]),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  TextField(
-                    controller: _comment,
-                    enabled: !_busy,
-                    maxLength: 300,
-                    decoration: InputDecoration(
-                        labelText: s.bkCommentLabel,
-                        hintText: s.bkCommentHint,
-                        border: const OutlineInputBorder()),
-                  ),
+                  if (_health) ...[
+                    Wrap(spacing: 8, runSpacing: 4, children: [
+                      for (final (method, label) in [
+                        (
+                          'PAY_ON_SITE',
+                          s.healthText(
+                              'Оплата на месте', 'Орнында төлеу', 'Pay on site')
+                        ),
+                        (
+                          'TEST_CARD',
+                          s.healthText(
+                              'Тестовая карта', 'Сынақ картасы', 'Test card')
+                        ),
+                      ])
+                        ChoiceChip(
+                          label: Text(label),
+                          selected: _paymentMethod == method,
+                          onSelected: _selectionLocked
+                              ? null
+                              : (selected) {
+                                  if (selected)
+                                    setState(() => _paymentMethod = method);
+                                },
+                        ),
+                    ]),
+                    if (_paymentMethod == 'TEST_CARD')
+                      Text(s.healthText(
+                          'Тестовый платёж без списания',
+                          'Ақша алынбайтын сынақ төлемі',
+                          'Test payment without a charge')),
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      value: _acceptsTerms,
+                      onChanged: _selectionLocked
+                          ? null
+                          : (value) =>
+                              setState(() => _acceptsTerms = value ?? false),
+                      title: Text(s.healthText(
+                          'Согласен с ценой и условиями записи',
+                          'Баға мен жазылу шарттарына келісемін',
+                          'I accept the price and booking terms')),
+                      subtitle: Text(s.healthText(
+                          'Демо-запись можно отменить до её начала.',
+                          'Демо жазбадан ол басталғанға дейін бас тартуға болады.',
+                          'A demo appointment can be cancelled before it starts.')),
+                    ),
+                  ] else
+                    TextField(
+                      controller: _comment,
+                      enabled: !_busy,
+                      maxLength: 300,
+                      decoration: InputDecoration(
+                          labelText: s.bkCommentLabel,
+                          hintText: s.bkCommentHint,
+                          border: const OutlineInputBorder()),
+                    ),
                 ],
                 if (_error != null)
                   Padding(
@@ -276,7 +342,10 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                   ),
                 const SizedBox(height: 16),
                 FilledButton(
-                  onPressed: _busy || _slot == null ? null : _submit,
+                  onPressed:
+                      _busy || _slot == null || (_health && !_acceptsTerms)
+                          ? null
+                          : _submit,
                   child: _busy
                       ? const SizedBox(
                           width: 22,

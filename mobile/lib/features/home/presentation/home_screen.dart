@@ -9,6 +9,7 @@ import '../../delivery/delivery_api.dart';
 import '../../delivery/delivery_screen.dart';
 import '../../food/food_services.dart';
 import '../../food/presentation/food_home_screen.dart';
+import '../../health/health_home_screen.dart';
 import '../../rides/ride_api.dart';
 import '../../rides/rides_screen.dart';
 
@@ -177,6 +178,7 @@ class _HomeScreenState extends State<HomeScreen> {
     bool ridesEnabled,
     bool deliveryEnabled, {
     bool autoEnabled = false,
+    bool healthEnabled = false,
   }) =>
       [
         ServiceCategory(
@@ -224,6 +226,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ServiceCategory(
           icon: Icons.favorite_rounded,
           label: s.catHealth,
+          enabled: healthEnabled && widget.booking != null,
           color: const Color(0xFFB9382D),
         ),
         ServiceCategory(
@@ -278,6 +281,10 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (_) => HomeServicesCategoryScreen(services: widget.booking!),
         ),
       );
+    } else if (c.label == s.catHealth && c.enabled && widget.booking != null) {
+      Navigator.of(context).push<void>(MaterialPageRoute(
+        builder: (_) => HealthHomeScreen(services: widget.booking!),
+      ));
     } else if (c.label == s.catAuto && c.enabled && widget.auto != null) {
       Navigator.of(context).push(
         MaterialPageRoute<void>(
@@ -378,6 +385,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   snapshot?.ridesEnabled ?? false,
                   (snapshot?.deliveryEnabled ?? false) || _deliveryResume,
                   autoEnabled: snapshot?.autoEnabled ?? false,
+                  healthEnabled: snapshot?.healthEnabled ?? false,
                 );
                 final visibleCategories = [
                   for (final label in [

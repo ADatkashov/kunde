@@ -100,7 +100,7 @@ class FeatureTogglesApiIntegrationTest {
         assertThat(toggles.enabled(FeatureToggles.Feature.AUTO)).isTrue();
 
         send("GET", "/api/v1/admin/features", admin, null).andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(3))
+                .andExpect(jsonPath("$.length()").value(4))
                 .andExpect(jsonPath("$[?(@.feature=='AUTO')].effective").value(true))
                 .andExpect(jsonPath("$[?(@.feature=='AUTO')].allowedByEnvironment").value(true))
                 .andExpect(jsonPath("$[?(@.feature=='RIDES')].allowedByEnvironment").value(false))

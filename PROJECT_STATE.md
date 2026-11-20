@@ -1,5 +1,11 @@
 # KUNDE project state
 
+## KUNDE Health & Wellness 1.0 — внутренний пилот
+
+- Стартовый аудит сверил `origin/main` `30f4bc5`, открытый Leisure [#175](https://github.com/ADatkashov/kunde/pull/175) и [последний Security CI на main](https://github.com/ADatkashov/kunde/actions/runs/44784856492). Linear доступен, отдельный Health-тикет поиском не найден.
+- В рабочей ветке V41, синтетический каталог, общий Booking Engine и тестовый ledger, Consumer, управление площадкой через Partner и модерация Admin. Реестр возможностей, проверок и ограничений — в [Health PRD](docs/product/health-wellness.md).
+- Готовность DEV/TEST, нативный E2E и подписанные сборки Health пока не подтверждены.
+
 ## KUNDE Control Center 3.0 — DEV
 
 - [Аудит и зависимости](docs/roadmap/27-control-center-2-audit.md) приняты в [#155](https://github.com/ADatkashov/kunde/pull/155). [#156](https://github.com/ADatkashov/kunde/pull/156) добавил `GET /api/v1/admin/me/capabilities` для действующих грантов текущего сотрудника. Backend CI и Security CI прошли на PR.

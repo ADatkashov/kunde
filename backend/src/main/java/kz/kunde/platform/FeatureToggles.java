@@ -9,6 +9,7 @@ import java.util.UUID;
 import kz.kunde.auto.AutoProperties;
 import kz.kunde.delivery.DeliveryProperties;
 import kz.kunde.rides.RidesFlags;
+import kz.kunde.health.HealthSettings;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -21,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class FeatureToggles {
-    public enum Feature { AUTO, RIDES, DELIVERY }
+    public enum Feature { AUTO, RIDES, DELIVERY, HEALTH }
 
     public record Toggle(boolean enabled, long version, String reason, UUID updatedBy, OffsetDateTime updatedAt) {}
 
@@ -34,15 +35,17 @@ public class FeatureToggles {
     private final AutoProperties auto;
     private final RidesFlags rides;
     private final DeliveryProperties delivery;
+    private final HealthSettings health;
     private final Clock clock;
     private volatile Map<Feature, Toggle> cache;
     private volatile long loadedAt;
 
-    public FeatureToggles(JdbcTemplate db, AutoProperties auto, RidesFlags rides, DeliveryProperties delivery) {
+    public FeatureToggles(JdbcTemplate db, AutoProperties auto, RidesFlags rides, DeliveryProperties delivery, HealthSettings health) {
         this.db = db;
         this.auto = auto;
         this.rides = rides;
         this.delivery = delivery;
+        this.health = health;
         this.clock = Clock.systemUTC();
     }
 
@@ -51,6 +54,7 @@ public class FeatureToggles {
             case AUTO -> auto.enabled();
             case RIDES -> rides.enabled();
             case DELIVERY -> delivery.enabled();
+            case HEALTH -> health.enabled();
         };
     }
 

@@ -96,6 +96,70 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     }
   }
 
+  Future<void> _move(BookingRecord booking) async {
+    final s = bkL10n(context);
+    final almaty = DateTime.now().toUtc().add(const Duration(hours: 5));
+    final today = DateTime(almaty.year, almaty.month, almaty.day);
+    final date = await showDatePicker(
+      context: context,
+      firstDate: today,
+      lastDate: today.add(const Duration(days: 13)),
+      initialDate: today,
+    );
+    if (!mounted || date == null) return;
+    final slots = widget.services.api.slots(
+      venueId: booking.venueId!,
+      serviceId: booking.serviceId!,
+      masterId: booking.masterId!,
+      date: date,
+    );
+    final slot = await showModalBottomSheet<BookingSlot>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: FutureBuilder<List<BookingSlot>>(
+          future: slots,
+          builder: (context, state) {
+            if (state.connectionState != ConnectionState.done) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final offered = state.data ?? const <BookingSlot>[];
+            if (offered.isEmpty) {
+              return Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(state.hasError ? s.bkSlotsError : s.bkNoSlots),
+              );
+            }
+            return ListView(
+              children: [
+                for (final slot in offered)
+                  ListTile(
+                    title: Text(formatClock(slot.start)),
+                    onTap: () => Navigator.of(context).pop(slot),
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+    if (!mounted || slot == null) return;
+    setState(() => _busy = true);
+    try {
+      final moved = await widget.services.api.reschedule(booking, slot);
+      if (mounted) setState(() => _booking = moved);
+    } on BookingException catch (error) {
+      if (!mounted) return;
+      await _load();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(s.bkError(error.failure))),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -129,15 +193,23 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                           margin: const EdgeInsets.only(bottom: 12),
                           child: ListTile(
                             leading: const Icon(Icons.check_circle_rounded),
-                            title: Text(b.isCleaning
+                            title: Text(b.isCleaning ||
+                                    (b.category == 'HEALTH' &&
+                                        b.status == 'PENDING')
                                 ? s.bkRequestPlacedTitle
                                 : s.bkBookedTitle),
-                            subtitle: Text(b.isCleaning
+                            subtitle: Text(b.isCleaning ||
+                                    (b.category == 'HEALTH' &&
+                                        b.status == 'PENDING') ||
+                                    (b.category == 'HEALTH' &&
+                                        b.status == 'PENDING')
                                 ? s.bkRequestPlacedBody
                                 : s.bkBookedBody),
                           ),
                         ),
                       _StatusBanner(booking: b),
+                      if (b.category == 'HEALTH')
+                        SelectableText(b.id, style: theme.textTheme.bodySmall),
                       const SizedBox(height: 12),
                       Text(b.venueName, style: theme.textTheme.headlineSmall),
                       Text(b.venueAddress,
@@ -145,7 +217,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                               color: theme.colorScheme.onSurfaceVariant)),
                       const Divider(height: 32),
                       _row(Icons.event_rounded,
-                          '${formatDay(b.start)}, ${formatClock(b.start)}–${formatClock(b.end)}'),
+                          '${b.category == 'HEALTH' ? MaterialLocalizations.of(context).formatMediumDate(b.start) : formatDay(b.start)}, ${formatClock(b.start)}–${formatClock(b.end)}'),
                       _row(
                           b.isCleaning
                               ? Icons.cleaning_services_rounded
@@ -161,11 +233,27 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                           b.isCleaning
                               ? '${s.bkCrew}: ${b.masterName}'
                               : s.bkMasterLine(b.masterName)),
-                      _row(Icons.payments_outlined,
-                          s.bkPaidOnSite(formatTenge(b.priceMinor))),
+                      _row(
+                          Icons.payments_outlined,
+                          b.paymentMethod == 'TEST_CARD'
+                              ? s.healthText(
+                                  'Тестовый платёж · ${formatTenge(b.priceMinor)}',
+                                  'Сынақ төлемі · ${formatTenge(b.priceMinor)}',
+                                  'Test payment · ${formatTenge(b.priceMinor)}')
+                              : s.bkPaidOnSite(formatTenge(b.priceMinor))),
                       if (b.comment != null)
                         _row(Icons.chat_bubble_outline_rounded, b.comment!),
                       const SizedBox(height: 16),
+                      if (b.reschedulable &&
+                          b.venueId != null &&
+                          b.serviceId != null &&
+                          b.masterId != null)
+                        OutlinedButton.icon(
+                          onPressed: _busy ? null : () => _move(b),
+                          icon: const Icon(Icons.edit_calendar_outlined),
+                          label: Text(s.healthText('Перенести запись',
+                              'Жазылуды ауыстыру', 'Reschedule')),
+                        ),
                       if (b.cancellable)
                         OutlinedButton.icon(
                           onPressed: _busy ? null : _cancel,

@@ -11,19 +11,22 @@ import 'services_home_screen.dart';
 
 /// History of the signed-in customer's bookings, restored from the server on every open.
 class BookingsList extends StatefulWidget {
-  const BookingsList({required this.services, super.key});
+  const BookingsList(
+      {required this.services, this.healthOnly = false, super.key});
 
   final BookingServices services;
+  final bool healthOnly;
 
   @override
   State<BookingsList> createState() => _BookingsListState();
 }
 
 class _BookingsListState extends State<BookingsList> {
-  late Future<List<BookingRecord>> _bookings = widget.services.api.bookings();
+  late Future<List<BookingRecord>> _bookings =
+      widget.services.api.bookings(healthOnly: widget.healthOnly);
 
   Future<void> _refresh() async {
-    final next = widget.services.api.bookings();
+    final next = widget.services.api.bookings(healthOnly: widget.healthOnly);
     setState(() {
       _bookings = next;
     });
@@ -62,14 +65,24 @@ class _BookingsListState extends State<BookingsList> {
             icon: Icons.event_busy_outlined,
             title: s.bkEmptyTitle,
             body: s.bkEmptyBody,
-            actionLabel: s.bkChooseService,
-            onAction: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                builder: (_) => ServicesHomeScreen(services: widget.services))),
+            actionLabel: widget.healthOnly ? null : s.bkChooseService,
+            onAction: widget.healthOnly
+                ? null
+                : () => Navigator.of(context).push(MaterialPageRoute<void>(
+                    builder: (_) =>
+                        ServicesHomeScreen(services: widget.services))),
           );
         }
         final upcoming =
             all.where((b) => b.cancellable).toList().reversed.toList();
-        final history = all.where((b) => !b.cancellable).toList();
+        final history = all
+            .where((b) =>
+                !b.cancellable &&
+                (!widget.healthOnly || b.status != 'CANCELLED'))
+            .toList();
+        final cancelled = widget.healthOnly
+            ? all.where((b) => b.status == 'CANCELLED').toList()
+            : const <BookingRecord>[];
         return RefreshIndicator(
           onRefresh: _refresh,
           child: ListView(
@@ -89,6 +102,14 @@ class _BookingsListState extends State<BookingsList> {
                     style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 8),
                 for (final b in history)
+                  _BookingCard(booking: b, onTap: () => _open(b)),
+              ],
+              if (cancelled.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text(s.healthText('Отменённые', 'Бас тартылды', 'Cancelled'),
+                    style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 8),
+                for (final b in cancelled)
                   _BookingCard(booking: b, onTap: () => _open(b)),
               ],
             ],

@@ -122,6 +122,21 @@ class BookingApi {
           .map((e) => BookingVenue.fromJson(e as Map<String, dynamic>))
           .toList(growable: false);
 
+  Future<List<BookingVenue>> healthVenues({
+    required String query,
+    required String direction,
+    required int limit,
+    required int offset,
+  }) async =>
+      ((await _public('booking/health/venues', {
+        'q': query,
+        'direction': direction,
+        'limit': '$limit',
+        'offset': '$offset',
+      })) as List<dynamic>)
+          .map((item) => BookingVenue.fromJson(item as Map<String, dynamic>))
+          .toList(growable: false);
+
   Future<VenueDetail> venue(String id) async => VenueDetail.fromJson(
       (await _public('booking/venues/$id')) as Map<String, dynamic>);
 
@@ -154,6 +169,9 @@ class BookingApi {
     String? addressText,
     int? areaSqm,
     required String idempotencyKey,
+    int? expectedPriceMinor,
+    String? paymentMethod,
+    bool? acceptsTerms,
   }) =>
       _guard(() async {
         final json =
@@ -162,6 +180,10 @@ class BookingApi {
           'serviceId': serviceId,
           'masterId': masterId,
           'startsAt': startsAtIso,
+          if (expectedPriceMinor != null)
+            'expectedPriceMinor': expectedPriceMinor,
+          if (paymentMethod != null) 'paymentMethod': paymentMethod,
+          if (acceptsTerms != null) 'acceptsTerms': acceptsTerms,
           if (comment != null && comment.trim().isNotEmpty)
             'comment': comment.trim(),
           if (addressText != null && addressText.trim().isNotEmpty)
@@ -176,8 +198,13 @@ class BookingApi {
         return BookingRecord.fromJson(json as Map<String, dynamic>);
       });
 
-  Future<List<BookingRecord>> bookings() => _guard(() async {
-        final json = await auth.authorizedJson('GET', 'booking/bookings');
+  Future<List<BookingRecord>> bookings({bool healthOnly = false}) =>
+      _guard(() async {
+        final json = await auth.authorizedJson(
+            'GET',
+            healthOnly
+                ? 'booking/bookings?healthOnly=true&limit=100'
+                : 'booking/bookings');
         return (json as List<dynamic>)
             .map((e) => BookingRecord.fromJson(e as Map<String, dynamic>))
             .toList(growable: false);
@@ -190,6 +217,14 @@ class BookingApi {
   Future<BookingRecord> cancel(String id) =>
       _guard(() async => BookingRecord.fromJson((await auth.authorizedJson(
           'POST', 'booking/bookings/$id/cancel')) as Map<String, dynamic>));
+
+  Future<BookingRecord> reschedule(BookingRecord booking, BookingSlot slot) =>
+      _guard(() async => BookingRecord.fromJson((await auth.authorizedJson(
+              'POST', 'booking/bookings/${booking.id}/reschedule',
+              body: {
+                'startsAt': slot.startsAtIso,
+                'expectedStartsAt': booking.startsAtIso,
+              })) as Map<String, dynamic>));
 
   static String newIdempotencyKey() {
     final random = Random.secure();

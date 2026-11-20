@@ -70,6 +70,8 @@ app:
   auto:
     enabled: ${AUTO_ENABLED:false}
     seed-demo: ${AUTO_SEED_DEMO:false}
+  health:
+    seed-demo: ${HEALTH_SEED_DEMO:false}
   # Partner Operations DEV pilot: loads two synthetic partners and links them to demo assets; dev/local/test only.
   partner-ops:
     seed-demo: ${PARTNER_OPS_SEED_DEMO:false}
