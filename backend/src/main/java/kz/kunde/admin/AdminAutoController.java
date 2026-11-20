@@ -40,8 +40,11 @@ public class AdminAutoController {
     private final AdminGrants grants;
     private final kz.kunde.auto.AutoJobService jobs;
     private final kz.kunde.auto.AutoFeedbackService feedback;
+    private final kz.kunde.auto.AutoPayments payments;
 
-    public AdminAutoController(JdbcTemplate db, AdminGrants grants, kz.kunde.auto.AutoJobService jobs, kz.kunde.auto.AutoFeedbackService feedback) {
+    public AdminAutoController(JdbcTemplate db, AdminGrants grants, kz.kunde.auto.AutoJobService jobs, kz.kunde.auto.AutoFeedbackService feedback,
+            kz.kunde.auto.AutoPayments payments) {
+        this.payments = payments;
         this.db = db;
         this.grants = grants;
         this.jobs = jobs;
@@ -129,6 +132,22 @@ public class AdminAutoController {
         admin(principal);
         return ok(db.query("select id, name, is_open from marketplace.booking_venues where category = 'AUTO' order by name",
                 (rs, n) -> new VenueView(rs.getString(1), rs.getString(2), rs.getBoolean(3))));
+    }
+
+    public record RefundBody(@NotNull @jakarta.validation.constraints.Positive Long amountMinor, @jakarta.validation.constraints.NotBlank
+            @jakarta.validation.constraints.Size(max = 200) String reason) {}
+
+    @GetMapping("/payments")
+    ResponseEntity<List<kz.kunde.auto.AutoPayments.Entry>> paymentList(@AuthenticationPrincipal Jwt principal,
+            @RequestParam(defaultValue = "false") boolean refundableOnly) {
+        admin(principal);
+        return ok(payments.latest(refundableOnly));
+    }
+
+    @PostMapping("/payments/{id}/refund")
+    ResponseEntity<kz.kunde.auto.AutoPayments.PaymentView> refund(@AuthenticationPrincipal Jwt principal, @PathVariable UUID id, @Valid @RequestBody RefundBody body) {
+        UUID admin = admin(principal);
+        return ok(payments.refund(admin, id, body.amountMinor(), body.reason()));
     }
 
     public record JobRow(String id, String category, String status, String specialist, long priceMinor, OffsetDateTime createdAt) {}

@@ -36,6 +36,26 @@ extension AutoStrings on KundeLocalizations {
       'DEV-режим: организации и цены синтетические, реальных платежей нет, оплата на месте.',
       'DEV режимі: ұйымдар мен бағалар синтетикалық, нақты төлем жоқ, төлем орнында.',
       'DEV mode: organisations and prices are synthetic, no real payments, pay on site.');
+  String get auPayment => _t('Оплата', 'Төлем', 'Payment');
+  String get auPayOnSite => _t('На месте', 'Орнында', 'Pay on site');
+  String get auPayTestCard => _t('Тестовая карта', 'Тест картасы', 'Test card');
+  String get auPayTestNote => _t(
+      'DEV/TEST: сумма только резервируется в учёте. Реальных списаний нет.',
+      'DEV/TEST: сома тек есепте резервтеледі. Нақты есептен шығару жоқ.',
+      'DEV/TEST: the amount is only held in a ledger. No real charges.');
+  String auPaymentStatus(String s) => switch (s) {
+        'PAY_ON_SITE' => _t('Оплата на месте', 'Орнында төлеу', 'Pay on site'),
+        'TEST_HELD' => _t('Тест: сумма зарезервирована',
+            'Тест: сома резервтелді', 'Test: amount held'),
+        'TEST_CAPTURED' => _t('Тест: оплачено', 'Тест: төленді', 'Test: paid'),
+        'TEST_VOIDED' =>
+          _t('Тест: резерв снят', 'Тест: резерв алынды', 'Test: hold released'),
+        'TEST_REFUNDED' =>
+          _t('Тест: возвращено', 'Тест: қайтарылды', 'Test: refunded'),
+        'TEST_PART_REFUNDED' => _t('Тест: возвращено частично',
+            'Тест: ішінара қайтарылды', 'Test: partly refunded'),
+        _ => s,
+      };
   String get auClosed => _t('Закрыто', 'Жабық', 'Closed');
   String auFrom(String price) =>
       _t('от $price', '$price бастап', 'from $price');
@@ -215,6 +235,10 @@ extension AutoStrings on KundeLocalizations {
             'Запись нельзя перенести: до начала меньше 2 часов или статус изменился.',
             'Жазылуды көшіруге болмайды: басталуына 2 сағаттан аз немесе мәртебе өзгерді.',
             'Cannot reschedule: under 2 hours to start or status changed.'),
+        AutoFailure.paymentUnsupported => _t(
+            'Тестовая оплата доступна только в DEV/TEST. Выберите оплату на месте.',
+            'Тестілік төлем тек DEV/TEST ортасында. Орнында төлемді таңдаңыз.',
+            'Test payment exists only in DEV/TEST. Choose pay on site.'),
         AutoFailure.rescheduleLimit => _t(
             'Запись уже переносили дважды.',
             'Жазылу екі рет көшірілген.',

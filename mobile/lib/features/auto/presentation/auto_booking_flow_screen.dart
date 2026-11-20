@@ -40,6 +40,7 @@ class _AutoBookingFlowScreenState extends State<AutoBookingFlowScreen> {
   bool _busy = false;
   String? _error;
   String _key = AutoApi.newIdempotencyKey();
+  String _payment = 'PAY_ON_SITE';
 
   bool get _moving => widget.reschedule != null;
 
@@ -114,8 +115,8 @@ class _AutoBookingFlowScreenState extends State<AutoBookingFlowScreen> {
         record = await widget.services.api
             .reschedule(widget.reschedule!.id, _slot!.startsAtIso);
       } else {
-        record = await widget.services.api
-            .book(quoteId: _quote!.id, idempotencyKey: _key);
+        record = await widget.services.api.book(
+            quoteId: _quote!.id, idempotencyKey: _key, paymentMethod: _payment);
       }
       if (!mounted) return;
       await Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
@@ -216,6 +217,30 @@ class _AutoBookingFlowScreenState extends State<AutoBookingFlowScreen> {
             if (_error != null) ...[
               const SizedBox(height: 12),
               AutoErrorBanner(_error!),
+            ],
+            if (!_moving && _quote != null) ...[
+              const SizedBox(height: 16),
+              Text(s.auPayment, style: theme.textTheme.titleSmall),
+              const SizedBox(height: 8),
+              SegmentedButton<String>(
+                  segments: [
+                    ButtonSegment(
+                        value: 'PAY_ON_SITE', label: Text(s.auPayOnSite)),
+                    ButtonSegment(
+                        value: 'TEST_CARD', label: Text(s.auPayTestCard)),
+                  ],
+                  selected: {
+                    _payment
+                  },
+                  onSelectionChanged: _busy
+                      ? null
+                      : (v) => setState(() {
+                            _payment = v.first;
+                          })),
+              if (_payment == 'TEST_CARD') ...[
+                const SizedBox(height: 4),
+                Text(s.auPayTestNote, style: theme.textTheme.bodySmall),
+              ],
             ],
             const SizedBox(height: 16),
             FilledButton(

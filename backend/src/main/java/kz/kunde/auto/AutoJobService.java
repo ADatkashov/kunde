@@ -32,14 +32,14 @@ public class AutoJobService {
 
     public enum Action { ARRIVE, START, PROPOSE_PRICE, COMPLETE, RELEASE }
 
-    public record JobRequest(UUID vehicleId, String category, String description, String addressText, BigDecimal latitude, BigDecimal longitude) {}
+    public record JobRequest(UUID vehicleId, String category, String description, String addressText, BigDecimal latitude, BigDecimal longitude, String paymentMethod) {}
 
     public record Timeline(String status, OffsetDateTime at, String actor, String reason) {}
 
     /** Customer view. The specialist's name appears once one is assigned; no contact data is exposed. */
     public record JobView(String id, String vehicle, String category, String description, String addressText, String status,
             String specialist, long priceMinor, String priceKind, Long finalPriceMinor, String priceApproval, boolean cancellable,
-            OffsetDateTime createdAt, List<Timeline> timeline) {}
+            OffsetDateTime createdAt, List<Timeline> timeline, AutoPayments.PaymentView payment) {}
 
     /** Specialist view: coordinates and address only after assignment; before that an approximate area and distance. */
     public record SpecialistJob(String id, String vehicle, String category, String description, String addressText, BigDecimal latitude,
@@ -52,10 +52,12 @@ public class AutoJobService {
 
     private final JdbcTemplate db;
     private final AutoProperties props;
+    private final AutoPayments payments;
 
-    public AutoJobService(JdbcTemplate db, AutoProperties props) {
+    public AutoJobService(JdbcTemplate db, AutoProperties props, AutoPayments payments) {
         this.db = db;
         this.props = props;
+        this.payments = payments;
     }
 
     // ---- customer ------------------------------------------------------------------------------
@@ -75,6 +77,7 @@ public class AutoJobService {
             return job(user, (UUID) existing.get()[0]);
         }
         requireEnabled();
+        String method = payments.method(r.paymentMethod());
         if (r.vehicleId() == null || r.category() == null || r.latitude() == null || r.longitude() == null) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "JOB_INVALID", "vehicleId, category and location are required");
         }
@@ -108,6 +111,7 @@ public class AutoJobService {
                         price_minor, idempotency_key) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning id
                     """, UUID.class, user, r.vehicleId(), label, r.category(), description, address, r.latitude(), r.longitude(), price, key);
             event(id, "REQUESTED", "CUSTOMER", user, null);
+            payments.open(user, null, id, method, price);
             return job(user, id);
         } catch (DataIntegrityViolationException e) {
             if (e.getMostSpecificCause() instanceof SQLException sql && "23505".equals(sql.getSQLState())) {
@@ -137,6 +141,7 @@ public class AutoJobService {
         }
         db.update("update transactions.auto_jobs set status = 'CANCELLED', cancelled_by = 'CUSTOMER', updated_at = now(), version = version + 1 where id = ?", id);
         event(id, "CANCELLED", "CUSTOMER", user, null);
+        payments.voidHold(null, id, "CUSTOMER", user, "CANCELLED");
         return job(user, id);
     }
 
@@ -326,6 +331,8 @@ public class AutoJobService {
                 db.update("update transactions.auto_jobs set status = 'COMPLETED', final_price_minor = case when price_approval = 'APPROVED' then final_price_minor else price_minor end, "
                         + "updated_at = now(), version = version + 1 where id = ?", id);
                 event(id, "COMPLETED", "SPECIALIST", user, null);
+                Long amount = db.queryForObject("select coalesce(final_price_minor, price_minor) from transactions.auto_jobs where id = ?", Long.class, id);
+                payments.capture(null, id, amount == null ? 0 : amount, "SPECIALIST", user);
             }
             case RELEASE -> {
                 if ("REQUESTED".equals(status)) { break; }
@@ -419,13 +426,13 @@ public class AutoJobService {
                 where j.user_id = ? and (?::uuid is null or j.id = ?::uuid) order by j.created_at desc, j.id limit 50
                 """, (rs, n) -> new JobView(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6),
                 rs.getString(7), rs.getLong(8), rs.getString(9), rs.getObject(10, Long.class), rs.getString(11), rs.getBoolean(12),
-                rs.getObject(13, OffsetDateTime.class), List.of()), user, id, id);
+                rs.getObject(13, OffsetDateTime.class), List.of(), null), user, id, id);
         List<JobView> out = new ArrayList<>();
         for (JobView j : base) {
             List<Timeline> t = db.query("select status, occurred_at, actor_type, reason from transactions.auto_job_events where job_id = ? order by id",
                     (rs, n) -> new Timeline(rs.getString(1), rs.getObject(2, OffsetDateTime.class), rs.getString(3), rs.getString(4)), UUID.fromString(j.id()));
             out.add(new JobView(j.id(), j.vehicle(), j.category(), j.description(), j.addressText(), j.status(), j.specialist(), j.priceMinor(), j.priceKind(),
-                    j.finalPriceMinor(), j.priceApproval(), j.cancellable(), j.createdAt(), t));
+                    j.finalPriceMinor(), j.priceApproval(), j.cancellable(), j.createdAt(), t, payments.ofJob(UUID.fromString(j.id()))));
         }
         return out;
     }

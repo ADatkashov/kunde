@@ -82,7 +82,9 @@ class DomainSchemaOwnershipIntegrationTest {
             "transactions.auto_job_events -> identity.users",
             "transactions.auto_complaints -> identity.users",
             "transactions.auto_reviews -> identity.users",
-            "transactions.auto_reviews -> marketplace.booking_venues");
+            "transactions.auto_reviews -> marketplace.booking_venues",
+            "transactions.auto_payments -> identity.users",
+            "transactions.auto_payment_events -> identity.users");
 
     @Autowired JdbcTemplate jdbc;
     @Autowired PlatformTransactionManager transactionManager;

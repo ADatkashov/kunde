@@ -281,6 +281,18 @@ class _AutoBookingDetailScreenState extends State<AutoBookingDetailScreen> {
                         onPressed: () => _openFlow(b, move: false),
                         child: Text(s.auRebook)),
                   ],
+                  if (b.payment != null) ...[
+                    const SizedBox(height: 12),
+                    ListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.payments_outlined),
+                        title: Text(s.auPaymentStatus(b.payment!.isTest
+                            ? b.payment!.status
+                            : 'PAY_ON_SITE')),
+                        subtitle:
+                            b.payment!.isTest ? Text(s.auPayTestNote) : null),
+                  ],
                   const SizedBox(height: 16),
                   for (final t in b.timeline)
                     ListTile(

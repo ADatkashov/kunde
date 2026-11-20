@@ -46,7 +46,7 @@ public class AutoController {
 
     public record VehicleUpdate(String make, String model, Integer year, String plate, @NotNull Long version) {}
 
-    public record BookBody(@NotNull UUID quoteId) {}
+    public record BookBody(@NotNull UUID quoteId, String paymentMethod) {}
 
     public record RescheduleBody(@NotNull OffsetDateTime startsAt) {}
 
@@ -81,7 +81,7 @@ public class AutoController {
     @PostMapping("/bookings")
     public ResponseEntity<AutoBooking> book(@AuthenticationPrincipal Jwt p, @RequestHeader(value = "Idempotency-Key", required = false) String key,
             @Valid @RequestBody BookBody b) {
-        var booked = auto.book(user(p), b.quoteId(), key);
+        var booked = auto.book(user(p), b.quoteId(), key, b.paymentMethod());
         return noStore(booked.created() ? HttpStatus.CREATED : HttpStatus.OK, booked.booking());
     }
 
