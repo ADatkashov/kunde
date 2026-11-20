@@ -1,15 +1,21 @@
 package kz.kunde.admin;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
 import com.nimbusds.jwt.SignedJWT;
+import java.util.List;
 import java.util.UUID;
+import kz.kunde.admin.AdminGrants.Permission;
+import kz.kunde.admin.AdminGrants.Scope;
 import kz.kunde.partner.PartnerService;
+import kz.kunde.platform.ApiException;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +49,7 @@ class AdminPartnerApiIntegrationTest {
     @Autowired MockMvc http;
     @Autowired JdbcTemplate db;
     @Autowired PartnerService service;
+    @Autowired AdminGrants grants;
 
     @BeforeEach
     void clean() {
@@ -150,6 +157,111 @@ class AdminPartnerApiIntegrationTest {
                 user(loginC), user(loginC));
         // Same token, still unexpired and still carrying kunde.admin: the per-request grant check refuses it.
         fetch("/api/v1/admin/partners", admin).andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("ADMIN_FORBIDDEN"));
+    }
+
+    @Test
+    void capabilitiesReportOnlyCurrentGrantsOfTheAuthenticatedEmployee() throws Exception {
+        String path = "/api/v1/admin/me/capabilities";
+        http.perform(get(path)).andExpect(status().isUnauthorized());
+        String employee = login("+77000000114");
+        fetch(path, JsonPath.read(employee, "$.accessToken")).andExpect(status().isForbidden());
+
+        String anotherEmployee = login("+77000000115");
+        adminToken(anotherEmployee, "PARTNER_VERIFICATION");
+        String token = adminToken(employee, "DELIVERY_OPERATIONS");
+        fetch(path, token).andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.permissions.length()").value(1))
+                .andExpect(jsonPath("$.permissions[0]").value("DELIVERY_OPERATIONS"));
+
+        UUID employeeId = user(employee);
+        db.update("UPDATE identity.admin_grants SET revoked_at = now(), revoked_by_user_id = ? WHERE user_id = ?",
+                employeeId, employeeId);
+        fetch(path, token).andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("ADMIN_FORBIDDEN"));
+    }
+
+    @Test
+    void directoryRequiresCurrentPlatformAccessManagerPermission() throws Exception {
+        String path = "/api/v1/admin/employees";
+        String ordinary = login("+77000000114");
+        String reviewer = login("+77000000115");
+        String manager = login("+77000000116");
+        fetch(path, JsonPath.read(ordinary, "$.accessToken")).andExpect(status().isForbidden());
+        String reviewerToken = adminToken(reviewer, "PARTNER_VERIFICATION");
+        String managerToken = adminToken(manager, "ADMIN_GRANTS");
+        fetch(path, reviewerToken).andExpect(status().isForbidden());
+        fetch(path + "?limit=101", managerToken).andExpect(status().isBadRequest());
+
+        var page = fetch(path + "?limit=1", managerToken).andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.employees.length()").value(1))
+                .andReturn().getResponse().getContentAsString();
+        String cursor = JsonPath.read(page, "$.next");
+        var last = fetch(path + "?limit=1&after=" + cursor, managerToken).andExpect(status().isOk())
+                .andExpect(jsonPath("$.employees.length()").value(1))
+                .andReturn().getResponse().getContentAsString();
+        assertThat((String) JsonPath.read(last, "$.employees[0].id")).isNotEqualTo(cursor);
+        var directory = fetch(path + "?limit=100", managerToken).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        List<String> employeeIds = JsonPath.read(directory, "$.employees[*].id");
+        assertThat(employeeIds).contains(user(reviewer).toString(), user(manager).toString())
+                .doesNotContain(user(ordinary).toString());
+
+        UUID managerId = user(manager);
+        db.update("update identity.admin_grants set revoked_at = now(), revoked_by_user_id = ? where user_id = ?",
+                managerId, managerId);
+        fetch(path, managerToken).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void scopedAssignmentsRequireAllResourceAttributesAndRevokeImmediately() throws Exception {
+        String employeeLogin = login("+77000000114");
+        String ownerLogin = login("+77000000115");
+        UUID employee = user(employeeLogin);
+        UUID owner = user(ownerLogin);
+        UUID organization = apply(ownerLogin, "Scope Cafe");
+        UUID otherOrganization = apply(login("+77000000116"), "Other Scope Cafe");
+        UUID resource = UUID.randomUUID();
+        db.update("INSERT INTO identity.admin_roles (code) VALUES ('delivery-operator')");
+        db.update("""
+                INSERT INTO identity.admin_role_permissions (role_code, permission)
+                VALUES ('delivery-operator', 'DELIVERY_OPERATIONS')""");
+        UUID assignment = db.queryForObject("""
+                INSERT INTO identity.admin_role_assignments
+                    (user_id, role_code, product_code, region_code, organization_id, resource_id, assigned_by)
+                VALUES (?, 'delivery-operator', 'DELIVERY', 'ALMATY', ?, ?, ?)
+                RETURNING id""", UUID.class, employee, organization, resource, owner);
+
+        String token = refreshed(employeeLogin);
+        String path = "/api/v1/admin/me/capabilities";
+        fetch(path, token).andExpect(status().isOk()).andExpect(jsonPath("$.permissions").isEmpty());
+        var correct = new Scope("DELIVERY", "ALMATY", organization, resource);
+        grants.require(employee, Permission.DELIVERY_OPERATIONS, correct);
+
+        for (var wrong : new Scope[] {
+                new Scope("RIDES", "ALMATY", organization, resource),
+                new Scope("DELIVERY", "ASTANA", organization, resource),
+                new Scope("DELIVERY", "ALMATY", otherOrganization, resource),
+                new Scope("DELIVERY", "ALMATY", organization, UUID.randomUUID()),
+                new Scope("DELIVERY", "ALMATY", organization, null)
+        }) {
+            assertThatThrownBy(() -> grants.require(employee, Permission.DELIVERY_OPERATIONS, wrong))
+                    .isInstanceOf(ApiException.class);
+        }
+        assertThatThrownBy(() -> grants.require(employee, Permission.DELIVERY_OPERATIONS))
+                .isInstanceOf(ApiException.class);
+        assertThatThrownBy(() -> grants.require(employee, Permission.ADMIN_GRANTS, correct))
+                .isInstanceOf(ApiException.class);
+        db.update("UPDATE identity.admin_role_assignments SET revoked_at = now(), revoked_by = ? WHERE id = ?", owner, assignment);
+        fetch(path, token).andExpect(status().isForbidden());
+        assertThatThrownBy(() -> grants.require(employee, Permission.DELIVERY_OPERATIONS, correct))
+                .isInstanceOf(ApiException.class);
+
+        db.update("""
+                INSERT INTO identity.admin_role_assignments
+                    (user_id, role_code, assigned_by, assigned_at, expires_at)
+                VALUES (?, 'delivery-operator', ?, now() - interval '2 hours', now() - interval '1 hour')""", employee, owner);
+        fetch(path, token).andExpect(status().isForbidden());
     }
 
     @Test

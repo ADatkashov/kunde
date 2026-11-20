@@ -1,10 +1,21 @@
 # KUNDE project state
 
+## KUNDE Control Center 3.0 — DEV
+
+- [Аудит и зависимости](docs/roadmap/27-control-center-2-audit.md) приняты в [#155](https://github.com/ADatkashov/kunde/pull/155). [#156](https://github.com/ADatkashov/kunde/pull/156) добавил `GET /api/v1/admin/me/capabilities` для действующих грантов текущего сотрудника. Backend CI и Security CI прошли на PR.
+- [#157](https://github.com/ADatkashov/kunde/pull/157) добавил навигацию по разрешённым очередям Rides, Delivery и Auto.
+- [#160](https://github.com/ADatkashov/kunde/pull/160) добавил назначения ролей с областью, сроком действия и отзывом. [#161](https://github.com/ADatkashov/kunde/pull/161) применяет область к списку отправлений Delivery и аудиту. [#162](https://github.com/ADatkashov/kunde/pull/162) открывает эти два сценария во Flutter для scoped-оператора.
+- [#164](https://github.com/ADatkashov/kunde/pull/164) добавил серверный реестр сотрудников с постраничной выдачей под действующим платформенным `ADMIN_GRANTS`. Управление назначениями и D-14 остаются открытыми.
+- [#165](https://github.com/ADatkashov/kunde/pull/165) добавил Flutter-реестр сотрудников. [#163](https://github.com/ADatkashov/kunde/pull/163) и [#166](https://github.com/ADatkashov/kunde/pull/166) добавили scoped-сводку Delivery и выбор периода.
+- [#168](https://github.com/ADatkashov/kunde/pull/168) добавил адаптивный обзор со scoped-метриками Delivery и действующими разрешениями. Flutter Analyze и 253 локальных теста прошли на `6252018`. Дополнительно проверены 18 сочетаний ширины, языка и темы с текстом 200%, загрузкой, ошибкой, повтором и пустым результатом.
+- Поставка открыта: Web [#159](https://github.com/ADatkashov/kunde/pull/159) → [#152](https://github.com/ADatkashov/kunde/pull/152) после авторизованного DEV E2E. Подписанный Admin APK актуального main и Admin Android E2E ещё не подтверждены. Порядок проверки описан в [NEXT_TASK.md](NEXT_TASK.md).
+- В работе: scoped RBAC, панели продуктов, реестры, поддержка, финансы, операции, аудит и проверка поставки на всех платформах. Functional DEV/TEST Ready ещё не подтверждён.
+
 ## KUNDE Auto 1.0 — backend slice (в работе)
 
 - Backend Auto (Flyway V34) построен на Booking Engine: автомобили, серверные котировки, идемпотентная запись, защита от двойной записи и буфер, перенос/отмена, жизненный цикл партнёра с согласованием цены, недоступные периоды, Admin и флаг `AUTO_ENABLED` (выключен). `mvn verify` на PostgreSQL 16: 316 тестов, 0 ошибок. Детали и ограничения: [auto](docs/product/auto.md).
 - В `main`: backend (#149), Consumer + Partner + backend Executor (#150), Executor Flutter (#151). Далее: Admin, жалобы и отзывы (V36), локально `mvn verify` 325, Flutter 244 теста, `flutter analyze --fatal-infos` чисто; на устройстве не проверено.
-- Платёжный DEV-контракт (V37, ledger-only TEST_CARD/PAY_ON_SITE, возвраты админом, без реальных списаний): `mvn verify` 331, Flutter 244 — локально; подробности в [auto](docs/product/auto.md).
+- Платёжный DEV-контракт (V38, ledger-only TEST_CARD/PAY_ON_SITE, возвраты админом, без реальных списаний): `mvn verify` 334, Flutter 244 — локально; подробности в [auto](docs/product/auto.md).
 - **Не готово:** Android E2E, APK, экран платежей Admin. Статус Functional DEV/TEST Ready **не** заявлен.
 
 ## KUNDE Delivery 1.0

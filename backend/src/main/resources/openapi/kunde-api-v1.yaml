@@ -427,12 +427,73 @@ paths:
           schema: { type: string, format: uuid }
       responses:
         '200': { description: 'List sums of quoted amounts and counts grouped by status.' }
+  /admin/me/capabilities:
+    get:
+      operationId: getMyAdminCapabilities
+      description: Returns the caller's active DEV administrator grants for navigation.
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Current permissions, sorted by code.
+          headers:
+            Cache-Control:
+              schema: { type: string, const: no-store }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [permissions, deliveryShipmentRead]
+                properties:
+                  deliveryShipmentRead:
+                    type: boolean
+                    description: The caller can read the Delivery shipment queue within their effective scope.
+                  permissions:
+                    type: array
+                    uniqueItems: true
+                    items:
+                      type: string
+                      enum: [ADMIN_GRANTS, AUTO_OPERATIONS, DELIVERY_OPERATIONS, PARTNER_VERIFICATION, RIDE_OPERATIONS, RIDE_VERIFICATION]
+        '401':
+          description: No valid access token.
+        '403':
+          description: Administrator scope, active identity or current grant is missing.
   /admin/deliveries:
     get:
       operationId: monitorDeliveries
       security: [{ bearerAuth: [] }]
       responses:
         '200': { description: 'List operational shipment metadata. Requires DELIVERY_OPERATIONS.' }
+  /admin/deliveries/summary:
+    get:
+      operationId: summarizeDeliveryShipments
+      description: Current status counts for shipments created in the requested interval, restricted to the caller's Delivery scope.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date-time } }
+      responses:
+        '200':
+          description: Count of visible shipments created in the half-open interval, grouped by current shipment status.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [from, to, total, byStatus]
+                properties:
+                  from: { type: string, format: date-time }
+                  to: { type: string, format: date-time }
+                  total: { type: integer, format: int64, minimum: 0 }
+                  byStatus:
+                    type: array
+                    items:
+                      type: object
+                      required: [status, shipments]
+                      properties:
+                        status: { type: string }
+                        shipments: { type: integer, format: int64, minimum: 1 }
+        '400': { description: Invalid date-time parameters or interval exceeding 31 days. }
+        '401': { description: No valid access token. }
+        '403': { description: Missing effective Delivery shipment access. }
   /admin/deliveries/couriers:
     get:
       operationId: listDeliveryCouriers

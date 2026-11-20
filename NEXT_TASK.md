@@ -1,5 +1,5 @@
-# Следующая задача KUNDE Auto 1.0
+# Следующая проверка KUNDE Control Center
 
-Backend-срез смержен в PR (см. [auto](docs/product/auto.md)). Далее по порядку: Consumer Flutter (автомобили, каталог, котировка, запись, перенос/отмена, история), Partner Flutter (inbox, жизненный цикл, недоступные периоды), затем Android E2E и подписанные DEV Release APK.
+Выполнить авторизованный Web E2E совмещённых #152/#159 на DEV с утверждённым синтетическим сотрудником. Критерии: вход, обзор и сводка Delivery, разрешённый реестр сотрудников, отказ 401/403 и выход. После зелёных обязательных проверок объединить #159 в `feat/delivery-admin-web`, затем заново проверить и объединить #152 в `main`.
 
-Приёмка: `cd backend && mvn verify` на PostgreSQL 16, `flutter analyze` и `flutter test`, Android E2E «Consumer → запись → Partner подтверждает → обслуживание → история». Публичный запуск Auto выключен.
+Из итогового main запустить [Android Release APK (DEV)](https://github.com/ADatkashov/kunde/actions/workflows/android-release.yml) с `admin=true`, `executor=false` и штатным DEV API. Сверить исходный коммит, `com.kunde.admin`, release-подпись, отсутствие debug-настроек, размер и SHA-256 файла. Подтвердить установку и пройти Admin Android E2E, когда доступно тестовое устройство и синтетическая учётная запись.

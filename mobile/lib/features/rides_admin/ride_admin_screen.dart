@@ -1,117 +1,317 @@
 import 'package:flutter/material.dart';
 
+import '../admin_employees/admin_employee_screen.dart';
 import '../auto_admin/auto_admin_screen.dart';
 import '../delivery_admin/delivery_admin_screen.dart';
 import '../identity/auth_repository.dart';
 import '../rides/ride_strings.dart';
 
-class RideAdminScreen extends StatelessWidget {
+class RideAdminScreen extends StatefulWidget {
   const RideAdminScreen({required this.auth, super.key});
 
   final AuthRepository auth;
+
+  @override
+  State<RideAdminScreen> createState() => _RideAdminScreenState();
+}
+
+class _RideAdminScreenState extends State<RideAdminScreen> {
+  late Future<(Set<String>, bool)> _permissions = _loadPermissions();
+
+  Future<(Set<String>, bool)> _loadPermissions() async {
+    final response = await widget.auth.authorizedJson(
+      'GET',
+      'admin/me/capabilities',
+    );
+    final capabilities = response as Map<String, dynamic>;
+    return (
+      (capabilities['permissions'] as List<dynamic>).cast<String>().toSet(),
+      capabilities['deliveryShipmentRead'] == true,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final s = RideStrings(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('KUNDE Rides Admin'),
+        title: const Text('KUNDE Control Center'),
         actions: [
           IconButton(
-            onPressed: auth.logout,
+            onPressed: widget.auth.logout,
             tooltip: s.t('Выйти', 'Шығу', 'Sign out'),
             icon: const Icon(Icons.logout),
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
+      body: FutureBuilder<(Set<String>, bool)>(
+        future: _permissions,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      s.t(
+                        'Не удалось загрузить доступные разделы',
+                        'Қолжетімді бөлімдер жүктелмеді',
+                        'Could not load available workspaces',
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () =>
+                          setState(() => _permissions = _loadPermissions()),
+                      child: Text(s.t('Повторить', 'Қайталау', 'Retry')),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+          final (permissions, deliveryShipmentRead) = snapshot.requireData;
+          final workspaces =
+              _workspaces(context, s, permissions, deliveryShipmentRead);
+          if (workspaces.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  s.t(
+                    'Для этой учётной записи нет доступных очередей',
+                    'Бұл есептік жазбаға кезектер қолжетімсіз',
+                    'No queues are available for this account',
+                  ),
+                ),
+              ),
+            );
+          }
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final wide = constraints.maxWidth >= 1040;
+              final railWidth = wide ? 224.0 : 0.0;
+              final contentWidth = constraints.maxWidth - railWidth;
+              final columns = contentWidth >= 1080
+                  ? 3
+                  : contentWidth >= 650
+                      ? 2
+                      : 1;
+              final width = (contentWidth - 32 - 12 * (columns - 1)) / columns;
+              final canReadDelivery = deliveryShipmentRead ||
+                  permissions.contains('DELIVERY_OPERATIONS');
+              final content = SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      s.t('Главная панель', 'Басты панель', 'Overview'),
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    const SizedBox(height: 12),
+                    if (canReadDelivery)
+                      Card(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.local_shipping_outlined,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .tertiary),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                      child: Text('Delivery',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleLarge)),
+                                ],
+                              ),
+                            ),
+                            DeliverySummaryPanel(auth: widget.auth),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 16),
+                    ExpansionTile(
+                      leading: const Icon(Icons.shield_outlined),
+                      title: Text(s.t('Мои разрешения', 'Менің рұқсаттарым',
+                          'My permissions')),
+                      children: [
+                        if (deliveryShipmentRead &&
+                            !permissions.contains('DELIVERY_OPERATIONS'))
+                          ListTile(
+                              title: Text(s.t(
+                                  'Delivery · чтение в назначенной области',
+                                  'Delivery · тағайындалған ауқымда оқу',
+                                  'Delivery · scoped read'))),
+                        for (final permission in permissions)
+                          ListTile(title: Text(permission)),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        for (final workspace in workspaces)
+                          SizedBox(width: width, child: workspace),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+              if (!wide) return content;
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    width: railWidth,
+                    child: Material(
+                      color: const Color(0xff281945),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const Text('KUNDE',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 24)),
+                            const SizedBox(height: 20),
+                            if (canReadDelivery)
+                              ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                textColor: Colors.white,
+                                iconColor: Colors.white,
+                                leading:
+                                    const Icon(Icons.local_shipping_outlined),
+                                title: const Text('Delivery'),
+                                onTap: () => Navigator.of(context)
+                                    .push<void>(MaterialPageRoute(
+                                  builder: (_) => DeliveryAdminScreen(
+                                    auth: widget.auth,
+                                    area: DeliveryAdminArea.shipments,
+                                    canRequestReturn: permissions
+                                        .contains('DELIVERY_OPERATIONS'),
+                                  ),
+                                )),
+                              ),
+                            if (permissions.contains('ADMIN_GRANTS'))
+                              ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                textColor: Colors.white,
+                                iconColor: Colors.white,
+                                leading: const Icon(Icons.badge_outlined),
+                                title: Text(s.t(
+                                    'Сотрудники', 'Қызметкерлер', 'Employees')),
+                                onTap: () => Navigator.of(context)
+                                    .push<void>(MaterialPageRoute(
+                                  builder: (_) =>
+                                      AdminEmployeeScreen(auth: widget.auth),
+                                )),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(child: content),
+                ],
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  List<Widget> _workspaces(
+    BuildContext context,
+    RideStrings s,
+    Set<String> permissions,
+    bool deliveryShipmentRead,
+  ) =>
+      [
+        if (deliveryShipmentRead || permissions.contains('DELIVERY_OPERATIONS'))
           for (final (area, label, icon) in [
             (
               DeliveryAdminArea.couriers,
               s.t('Курьеры', 'Курьерлер', 'Couriers'),
-              Icons.inventory_2_outlined
+              Icons.inventory_2_outlined,
             ),
             (
               DeliveryAdminArea.shipments,
               s.t('Отправления', 'Жөнелтілімдер', 'Shipments'),
-              Icons.local_shipping_outlined
+              Icons.local_shipping_outlined,
             ),
             (
               DeliveryAdminArea.complaints,
               s.t('Жалобы на доставку', 'Жеткізу шағымдары',
                   'Delivery complaints'),
-              Icons.flag_outlined
+              Icons.flag_outlined,
             ),
           ])
-            Card(
+            if (area == DeliveryAdminArea.shipments ||
+                permissions.contains('DELIVERY_OPERATIONS'))
+              Card(
                 child: ListTile(
-              leading: Icon(icon),
-              title: Text(label),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).push<void>(MaterialPageRoute(
-                builder: (_) => DeliveryAdminScreen(auth: auth, area: area),
-              )),
-            )),
+                  leading: Icon(icon),
+                  title: Text(label),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push<void>(
+                    MaterialPageRoute(
+                      builder: (_) => DeliveryAdminScreen(
+                        auth: widget.auth,
+                        area: area,
+                        canRequestReturn:
+                            permissions.contains('DELIVERY_OPERATIONS'),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+        if (permissions.contains('AUTO_OPERATIONS'))
           for (final (area, label, icon) in [
             (
               AutoAdminArea.specialists,
               s.t('Авто-специалисты', 'Авто мамандар', 'Auto specialists'),
-              Icons.build_circle_outlined
+              Icons.build_circle_outlined,
             ),
             (
               AutoAdminArea.venues,
               s.t('СТО и автомойки', 'СТО және көлік жуу',
                   'Stations and washes'),
-              Icons.garage_outlined
+              Icons.garage_outlined,
             ),
             (
               AutoAdminArea.categories,
               s.t('Категории Auto', 'Auto санаттары', 'Auto categories'),
-              Icons.category_outlined
+              Icons.category_outlined,
             ),
             (
               AutoAdminArea.bookings,
               s.t('Записи Auto', 'Auto жазылулары', 'Auto bookings'),
-              Icons.event_note_outlined
+              Icons.event_note_outlined,
             ),
             (
               AutoAdminArea.jobs,
               s.t('Выездные заявки', 'Шығу өтінімдері', 'On-site jobs'),
-              Icons.emergency_outlined
+              Icons.emergency_outlined,
             ),
             (
               AutoAdminArea.complaints,
               s.t('Жалобы Auto', 'Auto шағымдары', 'Auto complaints'),
-              Icons.report_outlined
-            ),
-          ])
-            Card(
-                child: ListTile(
-              leading: Icon(icon),
-              title: Text(label),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).push<void>(MaterialPageRoute(
-                builder: (_) => AutoAdminScreen(auth: auth, area: area),
-              )),
-            )),
-          for (final (route, label, icon) in [
-            (
-              'drivers',
-              s.t('Водители', 'Жүргізушілер', 'Drivers'),
-              Icons.person_outline
-            ),
-            (
-              'fleets',
-              s.t('Автопарки', 'Автопарктер', 'Fleets'),
-              Icons.local_taxi_outlined
-            ),
-            ('trips', s.rides, Icons.route_outlined),
-            (
-              'complaints',
-              s.t('Жалобы', 'Шағымдар', 'Complaints'),
-              Icons.flag_outlined
+              Icons.report_outlined,
             ),
           ])
             Card(
@@ -121,15 +321,62 @@ class RideAdminScreen extends StatelessWidget {
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => Navigator.of(context).push<void>(
                   MaterialPageRoute(
-                      builder: (_) =>
-                          _AdminQueue(auth: auth, route: route, label: label)),
+                    builder: (_) =>
+                        AutoAdminScreen(auth: widget.auth, area: area),
+                  ),
                 ),
               ),
             ),
-        ],
-      ),
-    );
-  }
+        for (final (route, label, icon) in [
+          (
+            'drivers',
+            s.t('Водители', 'Жүргізушілер', 'Drivers'),
+            Icons.person_outline,
+          ),
+          (
+            'fleets',
+            s.t('Автопарки', 'Автопарктер', 'Fleets'),
+            Icons.local_taxi_outlined,
+          ),
+          ('trips', s.rides, Icons.route_outlined),
+          (
+            'complaints',
+            s.t('Жалобы', 'Шағымдар', 'Complaints'),
+            Icons.flag_outlined,
+          ),
+        ])
+          if (permissions.contains(
+            route == 'drivers' || route == 'fleets'
+                ? 'RIDE_VERIFICATION'
+                : 'RIDE_OPERATIONS',
+          ))
+            Card(
+              child: ListTile(
+                leading: Icon(icon),
+                title: Text(label),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push<void>(
+                  MaterialPageRoute(
+                    builder: (_) => _AdminQueue(
+                        auth: widget.auth, route: route, label: label),
+                  ),
+                ),
+              ),
+            ),
+        if (permissions.contains('ADMIN_GRANTS'))
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.badge_outlined),
+              title: Text(s.t('Сотрудники', 'Қызметкерлер', 'Employees')),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push<void>(
+                MaterialPageRoute(
+                  builder: (_) => AdminEmployeeScreen(auth: widget.auth),
+                ),
+              ),
+            ),
+          ),
+      ];
 }
 
 class _AdminQueue extends StatefulWidget {

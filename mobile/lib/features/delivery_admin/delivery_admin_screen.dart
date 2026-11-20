@@ -7,10 +7,14 @@ enum DeliveryAdminArea { couriers, shipments, complaints }
 
 class DeliveryAdminScreen extends StatefulWidget {
   const DeliveryAdminScreen(
-      {required this.auth, required this.area, super.key});
+      {required this.auth,
+      required this.area,
+      this.canRequestReturn = false,
+      super.key});
 
   final AuthRepository auth;
   final DeliveryAdminArea area;
+  final bool canRequestReturn;
 
   @override
   State<DeliveryAdminScreen> createState() => _DeliveryAdminScreenState();
@@ -66,6 +70,29 @@ class _DeliveryAdminScreenState extends State<DeliveryAdminScreen> {
     };
     return Scaffold(
       appBar: AppBar(title: Text(title), actions: [
+        if (widget.area == DeliveryAdminArea.shipments)
+          IconButton(
+            tooltip: s.t('Сводка', 'Жиынтық', 'Summary'),
+            icon: const Icon(Icons.bar_chart_outlined),
+            onPressed: () => showDialog<void>(
+              context: context,
+              builder: (context) => AlertDialog(
+                scrollable: true,
+                title: Text(s.t('Сводка по отправлениям',
+                    'Жөнелтілімдер жиынтығы', 'Shipment summary')),
+                content: SizedBox(
+                  width: 420,
+                  child: DeliverySummaryPanel(
+                      auth: widget.auth, statusLabel: _status),
+                ),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(s.back))
+                ],
+              ),
+            ),
+          ),
         IconButton(
           tooltip: s.retry,
           icon: const Icon(Icons.refresh),
@@ -131,7 +158,7 @@ class _DeliveryAdminScreenState extends State<DeliveryAdminScreen> {
               TextButton(
                   onPressed: () => _audit(id, s),
                   child: Text(s.t('Аудит', 'Аудит', 'Audit trail'))),
-              if (status == 'DELIVERY_FAILED')
+              if (widget.canRequestReturn && status == 'DELIVERY_FAILED')
                 TextButton(
                   onPressed: _busy
                       ? null
@@ -238,6 +265,123 @@ class _DeliveryAdminScreenState extends State<DeliveryAdminScreen> {
         'RESOLVED' => s.t('Закрыта', 'Жабық', 'Resolved'),
         _ => state,
       };
+}
+
+class DeliverySummaryPanel extends StatefulWidget {
+  const DeliverySummaryPanel({required this.auth, this.statusLabel, super.key});
+
+  final AuthRepository auth;
+  final String Function(String, RideStrings)? statusLabel;
+
+  @override
+  State<DeliverySummaryPanel> createState() => _ShipmentSummaryState();
+}
+
+class _ShipmentSummaryState extends State<DeliverySummaryPanel> {
+  int _days = 7;
+  late Future<Map<String, dynamic>> _summary = _load();
+
+  Future<Map<String, dynamic>> _load() async {
+    final to = DateTime.now().toUtc();
+    final path = Uri(path: 'admin/deliveries/summary', queryParameters: {
+      'from': to.subtract(Duration(days: _days)).toIso8601String(),
+      'to': to.toIso8601String(),
+    });
+    return await widget.auth.authorizedJson('GET', path.toString())
+        as Map<String, dynamic>;
+  }
+
+  void _refresh([int? days]) {
+    setState(() {
+      _days = days ?? _days;
+      _summary = _load();
+    });
+  }
+
+  String _statusLabel(String state, RideStrings s) => switch (state) {
+        'CREATED' => s.t('Создано', 'Жасалды', 'Created'),
+        'DELIVERED' || 'COMPLETED' => s.t('Вручено', 'Тапсырылды', 'Delivered'),
+        'IN_TRANSIT' => s.t('В пути', 'Жолда', 'In transit'),
+        'RETURNED_TO_SENDER' => s.t('Возвращено', 'Қайтарылды', 'Returned'),
+        _ => state,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final s = RideStrings(context);
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          DropdownButton<int>(
+            value: _days,
+            isExpanded: true,
+            items: [
+              for (final days in [1, 7, 30])
+                DropdownMenuItem(
+                    value: days,
+                    child: Text(s.t(
+                      'Последние ${days * 24} ч',
+                      'Соңғы ${days * 24} сағ',
+                      'Last ${days * 24} hours',
+                    ))),
+            ],
+            onChanged: _refresh,
+          ),
+          FutureBuilder(
+            future: _summary,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return const LinearProgressIndicator();
+              }
+              if (snapshot.hasError) {
+                return TextButton(
+                    onPressed: () => _refresh(), child: Text(s.retry));
+              }
+              final result = snapshot.requireData;
+              final total = result['total'] as int;
+              final counts =
+                  (result['byStatus'] as List).cast<Map<String, dynamic>>();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                          s.t(
+                              'Всего отправлений · $total',
+                              'Барлық жөнелтілім · $total',
+                              'Total shipments · $total'),
+                          style: Theme.of(context).textTheme.titleLarge),
+                    ),
+                  ),
+                  for (final count in counts)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                              '${(widget.statusLabel ?? _statusLabel)(count['status'] as String, s)} · ${count['shipments']}'),
+                          if (total > 0)
+                            ExcludeSemantics(
+                              child: LinearProgressIndicator(
+                                  value: (count['shipments'] as int) / total),
+                            ),
+                        ],
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ReviewDialog extends StatefulWidget {

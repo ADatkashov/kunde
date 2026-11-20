@@ -28,3 +28,5 @@ Expand-migrate-contract: add nullable/new structures, dual-read/write temporaril
 ## Indexing, partitioning and recovery
 
 Candidate indexes: unique normalized verified phone per identity policy; `catalog(listing_status, category_id)`; PostGIS GiST on service area/point; `orders(customer_id, created_at desc)`, `orders(partner_id,status,created_at)`; `bookings(resource_id, starts_at)` with conflict-safe constraint; `payments(provider_ref)` unique when provided, `ledger(transaction_id, created_at)`; outbox `(published_at, created_at)`; notifications `(recipient_id, created_at desc)`. Validate via EXPLAIN/load tests. Partition only append-heavy event/audit/ledger after evidence and legal review. Recovery objectives are provisional in 23.
+
+The optional organization scope on `identity.admin_role_assignments` references the canonical `marketplace.partners` primary key. The foreign key prevents grants to unknown organizations and preserves assignment history by restricting deletion of referenced organizations.

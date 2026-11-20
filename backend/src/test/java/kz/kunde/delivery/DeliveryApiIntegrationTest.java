@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -274,6 +275,50 @@ class DeliveryApiIntegrationTest {
         http.perform(get(path + "/" + id).with(partner(outsider))).andExpect(status().isNotFound());
         http.perform(get(otherPath + "/" + id).with(partner(owner))).andExpect(status().isNotFound());
         http.perform(get(path + "/" + id).with(partner(coworker))).andExpect(status().isOk());
+        UUID employee = db.queryForObject("insert into identity.users default values returning id", UUID.class);
+        db.update("insert into identity.external_bindings (issuer, subject, user_id) values (?, ?, ?)",
+                "https://identity.example.test", "delivery-scoped-reader", employee);
+        db.update("insert into profile.consumer_profiles (user_id) values (?)", employee);
+        db.update("insert into identity.admin_roles(code) values ('delivery-reader')");
+        db.update("insert into identity.admin_role_permissions values ('delivery-reader', 'DELIVERY_OPERATIONS')");
+        UUID assignment = db.queryForObject("""
+                insert into identity.admin_role_assignments
+                    (user_id, role_code, product_code, organization_id, resource_id, assigned_by)
+                values (?, 'delivery-reader', 'DELIVERY', ?, ?, ?) returning id
+                """, UUID.class, employee, first, UUID.fromString(id), owner);
+        var scopedAdmin = jwt().jwt(token -> token.issuer("https://identity.example.test").subject("delivery-scoped-reader")
+                .claim("typ", "Bearer").claim("azp", "kunde-consumer").claim("scope", "kunde.consumer kunde.admin"));
+        String adminPath = "/api/v1/admin/deliveries";
+        http.perform(get(adminPath).with(scopedAdmin)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1)).andExpect(jsonPath("$[0].id").value(id));
+        http.perform(get(adminPath + "/" + id + "/audit").with(scopedAdmin)).andExpect(status().isOk());
+        var createdAt = db.queryForObject("select created_at from transactions.deliveries where id = ?",
+                OffsetDateTime.class, UUID.fromString(id));
+        var report = get(adminPath + "/summary").param("from", createdAt.toString())
+                .param("to", createdAt.plusDays(1).toString());
+        http.perform(report.with(scopedAdmin)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.byStatus[0].status").value("CREATED"))
+                .andExpect(jsonPath("$.byStatus[0].shipments").value(1));
+        http.perform(get(adminPath + "/summary").param("from", createdAt.minusDays(1).toString())
+                        .param("to", createdAt.toString()).with(scopedAdmin))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.total").value(0));
+        http.perform(get(adminPath + "/summary").param("from", createdAt.toString())
+                        .param("to", createdAt.plusDays(32).toString()).with(scopedAdmin))
+                .andExpect(status().isBadRequest());
+        http.perform(post(adminPath + "/" + id + "/return").with(scopedAdmin)).andExpect(status().isForbidden());
+        db.update("update identity.admin_role_assignments set organization_id = ? where id = ?", second, assignment);
+        http.perform(report.with(scopedAdmin)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(0)).andExpect(jsonPath("$.byStatus").isEmpty());
+        http.perform(get(adminPath).with(scopedAdmin)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+        http.perform(get(adminPath + "/" + id + "/audit").with(scopedAdmin)).andExpect(status().isNotFound());
+        http.perform(get(adminPath + "/" + UUID.randomUUID() + "/audit").with(scopedAdmin)).andExpect(status().isNotFound());
+        db.update("update identity.admin_role_assignments set region_code = 'ALMATY' where id = ?", assignment);
+        http.perform(get(adminPath).with(scopedAdmin)).andExpect(status().isForbidden());
+        db.update("update identity.admin_role_assignments set region_code = null, revoked_at = now(), revoked_by = ? where id = ?",
+                owner, assignment);
+        http.perform(get(adminPath).with(scopedAdmin)).andExpect(status().isForbidden());
         http.perform(get(path + "/totals").with(partner(owner))).andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].quotedTotalKzt").value(1050));
         http.perform(post(path + "/" + id + "/cancel").with(partner(coworker)))
