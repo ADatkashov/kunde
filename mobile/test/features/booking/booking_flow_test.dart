@@ -43,6 +43,7 @@ class _Gateway implements OAuthGateway {
 const _venueId = '11111111-1111-1111-1111-111111111111';
 const _serviceId = '22222222-2222-2222-2222-222222222222';
 const _masterId = '33333333-3333-3333-3333-333333333333';
+const _healthVenueId = '77777777-7777-7777-7777-777777777777';
 const _cleanVenueId = '44444444-4444-4444-4444-444444444444';
 const _cleanServiceId = '55555555-5555-5555-5555-555555555555';
 const _cleanCrewId = '66666666-6666-6666-6666-666666666666';
@@ -75,6 +76,13 @@ final _venue = {
   'fromPriceMinor': 650000,
 };
 
+final _healthVenue = {
+  ..._venue,
+  'id': _healthVenueId,
+  'category': 'HEALTH',
+  'name': 'ДЕМО · Контур',
+};
+
 /// In-memory stand-in for the booking backend: slots per date, one master, persisted bookings across app restarts.
 class _FakeBackend {
   final bookings = <Map<String, dynamic>>[];
@@ -97,9 +105,7 @@ class _FakeBackend {
         : jsonDecode(request.body) as Map<String, dynamic>;
     if (path == 'booking/health/venues') {
       lastHealthSearch = request.url;
-      return _json([
-        {..._venue, 'category': 'HEALTH', 'name': 'ДЕМО · Контур'},
-      ]);
+      return _json([_healthVenue]);
     }
     if (path == 'booking/venues') {
       return _json(request.url.queryParameters['category'] == 'CLEANING'
@@ -134,9 +140,10 @@ class _FakeBackend {
         ],
       });
     }
-    if (path == 'booking/venues/$_venueId') {
+    if (path == 'booking/venues/$_venueId' ||
+        path == 'booking/venues/$_healthVenueId') {
       return _json({
-        'venue': _venue,
+        'venue': path.endsWith(_healthVenueId) ? _healthVenue : _venue,
         'services': [
           {
             'id': _serviceId,
@@ -328,6 +335,39 @@ void main() {
     await tester.pumpAndSettle();
     expect(backend.lastHealthSearch?.queryParameters['q'], 'Контур');
     expect(find.text('ДЕМО · Контур'), findsOneWidget);
+  });
+
+  testWidgets('Health specialist opens at 200% text in dark theme',
+      (tester) async {
+    final services = await _services(_FakeBackend());
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData.dark(useMaterial3: true),
+      localizationsDelegates: KundeLocalizations.localizationsDelegates,
+      supportedLocales: KundeLocalizations.supportedLocales,
+      locale: const Locale('en'),
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(2)),
+        child: child!,
+      ),
+      home: HealthHomeScreen(services: services),
+    ));
+    await tester.pumpAndSettle();
+    final venue = find.text('ДЕМО · Контур');
+    await tester.scrollUntilVisible(venue.hitTestable(), 280,
+        scrollable: find.byType(Scrollable).first);
+    await tester.tap(venue);
+    await tester.pumpAndSettle();
+    final specialist = find.text('Арман');
+    await tester.scrollUntilVisible(specialist.hitTestable(), 200,
+        scrollable: find.byType(Scrollable).first);
+    await tester.tap(specialist);
+    await tester.pumpAndSettle();
+    expect(find.text('Specialist'), findsOneWidget);
+    expect(find.text('Synthetic profile'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('customer books a barber, sees it after a restart and cancels it',

@@ -263,7 +263,13 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                               : s.bkCancelBooking),
                         ),
                       const SizedBox(height: 12),
-                      Text(s.bkDetailDevNote,
+                      Text(
+                          b.category == 'HEALTH'
+                              ? s.healthText(
+                                  'Синтетическая запись для проверки сервиса',
+                                  'Сервисті тексеруге арналған синтетикалық жазба',
+                                  'Synthetic appointment for testing the service')
+                              : s.bkDetailDevNote,
                           style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant)),
                     ],
