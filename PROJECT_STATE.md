@@ -18,7 +18,9 @@
 - Платёжный DEV-контракт (V38, ledger-only TEST_CARD/PAY_ON_SITE, возвраты админом, без реальных списаний): `mvn verify` 334, Flutter 244 — локально; подробности в [auto](docs/product/auto.md).
 - **DEV:** Auto включён на DEV-сервисе (`AUTO_ENABLED=true`, `AUTO_SEED_DEMO=true`, `main` 77b86a0); `scripts/dev/auto_smoke.py` и `booking_smoke.py` пройдены на DEV. PROD не менялся, публичный приём выключен.
 - Переключатели Auto/Rides/Delivery в Control Center (V39, грант `ADMIN_GRANTS`, потолок — переменные окружения, журнал, причина обязательна): [feature-toggles](docs/engineering-foundation/feature-toggles.md). Booking/Food — пока только окружение.
-- **Не готово:** Android E2E, APK, экран платежей Admin. Статус Functional DEV/TEST Ready **не** заявлен.
+- Android E2E Auto (`.github/workflows/auto-native-e2e.yml`, `scripts/ci/auto_native_e2e.py`, PR #173): Consumer APK на эмуляторе Android 35 против реального backend и PostgreSQL 16 — 14 этапов `PASSED` (вход, авто, каталог, слот, котировка, запись с `TEST_CARD`, история и оценка, согласование цены, перенос и отмена, потеря сети и повтор, идемпотентный повтор, отказ партнёра, конкурентная запись, нет слотов, выездная заявка Executor, выключенный флаг). Партнёр и исполнитель в этом прогоне действуют через HTTP; их приложения проверяются своими тестами. Подробности: [auto](docs/product/auto.md#android-e2e).
+- Подписанные DEV Release APK (Consumer, Executor, Partner, Admin) из `main` e831750: сертификат `6645a7bc…d600`, подпись v2, не debuggable; идентификаторы и SHA-256 в [auto](docs/product/auto.md#dev-release-apk).
+- **Не готово:** проверка на физическом устройстве и TalkBack, нативный E2E Partner и Executor, экран платежей Admin, синхронизация Linear (коннектор недоступен). Статус Functional DEV/TEST Ready **не** заявлен: решение за владельцем после проверки на устройстве.
 
 ## KUNDE Delivery 1.0
 
