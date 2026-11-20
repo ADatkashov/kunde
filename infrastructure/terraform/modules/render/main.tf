@@ -71,6 +71,10 @@ resource "render_web_service" "this" {
       BOOKING_ENABLED   = { value = "true" }
       BOOKING_SEED_DEMO = { value = "true" }
     } : {},
+    var.auto_enabled ? {
+      AUTO_ENABLED   = { value = "true" }
+      AUTO_SEED_DEMO = { value = "true" }
+    } : {},
     var.food_enabled && var.booking_enabled && var.auth_phone_enabled ? {
       PARTNER_OPS_SEED_DEMO = { value = "true" }
     } : {},

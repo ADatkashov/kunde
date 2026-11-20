@@ -16,6 +16,7 @@
 - Backend Auto (Flyway V34) построен на Booking Engine: автомобили, серверные котировки, идемпотентная запись, защита от двойной записи и буфер, перенос/отмена, жизненный цикл партнёра с согласованием цены, недоступные периоды, Admin и флаг `AUTO_ENABLED` (выключен). `mvn verify` на PostgreSQL 16: 316 тестов, 0 ошибок. Детали и ограничения: [auto](docs/product/auto.md).
 - В `main`: backend (#149), Consumer + Partner + backend Executor (#150), Executor Flutter (#151). Далее: Admin, жалобы и отзывы (V36), локально `mvn verify` 325, Flutter 244 теста, `flutter analyze --fatal-infos` чисто; на устройстве не проверено.
 - Платёжный DEV-контракт (V38, ledger-only TEST_CARD/PAY_ON_SITE, возвраты админом, без реальных списаний): `mvn verify` 334, Flutter 244 — локально; подробности в [auto](docs/product/auto.md).
+- **DEV:** Auto включён на DEV-сервисе (`AUTO_ENABLED=true`, `AUTO_SEED_DEMO=true`, `main` 77b86a0); `scripts/dev/auto_smoke.py` и `booking_smoke.py` пройдены на DEV. PROD не менялся, публичный приём выключен.
 - **Не готово:** Android E2E, APK, экран платежей Admin. Статус Functional DEV/TEST Ready **не** заявлен.
 
 ## KUNDE Delivery 1.0
