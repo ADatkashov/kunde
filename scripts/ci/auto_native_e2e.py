@@ -90,8 +90,9 @@ def start_backend(auto_enabled):
     env["AUTH_PHONE_SECRET"] = fixture.FIXTURE_AUTH_KEY
     args = ["java", "-jar", "backend/target/kunde-api-0.1.0-SNAPSHOT.jar",
             "--server.address=127.0.0.1", "--server.port=8081"]
-    log_dir = Path(os.environ.get("RUNNER_TEMP", "/tmp"))
-    with (log_dir / "auto-backend.log").open("ab") as log:
+    log_path = Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "auto-backend.log"
+    offset = log_path.stat().st_size if log_path.exists() else 0
+    with log_path.open("ab") as log:
         process = subprocess.Popen(args, stdout=log, stderr=subprocess.STDOUT, env=env)
     for _ in range(120):
         if process.poll() is not None:
@@ -102,7 +103,14 @@ def start_backend(auto_enabled):
             time.sleep(1)
             continue
         if capabilities["autoEnabled"] == auto_enabled:
-            return process
+            # The web server answers while the demo seeders are still running; signing a seeded phone in before they
+            # finish makes the Partner seeder insert the same user twice and stops the backend.
+            for _ in range(90):
+                if process.poll() is not None:
+                    break
+                if "Partner demo seed done" in log_path.read_bytes()[offset:].decode("utf-8", "replace"):
+                    return process
+                time.sleep(1)
         break
     fixture.stop_backend(process)
     raise RuntimeError("Isolated backend did not start with the expected Auto capability")
