@@ -271,16 +271,6 @@ def separation_checks():
     completed.append("leisure_activity_booking_test_payment_cancel_refund")
 
 
-def ui_leisure_home():
-    """Leisure is its own tile and its own catalogue: the home opens, the cinema is not among its categories."""
-    relaunch()
-    tap(*LEISURE)
-    android.find(*LEISURE_HOME_TITLE, timeout=40)
-    reveal("Боулинг", "Bowling")
-    android.screenshot("consumer-leisure-home")
-    completed.append("consumer_leisure_home_activities_only")
-
-
 def flag_off_checks(process):
     fixture.stop_backend(process)
     process = start_backend(False)
@@ -436,6 +426,13 @@ def ui_after_scan():
 
 def ui_network_recovery(process):
     relaunch()
+    # Leisure is its own tile and its own catalogue (activities only); checked here to spare the emulator an extra app restart
+    tap(*LEISURE)
+    android.find(*LEISURE_HOME_TITLE, timeout=40)
+    reveal("Боулинг", "Bowling")
+    android.screenshot("consumer-leisure-home")
+    completed.append("consumer_leisure_home_activities_only")
+    back(1)
     tap(*EVENTS)
     android.find(*HOME_TITLE, timeout=40)
     fixture.stop_backend(process)
@@ -506,9 +503,6 @@ def main():
         phase = "backend_scenarios"
         api_checks()
         separation_checks()
-        if not API_ONLY:
-            phase = "leisure_home"
-            ui_leisure_home()
         if not API_ONLY:
             phase = "network_recovery"
             process = ui_network_recovery(process)
