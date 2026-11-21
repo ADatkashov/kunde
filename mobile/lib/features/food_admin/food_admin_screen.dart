@@ -6,6 +6,8 @@ import '../food/data/food_models.dart' show formatTenge;
 import '../identity/auth_repository.dart';
 import '../rides/ride_strings.dart';
 
+part 'groceries_admin_screen.dart';
+
 /// Food Control Center for administrators. Everything goes through `/api/v1/admin/food/**`, where the FOOD_OPERATIONS grant is checked on
 /// every request. The screen only presents what the server returns: with no orders every number is zero (never a sample value) and no
 /// customer name, phone or address exists in these responses (orders carry a short customer reference only).
@@ -65,9 +67,9 @@ class _FoodAdminScreenState extends State<FoodAdminScreen>
 
 const _root = 'admin/food';
 
-Future<List<Map<String, dynamic>>> _list(
-        AuthRepository auth, String path) async =>
-    (await auth.authorizedJson('GET', '$_root/$path') as List)
+Future<List<Map<String, dynamic>>> _list(AuthRepository auth, String path,
+        [String root = _root]) async =>
+    (await auth.authorizedJson('GET', '$root/$path') as List)
         .cast<Map<String, dynamic>>();
 
 String _when(String iso) {
@@ -376,9 +378,11 @@ class _ServerList extends StatefulWidget {
     required this.path,
     required this.emptyText,
     required this.itemBuilder,
+    this.root = _root,
   });
 
   final AuthRepository auth;
+  final String root;
   final String path;
   final String emptyText;
   final Widget Function(BuildContext, Map<String, dynamic>, VoidCallback reload)
@@ -390,10 +394,10 @@ class _ServerList extends StatefulWidget {
 
 class _ServerListState extends State<_ServerList> {
   late Future<List<Map<String, dynamic>>> _data =
-      _list(widget.auth, widget.path);
+      _list(widget.auth, widget.path, widget.root);
 
   void _reload() => setState(() {
-        _data = _list(widget.auth, widget.path);
+        _data = _list(widget.auth, widget.path, widget.root);
       });
 
   @override

@@ -64,6 +64,8 @@ class GroceryProduct {
     this.isNew = false,
     this.onSale = false,
     this.hasRequiredOptions = false,
+    this.ratingAvg,
+    this.ratingCount = 0,
   });
 
   final String id;
@@ -90,6 +92,10 @@ class GroceryProduct {
 
   /// True when the product needs a choice (for example fat content) that only the product page offers.
   final bool hasRequiredOptions;
+
+  /// Average of visible verified reviews; null while the product has none (no invented ratings).
+  final double? ratingAvg;
+  final int ratingCount;
 
   bool get weighed => unit == 'KG';
   int get step => weighed ? 100 : 1;
@@ -121,6 +127,8 @@ class GroceryProduct {
         isNew: json['isNew'] == true,
         onSale: json['onSale'] == true,
         hasRequiredOptions: json['hasRequiredOptions'] == true,
+        ratingAvg: (json['ratingAvg'] as num?)?.toDouble(),
+        ratingCount: (json['ratingCount'] as num?)?.toInt() ?? 0,
       );
 }
 
@@ -464,5 +472,49 @@ class ServerCart {
         subtotalMinor: (json['subtotalMinor'] as num?)?.toInt() ?? 0,
         totalMinor: (json['totalMinor'] as num?)?.toInt() ?? 0,
         needsUpdate: json['needsUpdate'] == true,
+      );
+}
+
+class ProductReview {
+  const ProductReview(
+      {required this.id,
+      required this.rating,
+      required this.author,
+      this.comment});
+
+  final String id;
+  final int rating;
+  final String author;
+  final String? comment;
+
+  factory ProductReview.fromJson(Map<String, dynamic> json) => ProductReview(
+        id: json['id'] as String,
+        rating: (json['rating'] as num).toInt(),
+        author: json['author'] as String? ?? '',
+        comment: json['comment'] as String?,
+      );
+}
+
+class ProductReviews {
+  const ProductReviews(
+      {required this.average,
+      required this.count,
+      required this.distribution,
+      required this.reviews});
+
+  final double? average;
+  final int count;
+  final List<int> distribution;
+  final List<ProductReview> reviews;
+
+  factory ProductReviews.fromJson(Map<String, dynamic> json) => ProductReviews(
+        average: (json['average'] as num?)?.toDouble(),
+        count: (json['count'] as num).toInt(),
+        distribution: (json['distribution'] as List<dynamic>)
+            .map((e) => (e as num).toInt())
+            .toList(growable: false),
+        reviews: (json['reviews'] as List<dynamic>)
+            .map((e) => ProductReview.fromJson(e as Map<String, dynamic>))
+            .toList(growable: false),
       );
 }

@@ -28,8 +28,8 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Public read-only Groceries catalog: product categories, server-side product search/filters/sorting, brands and the
  * product page. Stores and products live in the Food tables with {@code vertical = 'GROCERY'}. Everything is
- * unavailable (409 GROCERIES_DISABLED) while the GROCERIES switch is off. There is no product rating filter or sort:
- * ratings exist per store, not per product, and no product ratings are invented.
+ * unavailable (409 GROCERIES_DISABLED) while the GROCERIES switch is off. Product ratings come only from verified reviews
+ * (a delivered order that contained the product); no rating is ever invented.
  */
 @RestController
 @Validated
@@ -43,7 +43,12 @@ public class GroceriesCatalogController {
     public record Product(String id, String name, String description, String brand, String category, String unit,
             long priceMinor, Long compareAtPriceMinor, Integer discountPercent, boolean available, boolean inStock,
             int maxQuantity, Integer stockQty, String emoji, String tone, String imageUrl, String storeId,
-            String storeName, boolean storeOpen, boolean isNew, boolean onSale, boolean hasRequiredOptions) {}
+            String storeName, boolean storeOpen, boolean isNew, boolean onSale, boolean hasRequiredOptions, Double ratingAvg,
+            int ratingCount) {}
+
+    public record ReviewView(String id, int rating, String comment, String author, OffsetDateTime createdAt) {}
+
+    public record ReviewSummary(Double average, int count, int[] distribution, List<ReviewView> reviews) {}
 
     public record ProductsPage(List<Product> items, long total, int limit, int offset) {}
 
@@ -62,6 +67,7 @@ public class GroceriesCatalogController {
             "price_asc", "d.price_minor asc, d.name, d.id",
             "price_desc", "d.price_minor desc, d.name, d.id",
             "new", "d.created_at desc, d.name, d.id",
+            "rating", "rating_avg desc nulls last, rating_count desc, d.name, d.id",
             "discount", "((d.compare_at_price_minor - d.price_minor)::float8 / nullif(d.compare_at_price_minor, 0)) desc nulls last, d.name, d.id");
 
     static final String PRODUCT_SELECT = """
@@ -69,6 +75,8 @@ public class GroceriesCatalogController {
                    d.available, d.stock_qty, d.emoji, d.tone, d.image_url, d.created_at,
                    r.id as store_id, r.name as store_name, (r.is_open and r.moderation_status = 'ACTIVE') as store_open,
                    exists (select 1 from marketplace.food_option_groups g where g.dish_id = d.id and g.min_select > 0) as has_required_options,
+                   (select round(avg(v.rating)::numeric, 1)::float8 from marketplace.grocery_product_reviews v where v.dish_id = d.id and v.status = 'VISIBLE') as rating_avg,
+                   (select count(*) from marketplace.grocery_product_reviews v where v.dish_id = d.id and v.status = 'VISIBLE') as rating_count,
                    (select count(distinct i.order_id) from transactions.food_order_items i
                       join transactions.food_orders o on o.id = i.order_id
                      where i.dish_id = d.id and o.status <> 'CANCELLED') as popularity
@@ -109,7 +117,7 @@ public class GroceriesCatalogController {
                 maxQuantity(unit, stock), stock, rs.getString("emoji"), rs.getString("tone"), rs.getString("image_url"),
                 rs.getString("store_id"), rs.getString("store_name"), rs.getBoolean("store_open"),
                 created != null && created.isAfter(OffsetDateTime.now().minusDays(NEW_DAYS)), compareAt != null,
-                rs.getBoolean("has_required_options"));
+                rs.getBoolean("has_required_options"), rs.getObject("rating_avg", Double.class), rs.getInt("rating_count"));
     }
 
     private static Double dbl(java.math.BigDecimal value) { return value == null ? null : value.doubleValue(); }
@@ -160,13 +168,14 @@ public class GroceriesCatalogController {
             @RequestParam(required = false) Boolean onSale,
             @RequestParam(required = false) Boolean newOnly,
             @RequestParam(required = false) @Size(max = 80) String brand,
+            @RequestParam(required = false) @Min(1) @Max(5) Integer minRating,
             @RequestParam(defaultValue = "popularity") String sort,
             @RequestParam(defaultValue = "30") @Min(1) @Max(100) int limit,
             @RequestParam(defaultValue = "0") @Min(0) @Max(100000) int offset) {
         requireEnabled(toggles);
         String orderBy = SORTS.get(sort);
         if (orderBy == null) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "SORT_INVALID", "sort must be popularity, price_asc, price_desc, new or discount");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "SORT_INVALID", "sort must be popularity, rating, price_asc, price_desc, new or discount");
         }
         if (minPriceMinor != null && maxPriceMinor != null && minPriceMinor > maxPriceMinor) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "PRICE_RANGE_INVALID", "minPriceMinor must not exceed maxPriceMinor");
@@ -190,6 +199,10 @@ public class GroceriesCatalogController {
         if (Boolean.TRUE.equals(onSale)) { where.append(" and d.compare_at_price_minor is not null"); }
         if (Boolean.TRUE.equals(newOnly)) { where.append(" and d.created_at > now() - interval '" + NEW_DAYS + " days'"); }
         if (brand != null && !brand.isBlank()) { where.append(" and d.brand = ?"); args.add(brand.strip()); }
+        if (minRating != null) {
+            where.append(" and (select avg(v.rating) from marketplace.grocery_product_reviews v where v.dish_id = d.id and v.status = 'VISIBLE') >= ?");
+            args.add(minRating);
+        }
 
         Long total = db.queryForObject("select count(*) from marketplace.food_dishes d join marketplace.food_restaurants r on r.id = d.restaurant_id"
                 + where, Long.class, args.toArray());
@@ -200,6 +213,32 @@ public class GroceriesCatalogController {
                 + " order by (d.available and (d.stock_qty is null or d.stock_qty > 0)) desc, " + orderBy + " limit ? offset ?",
                 GroceriesCatalogController::mapProduct, pageArgs.toArray());
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(new ProductsPage(items, total == null ? 0 : total, limit, offset));
+    }
+
+    @GetMapping("/products/{productId}/reviews")
+    public ResponseEntity<ReviewSummary> reviews(@PathVariable UUID productId,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit, @RequestParam(defaultValue = "0") @Min(0) @Max(10000) int offset) {
+        requireEnabled(toggles);
+        Integer exists = db.queryForObject("select count(*) from marketplace.food_dishes d join marketplace.food_restaurants r on r.id = d.restaurant_id where d.id = ? and r.vertical = 'GROCERY'",
+                Integer.class, productId);
+        if (exists == null || exists == 0) { throw new ApiException(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND", "Product is not available"); }
+        int[] distribution = new int[5];
+        double[] sum = {0};
+        int[] count = {0};
+        db.query("select rating, count(*) from marketplace.grocery_product_reviews where dish_id = ? and status = 'VISIBLE' group by rating", rs -> {
+            int rating = rs.getInt(1);
+            int n = rs.getInt(2);
+            distribution[rating - 1] = n;
+            sum[0] += (double) rating * n;
+            count[0] += n;
+        }, productId);
+        List<ReviewView> list = db.query("""
+                select id, rating, comment, author_name, created_at from marketplace.grocery_product_reviews
+                where dish_id = ? and status = 'VISIBLE' order by created_at desc, id limit ? offset ?
+                """, (rs, row) -> new ReviewView(rs.getString(1), rs.getInt(2), rs.getString(3), rs.getString(4),
+                rs.getObject(5, OffsetDateTime.class)), productId, limit, offset);
+        Double avg = count[0] == 0 ? null : Math.round(sum[0] / count[0] * 10.0) / 10.0;
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(new ReviewSummary(avg, count[0], distribution, list));
     }
 
     @GetMapping("/products/{productId}")

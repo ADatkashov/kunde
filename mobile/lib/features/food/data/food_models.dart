@@ -479,8 +479,20 @@ const pickupOrderFlow = [
   'DELIVERED'
 ];
 
-List<String> orderFlowFor(String fulfillmentType) =>
-    fulfillmentType == 'PICKUP' ? pickupOrderFlow : orderFlow;
+/// Groceries delivery is handed to a courier: after preparing the order waits for the courier, who collects and delivers it.
+const groceryDeliveryFlow = [
+  'PLACED',
+  'ACCEPTED',
+  'PREPARING',
+  'READY_FOR_PICKUP',
+  'ON_THE_WAY',
+  'DELIVERED'
+];
+
+List<String> orderFlowFor(String fulfillmentType, {String vertical = 'FOOD'}) =>
+    fulfillmentType == 'PICKUP'
+        ? pickupOrderFlow
+        : (vertical == 'GROCERY' ? groceryDeliveryFlow : orderFlow);
 
 String orderStatusLabel(String status, {bool pickup = false}) =>
     switch (status) {

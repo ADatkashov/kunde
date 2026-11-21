@@ -326,6 +326,20 @@ class _RideAdminScreenState extends State<RideAdminScreen> {
               ),
             ),
           ),
+        if (permissions.contains('GROCERIES_OPERATIONS'))
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.shopping_basket_outlined),
+              title: Text(s.t('Продукты: центр управления',
+                  'Азық-түлік: басқару орталығы', 'Groceries control center')),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push<void>(
+                MaterialPageRoute(
+                  builder: (_) => GroceriesAdminScreen(auth: widget.auth),
+                ),
+              ),
+            ),
+          ),
         if (permissions.contains('LEISURE_OPERATIONS'))
           Card(
             child: ListTile(

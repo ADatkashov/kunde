@@ -15,6 +15,7 @@ enum GroceriesFailure {
   limit,
   storeConflict,
   nothingToAdd,
+  reviewNotAllowed,
   other,
 }
 
@@ -36,6 +37,8 @@ class GroceriesException implements Exception {
       GroceriesFailure.storeConflict: 'В корзине уже товары другого магазина.',
       GroceriesFailure.nothingToAdd:
           'В списке нет доступных товаров для корзины.',
+      GroceriesFailure.reviewNotAllowed:
+          'Отзыв можно оставить после доставки заказа с этим товаром.',
       GroceriesFailure.other:
           'Не удалось выполнить действие. Попробуйте позже.',
     };
@@ -49,6 +52,8 @@ class GroceriesException implements Exception {
       GroceriesFailure.limit: 'Шек толды. Артығын жойыңыз.',
       GroceriesFailure.storeConflict: 'Себетте басқа дүкеннің тауарлары бар.',
       GroceriesFailure.nothingToAdd: 'Тізімде себетке қосатын тауар жоқ.',
+      GroceriesFailure.reviewNotAllowed:
+          'Пікірді осы тауар бар тапсырыс жеткізілгеннен кейін қалдыруға болады.',
       GroceriesFailure.other: 'Әрекет орындалмады. Кейінірек көріңіз.',
     };
     const en = {
@@ -64,6 +69,8 @@ class GroceriesException implements Exception {
           'The cart already holds items from another store.',
       GroceriesFailure.nothingToAdd:
           'The list has no available items for the cart.',
+      GroceriesFailure.reviewNotAllowed:
+          'You can review a product after an order containing it is delivered.',
       GroceriesFailure.other: 'The action failed. Please try again later.',
     };
     return (switch (language) { 'kk' => kk, 'en' => en, _ => ru })[failure]!;
@@ -126,6 +133,7 @@ class GroceriesApi {
           GroceriesFailure.limit,
         'CART_STORE_CONFLICT' => GroceriesFailure.storeConflict,
         'LIST_NOTHING_TO_ADD' => GroceriesFailure.nothingToAdd,
+        'REVIEW_NOT_ALLOWED' => GroceriesFailure.reviewNotAllowed,
         _ => error.status == 404
             ? GroceriesFailure.notFound
             : GroceriesFailure.other,
@@ -175,6 +183,27 @@ class GroceriesApi {
 
   Future<ProductDetail> product(String id) async => ProductDetail.fromJson(
       (await _public('groceries/products/$id')) as Map<String, dynamic>);
+
+  Future<ProductReviews> reviews(
+          String productId) async =>
+      ProductReviews.fromJson(
+          (await _public('groceries/products/$productId/reviews'))
+              as Map<String, dynamic>);
+
+  /// True when the signed-in customer has a delivered order with this product and has not reviewed it yet.
+  Future<bool> canReview(String productId) async =>
+      ((await _auth('GET', 'groceries/products/$productId/review-eligibility'))
+          as Map<String, dynamic>)['canReview'] ==
+      true;
+
+  Future<void> submitReview(String productId, int rating, String? comment) =>
+      _auth('POST', 'groceries/products/$productId/reviews', body: {
+        'rating': rating,
+        if (comment != null && comment.trim().isNotEmpty)
+          'comment': comment.trim(),
+      }, expected: const {
+        201
+      });
 
   // ---- favorites -------------------------------------------------------------------------------------
 

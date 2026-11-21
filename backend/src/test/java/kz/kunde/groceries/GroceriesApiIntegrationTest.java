@@ -148,7 +148,7 @@ class GroceriesApiIntegrationTest {
         String page = body(send("GET", API + "/products?limit=5&offset=5&sort=price_desc", null, null));
         assertThat((List<?>) JsonPath.read(page, "$.items")).hasSize(5);
         assertThat(((Number) JsonPath.read(page, "$.total")).longValue()).isEqualTo(total);
-        send("GET", API + "/products?sort=rating", null, null).andExpect(status().isBadRequest());
+        send("GET", API + "/products?sort=popular-ish", null, null).andExpect(status().isBadRequest());
         send("GET", API + "/products?minPriceMinor=500&maxPriceMinor=100", null, null).andExpect(status().isBadRequest());
         send("GET", API + "/products?limit=1000", null, null).andExpect(status().isBadRequest());
     }
@@ -409,5 +409,60 @@ class GroceriesApiIntegrationTest {
     @Test
     void capabilitiesReportGroceriesOnInTestEnvironments() throws Exception {
         send("GET", "/api/v1/capabilities", null, null).andExpect(jsonPath("$.groceriesEnabled").value(true));
+    }
+
+    @Test
+    void productReviewsAreVerifiedOncePerOrderAndFeedTheRating() throws Exception {
+        String a = login("+77000000301");
+        String b = login("+77000000302");
+        String store = store("fresh-market-almaty");
+        String milk = product("Молоко 2,5% 1 л");
+        send("GET", API + "/products/" + milk + "/review-eligibility", a, null).andExpect(jsonPath("$.canReview").value(false));
+        send("POST", API + "/products/" + milk + "/reviews", a, "{\"rating\":5}").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("REVIEW_NOT_ALLOWED"));
+        send("POST", API + "/products/" + milk + "/reviews", null, "{\"rating\":5}").andExpect(status().isUnauthorized());
+
+        String address = JsonPath.read(body(send("POST", "/api/v1/me/addresses", a,
+                "{\"label\":\"Дом\",\"formattedAddress\":\"Алматы, пр. Абая 10 (тестовый адрес)\",\"latitude\":43.238,\"longitude\":76.945}")
+                .andExpect(status().isCreated())), "$.id");
+        String order = body(http.perform(post("/api/v1/food/orders").contentType(MediaType.APPLICATION_JSON).header("Authorization", "Bearer " + a)
+                .header("Idempotency-Key", "grocery-review-0001")
+                .content("{\"restaurantId\":\"" + store + "\",\"items\":[{\"dishId\":\"" + milk + "\",\"quantity\":5,\"optionIds\":[]}],"
+                        + "\"addressId\":\"" + address + "\",\"paymentMethod\":\"TEST_CARD\"}")).andExpect(status().isCreated()));
+        String orderId = JsonPath.read(order, "$.id");
+        // An order that is not delivered yet does not qualify.
+        send("POST", API + "/products/" + milk + "/reviews", a, "{\"rating\":5}").andExpect(status().isConflict());
+        db.update("update transactions.food_order_items set fulfillment_status = 'OK', final_unit_price_minor = unit_price_minor, final_line_total_minor = line_total_minor where order_id = ?::uuid", orderId);
+        db.update("update transactions.food_orders set status = 'DELIVERED' where id = ?::uuid", orderId);
+
+        send("GET", API + "/products/" + milk + "/review-eligibility", a, null).andExpect(jsonPath("$.canReview").value(true)).andExpect(jsonPath("$.orderId").value(orderId));
+        send("POST", API + "/products/" + milk + "/reviews", a, "{\"rating\":6}").andExpect(status().isBadRequest());
+        send("POST", API + "/products/" + milk + "/reviews", a, "{\"rating\":4,\"comment\":\"Свежее\"}").andExpect(status().isCreated())
+                .andExpect(jsonPath("$.rating").value(4)).andExpect(jsonPath("$.author").value("Покупатель"));
+        // One review per order and product; another customer without a delivered order cannot review.
+        send("POST", API + "/products/" + milk + "/reviews", a, "{\"rating\":5}").andExpect(status().isConflict());
+        send("POST", API + "/products/" + milk + "/reviews", b, "{\"rating\":5}").andExpect(status().isConflict());
+        // A product that was not in the order cannot be reviewed from it.
+        send("POST", API + "/products/" + product("Яйца С1 (10 шт)") + "/reviews", a, "{\"rating\":5}").andExpect(status().isConflict());
+
+        String summary = body(send("GET", API + "/products/" + milk + "/reviews", null, null).andExpect(status().isOk()));
+        assertThat((Double) JsonPath.read(summary, "$.average")).isEqualTo(4.0);
+        assertThat((Integer) JsonPath.read(summary, "$.count")).isEqualTo(1);
+        assertThat((List<Integer>) JsonPath.read(summary, "$.distribution")).containsExactly(0, 0, 0, 1, 0);
+        // The rating appears on the product, in the product page, and drives the rating filter and sort.
+        String detail = body(send("GET", API + "/products/" + milk, null, null));
+        assertThat((Double) JsonPath.read(detail, "$.product.ratingAvg")).isEqualTo(4.0);
+        assertThat((Integer) JsonPath.read(detail, "$.product.ratingCount")).isEqualTo(1);
+        assertThat((List<String>) JsonPath.read(body(send("GET", API + "/products?minRating=4", null, null)), "$.items[*].id")).containsExactly(milk);
+        assertThat((List<?>) JsonPath.read(body(send("GET", API + "/products?minRating=5", null, null)), "$.items")).isEmpty();
+        assertThat((String) JsonPath.read(body(send("GET", API + "/products?sort=rating", null, null)), "$.items[0].id")).isEqualTo(milk);
+        // A product without reviews has no rating (never an invented one).
+        assertThat((Object) JsonPath.read(body(send("GET", API + "/products/" + product("Яйца С1 (10 шт)"), null, null)), "$.product.ratingAvg")).isNull();
+
+        // Hidden reviews leave the public list and the average.
+        db.update("update marketplace.grocery_product_reviews set status = 'HIDDEN'");
+        assertThat((Integer) JsonPath.read(body(send("GET", API + "/products/" + milk + "/reviews", null, null)), "$.count")).isZero();
+        assertThat((Object) JsonPath.read(body(send("GET", API + "/products/" + milk, null, null)), "$.product.ratingAvg")).isNull();
+        send("GET", API + "/products/" + UUID.randomUUID() + "/reviews", null, null).andExpect(status().isNotFound());
     }
 }
