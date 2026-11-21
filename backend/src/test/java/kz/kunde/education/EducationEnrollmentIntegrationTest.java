@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 @AutoConfigureMockMvc
 class EducationEnrollmentIntegrationTest {
     @Autowired EducationEnrollmentService enrollment;
+    @Autowired EducationCertificateService certificates;
     @Autowired JdbcTemplate db;
     @Autowired MockMvc http;
     @Autowired org.springframework.transaction.PlatformTransactionManager transactionManager;
@@ -55,9 +56,34 @@ class EducationEnrollmentIntegrationTest {
         UUID code = enrollment.completeLesson(user, id, 1, 2).enrollment().certificateCode();
         assertThat(code).isNotNull();
         assertThat(enrollment.completeLesson(user, id, 1, 2).enrollment().certificateCode()).isEqualTo(code);
-        assertThat(enrollment.certificate(code).title()).isEqualTo("Synthetic course");
+        assertThat(certificates.verify(code).title()).isEqualTo("Synthetic course");
         http.perform(get("/api/v1/education/certificates/{code}", code)).andExpect(status().isOk());
         http.perform(get("/api/v1/education/enrollments/{id}/learning", id)).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @Transactional
+    void completedCertificateIsPrivateToDownloadAndCanBeRevoked() throws Exception {
+        UUID student = user();
+        UUID moderator = user();
+        db.update("insert into profile.consumer_profiles(user_id,display_name) values (?,'Синтетический ученик')", student);
+        db.update("insert into identity.admin_grants(user_id,permission,reason) values (?,'EDUCATION_OPERATIONS','Test revocation')", moderator);
+        UUID id = enrollment.enroll(student, cohort(1), 750, "synthetic-certificate-order").enrollment().id();
+        assertThatThrownBy(() -> certificates.pdf(student, id)).isInstanceOf(ApiException.class);
+        enrollment.completeLesson(student, id, 1, 1);
+        UUID code = enrollment.completeLesson(student, id, 1, 2).enrollment().certificateCode();
+        assertThat(certificates.verify(code).status()).isEqualTo("VALID");
+        assertThatThrownBy(() -> certificates.pdf(moderator, id)).isInstanceOf(ApiException.class);
+        try (var document = org.apache.pdfbox.Loader.loadPDF(certificates.pdf(student, id))) {
+            var text = new org.apache.pdfbox.text.PDFTextStripper().getText(document);
+            assertThat(text).contains("Синтетический ученик", "Synthetic course", code.toString());
+        }
+        http.perform(get("/api/v1/education/certificates/{code}", code)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.learnerName").doesNotExist());
+        assertThatThrownBy(() -> certificates.revoke(student, code, "Unauthorized")).isInstanceOf(ApiException.class);
+        assertThat(certificates.revoke(moderator, code, "Synthetic audit").status()).isEqualTo("REVOKED");
+        assertThat(enrollment.learning(student, id).enrollment().certificateStatus()).isEqualTo("REVOKED");
+        assertThatThrownBy(() -> certificates.pdf(student, id)).isInstanceOf(ApiException.class);
     }
 
     @Test

@@ -29,11 +29,13 @@ public class EducationOperationsController {
     private final EducationOperationsService operations;
     private final ConsumerIdentityService identity;
     private final EducationEnrollmentService enrollments;
+    private final EducationCertificateService certificates;
 
-    public EducationOperationsController(EducationOperationsService operations, ConsumerIdentityService identity, EducationEnrollmentService enrollments) {
+    public EducationOperationsController(EducationOperationsService operations, ConsumerIdentityService identity, EducationEnrollmentService enrollments, EducationCertificateService certificates) {
         this.operations = operations;
         this.identity = identity;
         this.enrollments = enrollments;
+        this.certificates = certificates;
     }
 
     @PreAuthorize("@partnerAccessPolicy.allowed(authentication)")
@@ -106,6 +108,15 @@ public class EducationOperationsController {
     }
 
     public record Review(@NotNull Boolean approved, @NotBlank @Size(max=1000) String feedback) {}
+
+    @PreAuthorize("@adminAccessPolicy.allowed(authentication)")
+    @PutMapping(ADMIN + "/certificates/{code}/revocation")
+    public ResponseEntity<EducationCertificateService.Verification> revokeCertificate(@AuthenticationPrincipal Jwt actor,
+            @PathVariable UUID code, @Valid @RequestBody Revocation input) {
+        return ok(certificates.revoke(user(actor), code, input.reason().strip()));
+    }
+
+    public record Revocation(@NotBlank @Size(max=200) String reason) {}
 
     private static UUID user(Jwt actor) {
         return PartnerAccessPolicy.userId(actor).orElseThrow(

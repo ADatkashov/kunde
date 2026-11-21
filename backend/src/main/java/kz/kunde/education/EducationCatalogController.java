@@ -31,11 +31,13 @@ public class EducationCatalogController {
     private final FeatureToggles toggles;
 
     private final EducationEnrollmentService enrollments;
+    private final EducationCertificateService certificates;
 
-    public EducationCatalogController(JdbcClient db, FeatureToggles toggles, EducationEnrollmentService enrollments) {
+    public EducationCatalogController(JdbcClient db, FeatureToggles toggles, EducationEnrollmentService enrollments, EducationCertificateService certificates) {
         this.db = db;
         this.toggles = toggles;
         this.enrollments = enrollments;
+        this.certificates = certificates;
     }
 
     @GetMapping("/courses")
@@ -75,8 +77,8 @@ public class EducationCatalogController {
     }
 
     @GetMapping("/certificates/{code}")
-    ResponseEntity<EducationEnrollmentService.Certificate> certificate(@PathVariable UUID code) {
-        return noStore(enrollments.certificate(code));
+    ResponseEntity<EducationCertificateService.Verification> certificate(@PathVariable UUID code) {
+        return noStore(certificates.verify(code));
     }
 
     @GetMapping("/courses/{id}")
