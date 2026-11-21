@@ -11,7 +11,7 @@ import rides_native_e2e as fixture
 REPORT = Path("reports/groceries-native")
 PHONE = "+77000000001"
 GROCERIES = ("Продукты", "Азық-түлік", "Groceries")
-PRODUCT = "Пельмени домашние 800 г"
+PRODUCT = "Сыр Российский 200 г"  # 2 190 ₸ on the shelf: two pieces clear the 3 000 ₸ minimum order
 ADD = ("Добавить в корзину", "Себетке қосу", "Add to cart")
 CART = ("В корзину", "Себетке", "Cart")
 CHECKOUT = ("Оформить заказ", "Тапсырысты рәсімдеу", "Checkout")
@@ -56,6 +56,7 @@ def main():
         android.screenshot("02-groceries-home")
         phase = "consumer_product"
         mobile.tap(PRODUCT)
+        mobile.tap("+")
         mobile.reveal(*ADD)
         android.screenshot("03-product")
         mobile.tap(*ADD)
