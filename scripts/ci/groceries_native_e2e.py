@@ -75,6 +75,10 @@ def main():
         fixture.write_report("PASSED", "completed")
     except Exception:
         fixture.write_report("FAILED", phase)
+        log = Path(os.environ.get("RUNNER_TEMP", "/tmp"), "rides-backend.log")
+        if log.exists():  # the isolated test backend only: synthetic data, no secrets
+            REPORT.joinpath("backend-tail.log").write_text(
+                "\n".join(log.read_text(errors="replace").splitlines()[-120:]))
         try:
             android.screenshot("failure")
         except Exception:
