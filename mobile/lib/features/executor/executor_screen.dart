@@ -9,6 +9,7 @@ import '../rides/ride_strings.dart';
 import 'auto_work_screen.dart';
 import 'leisure_work_screen.dart';
 import 'delivery_work_screen.dart';
+import 'food_work_screen.dart';
 import 'executor_api.dart';
 
 class ExecutorScreen extends StatefulWidget {
@@ -42,6 +43,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
   String _rideClass = 'ECONOMY';
   String? _failure;
   String? _locationFailure;
+  bool _foodAvailable = false;
   bool _deliveryEnabled = false;
   bool _deliveryResume = false;
   bool _deliverySynthetic = false;
@@ -65,12 +67,15 @@ class _ExecutorScreenState extends State<ExecutorScreen>
       final capabilities = await widget.auth
           .authorizedJson('GET', 'capabilities') as Map<String, dynamic>;
       final enabled = capabilities['deliveryExecutorEnabled'] == true;
+      final food = capabilities['marketplaceEnabled'] == true &&
+          capabilities['groceriesEnabled'] == true;
       final List<dynamic> shipments = enabled
           ? const []
           : await widget.auth.authorizedJson('GET', 'executor/deliveries')
               as List<dynamic>;
       if (!mounted) return;
       setState(() {
+        _foodAvailable = food;
         _deliveryEnabled = enabled;
         _deliveryResume = shipments.any((row) =>
             row is Map<String, dynamic> && row['pickupAddress'] != null);
@@ -329,6 +334,16 @@ class _ExecutorScreenState extends State<ExecutorScreen>
       appBar: AppBar(
         title: const Text('KUNDE Executor'),
         actions: [
+          if (_foodAvailable)
+            IconButton(
+              key: const Key('executor-food'),
+              icon: const Icon(Icons.shopping_basket_outlined),
+              tooltip:
+                  s.t('Заказы магазинов', 'Дүкен тапсырыстары', 'Store orders'),
+              onPressed: () => Navigator.of(context).push<void>(
+                  MaterialPageRoute(
+                      builder: (_) => FoodWorkScreen(auth: widget.auth))),
+            ),
           if (_deliveryEnabled || _deliveryResume)
             IconButton(
               icon: const Icon(Icons.inventory_2_outlined),
