@@ -5,8 +5,11 @@ import 'education_labels.dart';
 import 'education_text_dialog.dart';
 
 class EducationOperationsScreen extends StatefulWidget {
-  const EducationOperationsScreen(
-      {required this.auth, this.admin = false, super.key});
+  const EducationOperationsScreen({
+    required this.auth,
+    this.admin = false,
+    super.key,
+  });
   final AuthRepository auth;
   final bool admin;
 
@@ -35,27 +38,39 @@ class _EducationOperationsState extends State<EducationOperationsScreen> {
       context: context,
       builder: (context) => EducationTextDialog(
         title: educationLabel(
-            context, 'Причина решения', 'Шешімнің себебі', 'Decision reason'),
+          context,
+          'Причина решения',
+          'Шешімнің себебі',
+          'Decision reason',
+        ),
         maxLength: 200,
       ),
     );
     if (reason == null || !mounted) return;
-    await _save('POST', '$_root/$id/decision',
-        {'decision': decision, 'reason': reason});
+    await _save('POST', '$_root/$id/decision', {
+      'decision': decision,
+      'reason': reason,
+    });
   }
 
   Future<void> _review(String id, bool approved) async {
     final feedback = await showDialog<String>(
       context: context,
       builder: (context) => EducationTextDialog(
-        title: educationLabel(context, 'Комментарий к ответу', 'Жауапқа пікір',
-            'Answer feedback'),
+        title: educationLabel(
+          context,
+          'Комментарий к ответу',
+          'Жауапқа пікір',
+          'Answer feedback',
+        ),
         maxLength: 1000,
       ),
     );
     if (!mounted || feedback == null) return;
-    await _save('PUT', '$_root/$_session/roster/$id/assignment',
-        {'approved': approved, 'feedback': feedback});
+    await _save('PUT', '$_root/$_session/roster/$id/assignment', {
+      'approved': approved,
+      'feedback': feedback,
+    });
   }
 
   Future<void> _revokeCertificate() async {
@@ -63,46 +78,72 @@ class _EducationOperationsState extends State<EducationOperationsScreen> {
       context: context,
       builder: (context) => EducationTextDialog(
         title: educationLabel(
-            context, 'Код сертификата', 'Сертификат коды', 'Certificate code'),
+          context,
+          'Код сертификата',
+          'Сертификат коды',
+          'Certificate code',
+        ),
         maxLength: 36,
       ),
     );
     if (!mounted || code == null) return;
     if (!RegExp(r'^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$')
         .hasMatch(code)) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
           content: Text(
-        educationLabel(
-            context, 'Проверьте код', 'Кодты тексеріңіз', 'Check the code'),
-      )));
+            educationLabel(
+              context,
+              'Проверьте код',
+              'Кодты тексеріңіз',
+              'Check the code',
+            ),
+          ),
+        ),
+      );
       return;
     }
     final reason = await showDialog<String>(
       context: context,
       builder: (context) => EducationTextDialog(
-        title: educationLabel(context, 'Причина отзыва сертификата',
-            'Сертификатты қайтару себебі', 'Reason for certificate revocation'),
+        title: educationLabel(
+          context,
+          'Причина отзыва сертификата',
+          'Сертификатты қайтару себебі',
+          'Reason for certificate revocation',
+        ),
         maxLength: 200,
       ),
     );
     if (!mounted || reason == null) return;
-    await _save('PUT', 'admin/education/certificates/$code/revocation',
-        {'reason': reason});
+    await _save('PUT', 'admin/education/certificates/$code/revocation', {
+      'reason': reason,
+    });
   }
 
   Future<void> _save(
-      String method, String path, Map<String, dynamic> body) async {
+    String method,
+    String path,
+    Map<String, dynamic> body,
+  ) async {
     setState(() => _busy = true);
     try {
       await widget.auth.authorizedJson(method, path, body: body);
       if (mounted) _reload();
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
             content: Text(
-          educationLabel(context, 'Изменение не сохранено',
-              'Өзгеріс сақталмады', 'Change was not saved'),
-        )));
+              educationLabel(
+                context,
+                'Изменение не сохранено',
+                'Өзгеріс сақталмады',
+                'Change was not saved',
+              ),
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -111,63 +152,80 @@ class _EducationOperationsState extends State<EducationOperationsScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(
-          title: Text(widget.admin
-              ? educationLabel(context, 'Модерация курсов',
-                  'Курстарды модерациялау', 'Course moderation')
-              : _session == null
-                  ? educationLabel(
-                      context, 'Мои занятия', 'Сабақтарым', 'My classes')
-                  : educationLabel(
-                      context, 'Посещаемость', 'Қатысу', 'Attendance')),
-          actions: [
-            if (widget.admin)
-              IconButton(
-                tooltip: educationLabel(context, 'Отозвать сертификат',
-                    'Сертификатты қайтару', 'Revoke certificate'),
-                icon: const Icon(Icons.remove_moderator_outlined),
-                onPressed: _busy ? null : _revokeCertificate,
+    appBar: AppBar(
+      title: Text(
+        widget.admin
+            ? educationLabel(
+                context,
+                'Модерация курсов',
+                'Курстарды модерациялау',
+                'Course moderation',
+              )
+            : _session == null
+            ? educationLabel(context, 'Мои занятия', 'Сабақтарым', 'My classes')
+            : educationLabel(context, 'Посещаемость', 'Қатысу', 'Attendance'),
+      ),
+      actions: [
+        if (widget.admin)
+          IconButton(
+            tooltip: educationLabel(
+              context,
+              'Отозвать сертификат',
+              'Сертификатты қайтару',
+              'Revoke certificate',
+            ),
+            icon: const Icon(Icons.remove_moderator_outlined),
+            onPressed: _busy ? null : _revokeCertificate,
+          ),
+        if (_session != null)
+          IconButton(
+            tooltip: educationLabel(
+              context,
+              'К занятиям',
+              'Сабақтарға',
+              'Back to classes',
+            ),
+            icon: const Icon(Icons.calendar_month_outlined),
+            onPressed: _busy
+                ? null
+                : () {
+                    _session = null;
+                    _reload();
+                  },
+          ),
+      ],
+    ),
+    body: FutureBuilder<List<Map<String, dynamic>>>(
+      future: _rows,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final data = snapshot.data;
+        if (data == null) {
+          return Center(
+            child: TextButton(
+              onPressed: _reload,
+              child: Text(
+                educationLabel(context, 'Повторить', 'Қайталау', 'Retry'),
               ),
-            if (_session != null)
-              IconButton(
-                tooltip: educationLabel(
-                    context, 'К занятиям', 'Сабақтарға', 'Back to classes'),
-                icon: const Icon(Icons.calendar_month_outlined),
-                onPressed: _busy
-                    ? null
-                    : () {
-                        _session = null;
-                        _reload();
-                      },
-              ),
-          ],
-        ),
-        body: FutureBuilder<List<Map<String, dynamic>>>(
-          future: _rows,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            final data = snapshot.data;
-            if (data == null) {
-              return Center(
-                  child: TextButton(
-                      onPressed: _reload,
-                      child: Text(educationLabel(
-                          context, 'Повторить', 'Қайталау', 'Retry'))));
-            }
-            if (data.isEmpty) {
-              return Center(
-                  child: Text(educationLabel(
-                      context, 'Список пуст', 'Тізім бос', 'No items')));
-            }
-            return ListView(
-              padding: const EdgeInsets.all(16),
-              children: [for (final row in data) _row(row)],
-            );
-          },
-        ),
-      );
+            ),
+          );
+        }
+        if (data.isEmpty) {
+          return Center(
+            child: Text(
+              educationLabel(context, 'Список пуст', 'Тізім бос', 'No items'),
+            ),
+          );
+        }
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [for (final row in data) _row(row)],
+        );
+      },
+    ),
+  );
 
   Widget _row(Map<String, dynamic> row) {
     final id = row['id'] as String;
@@ -179,8 +237,10 @@ class _EducationOperationsState extends State<EducationOperationsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(row['title'] as String? ?? id,
-                style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              row['title'] as String? ?? id,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             if (widget.admin) ...[
               Text('${row['organization']} · $status'),
               Text(row['description'] as String? ?? ''),
@@ -189,21 +249,35 @@ class _EducationOperationsState extends State<EducationOperationsScreen> {
                 children: [
                   if (status == 'PENDING_REVIEW') ...[
                     FilledButton(
-                        onPressed:
-                            _busy ? null : () => _decision(id, 'PUBLISH'),
-                        child: Text(educationLabel(
-                            context, 'Опубликовать', 'Жариялау', 'Publish'))),
+                      onPressed: _busy ? null : () => _decision(id, 'PUBLISH'),
+                      child: Text(
+                        educationLabel(
+                          context,
+                          'Опубликовать',
+                          'Жариялау',
+                          'Publish',
+                        ),
+                      ),
+                    ),
                     TextButton(
-                        onPressed: _busy ? null : () => _decision(id, 'REJECT'),
-                        child: Text(educationLabel(
-                            context, 'Отклонить', 'Қабылдамау', 'Reject'))),
+                      onPressed: _busy ? null : () => _decision(id, 'REJECT'),
+                      child: Text(
+                        educationLabel(
+                          context,
+                          'Отклонить',
+                          'Қабылдамау',
+                          'Reject',
+                        ),
+                      ),
+                    ),
                   ],
                   if (status == 'PUBLISHED')
                     TextButton(
-                        onPressed:
-                            _busy ? null : () => _decision(id, 'SUSPEND'),
-                        child: Text(educationLabel(
-                            context, 'Скрыть', 'Жасыру', 'Suspend'))),
+                      onPressed: _busy ? null : () => _decision(id, 'SUSPEND'),
+                      child: Text(
+                        educationLabel(context, 'Скрыть', 'Жасыру', 'Suspend'),
+                      ),
+                    ),
                 ],
               ),
             ] else if (_session == null) ...[
@@ -211,11 +285,17 @@ class _EducationOperationsState extends State<EducationOperationsScreen> {
               OutlinedButton(
                 onPressed: () {
                   _session = id;
-                  _scheduled = starts != null;
+                  _scheduled = row['format'] != 'ONLINE_RECORDED';
                   _reload();
                 },
-                child: Text(educationLabel(
-                    context, 'Открыть список', 'Тізімді ашу', 'Open roster')),
+                child: Text(
+                  educationLabel(
+                    context,
+                    'Открыть список',
+                    'Тізімді ашу',
+                    'Open roster',
+                  ),
+                ),
               ),
             ] else ...[
               if (_scheduled)
@@ -226,24 +306,36 @@ class _EducationOperationsState extends State<EducationOperationsScreen> {
                       (
                         'PRESENT',
                         educationLabel(
-                            context, 'Присутствовал', 'Қатысты', 'Present')
+                          context,
+                          'Присутствовал',
+                          'Қатысты',
+                          'Present',
+                        ),
                       ),
                       (
                         'ABSENT',
                         educationLabel(
-                            context, 'Отсутствовал', 'Қатыспады', 'Absent')
+                          context,
+                          'Отсутствовал',
+                          'Қатыспады',
+                          'Absent',
+                        ),
                       ),
                     ])
-                      ChoiceChip(
-                        label: Text(label),
-                        selected: row['attendance'] == code,
-                        onSelected: _busy
-                            ? null
-                            : (_) => _save(
+                      Semantics(
+                        identifier:
+                            'education-attendance-${code.toLowerCase()}-$id',
+                        child: ChoiceChip(
+                          label: Text(label),
+                          selected: row['attendance'] == code,
+                          onSelected: _busy
+                              ? null
+                              : (_) => _save(
                                   'PUT',
                                   '$_root/$_session/roster/$id',
                                   {'status': code},
                                 ),
+                        ),
                       ),
                   ],
                 ),
@@ -254,13 +346,27 @@ class _EducationOperationsState extends State<EducationOperationsScreen> {
                   spacing: 8,
                   children: [
                     FilledButton(
-                        onPressed: _busy ? null : () => _review(id, true),
-                        child: Text(educationLabel(
-                            context, 'Принять', 'Қабылдау', 'Approve'))),
+                      onPressed: _busy ? null : () => _review(id, true),
+                      child: Text(
+                        educationLabel(
+                          context,
+                          'Принять',
+                          'Қабылдау',
+                          'Approve',
+                        ),
+                      ),
+                    ),
                     TextButton(
-                        onPressed: _busy ? null : () => _review(id, false),
-                        child: Text(educationLabel(context, 'На доработку',
-                            'Қайта орындау', 'Return'))),
+                      onPressed: _busy ? null : () => _review(id, false),
+                      child: Text(
+                        educationLabel(
+                          context,
+                          'На доработку',
+                          'Қайта орындау',
+                          'Return',
+                        ),
+                      ),
+                    ),
                   ],
                 ),
             ],

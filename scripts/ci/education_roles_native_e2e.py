@@ -123,12 +123,15 @@ def main():
                                   key=uuid.uuid4().hex, body={"cohortId": str(cohort),
                                       "expectedPriceMinor": 750, "paymentMethod": "TEST_CARD"})
         sql(f"UPDATE marketplace.education_cohorts SET starts_at=now()-interval '1 minute' WHERE id='{cohort}';")
+        teacher = fixture.session(INSTRUCTOR)
+        roster = fixture.call("GET", f"executor/education/sessions/{cohort}/roster", token=teacher)
+        assert any(row["id"] == enrollment["id"] for row in roster), "The fixture student is missing from the roster"
         launch_and_login("executor", "com.kunde.executor", INSTRUCTOR, "KUNDE Executor")
         mobile.tap("Мои занятия", "Сабақтарым", "My classes")
         mobile.reveal(TITLE)
         mobile.tap("Открыть список", "Тізімді ашу", "Open roster")
-        mobile.tap("Присутствовал", "Қатысты", "Present")
-        teacher = fixture.session(INSTRUCTOR)
+        android.find("Посещаемость", "Қатысу", "Attendance")
+        mobile.tap(resource_id=f"education-attendance-present-{enrollment['id']}")
         for _ in range(15):
             result = fixture.call("GET", f"executor/education/sessions/{cohort}/roster", token=teacher)
             if any(row["id"] == enrollment["id"] and row["attendance"] == "PRESENT" for row in result):
