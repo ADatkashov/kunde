@@ -31,7 +31,7 @@ public class FoodDemoSeeder implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        for (String file : new String[] {"food/demo-catalog.json", "food/grocery-demo-catalog.json", "food/partner-demo-catalog.json", "food/flowers-demo-catalog.json"}) {
+        for (String file : new String[] {"food/demo-catalog.json", "food/grocery-demo-catalog.json", "food/groceries-demo-catalog.json", "food/partner-demo-catalog.json", "food/flowers-demo-catalog.json"}) {
             try (InputStream in = new ClassPathResource(file).getInputStream()) {
                 int inserted = seed(new ObjectMapper().readTree(in));
                 log.info("Demo seed {}: {} synthetic stores/restaurants inserted", file, inserted);
@@ -59,9 +59,30 @@ public class FoodDemoSeeder implements ApplicationRunner {
      * Brings attributes added after a restaurant was first seeded (unit, initial stock) onto the existing synthetic rows:
      * the unit is set when it differs, stock only when it has never been set. Prices, names and availability are untouched.
      */
+    private static String text(JsonNode node, String field) { return node.has(field) ? node.get(field).asText() : null; }
+
     private void syncDishAttributes(JsonNode restaurant) {
         for (JsonNode s : restaurant.get("sections")) {
             for (JsonNode d : s.get("dishes")) {
+                if (d.has("category")) {
+                    // Groceries 1.0 attributes: only filled where still empty, so partner edits are never overwritten.
+                    JsonNode nut = d.path("nutrition");
+                    db.update("""
+                            update marketplace.food_dishes set grocery_category = ?,
+                                brand = coalesce(brand, ?), origin_country = coalesce(origin_country, ?),
+                                composition = coalesce(composition, ?), storage_conditions = coalesce(storage_conditions, ?),
+                                kcal_100 = coalesce(kcal_100, ?), protein_100 = coalesce(protein_100, ?),
+                                fat_100 = coalesce(fat_100, ?), carbs_100 = coalesce(carbs_100, ?),
+                                compare_at_price_minor = coalesce(compare_at_price_minor, ?)
+                            where (name = ? or name = ?) and grocery_category is null and restaurant_id =
+                                (select id from marketplace.food_restaurants where slug = ? and is_synthetic)
+                            """, d.get("category").asText(), text(d, "brand"), text(d, "origin"), text(d, "composition"),
+                            text(d, "storage"), nut.has("kcal") ? nut.get("kcal").asInt() : null,
+                            nut.has("protein") ? nut.get("protein").asDouble() : null, nut.has("fat") ? nut.get("fat").asDouble() : null,
+                            nut.has("carbs") ? nut.get("carbs").asDouble() : null, d.has("compareAt") ? d.get("compareAt").asLong() : null,
+                            d.get("name").asText(), d.has("legacyName") ? d.get("legacyName").asText() : d.get("name").asText(),
+                            restaurant.get("slug").asText());
+                }
                 if (d.has("legacyName")) {
                     // The first DEV seed priced these per kg but named them "..., 1 кг" and counted pieces.
                     db.update("""
@@ -114,14 +135,21 @@ public class FoodDemoSeeder implements ApplicationRunner {
                         """, UUID.class, id, s.get("name").asText(), sectionOrder++);
                 int dishOrder = 0;
                 for (JsonNode d : s.get("dishes")) {
+                    JsonNode nut = d.path("nutrition");
                     UUID dishId = db.queryForObject("""
                             insert into marketplace.food_dishes (restaurant_id, section_id, name, description, price_minor,
-                                emoji, tone, available, sort_order, unit, stock_qty, image_url)
-                            values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning id
+                                emoji, tone, available, sort_order, unit, stock_qty, image_url, grocery_category, brand, origin_country,
+                                composition, storage_conditions, kcal_100, protein_100, fat_100, carbs_100, compare_at_price_minor, created_at)
+                            values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now() - make_interval(days => ?))
+                            returning id
                             """, UUID.class, id, sectionId, d.get("name").asText(), d.get("description").asText(),
                             d.get("price").asLong(), d.get("emoji").asText(), d.get("tone").asText(),
                             d.get("available").asBoolean(), dishOrder++, d.has("unit") ? d.get("unit").asText() : "PIECE",
-                            d.has("stock") ? d.get("stock").asInt() : null, d.has("imageUrl") ? d.get("imageUrl").asText() : null);
+                            d.has("stock") ? d.get("stock").asInt() : null, d.has("imageUrl") ? d.get("imageUrl").asText() : null,
+                            text(d, "category"), text(d, "brand"), text(d, "origin"), text(d, "composition"), text(d, "storage"),
+                            nut.has("kcal") ? nut.get("kcal").asInt() : null, nut.has("protein") ? nut.get("protein").asDouble() : null,
+                            nut.has("fat") ? nut.get("fat").asDouble() : null, nut.has("carbs") ? nut.get("carbs").asDouble() : null,
+                            d.has("compareAt") ? d.get("compareAt").asLong() : null, d.has("newDays") ? d.get("newDays").asInt() : 60);
                     int groupOrder = 0;
                     for (JsonNode g : d.get("groups")) {
                         UUID groupId = db.queryForObject("""

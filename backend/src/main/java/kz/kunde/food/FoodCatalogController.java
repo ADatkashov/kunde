@@ -52,7 +52,18 @@ public class FoodCatalogController {
 
     private final JdbcTemplate jdbc;
 
+    private kz.kunde.platform.FeatureToggles toggles;
+
     public FoodCatalogController(JdbcTemplate jdbc) { this.jdbc = jdbc; }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setToggles(kz.kunde.platform.FeatureToggles toggles) { this.toggles = toggles; }
+
+    private void requireGroceriesOn(String vertical) {
+        if ("GROCERY".equals(vertical) && toggles != null && !toggles.enabled(kz.kunde.platform.FeatureToggles.Feature.GROCERIES)) {
+            throw new ApiException(HttpStatus.CONFLICT, "GROCERIES_DISABLED", "Groceries is switched off");
+        }
+    }
 
     static final String RESTAURANT_SELECT = """
             select id, slug, name, cuisine, description, emoji, tone, delivery_fee_minor, min_order_minor,
@@ -113,6 +124,7 @@ public class FoodCatalogController {
         if (orderBy == null) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "SORT_INVALID", "sort must be recommended, rating, delivery_fee or eta");
         }
+        requireGroceriesOn(vertical);
         StringBuilder where = new StringBuilder(" where r.vertical = ?");
         List<Object> args = new ArrayList<>();
         args.add(vertical(vertical));
@@ -216,6 +228,7 @@ public class FoodCatalogController {
     public ResponseEntity<SearchResult> search(@RequestParam(defaultValue = "") @Size(max = 100) String q,
             @RequestParam(defaultValue = "FOOD") String vertical) {
         vertical(vertical);
+        requireGroceriesOn(vertical);
         String term = q.strip();
         if (term.isEmpty()) {
             return ResponseEntity.ok(new SearchResult(List.of(), List.of()));

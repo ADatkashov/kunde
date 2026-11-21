@@ -3,8 +3,14 @@
 ## KUNDE Events & Tickets
 
 1. Дождаться зелёных обязательных проверок PR #196 (включая `Leisure Android E2E`), снять Android-скриншоты Events/Leisure (Android visual CI), перевести PR из Draft и слить. Глобальный поиск «концерт» → Events, «боулинг» → Leisure ещё не сделан.
-2. DEV: после merge развернуть `main`, проверить V45, `eventsEnabled: true`, купить место через `TEST_CARD`, проверить QR. Команды: `cd backend && mvn test -Dtest='Events*,Leisure*'`. [Матрица](docs/product/events.md).
+2. DEV: после merge развернуть `main`, проверить V46/V47, `eventsEnabled: true`, купить место через `TEST_CARD`, проверить QR. Команды: `cd backend && mvn test -Dtest='Events*,Leisure*'`. [Матрица](docs/product/events.md).
 
+
+## KUNDE Groceries 1.0
+
+1. Merge V44 после зелёного CI, затем DEV deploy (`kunde-backend-ty81`), `scripts/dev/food_smoke.py` и проверка `/groceries/*` на DEV.
+2. Partner: редактирование бренда/КБЖУ/цены «до скидки»; Admin-экран Groceries; Executor-проверка; Android E2E и подписанные APK.
+3. Команды: `cd backend && mvn test -Dtest='Groceries*'`; `cd mobile && flutter test test/features/groceries`.
 ## KUNDE Education
 
 Провести первый курс от публикации до подтверждения записи через поток и тестовый ledger. Критерии: модерация курса, серверная цена, транзакционная защита вместимости, идемпотентная запись, подтверждённая тестовая оплата. [Матрица и контракт](docs/product/education.md).

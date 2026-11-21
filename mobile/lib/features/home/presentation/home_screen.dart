@@ -13,6 +13,7 @@ import '../../delivery/delivery_screen.dart';
 import '../../education/education_screen.dart';
 import '../../food/food_services.dart';
 import '../../food/presentation/food_home_screen.dart';
+import '../../groceries/presentation/groceries_home_screen.dart';
 import '../../health/health_home_screen.dart';
 import '../../rides/ride_api.dart';
 import '../../rides/rides_screen.dart';
@@ -190,6 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
     bool eventsEnabled = false,
     bool healthEnabled = false,
     bool educationEnabled = false,
+    bool groceriesEnabled = false,
   }) =>
       [
         ServiceCategory(
@@ -202,7 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
           icon: Icons.shopping_basket_rounded,
           label: s.catGroceries,
           color: const Color(0xFF2E8174),
-          enabled: foodEnabled && widget.food != null,
+          enabled: foodEnabled && groceriesEnabled && widget.food != null,
         ),
         ServiceCategory(
           icon: Icons.local_florist_rounded,
@@ -338,12 +340,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     } else if (c.label == s.catGroceries &&
-        foodEnabled &&
-        widget.food != null) {
+        c.enabled &&
+        widget.food?.groceries != null) {
       Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) =>
-              FoodHomeScreen(services: widget.food!, vertical: 'GROCERY'),
+              GroceriesHomeScreen(services: widget.food!.groceries!),
         ),
       );
     } else if (c.label == s.catFlowers && foodEnabled && widget.food != null) {
@@ -435,6 +437,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   eventsEnabled: snapshot?.eventsEnabled ?? false,
                   healthEnabled: snapshot?.healthEnabled ?? false,
                   educationEnabled: snapshot?.educationEnabled ?? false,
+                  groceriesEnabled: snapshot?.groceriesEnabled ?? false,
                 );
                 final visibleCategories = [
                   for (final label in [

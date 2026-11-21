@@ -92,6 +92,7 @@ public class FoodOrderService {
     private final JdbcTemplate db;
     private final FoodProperties props;
     private final FoodPromotionService promotions;
+    private kz.kunde.platform.FeatureToggles toggles;
 
     /** D-05: a partner has this long to answer a new order; afterwards the system cancels it (free for the customer). */
     @org.springframework.beans.factory.annotation.Value("${app.partner-ops.response-timeout-seconds:300}")
@@ -101,6 +102,19 @@ public class FoodOrderService {
         this.db = db;
         this.props = props;
         this.promotions = promotions;
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setToggles(kz.kunde.platform.FeatureToggles toggles) { this.toggles = toggles; }
+
+    /** New grocery quotes/orders need the GROCERIES switch; reading or cancelling existing orders never does. */
+    private void requireGroceriesOn(UUID restaurantId) {
+        if (toggles == null || toggles.enabled(kz.kunde.platform.FeatureToggles.Feature.GROCERIES)) { return; }
+        String vertical = db.query("select vertical from marketplace.food_restaurants where id = ?",
+                (rs, row) -> rs.getString(1), restaurantId).stream().findFirst().orElse(null);
+        if ("GROCERY".equals(vertical)) {
+            throw new ApiException(HttpStatus.CONFLICT, "GROCERIES_DISABLED", "Groceries is switched off; new orders are not accepted");
+        }
     }
 
     static long lineTotal(String unit, long unitPrice, int quantity) {
@@ -117,6 +131,7 @@ public class FoodOrderService {
     @Transactional(readOnly = true)
     public Quote quote(UUID restaurantId, List<CartItem> items, String fulfillmentType, String promoCode, UUID user) {
         boolean pickup = "PICKUP".equals(fulfillmentType);
+        requireGroceriesOn(restaurantId);
         var restaurant = db.query("""
                 select name, delivery_fee_minor, min_order_minor, is_open and moderation_status = 'ACTIVE', pickup_enabled, prep_minutes
                 from marketplace.food_restaurants where id = ?
@@ -264,6 +279,7 @@ public class FoodOrderService {
             advance((UUID) existing.get()[0]);
             return new Placed(views(List.of((UUID) existing.get()[0]), user).get(0), false);
         }
+        requireGroceriesOn(request.restaurantId());
         Integer active = db.queryForObject("""
                 select count(*) from transactions.food_orders where user_id = ? and status not in ('DELIVERED', 'CANCELLED')
                   and placed_at > now() - make_interval(secs => ?)

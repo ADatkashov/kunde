@@ -19,7 +19,7 @@ INSERT INTO marketplace.leisure_categories (code, name_ru, name_kk, name_en, def
 
 ALTER TABLE identity.feature_toggles DROP CONSTRAINT feature_toggles_feature_check;
 ALTER TABLE identity.feature_toggles ADD CONSTRAINT feature_toggles_feature_check
-    CHECK (feature IN ('AUTO', 'RIDES', 'DELIVERY', 'LEISURE', 'HEALTH', 'EDUCATION', 'EVENTS'));
+    CHECK (feature IN ('AUTO', 'RIDES', 'DELIVERY', 'LEISURE', 'HEALTH', 'EDUCATION', 'GROCERIES', 'EVENTS'));
 ALTER TABLE identity.feature_toggle_events DROP CONSTRAINT feature_toggle_events_feature_check;
 ALTER TABLE identity.feature_toggle_events ADD CONSTRAINT feature_toggle_events_feature_check
-    CHECK (feature IN ('AUTO', 'RIDES', 'DELIVERY', 'LEISURE', 'HEALTH', 'EDUCATION', 'EVENTS'));
+    CHECK (feature IN ('AUTO', 'RIDES', 'DELIVERY', 'LEISURE', 'HEALTH', 'EDUCATION', 'GROCERIES', 'EVENTS'));

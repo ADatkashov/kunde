@@ -10,7 +10,7 @@
 
 Один коммерческий объект — одна каноническая карточка и один inventory: `GET /api/v1/leisure/events/{id}` и `/api/v1/events/{id}` читают одну строку; `product` в ответе показывает, к какому продукту она относится, а `/events/{id}` для объекта Leisure отвечает 404.
 
-## Что сделано (Flyway V45, backend)
+## Что сделано (Flyway V46, backend)
 - `leisure_categories.product`, 5 новых категорий Events и 5 новых Leisure.
 - Флаг `EVENTS` (`EVENTS_ENABLED`; пусто = включён в local/dev/test, выключен в production, явное `true` вне них — отказ при старте). Админ может переключать его как остальные (`/admin/features/EVENTS`), `GET /capabilities` → `eventsEnabled`.
 - Публичный каталог `GET /api/v1/events`, `/events/categories`, `/events/home`, `/events/{id}`, `/events/{id}/sessions`; места — общий `GET /leisure/sessions/{id}/seats`. Каталог Leisure больше не показывает категории Events.
@@ -21,7 +21,7 @@
 - **Consumer:** плитка «События» (флаг `eventsEnabled`) открывает те же экраны Leisure, параметризованные продуктом (`LeisureProduct.events`, `LeisureServices.forProduct`): каталог `/api/v1/events`, детали, сеансы, выбор мест, TEST_CARD, QR, «Мои билеты». Плитка «Досуг» остаётся отдельной (иконка контроллера) и читает `/api/v1/leisure`. Новые категории имеют иконки и градиенты.
 - **Admin:** два отдельных центра управления на одном экране и одном гранте `LEISURE_OPERATIONS` (отдельного гранта Events нет): `GET /admin/leisure/{summary,events,orders,categories}?product=EVENTS|LEISURE`; переключатель `EVENTS` в «Функциях».
 - **Partner:** два входа («События», «Досуг») на одном экране с серверным фильтром `?product=` для событий, броней и статистики; для Events в назначении роль только `GATE`.
-- **Executor (контролёр):** V46 — роль `GATE`. Организатор назначает контролёра на сеанс, тот принимает назначение и сканирует `POST /api/v1/executor/leisure/checkins`: без принятого назначения на сеанс ответ `ACCESS_DENIED` без данных билета, иначе та же серверная проверка (`ADMITTED` один раз, затем `DUPLICATE`, `CANCELLED`, `EXPIRED`, `TOO_EARLY`, `INVALID`). Offline-проверки нет: при потере сети экран говорит «билет не проверен».
+- **Executor (контролёр):** V47 — роль `GATE`. Организатор назначает контролёра на сеанс, тот принимает назначение и сканирует `POST /api/v1/executor/leisure/checkins`: без принятого назначения на сеанс ответ `ACCESS_DENIED` без данных билета, иначе та же серверная проверка (`ADMITTED` один раз, затем `DUPLICATE`, `CANCELLED`, `EXPIRED`, `TOO_EARLY`, `INVALID`). Offline-проверки нет: при потере сети экран говорит «билет не проверен».
 - Тесты: `EventsApiIntegrationTest` (4, в т.ч. контролёр и фильтр Partner), `EventsFlagOffIntegrationTest`; Flutter: Events/Leisure на общих экранах, Admin `product=EVENTS`, Partner, gate-экран (допуск, отказ, потеря сети).
 - Нативный E2E `scripts/ci/leisure_native_e2e.py`: покупка мест через плитку «События» в приложении, QR, скан, повтор, отзыв, потеря сети; HTTP: разделение каталогов, бронь Leisure (боулинг) с возвратом, гонка за место, идемпотентность, оба флага выключены.
 

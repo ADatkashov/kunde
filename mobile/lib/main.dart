@@ -11,6 +11,7 @@ import 'features/booking/data/booking_api.dart';
 import 'features/food/data/cart_controller.dart';
 import 'features/food/data/food_api.dart';
 import 'features/food/food_services.dart';
+import 'features/groceries/data/groceries_api.dart';
 import 'features/home/data/kunde_api.dart';
 import 'features/shell/kunde_shell.dart';
 import 'features/identity_poc/identity_poc_screen.dart';
@@ -63,7 +64,12 @@ void main() {
                 timeout: const Duration(
                     seconds: apiTimeoutSeconds < 20 ? 20 : apiTimeoutSeconds)),
             cart: CartController(),
-            auth: auth),
+            auth: auth,
+            groceriesApi: GroceriesApi(
+                baseUri: Uri.parse(apiBaseUrl),
+                auth: auth,
+                timeout: const Duration(
+                    seconds: apiTimeoutSeconds < 20 ? 20 : apiTimeoutSeconds))),
     booking: auth == null
         ? null
         : BookingServices(

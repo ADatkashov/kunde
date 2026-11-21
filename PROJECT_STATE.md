@@ -2,10 +2,15 @@
 
 ## KUNDE Events & Tickets / Leisure — разделение продуктов (2026-11-21, ветка `ccr-086450c7-ir0f4p`)
 
-- Аудит: движок билетов (места, удержание, QR, проверка) уже есть в Leisure 1.0; второй движок не создавался. Flyway V45: поле `product` у категорий (EVENTS/LEISURE), флаг `EVENTS`, публичный каталог `/api/v1/events`, раздельная фильтрация каталогов, блокировка продаж по флагу продукта. [Матрица и ограничения](docs/product/events.md).
-- Flutter (Consumer плитка «События» на общих экранах, Admin/Partner с фильтром по продукту, Executor-контролёр `GATE`, V46) добавлен в PR #196. Локально: Consumer analyze чисто, 290 тестов; Partner 118; backend `Events*,Leisure*` зелёные. **Не сделано:** Android-скриншоты и нативные E2E на эмуляторе (ждут CI), DEV deploy, APK. Подробности: [events](docs/product/events.md).
+- Аудит: движок билетов (места, удержание, QR, проверка) уже есть в Leisure 1.0; второй движок не создавался. Flyway V46: поле `product` у категорий (EVENTS/LEISURE), флаг `EVENTS`, публичный каталог `/api/v1/events`, раздельная фильтрация каталогов, блокировка продаж по флагу продукта. [Матрица и ограничения](docs/product/events.md).
+- Flutter (Consumer плитка «События» на общих экранах, Admin/Partner с фильтром по продукту, Executor-контролёр `GATE`, V47) добавлен в PR #196. Локально: Consumer analyze чисто, 290 тестов; Partner 118; backend `Events*,Leisure*` зелёные. **Не сделано:** Android-скриншоты и нативные E2E на эмуляторе (ждут CI), DEV deploy, APK. Подробности: [events](docs/product/events.md).
 
 
+
+## KUNDE Groceries 1.0 — DEV/TEST срез (2026-11-21, ветка `ccr-7604baac-80k1na`)
+
+- Flyway V45: флаг `GROCERIES`, 12 категорий, атрибуты товара, избранное товаров, списки покупок, серверная корзина; `/api/v1/groceries/*`. Consumer: главная Groceries, каталог с серверными фильтрами, карточка товара, списки, избранное, синхронизация корзины.
+- Проверено локально: `mvn verify` 376 тестов, Flutter analyze чисто и 328 тестов. **Не сделано / NOT VERIFIED:** Partner/Executor/Admin-экраны Groceries, лояльность, push, фото, DEV-деплой V44, Android E2E, APK. Матрица: [groceries](docs/product/groceries.md).
 ## KUNDE Education & Courses 1.0 — каталог
 
 - В ветке `feat/education-catalog`: PostgreSQL V44, серверный флаг, API каталога и программы, плитка и каталог Consumer, переключатель Admin. Запись, оплата и обучение остаются открытыми. [Матрица и контракт](docs/product/education.md).
