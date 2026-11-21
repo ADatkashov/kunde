@@ -392,6 +392,30 @@ class BookingApiIntegrationTest {
     }
 
     @Test
+    void homeServiceTaxonomyIsLocalizedOrderedAndExcludesDisabledCategories() throws Exception {
+        send("GET", "/api/v1/home-services/categories?limit=2&offset=1", null, null, null)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].code").value("PLUMBING"))
+                .andExpect(jsonPath("$[0].nameRu").value("Сантехника"))
+                .andExpect(jsonPath("$[0].nameKk").value("Сантехника"))
+                .andExpect(jsonPath("$[0].nameEn").value("Plumbing"))
+                .andExpect(jsonPath("$[1].code").value("ELECTRICAL"));
+        send("GET", "/api/v1/home-services/definitions?category=ELECTRICAL", null, null, null)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(8))
+                .andExpect(jsonPath("$[0].categoryCode").value("ELECTRICAL"));
+        send("GET", "/api/v1/home-services/definitions?limit=50&offset=50", null, null, null)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(5));
+        send("GET", "/api/v1/home-services/definitions?limit=51", null, null, null)
+                .andExpect(status().isBadRequest());
+
+        db.update("update marketplace.home_service_categories set active = false where code = 'ELECTRICAL'");
+        send("GET", "/api/v1/home-services/definitions?category=ELECTRICAL", null, null, null)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
     void disabledHomeServicesBlocksCatalogSlotsAndNewBookingsButKeepsExistingBookings() throws Exception {
         String venue = venueId("home-clean-demo");
         String service = "Генеральная уборка";
@@ -410,6 +434,8 @@ class BookingApiIntegrationTest {
             send("GET", "/api/v1/capabilities", null, null, null)
                     .andExpect(jsonPath("$.homeServicesEnabled").value(false))
                     .andExpect(jsonPath("$.bookingEnabled").value(true));
+            send("GET", "/api/v1/home-services/categories", null, null, null).andExpect(status().isNotFound());
+            send("GET", "/api/v1/home-services/definitions", null, null, null).andExpect(status().isNotFound());
             send("GET", "/api/v1/booking/venues?category=CLEANING", null, null, null).andExpect(status().isNotFound());
             send("GET", "/api/v1/booking/venues/" + venue, null, null, null).andExpect(status().isNotFound());
             send("GET", "/api/v1/booking/slots?venueId=" + venue + "&serviceId="
