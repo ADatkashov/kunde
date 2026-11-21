@@ -14,10 +14,10 @@
 - В `main` (V45–V52, PR #195, #197, #204): каталог/поиск/фильтры на сервере, карточка товара с галереей, Share, избранное, списки, серверная корзина, фото и поля товара (Partner), интерактивная сборка с согласованием замен, задачи курьера и экран Executor, Groceries Control Center (scoped `GROCERIES_OPERATIONS`), проверенные отзывы и рейтинг. DEV на `3faa0ee`.
 - Проверено: `mvn verify` 389 тестов, Consumer 353, Partner 120; сквозной integration-тест Consumer → Partner → Executor → Consumer → Admin. **Не сделано / NOT VERIFIED:** лояльность (правила не утверждены), уведомления, корректировка по весу, карта в Consumer, нативный Android E2E, реальные Android-скриншоты, APK. Матрица: [groceries](docs/product/groceries.md).
 
-## KUNDE Education & Courses 1.0 — каталог
+## KUNDE Education & Courses 1.0 — синтетический DEV/TEST
 
-- В `main` через [#193](https://github.com/ADatkashov/kunde/pull/193): PostgreSQL V44, серверный флаг, API каталога и программы, плитка и каталог Consumer, переключатель Admin. V48 добавляет запись в синтетические потоки, TEST_CARD, «Мои курсы», текстовый курс и код подтверждения завершения. Задания, посещаемость и панели остаются открытыми. [Матрица и контракт](docs/product/education.md).
-
+- В `main` после #193, #194, #198–#201: каталог, запись в поток с TEST_CARD, текстовые уроки, задания с проверкой преподавателем, тест, прогресс, PDF с проверяемым кодом и отзыв. Partner создаёт черновик и поток, Admin модерирует, Executor работает с назначенной группой. Миграции Education: V44, V48–V49 и V53–V55.
+- [Контракты, покрытие и ограничения](docs/product/education.md). Полная техническая приёмка остаётся открытой.
 
 ## KUNDE Food Ordering 2.0 — DEV slice (2026-11-21, ветка `ccr-0b95f693-1hsj46`)
 
