@@ -39,7 +39,7 @@ class _PartnerLeisureScreenState extends State<PartnerLeisureScreen>
     final s = S.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(s.lzTitle),
+        title: Text(widget.ops.isEvents ? s.evTitle : s.lzTitle),
         bottom: TabBar(
           controller: _tabs,
           isScrollable: true,

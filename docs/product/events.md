@@ -17,7 +17,15 @@
 - Покупка идёт по общим `POST /leisure/sessions/{id}/holds` и `/leisure/orders`; блокировка новых продаж зависит от флага продукта сеанса (`EVENTS_DISABLED` / `LEISURE_DISABLED`). Существующие заказы, билеты и возвраты остаются доступны.
 - Тесты (PostgreSQL 16): `EventsApiIntegrationTest` (разделение, каноническая карточка, покупка места), `EventsFlagOffIntegrationTest` (Events выключен — Leisure продаёт); существующая гонка за место `LeisureConcurrencyIntegrationTest` проверяет общий движок.
 
+## Клиенты (Flutter) и роли
+- **Consumer:** плитка «События» (флаг `eventsEnabled`) открывает те же экраны Leisure, параметризованные продуктом (`LeisureProduct.events`, `LeisureServices.forProduct`): каталог `/api/v1/events`, детали, сеансы, выбор мест, TEST_CARD, QR, «Мои билеты». Плитка «Досуг» остаётся отдельной (иконка контроллера) и читает `/api/v1/leisure`. Новые категории имеют иконки и градиенты.
+- **Admin:** два отдельных центра управления на одном экране и одном гранте `LEISURE_OPERATIONS` (отдельного гранта Events нет): `GET /admin/leisure/{summary,events,orders,categories}?product=EVENTS|LEISURE`; переключатель `EVENTS` в «Функциях».
+- **Partner:** два входа («События», «Досуг») на одном экране с серверным фильтром `?product=` для событий, броней и статистики; для Events в назначении роль только `GATE`.
+- **Executor (контролёр):** V46 — роль `GATE`. Организатор назначает контролёра на сеанс, тот принимает назначение и сканирует `POST /api/v1/executor/leisure/checkins`: без принятого назначения на сеанс ответ `ACCESS_DENIED` без данных билета, иначе та же серверная проверка (`ADMITTED` один раз, затем `DUPLICATE`, `CANCELLED`, `EXPIRED`, `TOO_EARLY`, `INVALID`). Offline-проверки нет: при потере сети экран говорит «билет не проверен».
+- Тесты: `EventsApiIntegrationTest` (4, в т.ч. контролёр и фильтр Partner), `EventsFlagOffIntegrationTest`; Flutter: Events/Leisure на общих экранах, Admin `product=EVENTS`, Partner, gate-экран (допуск, отказ, потеря сети).
+- Нативный E2E `scripts/ci/leisure_native_e2e.py`: покупка мест через плитку «События» в приложении, QR, скан, повтор, отзыв, потеря сети; HTTP: разделение каталогов, бронь Leisure (боулинг) с возвратом, гонка за место, идемпотентность, оба флага выключены.
+
 ## Не сделано (честно)
-- **Flutter:** отдельная плитка «События» и экраны Events в Consumer/Partner/Executor/Admin, поиск «концерт → Events / боулинг → Leisure», бегущий скриншот-сравнение с референсом. Пока приложение Consumer продолжает открывать Leisure; кино/концерты/театры исчезли из списка категорий Leisure до появления интерфейса Events (данные и покупка через API работают). Flutter SDK в этой сессии отсутствовал — UI не менялся.
-- Отдельный Admin-центр Events, CRUD-схемы зала в Partner, Executor-смены, отчёты, перенос/обмен билетов, уведомления, Wallet (нет интеграции), нативные E2E, TalkBack, подписанные APK, PROD (флаг выключен).
-- Seed Events использует существующие синтетические данные Leisure (кино, концерт, выставка); демо-данных для спорта/фестиваля/шоу ещё нет.
+- Проверка скриншотами Android и сравнение с референсом; нативные E2E Partner/Admin/Executor (покрыты виджет-тестами и HTTP); TalkBack на устройстве; полный RU/KK/EN-обзор казахских строк.
+- CRUD схемы зала, отчёты по продажам Events в Partner, перенос/обмен билетов, уведомления, Wallet (нет интеграции), промо/жалобы Events отдельно от Leisure (общие разделы Admin).
+- Отдельный грант `EVENTS_OPERATIONS`; демо-данные для спорта/фестиваля/шоу; PROD (флаг выключен), DEV deploy, подписанные APK.

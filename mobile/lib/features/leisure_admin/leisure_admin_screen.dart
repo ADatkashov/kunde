@@ -11,9 +11,15 @@ import '../rides/ride_strings.dart';
 /// the screen only presents what the server returns (no customer contact data exists in these responses).
 /// The runtime on/off switch of Leisure lives in the shared Features screen.
 class LeisureAdminScreen extends StatefulWidget {
-  const LeisureAdminScreen({required this.auth, super.key});
+  const LeisureAdminScreen({required this.auth, this.product, super.key});
 
   final AuthRepository auth;
+
+  /// `EVENTS` or `LEISURE`: the two products share one engine and one grant, but each has its own Control Center view
+  /// (analytics, events, orders and categories are filtered by the server). Null shows both.
+  final String? product;
+
+  bool get isEvents => product == 'EVENTS';
 
   @override
   State<LeisureAdminScreen> createState() => _LeisureAdminScreenState();
@@ -34,8 +40,11 @@ class _LeisureAdminScreenState extends State<LeisureAdminScreen>
     final s = RideStrings(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(s.t('Досуг: центр управления', 'Демалыс: басқару орталығы',
-            'Leisure control center')),
+        title: widget.isEvents
+            ? Text(s.t('События: центр управления',
+                'Іс-шаралар: басқару орталығы', 'Events control center'))
+            : Text(s.t('Досуг: центр управления', 'Демалыс: басқару орталығы',
+                'Leisure control center')),
         bottom: TabBar(
             controller: _tabs,
             isScrollable: true,
@@ -53,11 +62,11 @@ class _LeisureAdminScreenState extends State<LeisureAdminScreen>
           controller: _tabs,
           physics: const NeverScrollableScrollPhysics(),
           children: [
-            _Overview(auth: widget.auth),
-            _Moderation(auth: widget.auth),
-            _Bookings(auth: widget.auth),
+            _Overview(auth: widget.auth, product: widget.product),
+            _Moderation(auth: widget.auth, product: widget.product),
+            _Bookings(auth: widget.auth, product: widget.product),
             _Complaints(auth: widget.auth),
-            _Categories(auth: widget.auth),
+            _Categories(auth: widget.auth, product: widget.product),
             _Audit(auth: widget.auth),
           ]),
     );
@@ -66,10 +75,15 @@ class _LeisureAdminScreenState extends State<LeisureAdminScreen>
 
 const _root = 'admin/leisure';
 
-Future<List<Map<String, dynamic>>> _list(
-        AuthRepository auth, String path) async =>
-    (await auth.authorizedJson('GET', '$_root/$path') as List)
+Future<List<Map<String, dynamic>>> _list(AuthRepository auth, String path,
+        [String? product]) async =>
+    (await auth.authorizedJson('GET', '$_root/${_withProduct(path, product)}')
+            as List)
         .cast<Map<String, dynamic>>();
+
+String _withProduct(String path, String? product) => product == null
+    ? path
+    : '$path${path.contains('?') ? '&' : '?'}product=$product';
 
 String _when(String iso) {
   final m = RegExp(r'^\d{4}-(\d{2})-(\d{2})T(\d{2}):(\d{2})').firstMatch(iso);
@@ -141,9 +155,10 @@ void _toast(BuildContext context, String text) =>
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
 
 class _Overview extends StatefulWidget {
-  const _Overview({required this.auth});
+  const _Overview({required this.auth, this.product});
 
   final AuthRepository auth;
+  final String? product;
 
   @override
   State<_Overview> createState() => _OverviewState();
@@ -154,7 +169,8 @@ class _OverviewState extends State<_Overview> {
   late Future<Map<String, dynamic>> _data = _load();
 
   Future<Map<String, dynamic>> _load() async =>
-      await widget.auth.authorizedJson('GET', '$_root/summary?days=$_days')
+      await widget.auth.authorizedJson('GET',
+              '$_root/${_withProduct('summary?days=$_days', widget.product)}')
           as Map<String, dynamic>;
 
   void _reload() => setState(() {
@@ -341,9 +357,10 @@ class _LinePainter extends CustomPainter {
 }
 
 class _Moderation extends StatefulWidget {
-  const _Moderation({required this.auth});
+  const _Moderation({required this.auth, this.product});
 
   final AuthRepository auth;
+  final String? product;
 
   @override
   State<_Moderation> createState() => _ModerationState();
@@ -355,8 +372,10 @@ class _ModerationState extends State<_Moderation> {
   late Future<List<Map<String, dynamic>>> _rows = _load();
   bool _busy = false;
 
-  Future<List<Map<String, dynamic>>> _load() => _list(widget.auth,
-      '${_venues ? 'venues' : 'events'}${_status == null ? '' : '?status=$_status'}');
+  Future<List<Map<String, dynamic>>> _load() => _list(
+      widget.auth,
+      '${_venues ? 'venues' : 'events'}${_status == null ? '' : '?status=$_status'}',
+      _venues ? null : widget.product);
 
   void _reload() => setState(() {
         _rows = _load();
@@ -550,9 +569,10 @@ class _ModerationState extends State<_Moderation> {
 }
 
 class _Bookings extends StatefulWidget {
-  const _Bookings({required this.auth});
+  const _Bookings({required this.auth, this.product});
 
   final AuthRepository auth;
+  final String? product;
 
   @override
   State<_Bookings> createState() => _BookingsState();
@@ -563,8 +583,8 @@ class _BookingsState extends State<_Bookings> {
   late Future<List<Map<String, dynamic>>> _rows = _load();
   bool _busy = false;
 
-  Future<List<Map<String, dynamic>>> _load() =>
-      _list(widget.auth, 'orders${_status == null ? '' : '?status=$_status'}');
+  Future<List<Map<String, dynamic>>> _load() => _list(widget.auth,
+      'orders${_status == null ? '' : '?status=$_status'}', widget.product);
 
   void _reload() => setState(() {
         _rows = _load();
@@ -866,9 +886,10 @@ class _ComplaintsState extends State<_Complaints> {
 }
 
 class _Categories extends StatefulWidget {
-  const _Categories({required this.auth});
+  const _Categories({required this.auth, this.product});
 
   final AuthRepository auth;
+  final String? product;
 
   @override
   State<_Categories> createState() => _CategoriesState();
@@ -876,10 +897,10 @@ class _Categories extends StatefulWidget {
 
 class _CategoriesState extends State<_Categories> {
   late Future<List<Map<String, dynamic>>> _rows =
-      _list(widget.auth, 'categories');
+      _list(widget.auth, 'categories', widget.product);
 
   void _reload() => setState(() {
-        _rows = _list(widget.auth, 'categories');
+        _rows = _list(widget.auth, 'categories', widget.product);
       });
 
   @override

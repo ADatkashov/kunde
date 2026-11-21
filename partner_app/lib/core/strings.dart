@@ -299,8 +299,10 @@ class S {
         return _t('Начать приготовление?', 'Дайындауды бастайсыз ба?',
             'Start preparing?');
       case 'READY_FOR_PICKUP':
-        return _t('Заказ собран и готов к выдаче?',
-            'Тапсырыс жиналып, беруге дайын ба?', 'Is the order packed and ready?');
+        return _t(
+            'Заказ собран и готов к выдаче?',
+            'Тапсырыс жиналып, беруге дайын ба?',
+            'Is the order packed and ready?');
       case 'ON_THE_WAY':
         return _t('Заказ передан курьеру?', 'Тапсырыс курьерге берілді ме?',
             'Handed over to the courier?');
@@ -719,12 +721,12 @@ class S {
   String get dishUnavailable => _t('Нет в наличии', 'Жоқ', 'Unavailable');
   String stockLeft(int n) => _t('Остаток: $n', 'Қалдық: $n', 'In stock: $n');
   String get addDish => _t('Добавить блюдо', 'Тағам қосу', 'Add dish');
-  String get restaurantSettings => _t(
-      'Условия заказа', 'Тапсырыс шарттары', 'Ordering settings');
+  String get restaurantSettings =>
+      _t('Условия заказа', 'Тапсырыс шарттары', 'Ordering settings');
   String get pickupSetting =>
       _t('Принимать самовывоз', 'Өзі алып кетуді қабылдау', 'Accept pickup');
-  String prepTime(int m) =>
-      _t('Время готовности: $m мин', 'Дайындау уақыты: $m мин', 'Preparation time: $m min');
+  String prepTime(int m) => _t('Время готовности: $m мин',
+      'Дайындау уақыты: $m мин', 'Preparation time: $m min');
   String get promotionsTitle => _t('Акции', 'Акциялар', 'Promotions');
   String get promotionsEmpty =>
       _t('Акций пока нет', 'Акциялар әлі жоқ', 'No promotions yet');

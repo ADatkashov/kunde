@@ -416,9 +416,12 @@ class FakeBackend {
     if (promoStatus != null && r.method == 'POST') {
       promotions = [
         for (final x in promotions)
-          x['id'] == promoStatus.group(1) ? {...x, 'status': body()['status']} : x
+          x['id'] == promoStatus.group(1)
+              ? {...x, 'status': body()['status']}
+              : x
       ];
-      return json(promotions.firstWhere((x) => x['id'] == promoStatus.group(1)));
+      return json(
+          promotions.firstWhere((x) => x['id'] == promoStatus.group(1)));
     }
     var m = RegExp(r'^food/restaurants/([^/]+)$').firstMatch(rest);
     if (m != null && r.method == 'PATCH') {

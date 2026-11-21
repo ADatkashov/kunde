@@ -3,7 +3,7 @@
 ## KUNDE Events & Tickets / Leisure — разделение продуктов (2026-11-21, ветка `ccr-086450c7-ir0f4p`)
 
 - Аудит: движок билетов (места, удержание, QR, проверка) уже есть в Leisure 1.0; второй движок не создавался. Flyway V45: поле `product` у категорий (EVENTS/LEISURE), флаг `EVENTS`, публичный каталог `/api/v1/events`, раздельная фильтрация каталогов, блокировка продаж по флагу продукта. [Матрица и ограничения](docs/product/events.md).
-- Проверено локально: `mvn test -Dtest='Events*,Leisure*,FeatureToggles*'` на PostgreSQL 16 — 20 тестов, 0 падений. **Не сделано:** Flutter-интерфейс Events (SDK недоступен в сессии), Admin/Partner/Executor-экраны Events, E2E, APK, DEV deploy.
+- Flutter (Consumer плитка «События» на общих экранах, Admin/Partner с фильтром по продукту, Executor-контролёр `GATE`, V46) добавлен в PR #196. Локально: Consumer analyze чисто, 290 тестов; Partner 118; backend `Events*,Leisure*` зелёные. **Не сделано:** Android-скриншоты и нативные E2E на эмуляторе (ждут CI), DEV deploy, APK. Подробности: [events](docs/product/events.md).
 
 
 ## KUNDE Education & Courses 1.0 — каталог

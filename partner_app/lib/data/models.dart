@@ -167,9 +167,13 @@ class PartnerOrder {
   final String? cancelledBy;
 
   bool get isNew => status == 'PLACED';
-  bool get isActive =>
-      const {'PLACED', 'ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP', 'ON_THE_WAY'}
-          .contains(status);
+  bool get isActive => const {
+        'PLACED',
+        'ACCEPTED',
+        'PREPARING',
+        'READY_FOR_PICKUP',
+        'ON_THE_WAY'
+      }.contains(status);
   int get itemCount => items.fold(0, (a, l) => a + l.quantity);
 
   /// Short human reference derived from the id; never the full identifier.
@@ -276,8 +280,10 @@ class Restaurant {
         id: _id(j, 'restaurant'),
         name: _str(j['name']) ?? '',
         open: _bool(j['open']),
-        pickupEnabled: j['pickupEnabled'] is bool ? j['pickupEnabled'] as bool : true,
-        prepMinutes: j['prepMinutes'] is num ? (j['prepMinutes'] as num).toInt() : 20,
+        pickupEnabled:
+            j['pickupEnabled'] is bool ? j['pickupEnabled'] as bool : true,
+        prepMinutes:
+            j['prepMinutes'] is num ? (j['prepMinutes'] as num).toInt() : 20,
       );
   final String id;
   final String name;

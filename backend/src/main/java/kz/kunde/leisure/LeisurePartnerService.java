@@ -93,6 +93,15 @@ public class LeisurePartnerService {
         }
     }
 
+    /** EVENTS or LEISURE (the two products on one engine); absent = both. */
+    private static String product(String product) {
+        if (product == null || product.isBlank()) { return null; }
+        if (!"EVENTS".equals(product) && !"LEISURE".equals(product)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "PRODUCT_INVALID", "product must be EVENTS or LEISURE");
+        }
+        return product;
+    }
+
     private static ApiException notFound(String code) { return new ApiException(HttpStatus.NOT_FOUND, code, "Not found"); }
 
     private void requireOwnVenue(UUID partner, UUID venue) {
@@ -201,10 +210,12 @@ public class LeisurePartnerService {
     }
 
     @Transactional(readOnly = true)
-    public List<EventRow> events(UUID actor, UUID partner, UUID venueId) {
+    public List<EventRow> events(UUID actor, UUID partner, UUID venueId, String product) {
         partners.requireProcessing(actor, partner);
-        return db.query(EVENT_SELECT + "where v.partner_id = ? and (?::uuid is null or e.venue_id = ?::uuid) order by e.created_at desc, e.id limit 200",
-                LeisurePartnerService::eventRow, partner, venueId, venueId);
+        String pr = product(product);
+        return db.query(EVENT_SELECT + "where v.partner_id = ? and (?::uuid is null or e.venue_id = ?::uuid) "
+                + "and (?::text is null or (select c.product from marketplace.leisure_categories c where c.code = e.category_code) = ?::text) order by e.created_at desc, e.id limit 200",
+                LeisurePartnerService::eventRow, partner, venueId, venueId, pr, pr);
     }
 
     @Transactional
@@ -460,8 +471,9 @@ public class LeisurePartnerService {
     // ---- bookings ------------------------------------------------------------------------------------------------------------
 
     @Transactional(readOnly = true)
-    public List<PartnerOrder> orders(UUID actor, UUID partner, String scope, UUID eventId, UUID sessionId, int limit, int offset) {
+    public List<PartnerOrder> orders(UUID actor, UUID partner, String scope, UUID eventId, UUID sessionId, int limit, int offset, String product) {
         partners.requireProcessing(actor, partner);
+        String pr = product(product);
         String filter = switch (scope) {
             case "requests" -> "o.status = 'PENDING' and s.ends_at > now()";
             case "history" -> "(o.status = 'CANCELLED' or s.ends_at <= now())";
@@ -469,8 +481,10 @@ public class LeisurePartnerService {
         };
         String order = "history".equals(scope) ? "s.starts_at desc" : "s.starts_at asc";
         List<UUID> ids = db.queryForList("select o.id from transactions.leisure_orders o join marketplace.leisure_sessions s on s.id = o.session_id join marketplace.leisure_venues v on v.id = o.venue_id "
-                + "where v.partner_id = ? and " + filter + " and (?::uuid is null or o.event_id = ?::uuid) and (?::uuid is null or o.session_id = ?::uuid) order by " + order + ", o.id limit ? offset ?",
-                UUID.class, partner, eventId, eventId, sessionId, sessionId, Math.max(1, Math.min(limit, 100)), Math.max(0, offset));
+                + "join marketplace.leisure_events e on e.id = o.event_id join marketplace.leisure_categories c on c.code = e.category_code "
+                + "where v.partner_id = ? and " + filter + " and (?::uuid is null or o.event_id = ?::uuid) and (?::uuid is null or o.session_id = ?::uuid) and (?::text is null or c.product = ?::text) "
+                + "order by " + order + ", o.id limit ? offset ?",
+                UUID.class, partner, eventId, eventId, sessionId, sessionId, pr, pr, Math.max(1, Math.min(limit, 100)), Math.max(0, offset));
         return ids.stream().map(id -> partnerOrder(partner, id)).toList();
     }
 
@@ -545,6 +559,33 @@ public class LeisurePartnerService {
     @Transactional
     public CheckinResult checkin(UUID actor, UUID partner, String code, UUID expectedSession) {
         partners.requireProcessing(actor, partner);
+        return scan(actor, partner, code, expectedSession);
+    }
+
+    /**
+     * Gate scan by a controller (executor) of Events. Access exists only for a ticket of a session to which the organiser assigned this person as
+     * GATE and who accepted it; anything else is ACCESS_DENIED without a word about the ticket. Verification itself is {@link #scan}.
+     */
+    @Transactional
+    public CheckinResult gateScan(UUID executor, String code) {
+        Matcher m = CODE.matcher(code == null ? "" : code.strip());
+        if (!m.matches()) { return new CheckinResult("INVALID", false, "Unreadable code", null, null, null, null, null, null, 0, null); }
+        UUID ticketId = UUID.fromString(m.group(1).length() == 36 ? m.group(1) : "00000000-0000-0000-0000-000000000000");
+        var ctx = db.query("select s.id, v.partner_id, v.id from transactions.leisure_tickets t join marketplace.leisure_sessions s on s.id = t.session_id "
+                + "join marketplace.leisure_events e on e.id = s.event_id join marketplace.leisure_venues v on v.id = e.venue_id where t.id = ?",
+                (rs, n) -> new UUID[] {rs.getObject(1, UUID.class), rs.getObject(2, UUID.class), rs.getObject(3, UUID.class)}, ticketId).stream().findFirst().orElse(null);
+        if (ctx == null) { return new CheckinResult("INVALID", false, "Ticket not found", null, null, null, null, null, null, 0, null); }
+        boolean assigned = Boolean.TRUE.equals(db.queryForObject("select exists (select 1 from transactions.leisure_assignments where session_id = ? and executor_user_id = ? "
+                + "and role = 'GATE' and status in ('ACCEPTED', 'STARTED'))", Boolean.class, ctx[0], executor));
+        if (!assigned) {
+            db.update("insert into transactions.leisure_checkins (ticket_id, session_id, venue_id, partner_id, actor_user_id, result, admits) values (?, ?, ?, ?, ?, 'ACCESS_DENIED', 0)",
+                    ticketId, ctx[0], ctx[2], ctx[1], executor);
+            return new CheckinResult("ACCESS_DENIED", false, "You are not assigned to this session", null, null, null, null, null, null, 0, null);
+        }
+        return scan(executor, ctx[1], code, ctx[0]);
+    }
+
+    private CheckinResult scan(UUID actor, UUID partner, String code, UUID expectedSession) {
         Matcher m = CODE.matcher(code == null ? "" : code.strip());
         if (!m.matches()) { return refuse(actor, partner, null, null, null, "INVALID", "Unreadable code", null); }
         UUID ticketId;
@@ -603,16 +644,20 @@ public class LeisurePartnerService {
     }
 
     @Transactional(readOnly = true)
-    public Stats stats(UUID actor, UUID partner, int days) {
+    public Stats stats(UUID actor, UUID partner, int days, String product) {
         partners.requireProcessing(actor, partner);
+        String pr = product(product);
         int d = Math.max(1, Math.min(days, 90));
         var r = db.query("""
                 select count(*), coalesce(sum(o.total_minor), 0), coalesce(sum((select count(*) from transactions.leisure_tickets t where t.order_id = o.id)), 0),
                        coalesce(sum((select coalesce(sum(t.admits), 0) from transactions.leisure_tickets t where t.order_id = o.id and t.status = 'USED')), 0)
                 from transactions.leisure_orders o join marketplace.leisure_venues v on v.id = o.venue_id
-                where v.partner_id = ? and o.status = 'CONFIRMED' and o.created_at > now() - (? * interval '1 day')""", (rs, n) -> new long[] {rs.getLong(1), rs.getLong(2), rs.getLong(3), rs.getLong(4)}, partner, d).get(0);
+                join marketplace.leisure_events e on e.id = o.event_id join marketplace.leisure_categories c on c.code = e.category_code
+                where v.partner_id = ? and o.status = 'CONFIRMED' and o.created_at > now() - (? * interval '1 day') and (?::text is null or c.product = ?::text)""",
+                (rs, n) -> new long[] {rs.getLong(1), rs.getLong(2), rs.getLong(3), rs.getLong(4)}, partner, d, pr, pr).get(0);
         long upcoming = db.queryForObject("select count(*) from marketplace.leisure_sessions s join marketplace.leisure_events e on e.id = s.event_id join marketplace.leisure_venues v on v.id = e.venue_id "
-                + "where v.partner_id = ? and s.status = 'SCHEDULED' and s.starts_at > now()", Long.class, partner);
+                + "join marketplace.leisure_categories c on c.code = e.category_code "
+                + "where v.partner_id = ? and s.status = 'SCHEDULED' and s.starts_at > now() and (?::text is null or c.product = ?::text)", Long.class, partner, pr, pr);
         return new Stats(d, r[0], r[2], r[1], r[3], upcoming);
     }
 

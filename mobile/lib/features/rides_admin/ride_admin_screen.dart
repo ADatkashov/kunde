@@ -316,12 +316,28 @@ class _RideAdminScreenState extends State<RideAdminScreen> {
           Card(
             child: ListTile(
               leading: const Icon(Icons.confirmation_number_outlined),
+              title: Text(s.t('События: центр управления',
+                  'Іс-шаралар: басқару орталығы', 'Events control center')),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push<void>(
+                MaterialPageRoute(
+                  builder: (_) =>
+                      LeisureAdminScreen(auth: widget.auth, product: 'EVENTS'),
+                ),
+              ),
+            ),
+          ),
+        if (permissions.contains('LEISURE_OPERATIONS'))
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.sports_esports_outlined),
               title: Text(s.t('Досуг: центр управления',
                   'Демалыс: басқару орталығы', 'Leisure control center')),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context).push<void>(
                 MaterialPageRoute(
-                  builder: (_) => LeisureAdminScreen(auth: widget.auth),
+                  builder: (_) =>
+                      LeisureAdminScreen(auth: widget.auth, product: 'LEISURE'),
                 ),
               ),
             ),

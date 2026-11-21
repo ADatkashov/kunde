@@ -73,8 +73,9 @@ public class LeisurePartnerController {
     }
 
     @GetMapping("/events")
-    ResponseEntity<List<EventRow>> events(@AuthenticationPrincipal Jwt p, @PathVariable UUID partnerId, @RequestParam(required = false) UUID venueId) {
-        return ok(service.events(user(p), partnerId, venueId));
+    ResponseEntity<List<EventRow>> events(@AuthenticationPrincipal Jwt p, @PathVariable UUID partnerId, @RequestParam(required = false) UUID venueId,
+            @RequestParam(required = false) String product) {
+        return ok(service.events(user(p), partnerId, venueId, product));
     }
 
     @PostMapping("/venues/{venueId}/events")
@@ -139,8 +140,9 @@ public class LeisurePartnerController {
     @GetMapping("/orders")
     ResponseEntity<List<PartnerOrder>> orders(@AuthenticationPrincipal Jwt p, @PathVariable UUID partnerId, @RequestParam(defaultValue = "upcoming") @Pattern(regexp = "requests|upcoming|history") String scope,
             @RequestParam(required = false) UUID eventId, @RequestParam(required = false) UUID sessionId, @RequestParam(defaultValue = "30") @Min(1) @Max(100) int limit,
-            @RequestParam(defaultValue = "0") @Min(0) @Max(10000) int offset) {
-        return ok(service.orders(user(p), partnerId, scope, eventId, sessionId, limit, offset));
+            @RequestParam(defaultValue = "0") @Min(0) @Max(10000) int offset,
+            @RequestParam(required = false) String product) {
+        return ok(service.orders(user(p), partnerId, scope, eventId, sessionId, limit, offset, product));
     }
 
     @GetMapping("/orders/{orderId}")
@@ -164,8 +166,9 @@ public class LeisurePartnerController {
     }
 
     @GetMapping("/stats")
-    ResponseEntity<Stats> stats(@AuthenticationPrincipal Jwt p, @PathVariable UUID partnerId, @RequestParam(defaultValue = "7") @Min(1) @Max(90) int days) {
-        return ok(service.stats(user(p), partnerId, days));
+    ResponseEntity<Stats> stats(@AuthenticationPrincipal Jwt p, @PathVariable UUID partnerId, @RequestParam(defaultValue = "7") @Min(1) @Max(90) int days,
+            @RequestParam(required = false) String product) {
+        return ok(service.stats(user(p), partnerId, days, product));
     }
 
     @GetMapping("/history")

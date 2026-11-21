@@ -228,7 +228,8 @@ class PartnerOperations {
           required String masterId,
           required int priceMinor,
           required int durationMinutes}) async =>
-      VenueService.fromJson(await api.postMap('${_venue(venueId)}/health/services', {
+      VenueService.fromJson(
+          await api.postMap('${_venue(venueId)}/health/services', {
         'name': name,
         'category': category,
         'masterId': masterId,
@@ -237,8 +238,8 @@ class PartnerOperations {
       }));
 
   Future<Master> createHealthSpecialist(String venueId, String name) async =>
-      Master.fromJson(await api.postMap(
-          '${_venue(venueId)}/health/specialists', {'name': name}));
+      Master.fromJson(await api
+          .postMap('${_venue(venueId)}/health/specialists', {'name': name}));
 
   Future<Master> createPost(String venueId, String name) async =>
       Master.fromJson(

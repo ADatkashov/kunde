@@ -27,7 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
         "app.auth.phone.secret=synthetic-test-secret-synthetic-test-secret",
         "app.auth.phone.dev-otp.enabled=true",
         "app.auth.phone.dev-otp.skip-throttle=true",
-        "app.auth.phone.dev-otp.allowed-phones=+77000000002,+77000000003,+77000000541",
+        "app.auth.phone.dev-otp.allowed-phones=+77000000002,+77000000003,+77000000541,+77000000542",
         "app.security.rate-limit.requests=100000",
         "app.security.authenticated-rate-limit.requests=100000"
 })
@@ -42,7 +42,7 @@ class EventsApiIntegrationTest {
     @BeforeEach
     void setUp() {
         t = new LeisureTestSupport(http, db);
-        db.update("DELETE FROM identity.otp_challenges WHERE phone_e164 IN ('+77000000002','+77000000003','+77000000541')");
+        db.update("DELETE FROM identity.otp_challenges WHERE phone_e164 IN ('+77000000002','+77000000003','+77000000541','+77000000542')");
         new LeisureDemoSeeder(db, auth, env).seed();
     }
 
@@ -83,5 +83,55 @@ class EventsApiIntegrationTest {
         String hold = t.body(t.send("POST", "/api/v1/leisure/sessions/" + session + "/holds", alice,
                 "{\"lines\":[{\"ticketTypeId\":\"" + std + "\",\"seatIds\":[\"" + t.seat(session, "D", 5) + "\"]}]}", null).andExpect(status().isCreated()));
         assertThat((Long) JsonPath.parse(hold).read("$.totalMinor", Long.class)).isEqualTo(200000L);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void partnerSeesEventsAndLeisureApart() throws Exception {
+        UUID partner = db.queryForObject("select partner_id from marketplace.leisure_venues where slug = 'demo-leisure-cinema'", UUID.class);
+        String owner = t.login("+77000000002");
+        String root = "/api/v1/partner/partners/" + partner + "/leisure";
+        String events = t.body(t.send("GET", root + "/events?product=EVENTS", owner, null, null).andExpect(status().isOk()));
+        assertThat((List<String>) JsonPath.read(events, "$[*].categoryCode")).isNotEmpty().isSubsetOf("CINEMA", "CONCERT", "THEATER", "EXHIBITION", "SPORT", "FESTIVAL", "SHOW", "STANDUP", "KIDS_SHOW");
+        assertThat((List<?>) JsonPath.read(t.body(t.send("GET", root + "/events?product=LEISURE", owner, null, null)), "$")).isNotNull();
+        assertThat((List<String>) JsonPath.read(t.body(t.send("GET", root + "/events?product=LEISURE", owner, null, null)), "$[*].categoryCode")).doesNotContain("CINEMA");
+        t.send("GET", root + "/stats?product=EVENTS", owner, null, null).andExpect(status().isOk());
+        t.send("GET", root + "/orders?product=LEISURE", owner, null, null).andExpect(status().isOk());
+        t.send("GET", root + "/events?product=NOPE", owner, null, null).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void gateControllerScansOnlyAssignedSessionsAndAdmitsOnce() throws Exception {
+        UUID partner = db.queryForObject("select partner_id from marketplace.leisure_venues where slug = 'demo-leisure-cinema'", UUID.class);
+        String owner = t.login("+77000000002");
+        String gate = t.login("+77000000003");
+        String alice = t.login("+77000000541");
+        String stranger = t.login("+77000000542");
+        UUID film = t.event("Демо-фильм");
+        UUID session = t.firstSession(film);
+        UUID std = t.ticketType(film, "Стандарт");
+        String hold = t.body(t.send("POST", "/api/v1/leisure/sessions/" + session + "/holds", alice,
+                "{\"lines\":[{\"ticketTypeId\":\"" + std + "\",\"seatIds\":[\"" + t.seat(session, "E", 3) + "\"]}]}", null).andExpect(status().isCreated()));
+        String order = t.body(t.send("POST", "/api/v1/leisure/orders", alice, "{\"holdId\":\"" + JsonPath.read(hold, "$.id") + "\",\"paymentMethod\":\"TEST_CARD\",\"ageConfirmed\":true}",
+                "gate-test-key-0000000001").andExpect(status().is2xxSuccessful()));
+        String qr = JsonPath.read(order, "$.tickets[0].qr");
+        db.update("update marketplace.leisure_sessions set starts_at = now() + interval '30 minutes', ends_at = now() + interval '2 hours' where id = ?", session);
+        String scan = "/api/v1/executor/leisure/checkins";
+        String body = "{\"code\":\"" + qr + "\"}";
+        // not assigned: refused without any detail of the ticket
+        t.send("POST", scan, gate, body, null).andExpect(status().isOk()).andExpect(jsonPath("$.result").value("ACCESS_DENIED")).andExpect(jsonPath("$.eventTitle").doesNotExist());
+        // the organiser assigns a gate controller; an unrelated user cannot assign
+        String assign = "/api/v1/partner/partners/" + partner + "/leisure/sessions/" + session + "/assignments";
+        t.send("POST", assign, stranger, "{\"phone\":\"+77000000003\",\"role\":\"GATE\"}", null).andExpect(status().is4xxClientError());
+        String assignment = t.body(t.send("POST", assign, owner, "{\"phone\":\"+77000000003\",\"role\":\"GATE\"}", null).andExpect(status().is2xxSuccessful()));
+        // an offer alone is not access
+        t.send("POST", scan, gate, body, null).andExpect(jsonPath("$.result").value("ACCESS_DENIED"));
+        t.send("POST", "/api/v1/executor/leisure/assignments/" + JsonPath.read(assignment, "$.id") + "/step", gate, "{\"step\":\"ACCEPT\"}", null).andExpect(status().isOk());
+        t.send("POST", scan, stranger, body, null).andExpect(jsonPath("$.result").value("ACCESS_DENIED"));
+        t.send("POST", scan, gate, "{\"code\":\"KT1.not-a-code\"}", null).andExpect(jsonPath("$.result").value("INVALID"));
+        t.send("POST", scan, gate, body, null).andExpect(status().isOk()).andExpect(jsonPath("$.result").value("ADMITTED")).andExpect(jsonPath("$.admitted").value(true));
+        t.send("POST", scan, gate, body, null).andExpect(jsonPath("$.result").value("DUPLICATE")).andExpect(jsonPath("$.admitted").value(false));
+        assertThat(db.queryForObject("select count(*) from transactions.leisure_checkins where result = 'ADMITTED' and session_id = ?", Integer.class, session)).isEqualTo(1);
+        assertThat(db.queryForObject("select count(*) from transactions.leisure_checkins where result = 'ACCESS_DENIED'", Integer.class)).isGreaterThanOrEqualTo(3);
     }
 }

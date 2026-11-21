@@ -136,15 +136,33 @@ class _PartnerShellState extends State<PartnerShell>
                             ),
                           ),
                         ),
-                      if (flags?['leisureEnabled'] == true)
+                      if (flags?['eventsEnabled'] == true)
                         IconButton(
-                          tooltip: s.lzTitle,
+                          tooltip: s.evTitle,
                           icon: const Icon(Icons.confirmation_number_outlined),
                           onPressed: () => Navigator.of(context).push<void>(
                             MaterialPageRoute(
                               builder: (_) => PartnerLeisureScreen(
                                 ops: LeisureOps(
-                                    _store.ops.api, _store.ops.partnerId),
+                                    _store.ops.api, _store.ops.partnerId,
+                                    product: 'EVENTS'),
+                                canManage:
+                                    widget.controller.partner?.canManage ??
+                                        false,
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (flags?['leisureEnabled'] == true)
+                        IconButton(
+                          tooltip: s.lzTitle,
+                          icon: const Icon(Icons.sports_esports_outlined),
+                          onPressed: () => Navigator.of(context).push<void>(
+                            MaterialPageRoute(
+                              builder: (_) => PartnerLeisureScreen(
+                                ops: LeisureOps(
+                                    _store.ops.api, _store.ops.partnerId,
+                                    product: 'LEISURE'),
                                 canManage:
                                     widget.controller.partner?.canManage ??
                                         false,
