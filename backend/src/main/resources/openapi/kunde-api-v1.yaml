@@ -42,6 +42,7 @@ paths:
                   marketplaceEnabled: { type: boolean, example: false }
                   oidcIssuerConfigured: { type: boolean, example: false }
                   aiEnabled: { type: boolean, example: false }
+                  homeServicesEnabled: { type: boolean, example: false, description: Effective switch for the Home Services pilot. }
                   deliveryEnabled: { type: boolean, example: false }
                   deliverySyntheticRouting: { type: boolean, example: false }
                   deliveryExecutorEnabled: { type: boolean, example: false }
@@ -1143,7 +1144,7 @@ paths:
   /booking/venues:
     get:
       operationId: listBookingVenues
-      description: Barbershop booking DEV pilot (only when app.booking.enabled; absent otherwise). Synthetic venues.
+      description: Booking DEV pilot with synthetic venues. CLEANING requires an enabled Home Services pilot.
       parameters:
         - { name: category, in: query, schema: { type: string, enum: [BARBER, CLEANING], default: BARBER } }
       responses:
@@ -1152,6 +1153,8 @@ paths:
           content:
             application/json:
               schema: { type: array, items: { type: object } }
+        '404':
+          description: HOME_SERVICES_DISABLED for the cleaning catalog.
   /booking/venues/{venueId}:
     get:
       operationId: getBookingVenue
@@ -1159,7 +1162,7 @@ paths:
         - { name: venueId, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         '404':
-          description: VENUE_NOT_FOUND.
+          description: VENUE_NOT_FOUND or HOME_SERVICES_DISABLED.
         '200':
           description: Venue with services (duration, KZT price) and masters (with the service ids they perform).
   /booking/slots:
@@ -1177,7 +1180,7 @@ paths:
         '400':
           description: BOOKING_DATE_INVALID.
         '404':
-          description: VENUE_NOT_FOUND, SERVICE_NOT_FOUND or MASTER_NOT_FOUND.
+          description: VENUE_NOT_FOUND, SERVICE_NOT_FOUND, MASTER_NOT_FOUND or HOME_SERVICES_DISABLED.
   /booking/bookings:
     get:
       operationId: listBookings
@@ -1193,6 +1196,8 @@ paths:
           description: Booking confirmed (confirmation DEV_MOCK).
         '200':
           description: Idempotent replay.
+        '404':
+          description: HOME_SERVICES_DISABLED for a new cleaning booking.
         '409':
           description: SLOT_UNAVAILABLE, SLOT_TAKEN (database exclusion on overlapping time of one master), BOOKING_OVERLAPS_YOURS, TOO_MANY_UPCOMING_BOOKINGS or IDEMPOTENCY_KEY_REUSED.
   /booking/bookings/{id}:
