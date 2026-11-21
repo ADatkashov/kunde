@@ -10,6 +10,9 @@ import '../business/business_screen.dart';
 import '../business/fleet_screen.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../delivery/business_delivery_screen.dart';
+import '../leisure/leisure_ops.dart';
+import '../leisure/leisure_screen.dart';
+import '../leisure/leisure_strings.dart';
 import '../orders/orders_screen.dart';
 import '../profile/profile_screen.dart';
 
@@ -129,6 +132,22 @@ class _PartnerShellState extends State<PartnerShell>
                                 ops: _store.ops,
                                 synthetic:
                                     flags?['deliverySyntheticRouting'] == true,
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (flags?['leisureEnabled'] == true)
+                        IconButton(
+                          tooltip: s.lzTitle,
+                          icon: const Icon(Icons.confirmation_number_outlined),
+                          onPressed: () => Navigator.of(context).push<void>(
+                            MaterialPageRoute(
+                              builder: (_) => PartnerLeisureScreen(
+                                ops: LeisureOps(
+                                    _store.ops.api, _store.ops.partnerId),
+                                canManage:
+                                    widget.controller.partner?.canManage ??
+                                        false,
                               ),
                             ),
                           ),

@@ -75,7 +75,7 @@ public class LeisureOrderService {
                        v.cancellation_hours, e.status, v.status, e.title
                 from marketplace.leisure_sessions s join marketplace.leisure_events e on e.id = s.event_id join marketplace.leisure_venues v on v.id = e.venue_id
                 where s.id = ? for update of s""", (rs, n) -> new SessionRow(rs.getObject(1, UUID.class), rs.getObject(2, UUID.class), rs.getObject(3, UUID.class),
-                rs.getString(4), rs.getInt(5), rs.getObject(6, OffsetDateTime.class), rs.getObject(7, OffsetDateTime.class), rs.getString(8), rs.getInt(9),
+                rs.getString(4), rs.getInt(5), kz.kunde.leisure.LeisureTime.local(rs, 6), kz.kunde.leisure.LeisureTime.local(rs, 7), rs.getString(8), rs.getInt(9),
                 rs.getInt(10), rs.getString(11), rs.getInt(12), rs.getString(13), rs.getString(14), rs.getString(15)), sessionId).stream().findFirst()
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "SESSION_NOT_FOUND", "Session not found"));
     }
@@ -175,7 +175,7 @@ public class LeisureOrderService {
 
     private HoldView holdView(UUID user, UUID holdId) {
         var h = db.query("select id, session_id, guests, total_minor, expires_at, status from transactions.leisure_holds where id = ? and user_id = ?",
-                (rs, n) -> new Object[] {rs.getString(1), rs.getString(2), rs.getInt(3), rs.getLong(4), rs.getObject(5, OffsetDateTime.class), rs.getString(6)}, holdId, user)
+                (rs, n) -> new Object[] {rs.getString(1), rs.getString(2), rs.getInt(3), rs.getLong(4), kz.kunde.leisure.LeisureTime.local(rs, 5), rs.getString(6)}, holdId, user)
                 .stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "HOLD_NOT_FOUND", "Hold not found"));
         List<HoldLine> lines = db.query("""
                 select hl.ticket_type_id, tt.name, hl.seat_id, st.row_label || st.seat_number, hl.unit_price_minor from transactions.leisure_hold_lines hl
@@ -222,7 +222,7 @@ public class LeisureOrderService {
         requireEnabled();
         String method = payments.method(body.paymentMethod());
         var hold = db.query("select session_id, guests, total_minor, status, expires_at from transactions.leisure_holds where id = ? and user_id = ? for update",
-                (rs, n) -> new Object[] {rs.getObject(1, UUID.class), rs.getInt(2), rs.getLong(3), rs.getString(4), rs.getObject(5, OffsetDateTime.class)}, body.holdId(), user)
+                (rs, n) -> new Object[] {rs.getObject(1, UUID.class), rs.getInt(2), rs.getLong(3), rs.getString(4), kz.kunde.leisure.LeisureTime.local(rs, 5)}, body.holdId(), user)
                 .stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "HOLD_NOT_FOUND", "Hold not found"));
         if ("CONSUMED".equals(hold[3])) { // a parallel request with the same key finished first while this one waited for the hold lock
             var done = db.query("select id from transactions.leisure_orders where user_id = ? and idempotency_key = ? and hold_id = ?", (rs, n) -> rs.getObject(1, UUID.class), user, key, body.holdId());
@@ -302,8 +302,8 @@ public class LeisureOrderService {
                 from transactions.leisure_orders o join marketplace.leisure_sessions s on s.id = o.session_id join marketplace.leisure_events e on e.id = o.event_id
                 join marketplace.leisure_venues v on v.id = o.venue_id where o.id = ? and o.user_id = ?""", (rs, n) -> new Object[] {
                 rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6), rs.getString(7), rs.getString(8), rs.getString(9),
-                rs.getString(10), rs.getString(11), rs.getObject(12, OffsetDateTime.class), rs.getObject(13, OffsetDateTime.class), rs.getInt(14), rs.getLong(15),
-                rs.getString(16), rs.getInt(17), rs.getString(18), rs.getString(19), rs.getObject(20, OffsetDateTime.class), rs.getString(21), rs.getInt(22),
+                rs.getString(10), rs.getString(11), kz.kunde.leisure.LeisureTime.local(rs, 12), kz.kunde.leisure.LeisureTime.local(rs, 13), rs.getInt(14), rs.getLong(15),
+                rs.getString(16), rs.getInt(17), rs.getString(18), rs.getString(19), kz.kunde.leisure.LeisureTime.local(rs, 20), rs.getString(21), rs.getInt(22),
                 rs.getBoolean(23), rs.getBoolean(24)}, id, user).stream().findFirst()
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND", "Order not found"));
         String status = (String) row[1];
@@ -321,9 +321,9 @@ public class LeisureOrderService {
                 join marketplace.leisure_ticket_types tt on tt.id = t.ticket_type_id left join marketplace.leisure_seats st on st.id = t.seat_id
                 where t.order_id = ? order by st.row_label, st.seat_number, t.created_at, t.id""", (rs, n) -> new TicketView(rs.getString(1), rs.getString(2), rs.getString(3),
                 rs.getString(4), rs.getInt(5), rs.getLong(6), "VALID".equals(rs.getString(2)) || "USED".equals(rs.getString(2)) ? "KT1." + rs.getString(1) + "." + rs.getString(7) : null,
-                rs.getObject(8, OffsetDateTime.class)), id);
+                kz.kunde.leisure.LeisureTime.local(rs, 8)), id);
         List<TimelineEntry> timeline = db.query("select status, occurred_at, actor, reason from transactions.leisure_order_events where order_id = ? order by id",
-                (rs, n) -> new TimelineEntry(rs.getString(1), rs.getObject(2, OffsetDateTime.class), rs.getString(3), rs.getString(4)), id);
+                (rs, n) -> new TimelineEntry(rs.getString(1), kz.kunde.leisure.LeisureTime.local(rs, 2), rs.getString(3), rs.getString(4)), id);
         return new OrderView((String) row[0], status, phase, (String) row[2], (String) row[3], (String) row[4], (String) row[5], (String) row[6], (String) row[7],
                 (String) row[8], (String) row[9], (String) row[10], starts, ends, (int) row[13], (long) row[14], "KZT", (String) row[15], payments.ofOrder(id), cancellable,
                 cancelUntil, (String) row[17], (String) row[18], (OffsetDateTime) row[19], (String) row[20], (int) row[21], reviewed, canReview, tickets, timeline);
@@ -334,7 +334,7 @@ public class LeisureOrderService {
         var row = db.query("""
                 select o.status, o.session_id, s.starts_at, v.cancellation_hours from transactions.leisure_orders o join marketplace.leisure_sessions s on s.id = o.session_id
                 join marketplace.leisure_venues v on v.id = o.venue_id where o.id = ? and o.user_id = ? for update of o""", (rs, n) -> new Object[] {rs.getString(1),
-                rs.getObject(2, UUID.class), rs.getObject(3, OffsetDateTime.class), rs.getInt(4)}, id, user).stream().findFirst()
+                rs.getObject(2, UUID.class), kz.kunde.leisure.LeisureTime.local(rs, 3), rs.getInt(4)}, id, user).stream().findFirst()
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND", "Order not found"));
         if ("CANCELLED".equals(row[0])) { return order(user, id); } // idempotent repeat
         lockSession((UUID) row[1]);

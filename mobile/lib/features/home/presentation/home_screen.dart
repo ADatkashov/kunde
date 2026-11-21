@@ -3,6 +3,8 @@ import 'dart:async';
 import '../../assistant/assistant_screen.dart';
 import '../../auto/auto_services.dart';
 import '../../auto/presentation/auto_home_screen.dart';
+import '../../leisure/leisure_services.dart';
+import '../../leisure/presentation/leisure_home_screen.dart';
 import '../../booking/booking_services.dart';
 import '../../booking/presentation/category_screens.dart';
 import '../../delivery/delivery_api.dart';
@@ -32,6 +34,7 @@ class HomeScreen extends StatefulWidget {
     this.food,
     this.booking,
     this.auto,
+    this.leisure,
     this.rides,
     this.delivery,
     super.key,
@@ -51,6 +54,9 @@ class HomeScreen extends StatefulWidget {
 
   /// KUNDE Auto; shown when the server enables it.
   final AutoServices? auto;
+
+  /// KUNDE Leisure; shown when the server enables it.
+  final LeisureServices? leisure;
   final RideApi? rides;
   final DeliveryApi? delivery;
 
@@ -178,6 +184,7 @@ class _HomeScreenState extends State<HomeScreen> {
     bool ridesEnabled,
     bool deliveryEnabled, {
     bool autoEnabled = false,
+    bool leisureEnabled = false,
     bool healthEnabled = false,
   }) =>
       [
@@ -239,6 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
           icon: Icons.confirmation_number_rounded,
           label: s.catLeisure,
           color: const Color(0xFF8A5700),
+          enabled: leisureEnabled && widget.leisure != null,
         ),
         ServiceCategory(
           icon: Icons.apps_rounded,
@@ -279,6 +287,13 @@ class _HomeScreenState extends State<HomeScreen> {
       Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => HomeServicesCategoryScreen(services: widget.booking!),
+        ),
+      );
+    } else if (c.label == s.catLeisure && c.enabled && widget.leisure != null) {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          settings: const RouteSettings(name: '/leisure'),
+          builder: (_) => LeisureHomeScreen(services: widget.leisure!),
         ),
       );
     } else if (c.label == s.catHealth && c.enabled && widget.booking != null) {
@@ -385,6 +400,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   snapshot?.ridesEnabled ?? false,
                   (snapshot?.deliveryEnabled ?? false) || _deliveryResume,
                   autoEnabled: snapshot?.autoEnabled ?? false,
+                  leisureEnabled: snapshot?.leisureEnabled ?? false,
                   healthEnabled: snapshot?.healthEnabled ?? false,
                 );
                 final visibleCategories = [

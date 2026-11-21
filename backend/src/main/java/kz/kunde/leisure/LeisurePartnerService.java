@@ -409,7 +409,7 @@ public class LeisurePartnerService {
                   (select count(*) from transactions.leisure_hold_lines hl join transactions.leisure_holds h on h.id = hl.hold_id where h.session_id = s.id and h.status = 'ACTIVE' and h.expires_at > now()),
                   coalesce((select sum(t.admits) from transactions.leisure_tickets t where t.session_id = s.id and t.status = 'USED'), 0), s.status, s.cancel_reason
                 from marketplace.leisure_sessions s join marketplace.leisure_events e on e.id = s.event_id where s.id = ?""",
-                (rs, n) -> new SessionRow(rs.getString(1), rs.getString(2), rs.getString(3), rs.getObject(4, OffsetDateTime.class), rs.getObject(5, OffsetDateTime.class), rs.getInt(6),
+                (rs, n) -> new SessionRow(rs.getString(1), rs.getString(2), rs.getString(3), kz.kunde.leisure.LeisureTime.local(rs, 4), kz.kunde.leisure.LeisureTime.local(rs, 5), rs.getInt(6),
                         rs.getInt(7), rs.getInt(8), rs.getInt(9), rs.getString(10), rs.getString(11)), id).get(0);
     }
 
@@ -478,13 +478,13 @@ public class LeisurePartnerService {
                 select o.id, o.status, o.session_id, e.title, v.name, s.starts_at, o.guests, o.total_minor, o.payment_method, o.created_at, o.cancelled_by, o.cancel_reason
                 from transactions.leisure_orders o join marketplace.leisure_sessions s on s.id = o.session_id join marketplace.leisure_events e on e.id = o.event_id
                 join marketplace.leisure_venues v on v.id = o.venue_id where o.id = ? and v.partner_id = ?""", (rs, n) -> new Object[] {rs.getString(1), rs.getString(2), rs.getString(3),
-                rs.getString(4), rs.getString(5), rs.getObject(6, OffsetDateTime.class), rs.getInt(7), rs.getLong(8), rs.getString(9), rs.getObject(10, OffsetDateTime.class),
+                rs.getString(4), rs.getString(5), kz.kunde.leisure.LeisureTime.local(rs, 6), rs.getInt(7), rs.getLong(8), rs.getString(9), kz.kunde.leisure.LeisureTime.local(rs, 10),
                 rs.getString(11), rs.getString(12)}, id, partner).stream().findFirst().orElseThrow(() -> notFound("ORDER_NOT_FOUND"));
         List<LeisureOrderService.TicketView> tickets = db.query("""
                 select t.id, t.status, tt.name, st.row_label || st.seat_number, t.admits, t.price_minor, t.used_at from transactions.leisure_tickets t
                 join marketplace.leisure_ticket_types tt on tt.id = t.ticket_type_id left join marketplace.leisure_seats st on st.id = t.seat_id where t.order_id = ?
                 order by st.row_label, st.seat_number, t.created_at, t.id""", (rs, n) -> new LeisureOrderService.TicketView(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
-                rs.getInt(5), rs.getLong(6), null, rs.getObject(7, OffsetDateTime.class)), id);
+                rs.getInt(5), rs.getLong(6), null, kz.kunde.leisure.LeisureTime.local(rs, 7)), id);
         return new PartnerOrder((String) row[0], (String) row[1], (String) row[2], (String) row[3], (String) row[4], (OffsetDateTime) row[5], (int) row[6], (long) row[7], (String) row[8],
                 payments.ofOrder(id), ((String) row[0]).substring(0, 8).toUpperCase(Locale.ROOT), (OffsetDateTime) row[9], (String) row[10], (String) row[11], tickets);
     }
@@ -546,8 +546,8 @@ public class LeisurePartnerService {
                 select t.id, t.status, t.nonce, t.admits, t.used_at, s.id, s.starts_at, s.ends_at, s.status, v.id, v.partner_id, e.title, tt.name, st.row_label || st.seat_number
                 from transactions.leisure_tickets t join marketplace.leisure_sessions s on s.id = t.session_id join marketplace.leisure_events e on e.id = s.event_id
                 join marketplace.leisure_venues v on v.id = e.venue_id join marketplace.leisure_ticket_types tt on tt.id = t.ticket_type_id left join marketplace.leisure_seats st on st.id = t.seat_id
-                where t.id = ? for update of t""", (rs, n) -> new Object[] {rs.getString(1), rs.getString(2), rs.getString(3), rs.getInt(4), rs.getObject(5, OffsetDateTime.class),
-                rs.getObject(6, UUID.class), rs.getObject(7, OffsetDateTime.class), rs.getObject(8, OffsetDateTime.class), rs.getString(9), rs.getObject(10, UUID.class),
+                where t.id = ? for update of t""", (rs, n) -> new Object[] {rs.getString(1), rs.getString(2), rs.getString(3), rs.getInt(4), kz.kunde.leisure.LeisureTime.local(rs, 5),
+                rs.getObject(6, UUID.class), kz.kunde.leisure.LeisureTime.local(rs, 7), kz.kunde.leisure.LeisureTime.local(rs, 8), rs.getString(9), rs.getObject(10, UUID.class),
                 rs.getObject(11, UUID.class), rs.getString(12), rs.getString(13), rs.getString(14)}, ticketId).stream().findFirst().orElse(null);
         if (row == null) { return refuse(actor, partner, null, null, null, "INVALID", "Ticket not found", null); }
         boolean secretOk = MessageDigest.isEqual(((String) row[2]).getBytes(java.nio.charset.StandardCharsets.UTF_8), m.group(2).getBytes(java.nio.charset.StandardCharsets.UTF_8));
@@ -591,7 +591,7 @@ public class LeisurePartnerService {
         partners.requireProcessing(actor, partner);
         return db.query("select c.id, c.result, c.admits, coalesce(e.title, ''), s.starts_at, c.occurred_at from transactions.leisure_checkins c left join marketplace.leisure_sessions s on s.id = c.session_id "
                 + "left join marketplace.leisure_events e on e.id = s.event_id where c.partner_id = ? and (?::uuid is null or c.session_id = ?::uuid) order by c.id desc limit ? offset ?",
-                (rs, n) -> new CheckinRow(rs.getLong(1), rs.getString(2), rs.getInt(3), rs.getString(4), rs.getObject(5, OffsetDateTime.class), rs.getObject(6, OffsetDateTime.class)),
+                (rs, n) -> new CheckinRow(rs.getLong(1), rs.getString(2), rs.getInt(3), rs.getString(4), kz.kunde.leisure.LeisureTime.local(rs, 5), kz.kunde.leisure.LeisureTime.local(rs, 6)),
                 partner, sessionId, sessionId, Math.max(1, Math.min(limit, 100)), Math.max(0, offset));
     }
 
@@ -613,7 +613,7 @@ public class LeisurePartnerService {
     public List<AuditRow> history(UUID actor, UUID partner, int limit, int offset) {
         partners.requireProcessing(actor, partner, MANAGE);
         return db.query("select id, action, target, detail, actor_type, occurred_at from marketplace.leisure_audit where partner_id = ? order by id desc limit ? offset ?",
-                (rs, n) -> new AuditRow(rs.getLong(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getObject(6, OffsetDateTime.class)),
+                (rs, n) -> new AuditRow(rs.getLong(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), kz.kunde.leisure.LeisureTime.local(rs, 6)),
                 partner, Math.max(1, Math.min(limit, 100)), Math.max(0, offset));
     }
 

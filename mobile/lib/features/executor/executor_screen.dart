@@ -7,6 +7,7 @@ import 'package:geolocator/geolocator.dart';
 import '../identity/auth_repository.dart';
 import '../rides/ride_strings.dart';
 import 'auto_work_screen.dart';
+import 'leisure_work_screen.dart';
 import 'delivery_work_screen.dart';
 import 'executor_api.dart';
 
@@ -45,6 +46,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
   bool _deliveryResume = false;
   bool _deliverySynthetic = false;
   bool _autoEnabled = false;
+  bool _leisureAvailable = false;
   bool _autoResume = false;
 
   @override
@@ -86,6 +88,16 @@ class _ExecutorScreenState extends State<ExecutorScreen>
       final capabilities = await widget.auth
           .authorizedJson('GET', 'capabilities') as Map<String, dynamic>;
       final enabled = capabilities['autoEnabled'] == true;
+      var leisure = capabilities['leisureEnabled'] == true;
+      if (!leisure) {
+        try {
+          final rows = await widget.auth.authorizedJson(
+              'GET', 'executor/leisure/assignments') as List<dynamic>;
+          leisure = rows.isNotEmpty;
+        } on IdentityApiError {
+          leisure = false;
+        }
+      }
       var resume = false;
       if (!enabled) {
         try {
@@ -103,6 +115,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
         setState(() {
           _autoEnabled = enabled;
           _autoResume = resume;
+          _leisureAvailable = leisure;
         });
       }
     } catch (_) {
@@ -327,6 +340,16 @@ class _ExecutorScreenState extends State<ExecutorScreen>
                   synthetic: _deliverySynthetic,
                   intakeEnabled: _deliveryEnabled,
                 ),
+              )),
+            ),
+          if (_leisureAvailable)
+            IconButton(
+              icon: const Icon(Icons.confirmation_number_outlined),
+              tooltip: s.t('Мероприятия (гид, ведущий)',
+                  'Іс-шаралар (гид, жүргізуші)', 'Events (guide, host)'),
+              onPressed: () =>
+                  Navigator.of(context).push<void>(MaterialPageRoute(
+                builder: (_) => LeisureWorkScreen(auth: widget.auth),
               )),
             ),
           if (_autoEnabled || _autoResume)
