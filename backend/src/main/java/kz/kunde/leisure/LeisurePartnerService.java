@@ -88,7 +88,7 @@ public class LeisurePartnerService {
     }
 
     private void requireEnabled() {
-        if (!toggles.enabled(FeatureToggles.Feature.LEISURE)) {
+        if (!toggles.enabled(FeatureToggles.Feature.LEISURE) && !toggles.enabled(FeatureToggles.Feature.EVENTS)) {
             throw new ApiException(HttpStatus.CONFLICT, "LEISURE_DISABLED", "Leisure is switched off; new venues, events and sessions are not accepted");
         }
     }
@@ -212,6 +212,13 @@ public class LeisurePartnerService {
         partners.requireProcessing(actor, partner, MANAGE);
         requireEnabled();
         requireOwnVenue(partner, venueId);
+        if (in.categoryCode() != null) {
+            String product = db.query("select product from marketplace.leisure_categories where code = ?", (rs, n) -> rs.getString(1),
+                    in.categoryCode().toUpperCase(java.util.Locale.ROOT)).stream().findFirst().orElse(null);
+            if (product != null && !toggles.enabled("EVENTS".equals(product) ? FeatureToggles.Feature.EVENTS : FeatureToggles.Feature.LEISURE)) {
+                throw new ApiException(HttpStatus.CONFLICT, "EVENTS".equals(product) ? "EVENTS_DISABLED" : "LEISURE_DISABLED", "This product is switched off; new events are not accepted");
+            }
+        }
         Long count = db.queryForObject("select count(*) from marketplace.leisure_events where venue_id = ?", Long.class, venueId);
         if (count != null && count >= 100) { throw new ApiException(HttpStatus.CONFLICT, "TOO_MANY_EVENTS", "At most 100 events per venue"); }
         Valid v = validate(in);

@@ -1,5 +1,10 @@
 # Следующие проверки
 
+## KUNDE Events & Tickets
+
+1. Flutter Consumer: плитка «События» (`eventsEnabled` из `/capabilities`), каталог/детали/выбор мест на базе `/api/v1/events` и общих экранов Leisure; Partner/Executor/Admin-экраны Events. Поиск: «концерт» → Events, «боулинг» → Leisure.
+2. DEV: после merge развернуть `main`, проверить V45, `eventsEnabled: true`, купить место через `TEST_CARD`, проверить QR. Команды: `cd backend && mvn test -Dtest='Events*,Leisure*'`. [Матрица](docs/product/events.md).
+
 ## KUNDE Education
 
 Провести первый курс от публикации до подтверждения записи через поток и тестовый ledger. Критерии: модерация курса, серверная цена, транзакционная защита вместимости, идемпотентная запись, подтверждённая тестовая оплата. [Матрица и контракт](docs/product/education.md).

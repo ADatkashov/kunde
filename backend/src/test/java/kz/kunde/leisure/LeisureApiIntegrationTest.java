@@ -89,11 +89,13 @@ class LeisureApiIntegrationTest {
     @Test
     void catalogSearchDetailAndSeatMap() throws Exception {
         t.send("GET", "/api/v1/capabilities", null, null, null).andExpect(status().isOk()).andExpect(jsonPath("$.leisureEnabled").value(true));
-        assertThat((List<?>) JsonPath.read(t.body(t.send("GET", "/api/v1/leisure/categories", null, null, null)), "$")).hasSize(16);
+        assertThat((List<?>) JsonPath.read(t.body(t.send("GET", "/api/v1/leisure/categories", null, null, null)), "$")).hasSize(17); // 12 original + 5 new activity categories; ticketed event categories moved to Events
         String all = t.body(t.send("GET", "/api/v1/leisure/events?limit=50", null, null, null).andExpect(status().isOk()));
-        assertThat((List<?>) JsonPath.read(all, "$")).hasSizeGreaterThanOrEqualTo(9);
-        String cinema = t.body(t.send("GET", "/api/v1/leisure/events?category=CINEMA&available=true&guests=2&sort=price", null, null, null));
-        assertThat((List<String>) JsonPath.read(cinema, "$[*].categoryCode")).containsOnly("CINEMA");
+        assertThat((List<?>) JsonPath.read(all, "$")).hasSizeGreaterThanOrEqualTo(4);
+        assertThat((List<String>) JsonPath.read(all, "$[*].categoryCode")).doesNotContain("CINEMA", "CONCERT", "THEATER", "EXHIBITION"); // those are Events
+        assertThat((List<?>) JsonPath.read(t.body(t.send("GET", "/api/v1/leisure/events?category=CINEMA", null, null, null)), "$")).isEmpty();
+        String bowling = t.body(t.send("GET", "/api/v1/leisure/events?category=BOWLING&available=true&guests=2&sort=price", null, null, null));
+        assertThat((List<String>) JsonPath.read(bowling, "$[*].categoryCode")).containsOnly("BOWLING");
         assertThat((List<?>) JsonPath.read(t.body(t.send("GET", "/api/v1/leisure/events?q=боулинг", null, null, null)), "$")).isNotEmpty();
         assertThat((List<?>) JsonPath.read(t.body(t.send("GET", "/api/v1/leisure/events?age=3&category=KARAOKE", null, null, null)), "$")).isEmpty(); // karaoke is 18+
         assertThat((List<?>) JsonPath.read(t.body(t.send("GET", "/api/v1/leisure/events?family=true", null, null, null)), "$")).isNotEmpty();

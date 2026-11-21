@@ -9,6 +9,7 @@ import java.util.UUID;
 import kz.kunde.auto.AutoProperties;
 import kz.kunde.delivery.DeliveryProperties;
 import kz.kunde.education.EducationSettings;
+import kz.kunde.events.EventsSettings;
 import kz.kunde.leisure.LeisureFlags;
 import kz.kunde.health.HealthSettings;
 import kz.kunde.rides.RidesFlags;
@@ -24,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class FeatureToggles {
-    public enum Feature { AUTO, RIDES, DELIVERY, LEISURE, HEALTH, EDUCATION }
+    public enum Feature { AUTO, RIDES, DELIVERY, LEISURE, HEALTH, EDUCATION, EVENTS }
 
     public record Toggle(boolean enabled, long version, String reason, UUID updatedBy, OffsetDateTime updatedAt) {}
 
@@ -40,11 +41,13 @@ public class FeatureToggles {
     private final LeisureFlags leisure;
     private final HealthSettings health;
     private final EducationSettings education;
+    private final EventsSettings events;
     private final Clock clock;
     private volatile Map<Feature, Toggle> cache;
     private volatile long loadedAt;
 
-    public FeatureToggles(JdbcTemplate db, AutoProperties auto, RidesFlags rides, DeliveryProperties delivery, LeisureFlags leisure, HealthSettings health, EducationSettings education) {
+    public FeatureToggles(JdbcTemplate db, AutoProperties auto, RidesFlags rides, DeliveryProperties delivery, LeisureFlags leisure, HealthSettings health, EducationSettings education,
+            EventsSettings events) {
         this.db = db;
         this.auto = auto;
         this.rides = rides;
@@ -52,6 +55,7 @@ public class FeatureToggles {
         this.leisure = leisure;
         this.health = health;
         this.education = education;
+        this.events = events;
         this.clock = Clock.systemUTC();
     }
 
@@ -63,6 +67,7 @@ public class FeatureToggles {
             case LEISURE -> leisure.allowedByEnvironment();
             case HEALTH -> health.enabled();
             case EDUCATION -> education.allowedByEnvironment();
+            case EVENTS -> events.allowedByEnvironment();
         };
     }
 

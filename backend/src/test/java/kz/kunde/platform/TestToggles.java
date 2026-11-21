@@ -19,6 +19,7 @@ public final class TestToggles {
                 BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO),
                 new LeisureFlags(new LeisureProperties(false, false), new org.springframework.mock.env.MockEnvironment().withProperty("app.environment", "test")),
                 new kz.kunde.health.HealthSettings(new org.springframework.mock.env.MockEnvironment()),
-                new kz.kunde.education.EducationSettings(new org.springframework.mock.env.MockEnvironment()));
+                new kz.kunde.education.EducationSettings(new org.springframework.mock.env.MockEnvironment()),
+                new kz.kunde.events.EventsSettings(new org.springframework.mock.env.MockEnvironment()));
     }
 }
