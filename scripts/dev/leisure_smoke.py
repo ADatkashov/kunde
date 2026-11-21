@@ -59,7 +59,9 @@ card = next(c for c in cards if c["bookingType"] == "SEAT_MAP" and c["minAge"] =
 detail = call("GET", "/api/v1/leisure/events/" + card["id"])
 assert detail["demo"] is True and detail["rating"] is None, "synthetic data must be flagged and carry no invented rating"
 std = next(t for t in detail["ticketTypes"] if t["zone"] == "STANDARD")
-session_id = card["nextSessionId"]
+# the latest session of the week: entry is still closed (TOO_EARLY) and free cancellation is still open, whatever the time of day
+sessions = call("GET", f"/api/v1/leisure/events/{card['id']}/sessions?days=7")
+session_id = max(sessions, key=lambda x: x["startsAt"])["id"]
 seats = call("GET", f"/api/v1/leisure/sessions/{session_id}/seats")
 free = [s for s in seats if s["status"] == "FREE" and s["zone"] == "STANDARD"]
 a, b, c = free[-1], free[-2], free[-3]
