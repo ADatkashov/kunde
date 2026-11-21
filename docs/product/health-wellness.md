@@ -33,10 +33,17 @@ V41 добавляет направление услуги, состояние �
 
 ## Подтверждённое развёртывание
 
-- Render DEV `dep-dc0a4hd6e07s73c56f40` перешёл в live на первоначальном коммите `e3edb329d4771c0b291ef04f777c65c7c960fa24`. Текущий backend `fb910f79ad704be9672370851f60c24082a7bdd6` прошёл повторную проверку обоих способов оплаты и создания скрытых черновиков Partner. [Повторный deploy](https://dashboard.render.com/web/srv-dbsb8ct6e07s739c3t7g/deploys/dep-dc0aakc0916s73d4q53g). Заданы `HEALTH_ENABLED=true` и `HEALTH_SEED_DEMO=true`. Публичная capability подтвердила `healthEnabled: true`, а Neon DEV — успешные миграции V39, V40 и V41. [Render](https://dashboard.render.com/web/srv-dbsb8ct6e07s739c3t7g/deploys/dep-dc0a4hd6e07s73c56f40)
+- Render DEV `dep-dc0a4hd6e07s73c56f40` перешёл в live на первоначальном коммите `e3edb329d4771c0b291ef04f777c65c7c960fa24`. Последующий backend `fb910f79ad704be9672370851f60c24082a7bdd6` прошёл повторную проверку обоих способов оплаты и создания скрытых черновиков Partner. [Повторный deploy](https://dashboard.render.com/web/srv-dbsb8ct6e07s739c3t7g/deploys/dep-dc0aakc0916s73d4q53g). Заданы `HEALTH_ENABLED=true` и `HEALTH_SEED_DEMO=true`. Публичная capability подтвердила `healthEnabled: true`, а Neon DEV — успешные миграции V39, V40 и V41. [Render](https://dashboard.render.com/web/srv-dbsb8ct6e07s739c3t7g/deploys/dep-dc0a4hd6e07s73c56f40)
 - 20 ноября 2026 года Render подтвердил статус `live` у `fb910f79`. Повторная проверка capability вернула `healthEnabled: true`, в Neon DEV последняя успешная миграция — V41. Сценарий `scripts/dev/health_smoke.py` повторно прошёл с `TEST_CARD` и `PAY_ON_SITE`. Проверены каталог, отклонение подменённой цены, запись, идемпотентный повтор, история, перенос и освобождение тестового удержания.
 - На локальном PostgreSQL 16.12 прошли 351 backend-тест. HTTP также подтвердил подтверждение и отмену партнёром, запрет другому tenant, проверку Admin-гранта и модерацию. В Neon DEV у синтетических аккаунтов пока нет `HEALTH_OPERATIONS`.
 - GitHub Actions проверил Backend, Flutter, Partner Flutter и Android, а также зависимости, контейнеры и секреты. Нативный Health E2E и визуальные артефакты отслеживаются в [#178](https://github.com/ADatkashov/kunde/pull/178). [Checks #176](https://github.com/ADatkashov/kunde/pull/176/checks)
+
+## Проверки 21 ноября
+
+- Render DEV обслуживает `965135ce6ba461622c81e7eefa7e1f8d9f05fa5c`. API вернул `healthEnabled: true`, совместимые фильтры нашли синтетическую площадку, несовместимые условия дали пустой результат. Оба smoke, `TEST_CARD` и `PAY_ON_SITE`, прошли запись, повтор, историю, перенос и отмену. В Neon последняя успешная миграция V41. [Render deploy](https://dashboard.render.com/web/srv-dbsb8ct6e07s739c3t7g/deploys/dep-dc0l4c97lnhs7390jvl0)
+- [#183](https://github.com/ADatkashov/kunde/pull/183) добавил панель фильтров Consumer и серверную фильтрацию по организации, району, услуге, специальности, специалисту и цене. [Backend CI](https://github.com/ADatkashov/kunde/actions/runs/44883528684) и [Flutter CI](https://github.com/ADatkashov/kunde/actions/runs/44883528771) прошли на merge-коммите.
+- Consumer Health Android E2E из #183 прошёл каталог, профиль специалиста, создание и отмену записи. Панель фильтров проверена Flutter-тестом отправки параметров и сброса. [Артефакт Android](https://github.com/ADatkashov/kunde/actions/runs/44882517558/artifacts/14698168761)
+- [#184](https://github.com/ADatkashov/kunde/pull/184) подтвердил модерацию и аудит под синтетическим `HEALTH_OPERATIONS` в изолированной PostgreSQL. Доступ с другим грантом и изменение флага оператором Health запрещены. Аккаунт с таким грантом на DEV и нативный Admin E2E остаются открытыми.
 
 ## Android и подписанные сборки
 
@@ -73,4 +80,4 @@ V41 добавляет направление услуги, состояние �
 
 ## Открытая приёмка
 
-Расширенные фильтры, проверенные отзывы и избранное, управление Health-ролями и жалобами, возвраты Health, выездной wellness Executor, лицензии и локализованный каталог, визуальная приёмка всех ролей и установка подписанных APK требуют дальнейшей работы. Нативная проверка Partner, Admin, TalkBack и полного RU/KK/EN сценария остаётся открытой.
+Фильтры по дате, времени, доступности, формату и рейтингу, общее количество результатов, проверенные отзывы и избранное, управление Health-ролями и жалобами, возвраты Health, выездной wellness Executor, лицензии и локализованный каталог, визуальная приёмка всех ролей и установка подписанных APK требуют дальнейшей работы. Нативная проверка Partner, Admin, TalkBack и полного RU/KK/EN сценария остаётся открытой.
