@@ -12,6 +12,7 @@ class PlatformSnapshot {
     this.leisureEnabled = false,
     this.healthEnabled = false,
     this.educationEnabled = false,
+    this.groceriesEnabled = false,
   });
 
   final String releaseStage;
@@ -29,6 +30,9 @@ class PlatformSnapshot {
   final bool autoEnabled;
   final bool healthEnabled;
   final bool educationEnabled;
+
+  /// KUNDE Groceries switch (server decides). Older servers do not send it: Groceries then follows the marketplace.
+  final bool groceriesEnabled;
 
   /// KUNDE Leisure; on by default in DEV/TEST, decided by the server; absent on older servers.
   final bool leisureEnabled;
@@ -57,6 +61,9 @@ class PlatformSnapshot {
       leisureEnabled: json['leisureEnabled'] == true,
       healthEnabled: json['healthEnabled'] == true,
       educationEnabled: json['educationEnabled'] == true,
+      groceriesEnabled: json.containsKey('groceriesEnabled')
+          ? json['groceriesEnabled'] == true
+          : marketplace,
     );
   }
 }

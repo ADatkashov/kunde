@@ -1,0 +1,655 @@
+{
+ "restaurants": [
+  {
+   "slug": "fresh-market-almaty",
+   "name": "Фреш Маркет Алматы",
+   "cuisine": "Супермаркет",
+   "description": "Свежие продукты, напитки и товары для дома. Вымышленный магазин для демонстрации.",
+   "emoji": "🛒",
+   "tone": "green",
+   "deliveryFee": 0,
+   "minOrder": 300000,
+   "etaMin": 30,
+   "etaMax": 55,
+   "open": true,
+   "vertical": "GROCERY",
+   "sections": [
+    {
+     "name": "Овощи и фрукты",
+     "dishes": [
+      {
+       "name": "Яблоки Айдаред",
+       "description": "Сочные и ароматные, отлично подходят для перекуса и выпечки",
+       "price": 59000,
+       "emoji": "🍎",
+       "tone": "red",
+       "available": true,
+       "groups": [],
+       "category": "fruit_veg",
+       "unit": "KG",
+       "stock": 80000,
+       "brand": "Алматинские сады",
+       "origin": "Казахстан",
+       "composition": "Яблоки свежие",
+       "storage": "Хранить при +2…+6 °C, в сухом месте",
+       "nutrition": {
+        "kcal": 52,
+        "protein": 0.3,
+        "fat": 0.2,
+        "carbs": 13.8
+       },
+       "compareAt": 79000,
+       "newDays": 5
+      },
+      {
+       "name": "Бананы",
+       "description": "Спелые, сладкие",
+       "price": 69000,
+       "emoji": "🍌",
+       "tone": "amber",
+       "available": true,
+       "groups": [],
+       "category": "fruit_veg",
+       "unit": "KG",
+       "stock": 60000,
+       "origin": "Эквадор",
+       "composition": "Бананы свежие",
+       "storage": "Хранить при +13…+15 °C",
+       "nutrition": {
+        "kcal": 89,
+        "protein": 1.1,
+        "fat": 0.3,
+        "carbs": 22.8
+       }
+      },
+      {
+       "name": "Помидоры",
+       "description": "Мясистые, для салатов",
+       "price": 79000,
+       "emoji": "🍅",
+       "tone": "red",
+       "available": true,
+       "groups": [],
+       "category": "fruit_veg",
+       "unit": "KG",
+       "stock": 50000,
+       "origin": "Казахстан",
+       "composition": "Томаты свежие",
+       "storage": "Хранить при +8…+12 °C",
+       "nutrition": {
+        "kcal": 20,
+        "protein": 1.1,
+        "fat": 0.2,
+        "carbs": 3.7
+       }
+      },
+      {
+       "name": "Огурцы",
+       "description": "Хрустящие, тепличные",
+       "price": 65000,
+       "emoji": "🥒",
+       "tone": "green",
+       "available": true,
+       "groups": [],
+       "category": "fruit_veg",
+       "unit": "KG",
+       "stock": 50000,
+       "origin": "Казахстан",
+       "composition": "Огурцы свежие",
+       "storage": "Хранить при +6…+10 °C",
+       "nutrition": {
+        "kcal": 15,
+        "protein": 0.8,
+        "fat": 0.1,
+        "carbs": 2.8
+       }
+      },
+      {
+       "name": "Лимоны",
+       "description": "Ароматные",
+       "price": 120000,
+       "emoji": "🍋",
+       "tone": "amber",
+       "available": true,
+       "groups": [],
+       "category": "fruit_veg",
+       "unit": "KG",
+       "stock": 20000,
+       "origin": "Турция",
+       "composition": "Лимоны свежие",
+       "storage": "Хранить при +4…+8 °C",
+       "nutrition": {
+        "kcal": 34,
+        "protein": 0.9,
+        "fat": 0.1,
+        "carbs": 3.0
+       }
+      }
+     ]
+    },
+    {
+     "name": "Молочные продукты и яйца",
+     "dishes": [
+      {
+       "name": "Молоко 2,5% 1 л",
+       "description": "Пастеризованное",
+       "price": 69000,
+       "emoji": "🥛",
+       "tone": "blue",
+       "available": true,
+       "groups": [],
+       "category": "dairy",
+       "stock": 40,
+       "brand": "Жайлау",
+       "origin": "Казахстан",
+       "composition": "Молоко коровье нормализованное",
+       "storage": "Хранить при +2…+6 °C, 5 суток",
+       "nutrition": {
+        "kcal": 52,
+        "protein": 2.8,
+        "fat": 2.5,
+        "carbs": 4.7
+       }
+      },
+      {
+       "name": "Кефир 1% 0,9 л",
+       "description": "Классический",
+       "price": 56000,
+       "emoji": "🥛",
+       "tone": "blue",
+       "available": true,
+       "groups": [],
+       "category": "dairy",
+       "stock": 30,
+       "brand": "Жайлау",
+       "origin": "Казахстан",
+       "composition": "Молоко, закваска кефирных грибков",
+       "storage": "Хранить при +2…+6 °C",
+       "nutrition": {
+        "kcal": 40,
+        "protein": 3.0,
+        "fat": 1.0,
+        "carbs": 4.0
+       },
+       "compareAt": 64000
+      },
+      {
+       "name": "Яйца С1 (10 шт)",
+       "description": "Столовые, категория С1",
+       "price": 125000,
+       "emoji": "🥚",
+       "tone": "amber",
+       "available": true,
+       "groups": [],
+       "category": "dairy",
+       "stock": 25,
+       "brand": "Степные",
+       "origin": "Казахстан",
+       "composition": "Яйца куриные столовые",
+       "storage": "Хранить при +2…+20 °C",
+       "nutrition": {
+        "kcal": 157,
+        "protein": 12.7,
+        "fat": 11.5,
+        "carbs": 0.7
+       }
+      },
+      {
+       "name": "Сыр Российский 200 г",
+       "description": "Нарезка",
+       "price": 219000,
+       "emoji": "🧀",
+       "tone": "amber",
+       "available": true,
+       "groups": [],
+       "category": "dairy",
+       "stock": 3,
+       "brand": "Жайлау",
+       "origin": "Казахстан",
+       "composition": "Молоко, соль, закваска, сычужный фермент",
+       "storage": "Хранить при +2…+6 °C",
+       "nutrition": {
+        "kcal": 363,
+        "protein": 23.0,
+        "fat": 29.0,
+        "carbs": 0.0
+       },
+       "newDays": 3
+      }
+     ]
+    },
+    {
+     "name": "Мясо, птица и рыба",
+     "dishes": [
+      {
+       "name": "Говядина лопатка",
+       "description": "Охлаждённая",
+       "price": 489000,
+       "emoji": "🥩",
+       "tone": "red",
+       "available": true,
+       "groups": [],
+       "category": "meat",
+       "unit": "KG",
+       "stock": 30000,
+       "brand": "Степные",
+       "origin": "Казахстан",
+       "composition": "Говядина охлаждённая",
+       "storage": "Хранить при 0…+4 °C, 3 суток",
+       "nutrition": {
+        "kcal": 187,
+        "protein": 18.9,
+        "fat": 12.4,
+        "carbs": 0.0
+       }
+      },
+      {
+       "name": "Куриное филе",
+       "description": "Охлаждённое",
+       "price": 329000,
+       "emoji": "🍗",
+       "tone": "amber",
+       "available": true,
+       "groups": [],
+       "category": "meat",
+       "unit": "KG",
+       "stock": 30000,
+       "brand": "Степные",
+       "origin": "Казахстан",
+       "composition": "Филе куриной грудки",
+       "storage": "Хранить при 0…+4 °C, 3 суток",
+       "nutrition": {
+        "kcal": 113,
+        "protein": 23.6,
+        "fat": 1.9,
+        "carbs": 0.4
+       }
+      },
+      {
+       "name": "Форель охлаждённая",
+       "description": "Стейк",
+       "price": 1290000,
+       "emoji": "🐟",
+       "tone": "blue",
+       "available": true,
+       "groups": [],
+       "category": "fish",
+       "unit": "KG",
+       "stock": 8000,
+       "origin": "Казахстан",
+       "composition": "Форель радужная",
+       "storage": "Хранить при 0…+2 °C, 2 суток",
+       "nutrition": {
+        "kcal": 141,
+        "protein": 19.9,
+        "fat": 6.2,
+        "carbs": 0.0
+       },
+       "newDays": 4
+      },
+      {
+       "name": "Креветки варёно-мороженые 500 г",
+       "description": "Очищенные",
+       "price": 259000,
+       "emoji": "🦐",
+       "tone": "red",
+       "available": true,
+       "groups": [],
+       "category": "fish",
+       "stock": 12,
+       "origin": "Вьетнам",
+       "composition": "Креветки, соль",
+       "storage": "Хранить при −18 °C",
+       "nutrition": {
+        "kcal": 95,
+        "protein": 20.0,
+        "fat": 1.1,
+        "carbs": 0.0
+       }
+      }
+     ]
+    },
+    {
+     "name": "Хлеб и выпечка",
+     "dishes": [
+      {
+       "name": "Хлеб пшеничный",
+       "description": "Формовой, нарезанный",
+       "price": 28000,
+       "emoji": "🍞",
+       "tone": "amber",
+       "available": true,
+       "groups": [],
+       "category": "bakery",
+       "stock": 50,
+       "brand": "Алатау",
+       "origin": "Казахстан",
+       "composition": "Мука пшеничная, вода, дрожжи, соль",
+       "storage": "Хранить при +18…+25 °C",
+       "nutrition": {
+        "kcal": 242,
+        "protein": 7.5,
+        "fat": 2.9,
+        "carbs": 48.0
+       }
+      },
+      {
+       "name": "Круассан с маслом",
+       "description": "Свежая выпечка дня",
+       "price": 45000,
+       "emoji": "🥐",
+       "tone": "amber",
+       "available": true,
+       "groups": [],
+       "category": "bakery",
+       "stock": 20,
+       "brand": "Алатау",
+       "origin": "Казахстан",
+       "composition": "Мука, сливочное масло, сахар, дрожжи",
+       "storage": "Хранить 24 часа",
+       "nutrition": {
+        "kcal": 406,
+        "protein": 8.2,
+        "fat": 21.0,
+        "carbs": 45.8
+       }
+      }
+     ]
+    },
+    {
+     "name": "Напитки",
+     "dishes": [
+      {
+       "name": "Вода питьевая 1,5 л",
+       "description": "Негазированная",
+       "price": 21000,
+       "emoji": "💧",
+       "tone": "blue",
+       "available": true,
+       "groups": [],
+       "category": "drinks",
+       "stock": 100,
+       "brand": "Алатау",
+       "origin": "Казахстан",
+       "composition": "Вода питьевая"
+      },
+      {
+       "name": "Сок апельсиновый 1 л",
+       "description": "Восстановленный",
+       "price": 119000,
+       "emoji": "🍊",
+       "tone": "amber",
+       "available": true,
+       "groups": [],
+       "category": "drinks",
+       "stock": 35,
+       "brand": "Фруктовый день",
+       "origin": "Казахстан",
+       "composition": "Апельсиновый сок",
+       "nutrition": {
+        "kcal": 45,
+        "protein": 0.7,
+        "fat": 0.2,
+        "carbs": 10.4
+       },
+       "compareAt": 139000
+      },
+      {
+       "name": "Чай чёрный 100 г",
+       "description": "Листовой",
+       "price": 139000,
+       "emoji": "🍵",
+       "tone": "amber",
+       "available": true,
+       "groups": [],
+       "category": "drinks",
+       "stock": 40,
+       "brand": "Алатау",
+       "origin": "Шри-Ланка",
+       "composition": "Чай чёрный листовой",
+       "storage": "Хранить в сухом месте"
+      }
+     ]
+    },
+    {
+     "name": "Бакалея и сладости",
+     "dishes": [
+      {
+       "name": "Рис длиннозёрный 900 г",
+       "description": "Шлифованный",
+       "price": 105000,
+       "emoji": "🍚",
+       "tone": "amber",
+       "available": true,
+       "groups": [],
+       "category": "pantry",
+       "stock": 40,
+       "brand": "Степные",
+       "origin": "Казахстан",
+       "composition": "Рис",
+       "nutrition": {
+        "kcal": 344,
+        "protein": 6.7,
+        "fat": 0.7,
+        "carbs": 78.9
+       }
+      },
+      {
+       "name": "Макароны спагетти 400 г",
+       "description": "Твёрдые сорта пшеницы",
+       "price": 45000,
+       "emoji": "🍝",
+       "tone": "amber",
+       "available": true,
+       "groups": [],
+       "category": "pantry",
+       "stock": 60,
+       "brand": "Алатау",
+       "origin": "Казахстан",
+       "composition": "Мука из твёрдой пшеницы, вода",
+       "nutrition": {
+        "kcal": 344,
+        "protein": 11.0,
+        "fat": 1.5,
+        "carbs": 70.0
+       }
+      },
+      {
+       "name": "Шоколад молочный 90 г",
+       "description": "Плитка",
+       "price": 69000,
+       "emoji": "🍫",
+       "tone": "red",
+       "available": true,
+       "groups": [],
+       "category": "sweets",
+       "stock": 45,
+       "brand": "Алатау",
+       "origin": "Казахстан",
+       "composition": "Сахар, какао-масло, молоко сухое",
+       "nutrition": {
+        "kcal": 540,
+        "protein": 7.0,
+        "fat": 31.0,
+        "carbs": 57.0
+       },
+       "newDays": 2
+      },
+      {
+       "name": "Печенье овсяное 300 г",
+       "description": "Классическое",
+       "price": 79000,
+       "emoji": "🍪",
+       "tone": "amber",
+       "available": true,
+       "groups": [],
+       "category": "sweets",
+       "stock": 30,
+       "brand": "Алатау",
+       "origin": "Казахстан",
+       "composition": "Мука, овсяные хлопья, сахар, масло",
+       "nutrition": {
+        "kcal": 437,
+        "protein": 6.5,
+        "fat": 16.0,
+        "carbs": 67.0
+       }
+      }
+     ]
+    },
+    {
+     "name": "Замороженные продукты",
+     "dishes": [
+      {
+       "name": "Пельмени домашние 800 г",
+       "description": "Говядина и свинина",
+       "price": 329000,
+       "emoji": "🥟",
+       "tone": "amber",
+       "available": true,
+       "groups": [],
+       "category": "frozen",
+       "stock": 25,
+       "brand": "Степные",
+       "origin": "Казахстан",
+       "composition": "Мука, мясо, лук, соль",
+       "storage": "Хранить при −18 °C",
+       "nutrition": {
+        "kcal": 275,
+        "protein": 11.9,
+        "fat": 12.4,
+        "carbs": 29.0
+       }
+      },
+      {
+       "name": "Овощная смесь 400 г",
+       "description": "Для жарки",
+       "price": 129000,
+       "emoji": "🥦",
+       "tone": "green",
+       "available": true,
+       "groups": [],
+       "category": "frozen",
+       "stock": 30,
+       "origin": "Польша",
+       "composition": "Брокколи, морковь, кукуруза",
+       "storage": "Хранить при −18 °C",
+       "nutrition": {
+        "kcal": 55,
+        "protein": 2.5,
+        "fat": 0.5,
+        "carbs": 9.0
+       }
+      },
+      {
+       "name": "Мороженое пломбир 450 г",
+       "description": "Ванильное",
+       "price": 179000,
+       "emoji": "🍨",
+       "tone": "blue",
+       "available": true,
+       "groups": [],
+       "category": "frozen",
+       "stock": 20,
+       "brand": "Жайлау",
+       "origin": "Казахстан",
+       "composition": "Молоко, сливки, сахар",
+       "storage": "Хранить при −18 °C",
+       "nutrition": {
+        "kcal": 227,
+        "protein": 3.2,
+        "fat": 15.0,
+        "carbs": 20.0
+       }
+      }
+     ]
+    },
+    {
+     "name": "Готовая еда",
+     "dishes": [
+      {
+       "name": "Салат Оливье 300 г",
+       "description": "Свежеприготовленный",
+       "price": 169000,
+       "emoji": "🥗",
+       "tone": "green",
+       "available": true,
+       "groups": [],
+       "category": "ready_meals",
+       "stock": 10,
+       "brand": "Кухня Фреш",
+       "origin": "Казахстан",
+       "composition": "Картофель, морковь, горошек, яйцо, майонез",
+       "storage": "Хранить при +2…+6 °C, 12 часов"
+      }
+     ]
+    },
+    {
+     "name": "Дом и дети",
+     "dishes": [
+      {
+       "name": "Средство для мытья посуды 500 мл",
+       "description": "Гипоаллергенное",
+       "price": 89000,
+       "emoji": "🧴",
+       "tone": "blue",
+       "available": true,
+       "groups": [],
+       "category": "household",
+       "stock": 40,
+       "brand": "Чистый дом",
+       "origin": "Казахстан"
+      },
+      {
+       "name": "Туалетная бумага (12 рулонов)",
+       "description": "Трёхслойная",
+       "price": 199000,
+       "emoji": "🧻",
+       "tone": "blue",
+       "available": true,
+       "groups": [],
+       "category": "household",
+       "stock": 40,
+       "brand": "Чистый дом",
+       "origin": "Казахстан"
+      },
+      {
+       "name": "Подгузники размер 4 (44 шт)",
+       "description": "9–14 кг",
+       "price": 649000,
+       "emoji": "👶",
+       "tone": "blue",
+       "available": true,
+       "groups": [],
+       "category": "kids",
+       "stock": 15,
+       "brand": "Малыш",
+       "origin": "Польша",
+       "compareAt": 749000
+      },
+      {
+       "name": "Пюре яблочное детское 90 г",
+       "description": "С 4 месяцев",
+       "price": 39000,
+       "emoji": "🍼",
+       "tone": "green",
+       "available": true,
+       "groups": [],
+       "category": "kids",
+       "stock": 60,
+       "brand": "Малыш",
+       "origin": "Казахстан",
+       "composition": "Яблоки, вода",
+       "nutrition": {
+        "kcal": 48,
+        "protein": 0.3,
+        "fat": 0.1,
+        "carbs": 11.0
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
