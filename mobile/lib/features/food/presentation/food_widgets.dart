@@ -134,10 +134,18 @@ class DemoBadge extends StatelessWidget {
 
 class RestaurantCard extends StatelessWidget {
   const RestaurantCard(
-      {required this.restaurant, required this.onTap, super.key});
+      {required this.restaurant,
+      required this.onTap,
+      this.favorite,
+      this.onFavorite,
+      super.key});
 
   final Restaurant restaurant;
   final VoidCallback onTap;
+
+  /// `null` hides the heart (favorites unavailable, for example for guests).
+  final bool? favorite;
+  final VoidCallback? onFavorite;
 
   @override
   Widget build(BuildContext context) {
@@ -148,7 +156,9 @@ class RestaurantCard extends StatelessWidget {
     return Semantics(
       button: true,
       label:
-          '${restaurant.name}, ${restaurant.cuisine}, ${restaurant.open ? restaurant.eta : 'закрыто'}',
+          '${restaurant.name}, ${restaurant.cuisine}, ${restaurant.open ? restaurant.eta : 'закрыто'}'
+          '${restaurant.ratingAvg == null ? '' : ', рейтинг ${restaurant.ratingAvg!.toStringAsFixed(1).replaceAll('.', ',')}, отзывов ${restaurant.ratingCount}'}'
+          '${restaurant.hasPromo ? ', есть акция' : ''}',
       child: Card(
         clipBehavior: Clip.antiAlias,
         margin: EdgeInsets.zero,
@@ -190,6 +200,38 @@ class RestaurantCard extends StatelessWidget {
                         ),
                       if (restaurant.synthetic)
                         const Positioned(left: 12, top: 12, child: DemoBadge()),
+                      if (restaurant.hasPromo)
+                        Positioned(
+                          left: 12,
+                          bottom: 10,
+                          child: Container(
+                            key: const Key('restaurant-promo-badge'),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                                color: theme.colorScheme.primary,
+                                borderRadius: BorderRadius.circular(999)),
+                            child: Text('Акция',
+                                style: TextStyle(
+                                    color: theme.colorScheme.onPrimary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700)),
+                          ),
+                        ),
+                      if (favorite != null)
+                        Positioned(
+                          right: 4,
+                          top: 4,
+                          child: IconButton.filledTonal(
+                            tooltip: favorite!
+                                ? 'Убрать из избранного'
+                                : 'В избранное',
+                            onPressed: onFavorite,
+                            icon: Icon(favorite!
+                                ? Icons.favorite
+                                : Icons.favorite_border),
+                          ),
+                        ),
                     ]),
               ),
               Padding(
@@ -199,13 +241,34 @@ class RestaurantCard extends StatelessWidget {
                     children: [
                       Text(restaurant.name, style: theme.textTheme.titleLarge),
                       const SizedBox(height: 2),
-                      Text(restaurant.cuisine,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant)),
+                      Row(children: [
+                        if (restaurant.ratingAvg != null) ...[
+                          const Icon(Icons.star_rounded,
+                              size: 18, color: Color(0xFFF5A623)),
+                          const SizedBox(width: 2),
+                          Text(
+                              '${restaurant.ratingAvg!.toStringAsFixed(1).replaceAll('.', ',')} (${restaurant.ratingCount}) · ',
+                              key: const Key('restaurant-rating'),
+                              style: theme.textTheme.bodyMedium
+                                  ?.copyWith(fontWeight: FontWeight.w700)),
+                        ],
+                        Flexible(
+                          child: Text(restaurant.cuisine,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant)),
+                        ),
+                      ]),
                       const SizedBox(height: 8),
                       Wrap(spacing: 14, runSpacing: 4, children: [
                         _Meta(Icons.schedule_rounded, restaurant.eta),
                         _Meta(Icons.delivery_dining_rounded, fee),
+                        if (restaurant.pickupEnabled &&
+                            restaurant.vertical == 'FOOD')
+                          const _Meta(Icons.storefront_outlined, 'Самовывоз'),
+                        if (restaurant.minOrderMinor > 0)
+                          _Meta(Icons.shopping_bag_outlined,
+                              'от ${formatTenge(restaurant.minOrderMinor)}'),
                       ]),
                     ]),
               ),

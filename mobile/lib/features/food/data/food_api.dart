@@ -19,6 +19,15 @@ enum FoodFailure {
   quantity,
   substitution,
   priceChanged,
+  pickupUnavailable,
+  promoNotFound,
+  promoExpired,
+  promoNotApplicable,
+  promoMinSubtotal,
+  promoExhausted,
+  promoUsed,
+  reviewNotAllowed,
+  reviewExists,
   addressMissing,
   tooManyOrders,
   notCancellable,
@@ -50,6 +59,19 @@ class FoodException implements Exception {
           'Выбор замены устарел. Откройте товар и выберите замену заново.',
         FoodFailure.priceChanged =>
           'Цена изменилась. Вернитесь в корзину и проверьте сумму.',
+        FoodFailure.pickupUnavailable =>
+          'Этот ресторан не принимает заказы на самовывоз.',
+        FoodFailure.promoNotFound => 'Промокод не найден.',
+        FoodFailure.promoExpired => 'Срок действия промокода истёк.',
+        FoodFailure.promoNotApplicable =>
+          'Промокод не подходит для этого ресторана или корзины.',
+        FoodFailure.promoMinSubtotal =>
+          'Сумма блюд меньше минимальной для этого промокода.',
+        FoodFailure.promoExhausted => 'Промокод уже полностью использован.',
+        FoodFailure.promoUsed => 'Вы уже использовали этот промокод.',
+        FoodFailure.reviewNotAllowed =>
+          'Отзыв можно оставить после доставки заказа.',
+        FoodFailure.reviewExists => 'Отзыв на этот заказ уже оставлен.',
         FoodFailure.addressMissing => 'Выберите адрес доставки.',
         FoodFailure.tooManyOrders =>
           'Слишком много активных заказов. Дождитесь доставки.',
@@ -103,6 +125,42 @@ class FoodException implements Exception {
         'Баға өзгерді. Себетке оралып, соманы тексеріңіз.',
         'The price changed. Return to the cart and check the total.'
       ),
+      FoodFailure.pickupUnavailable: (
+        'Бұл мейрамхана өзі алып кетуді қабылдамайды.',
+        'This restaurant does not offer pickup.'
+      ),
+      FoodFailure.promoNotFound: (
+        'Промокод табылмады.',
+        'Promo code not found.'
+      ),
+      FoodFailure.promoExpired: (
+        'Промокодтың мерзімі өтті.',
+        'The promo code has expired.'
+      ),
+      FoodFailure.promoNotApplicable: (
+        'Промокод бұл себетке жарамайды.',
+        'The promo code does not apply to this cart.'
+      ),
+      FoodFailure.promoMinSubtotal: (
+        'Тағам сомасы промокодтың ең аз шегінен төмен.',
+        'The items total is below the promo minimum.'
+      ),
+      FoodFailure.promoExhausted: (
+        'Промокод толық пайдаланылды.',
+        'The promo code is fully used.'
+      ),
+      FoodFailure.promoUsed: (
+        'Сіз бұл промокодты пайдаландыңыз.',
+        'You have already used this promo code.'
+      ),
+      FoodFailure.reviewNotAllowed: (
+        'Пікірді тапсырыс жеткізілгеннен кейін қалдыруға болады.',
+        'You can review an order after it is delivered.'
+      ),
+      FoodFailure.reviewExists: (
+        'Бұл тапсырысқа пікір бар.',
+        'This order already has a review.'
+      ),
       FoodFailure.addressMissing: (
         'Жеткізу мекенжайын таңдаңыз.',
         'Select a delivery address.'
@@ -130,15 +188,21 @@ class CheckoutRequest {
   const CheckoutRequest({
     required this.restaurantId,
     required this.items,
-    required this.addressId,
     required this.paymentMethod,
+    this.addressId,
     this.comment,
     this.expectedTotalMinor,
+    this.pickup = false,
+    this.promoCode,
   });
 
   final String restaurantId;
   final List<Map<String, dynamic>> items;
-  final String addressId;
+
+  /// Required for delivery; pickup orders carry no customer address.
+  final String? addressId;
+  final bool pickup;
+  final String? promoCode;
 
   /// `TEST_CARD` (DEV mock, no card data) or `CASH_ON_DELIVERY`.
   final String paymentMethod;
@@ -194,6 +258,15 @@ class FoodApi {
         'FOOD_QUANTITY_INVALID' => FoodFailure.quantity,
         'FOOD_PRICE_CHANGED' => FoodFailure.priceChanged,
         'FOOD_SUBSTITUTION_INVALID' => FoodFailure.substitution,
+        'PICKUP_UNAVAILABLE' => FoodFailure.pickupUnavailable,
+        'PROMO_NOT_FOUND' => FoodFailure.promoNotFound,
+        'PROMO_EXPIRED' => FoodFailure.promoExpired,
+        'PROMO_NOT_APPLICABLE' => FoodFailure.promoNotApplicable,
+        'PROMO_MIN_SUBTOTAL' => FoodFailure.promoMinSubtotal,
+        'PROMO_EXHAUSTED' => FoodFailure.promoExhausted,
+        'PROMO_ALREADY_USED' => FoodFailure.promoUsed,
+        'REVIEW_NOT_ALLOWED' => FoodFailure.reviewNotAllowed,
+        'REVIEW_EXISTS' => FoodFailure.reviewExists,
         'ADDRESS_NOT_FOUND' => FoodFailure.addressMissing,
         'TOO_MANY_ACTIVE_ORDERS' => FoodFailure.tooManyOrders,
         'ORDER_NOT_CANCELLABLE' => FoodFailure.notCancellable,
@@ -215,11 +288,66 @@ class FoodApi {
         return jsonDecode(utf8.decode(response.bodyBytes));
       });
 
-  Future<List<Restaurant>> restaurants({String vertical = 'FOOD'}) async =>
-      ((await _public('food/restaurants', {'vertical': vertical}))
+  Future<List<Restaurant>> restaurants({
+    String vertical = 'FOOD',
+    RestaurantFilter filter = const RestaurantFilter(),
+  }) async =>
+      ((await _public('food/restaurants', filter.toQuery(vertical)))
               as List<dynamic>)
           .map((e) => Restaurant.fromJson(e as Map<String, dynamic>))
           .toList(growable: false);
+
+  /// Promotions usable right now, optionally for one restaurant. Empty when there is no active promotion.
+  Future<List<FoodPromotion>> promotions(
+          {String? restaurantId, String vertical = 'FOOD'}) async =>
+      ((await _public('food/promotions', {
+        'vertical': vertical,
+        if (restaurantId != null) 'restaurantId': restaurantId,
+      })) as List<dynamic>)
+          .map((e) => FoodPromotion.fromJson(e as Map<String, dynamic>))
+          .toList(growable: false);
+
+  Future<List<FoodCategory>> categories({String vertical = 'FOOD'}) async =>
+      ((await _public('food/categories', {'vertical': vertical}))
+              as List<dynamic>)
+          .map((e) => FoodCategory.fromJson(e as Map<String, dynamic>))
+          .toList(growable: false);
+
+  Future<FoodReviewSummary> reviews(String restaurantId) async =>
+      FoodReviewSummary.fromJson(
+          (await _public('food/restaurants/$restaurantId/reviews'))
+              as Map<String, dynamic>);
+
+  /// The caller's favorite restaurants (stored in PostgreSQL, so they follow the account across sessions).
+  Future<List<Restaurant>> favorites() => _guard(() async {
+        final json = await auth.authorizedJson('GET', 'food/favorites');
+        return (json as List<dynamic>)
+            .map((e) => Restaurant.fromJson(e as Map<String, dynamic>))
+            .toList(growable: false);
+      });
+
+  Future<void> setFavorite(String restaurantId, bool favorite) =>
+      _guard(() async {
+        await auth.authorizedJson(
+            favorite ? 'PUT' : 'DELETE', 'food/favorites/$restaurantId');
+      });
+
+  Future<void> submitReview(String orderId, int rating, String? comment) =>
+      _guard(() async {
+        await auth.authorizedJson('POST', 'food/orders/$orderId/review', body: {
+          'rating': rating,
+          if (comment != null && comment.trim().isNotEmpty)
+            'comment': comment.trim(),
+        }, expected: const {
+          201
+        });
+      });
+
+  Future<void> complainAboutReview(String reviewId, String reason) =>
+      _guard(() async {
+        await auth.authorizedJson('POST', 'food/reviews/$reviewId/complaints',
+            body: {'reason': reason}, expected: const {202});
+      });
 
   Future<RestaurantMenu> menu(String restaurantId) async =>
       RestaurantMenu.fromJson((await _public('food/restaurants/$restaurantId'))
@@ -237,11 +365,17 @@ class FoodApi {
           (await _public('food/search', {'q': query, 'vertical': vertical}))
               as Map<String, dynamic>);
 
-  Future<FoodQuote> quote(
-          String restaurantId, List<Map<String, dynamic>> items) =>
+  Future<FoodQuote> quote(String restaurantId, List<Map<String, dynamic>> items,
+          {bool pickup = false, String? promoCode}) =>
       _guard(() async {
-        final json = await auth.authorizedJson('POST', 'food/cart/quote',
-            body: {'restaurantId': restaurantId, 'items': items});
+        final json =
+            await auth.authorizedJson('POST', 'food/cart/quote', body: {
+          'restaurantId': restaurantId,
+          'items': items,
+          'fulfillmentType': pickup ? 'PICKUP' : 'DELIVERY',
+          if (promoCode != null && promoCode.trim().isNotEmpty)
+            'promoCode': promoCode.trim(),
+        });
         return FoodQuote.fromJson(json as Map<String, dynamic>);
       });
 
@@ -252,7 +386,10 @@ class FoodApi {
         final json = await auth.authorizedJson('POST', 'food/orders', body: {
           'restaurantId': request.restaurantId,
           'items': request.items,
-          'addressId': request.addressId,
+          if (request.addressId != null) 'addressId': request.addressId,
+          'fulfillmentType': request.pickup ? 'PICKUP' : 'DELIVERY',
+          if (request.promoCode != null && request.promoCode!.trim().isNotEmpty)
+            'promoCode': request.promoCode!.trim(),
           'paymentMethod': request.paymentMethod,
           if (request.expectedTotalMinor != null)
             'expectedTotalMinor': request.expectedTotalMinor,

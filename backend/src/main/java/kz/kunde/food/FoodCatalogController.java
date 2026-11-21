@@ -29,7 +29,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class FoodCatalogController {
     public record RestaurantSummary(String id, String slug, String name, String cuisine, String description,
             String emoji, String tone, long deliveryFeeMinor, long minOrderMinor, int etaMinMinutes,
-            int etaMaxMinutes, boolean open, boolean synthetic, String vertical, String imageUrl) {}
+            int etaMaxMinutes, boolean open, boolean synthetic, String vertical, String imageUrl, Double ratingAvg,
+            int ratingCount, boolean pickupEnabled, int prepMinutes, String addressText, boolean hasPromo) {}
 
     public record Option(String id, String name, long priceDeltaMinor) {}
 
@@ -55,8 +56,16 @@ public class FoodCatalogController {
 
     static final String RESTAURANT_SELECT = """
             select id, slug, name, cuisine, description, emoji, tone, delivery_fee_minor, min_order_minor,
-                   eta_min_minutes, eta_max_minutes, is_open, is_synthetic, vertical, image_url
-            from marketplace.food_restaurants
+                   eta_min_minutes, eta_max_minutes, (is_open and moderation_status = 'ACTIVE') as is_open, is_synthetic, vertical, image_url,
+                   (select round(avg(v.rating)::numeric, 1)::float8 from marketplace.food_reviews v
+                     where v.restaurant_id = r.id and v.status = 'VISIBLE') as rating_avg,
+                   (select count(*) from marketplace.food_reviews v
+                     where v.restaurant_id = r.id and v.status = 'VISIBLE') as rating_count,
+                   pickup_enabled, prep_minutes, address_text,
+                   exists (select 1 from marketplace.food_promotions p
+                            where p.status = 'ACTIVE' and p.starts_at <= now() and p.ends_at > now()
+                              and (p.restaurant_id = r.id or (p.restaurant_id is null and (p.cuisine is null or p.cuisine = r.cuisine)))) as has_promo
+            from marketplace.food_restaurants r
             """;
 
     static RestaurantSummary mapRestaurant(java.sql.ResultSet rs, int row) throws java.sql.SQLException {
@@ -64,7 +73,9 @@ public class FoodCatalogController {
                 rs.getString("cuisine"), rs.getString("description"), rs.getString("emoji"), rs.getString("tone"),
                 rs.getLong("delivery_fee_minor"), rs.getLong("min_order_minor"), rs.getInt("eta_min_minutes"),
                 rs.getInt("eta_max_minutes"), rs.getBoolean("is_open"), rs.getBoolean("is_synthetic"),
-                rs.getString("vertical"), rs.getString("image_url"));
+                rs.getString("vertical"), rs.getString("image_url"), rs.getObject("rating_avg", Double.class),
+                rs.getInt("rating_count"), rs.getBoolean("pickup_enabled"), rs.getInt("prep_minutes"),
+                rs.getString("address_text"), rs.getBoolean("has_promo"));
     }
 
     private static String vertical(String value) {
@@ -74,21 +85,60 @@ public class FoodCatalogController {
         return value;
     }
 
-    /** Stores/restaurants of one vertical (default FOOD, so existing clients are unchanged). */
+    private static final java.util.Map<String, String> SORTS = java.util.Map.of(
+            "recommended", "(r.is_open and r.moderation_status = 'ACTIVE') desc, r.sort_order, r.name, r.id",
+            "rating", "(r.is_open and r.moderation_status = 'ACTIVE') desc, rating_avg desc nulls last, rating_count desc, r.name, r.id",
+            "delivery_fee", "(r.is_open and r.moderation_status = 'ACTIVE') desc, r.delivery_fee_minor, r.name, r.id",
+            "eta", "(r.is_open and r.moderation_status = 'ACTIVE') desc, r.eta_min_minutes, r.name, r.id");
+
+    /**
+     * Stores/restaurants of one vertical (default FOOD, so existing clients are unchanged), with server-side filters
+     * (open now, pickup, free delivery, promotion, minimum rating, cuisine, price range by minimum order) and sorting.
+     * Distance sorting is not offered: restaurants have no stored coordinates yet, so no distance is invented.
+     */
     @GetMapping("/restaurants")
     public ResponseEntity<List<RestaurantSummary>> restaurants(
             @RequestParam(defaultValue = "FOOD") String vertical,
+            @RequestParam(required = false) Boolean openNow,
+            @RequestParam(required = false) Boolean pickup,
+            @RequestParam(required = false) Boolean freeDelivery,
+            @RequestParam(required = false) Boolean promo,
+            @RequestParam(required = false) @Min(1) @Max(5) Integer minRating,
+            @RequestParam(required = false) @Size(max = 80) String cuisine,
+            @RequestParam(required = false) @Min(0) @Max(100000000) Long maxMinOrderMinor,
+            @RequestParam(defaultValue = "recommended") String sort,
             @RequestParam(defaultValue = "50") @Min(1) @Max(100) int limit,
             @RequestParam(defaultValue = "0") @Min(0) @Max(100000) int offset) {
-        List<RestaurantSummary> list = jdbc.query(RESTAURANT_SELECT
-                + " where vertical = ? order by is_open desc, sort_order, name, id limit ? offset ?",
-                FoodCatalogController::mapRestaurant, vertical(vertical), limit, offset);
+        String orderBy = SORTS.get(sort);
+        if (orderBy == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "SORT_INVALID", "sort must be recommended, rating, delivery_fee or eta");
+        }
+        StringBuilder where = new StringBuilder(" where r.vertical = ?");
+        List<Object> args = new ArrayList<>();
+        args.add(vertical(vertical));
+        if (Boolean.TRUE.equals(openNow)) { where.append(" and (r.is_open and r.moderation_status = 'ACTIVE')"); }
+        if (Boolean.TRUE.equals(pickup)) { where.append(" and r.pickup_enabled"); }
+        if (Boolean.TRUE.equals(freeDelivery)) { where.append(" and r.delivery_fee_minor = 0"); }
+        if (Boolean.TRUE.equals(promo)) {
+            where.append(" and exists (select 1 from marketplace.food_promotions p where p.status = 'ACTIVE' and p.starts_at <= now()"
+                    + " and p.ends_at > now() and (p.restaurant_id = r.id or (p.restaurant_id is null and (p.cuisine is null or p.cuisine = r.cuisine))))");
+        }
+        if (minRating != null) {
+            where.append(" and (select avg(v.rating) from marketplace.food_reviews v where v.restaurant_id = r.id and v.status = 'VISIBLE') >= ?");
+            args.add(minRating);
+        }
+        if (cuisine != null && !cuisine.isBlank()) { where.append(" and r.cuisine = ?"); args.add(cuisine.strip()); }
+        if (maxMinOrderMinor != null) { where.append(" and r.min_order_minor <= ?"); args.add(maxMinOrderMinor); }
+        args.add(limit);
+        args.add(offset);
+        List<RestaurantSummary> list = jdbc.query(RESTAURANT_SELECT + where + " order by " + orderBy + " limit ? offset ?",
+                FoodCatalogController::mapRestaurant, args.toArray());
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(list);
     }
 
     @GetMapping("/restaurants/{restaurantId}")
     public ResponseEntity<RestaurantDetail> restaurant(@PathVariable UUID restaurantId) {
-        RestaurantSummary restaurant = jdbc.query(RESTAURANT_SELECT + " where id = ?",
+        RestaurantSummary restaurant = jdbc.query(RESTAURANT_SELECT + " where r.id = ?",
                 FoodCatalogController::mapRestaurant, restaurantId).stream().findFirst()
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "RESTAURANT_NOT_FOUND",
                         "Restaurant is not available"));
@@ -172,7 +222,7 @@ public class FoodCatalogController {
         }
         String contains = "%" + term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
         List<RestaurantSummary> restaurants = jdbc.query(RESTAURANT_SELECT
-                + " where vertical = ? and (name ilike ? or cuisine ilike ?) order by is_open desc, sort_order, name limit 30",
+                + " where r.vertical = ? and (r.name ilike ? or r.cuisine ilike ?) order by (r.is_open and r.moderation_status = 'ACTIVE') desc, r.sort_order, r.name limit 30",
                 FoodCatalogController::mapRestaurant, vertical, contains, contains);
         List<DishHit> dishes = jdbc.query("""
                 select d.id, d.name, d.description, d.price_minor, d.emoji, d.tone, d.available,

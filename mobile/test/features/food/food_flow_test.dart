@@ -105,6 +105,10 @@ class _FakeBackend {
   bool withClosedRestaurant = false;
   bool flowersCatalog = false;
   final requestedVerticals = <String?>[];
+  final restaurantQueries = <Map<String, String>>[];
+  final favorites = <String>{};
+  final reviews = <Map<String, dynamic>>[];
+  bool withPromotions = false;
   int minOrder = 0;
 
   http.Response _json(Object body, [int status = 200]) =>
@@ -117,7 +121,61 @@ class _FakeBackend {
     final body = request.body.isEmpty
         ? null
         : jsonDecode(request.body) as Map<String, dynamic>;
+    if (path == 'food/promotions') {
+      return _json(withPromotions
+          ? [
+              {
+                'id': '77777777-7777-7777-7777-777777777777',
+                'code': 'WELCOME10',
+                'title': 'Скидка 10% на первый заказ',
+                'description': 'Тестовый промокод',
+                'kind': 'PERCENT',
+                'value': 10,
+                'minSubtotalMinor': 0,
+              }
+            ]
+          : []);
+    }
+    if (path == 'food/categories') {
+      return _json([
+        {'cuisine': 'Итальянская', 'restaurants': 1}
+      ]);
+    }
+    if (path == 'food/favorites' && request.method == 'GET') {
+      return _json(
+          [if (favorites.contains(_restaurantId)) _restaurant(minOrder: 0)]);
+    }
+    if (path.startsWith('food/favorites/')) {
+      final id = path.split('/').last;
+      final add = request.method == 'PUT';
+      add ? favorites.add(id) : favorites.remove(id);
+      return _json({'restaurantId': id, 'favorite': add});
+    }
+    if (path == 'food/restaurants/$_restaurantId/reviews') {
+      return _json({
+        'average': reviews.isEmpty ? null : 4.0,
+        'count': reviews.length,
+        'distribution': [0, 0, 0, reviews.length, 0],
+        'reviews': reviews,
+      });
+    }
+    if (path.endsWith('/review') && request.method == 'POST') {
+      final id = path.split('/')[2];
+      final order = orders.firstWhere((o) => o['id'] == id);
+      if (order['status'] != 'DELIVERED') {
+        return _json({'code': 'REVIEW_NOT_ALLOWED'}, 409);
+      }
+      order['reviewed'] = true;
+      return _json({
+        'id': 'rrrrrrrr-0000-0000-0000-000000000001',
+        'rating': body!['rating'],
+        'comment': body['comment'],
+        'author': 'Гость',
+        'createdAt': DateTime.now().toUtc().toIso8601String(),
+      }, 201);
+    }
     if (path == 'food/restaurants') {
+      restaurantQueries.add(request.url.queryParameters);
       requestedVerticals.add(request.url.queryParameters['vertical']);
       if (request.url.queryParameters['vertical'] == 'FLOWERS_GIFTS' &&
           flowersCatalog) {
@@ -137,7 +195,8 @@ class _FakeBackend {
           }
         ]);
       }
-      return _json([
+      final query = request.url.queryParameters;
+      final list = [
         _restaurant(minOrder: minOrder),
         if (withClosedRestaurant)
           {
@@ -146,6 +205,13 @@ class _FakeBackend {
             'name': 'Закрытая Пиццерия',
             'open': false,
           },
+      ];
+      // The server filters; the app only passes the choices as query parameters.
+      return _json([
+        for (final r in list)
+          if ((query['openNow'] != 'true' || r['open'] == true) &&
+              (query['cuisine'] == null || r['cuisine'] == query['cuisine']))
+            r
       ]);
     }
     if (path == 'food/restaurants/$_restaurantId') {
@@ -169,7 +235,11 @@ class _FakeBackend {
       ]);
     }
     if (path == 'food/cart/quote') {
-      final quote = _price(body!);
+      final promo = (body!['promoCode'] as String?)?.toUpperCase();
+      if (promo != null && promo != 'WELCOME10') {
+        return _json({'code': 'PROMO_NOT_FOUND'}, 422);
+      }
+      final quote = _price(body);
       if (quote == null) return _json({'code': 'FOOD_OPTIONS_INVALID'}, 422);
       return _json(quote);
     }
@@ -179,7 +249,11 @@ class _FakeBackend {
         return _json(orders.firstWhere((o) => o['id'] == keys[key]));
       }
       final quote = _price(body!)!;
+      final pickup = body['fulfillmentType'] == 'PICKUP';
       final order = {
+        'fulfillmentType': pickup ? 'PICKUP' : 'DELIVERY',
+        'discountMinor': quote['discountMinor'],
+        'promoCode': quote['promoCode'],
         'id': 'aaaaaaaa-0000-0000-0000-00000000000${orders.length + 1}',
         'restaurantId': _restaurantId,
         'restaurantName': 'Пицца Тест',
@@ -194,8 +268,8 @@ class _FakeBackend {
         'subtotalMinor': quote['subtotalMinor'],
         'deliveryFeeMinor': quote['deliveryFeeMinor'],
         'totalMinor': quote['totalMinor'],
-        'addressLabel': 'Дом',
-        'addressText': 'Алматы, Абая 10',
+        'addressLabel': pickup ? 'Самовывоз' : 'Дом',
+        'addressText': pickup ? 'Алматы, ул. Тестовая 1' : 'Алматы, Абая 10',
         'comment': body['comment'],
         'placedAt': DateTime.now().toUtc().toIso8601String(),
         'items': [
@@ -243,15 +317,24 @@ class _FakeBackend {
       });
       subtotal += unit * qty;
     }
+    final pickup = body['fulfillmentType'] == 'PICKUP';
+    final fee = pickup ? 0 : 60000;
+    final code = (body['promoCode'] as String?)?.toUpperCase();
+    final discount = code == 'WELCOME10' ? subtotal ~/ 10 : 0;
     return {
       'restaurantId': _restaurantId,
       'restaurantName': 'Пицца Тест',
       'lines': lines,
       'subtotalMinor': subtotal,
-      'deliveryFeeMinor': 60000,
-      'totalMinor': subtotal + 60000,
+      'deliveryFeeMinor': fee,
+      'totalMinor': subtotal + fee - discount,
       'currency': 'KZT',
       'minOrderMinor': minOrder,
+      'fulfillmentType': pickup ? 'PICKUP' : 'DELIVERY',
+      'discountMinor': discount,
+      'promoCode': discount > 0 ? code : null,
+      'promoTitle': discount > 0 ? 'Скидка 10% на первый заказ' : null,
+      'prepMinutes': 20,
     };
   }
 }
@@ -738,22 +821,169 @@ void main() {
         containsPair('substitution', 'CHOSEN'));
   });
 
-  testWidgets('catalog filters hide closed restaurants and filter by cuisine',
+  testWidgets('catalog filters are sent to the server and its answer is shown',
       (tester) async {
     final backend = _FakeBackend()..withClosedRestaurant = true;
     final services = await _services(backend, tester);
     await _show(tester, FoodHomeScreen(services: services),
         size: const Size(640, 800), pixelRatio: 1);
     expect(find.text('Закрытая Пиццерия'), findsOneWidget);
-    await tester.tap(find.text('Открыто сейчас'));
+    expect(backend.restaurantQueries.last.containsKey('openNow'), isFalse);
+    await tester.tap(find.byKey(const Key('filter-open')));
     await tester.pumpAndSettle();
+    expect(backend.restaurantQueries.last['openNow'], 'true');
     expect(find.text('Закрытая Пиццерия'), findsNothing);
     expect(find.text('Пицца Тест'), findsOneWidget);
-    final cuisine = find.widgetWithText(ChoiceChip, 'Итальянская');
-    await tester.tap(cuisine);
+    // The cuisine chip comes from /food/categories and filters on the server too.
+    await tester.tap(find.byKey(const Key('category-Итальянская')));
     await tester.pumpAndSettle();
-    expect(tester.widget<ChoiceChip>(cuisine).selected, isTrue);
+    expect(backend.restaurantQueries.last['cuisine'], 'Итальянская');
     expect(find.text('Пицца Тест'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('filter-pickup')));
+    await tester.pumpAndSettle();
+    expect(backend.restaurantQueries.last['pickup'], 'true');
+    await tester.ensureVisible(find.byKey(const Key('filter-reset')));
+    await tester.tap(find.byKey(const Key('filter-reset')));
+    await tester.pumpAndSettle();
+    expect(backend.restaurantQueries.last.containsKey('openNow'), isFalse);
+    expect(find.text('Закрытая Пиццерия'), findsOneWidget);
+  });
+
+  testWidgets('promo banner appears only for a real promotion', (tester) async {
+    final without = _FakeBackend();
+    await _show(
+        tester, FoodHomeScreen(services: await _services(without, tester)),
+        size: const Size(640, 800), pixelRatio: 1);
+    expect(find.byKey(const Key('promo-banner')), findsNothing);
+    final backend = _FakeBackend()..withPromotions = true;
+    await _show(
+        tester, FoodHomeScreen(services: await _services(backend, tester)),
+        size: const Size(640, 800), pixelRatio: 1);
+    expect(find.byKey(const Key('promo-banner')), findsOneWidget);
+    expect(find.textContaining('WELCOME10'), findsOneWidget);
+    expect(find.text('−10%'), findsOneWidget);
+  });
+
+  testWidgets('favorite heart is stored on the server', (tester) async {
+    final backend = _FakeBackend();
+    final services = await _services(backend, tester);
+    await _show(tester, FoodHomeScreen(services: services),
+        size: const Size(640, 800), pixelRatio: 1);
+    await tester.tap(find.byIcon(Icons.favorite_border).first);
+    await tester.pumpAndSettle();
+    expect(backend.favorites, contains(_restaurantId));
+    expect(find.byIcon(Icons.favorite), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.favorite).first);
+    await tester.pumpAndSettle();
+    expect(backend.favorites, isEmpty);
+  });
+
+  testWidgets('checkout switches to pickup and applies a promo code',
+      (tester) async {
+    final backend = _FakeBackend();
+    final services = await _services(backend, tester);
+    services.cart.add(
+        Restaurant.fromJson(_restaurant()),
+        CartLine(
+            dishId: _dishId,
+            name: 'Маргарита',
+            emoji: '🍕',
+            tone: 'red',
+            optionIds: const [_sizeS],
+            optionsText: '',
+            unitPriceMinor: 350000,
+            quantity: 1));
+    final body = {
+      'items': [
+        {
+          'dishId': _dishId,
+          'quantity': 1,
+          'optionIds': [_sizeS]
+        }
+      ]
+    };
+    final quote = FoodQuote.fromJson(backend._price(body)!);
+    await _show(tester, CheckoutScreen(services: services, quote: quote),
+        size: const Size(640, 1400), pixelRatio: 1);
+    expect(find.text('Адрес доставки'), findsOneWidget);
+    await tester.tap(find.text('Самовывоз'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('pickup-info')), findsOneWidget);
+    expect(find.text('Адрес доставки'), findsNothing);
+    await tester.enterText(find.byKey(const Key('promo-field')), 'nope');
+    await tester.tap(find.byKey(const Key('promo-apply')));
+    await tester.pumpAndSettle();
+    expect(find.text('Промокод не найден.'), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('promo-field')), 'welcome10');
+    await tester.tap(find.byKey(const Key('promo-apply')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('promo-applied')), findsOneWidget);
+    expect(find.textContaining('Скидка (WELCOME10)'), findsOneWidget);
+    // 3 500 ₸ - 10% = 3 150 ₸, no delivery fee for pickup (computed by the fake server).
+    await tester.ensureVisible(find.textContaining('Подтвердить заказ'));
+    expect(find.textContaining('Подтвердить заказ · ${formatTenge(315000)}'),
+        findsOneWidget);
+    await tester.tap(find.textContaining('Подтвердить заказ'));
+    await tester.pumpAndSettle();
+    final order = backend.orders.single;
+    expect(order['fulfillmentType'], 'PICKUP');
+    expect(order['promoCode'], 'WELCOME10');
+    expect(order['totalMinor'], 315000);
+  });
+
+  testWidgets('delivered order can be reviewed once', (tester) async {
+    final backend = _FakeBackend();
+    backend.orders.add({
+      'id': 'dddddddd-0000-0000-0000-000000000001',
+      'restaurantId': _restaurantId,
+      'restaurantName': 'Пицца Тест',
+      'status': 'DELIVERED',
+      'fulfillmentType': 'PICKUP',
+      'paymentMethod': 'TEST_CARD',
+      'paymentStatus': 'TEST_PAID',
+      'subtotalMinor': 350000,
+      'deliveryFeeMinor': 0,
+      'totalMinor': 350000,
+      'addressLabel': 'Самовывоз',
+      'addressText': 'Алматы, ул. Тестовая 1',
+      'comment': null,
+      'placedAt': DateTime.now().toUtc().toIso8601String(),
+      'cancellable': false,
+      'timeline': [
+        for (final s in [
+          'PLACED',
+          'ACCEPTED',
+          'PREPARING',
+          'READY_FOR_PICKUP',
+          'DELIVERED'
+        ])
+          {'status': s, 'at': DateTime.now().toUtc().toIso8601String()}
+      ],
+      'items': <Map<String, dynamic>>[],
+    });
+    final services = await _services(backend, tester);
+    await _show(
+        tester,
+        OrderScreen(
+            services: services,
+            orderId: 'dddddddd-0000-0000-0000-000000000001'),
+        size: const Size(640, 2000),
+        pixelRatio: 1);
+    expect(find.text('Готов к выдаче'), findsOneWidget);
+    expect(find.text('Выдан'), findsWidgets);
+    expect(find.text('Курьер в пути'), findsNothing);
+    expect(find.byKey(const Key('review-card')), findsOneWidget);
+    expect(
+        tester
+            .widget<FilledButton>(find.byKey(const Key('review-send')))
+            .onPressed,
+        isNull);
+    await tester.tap(find.byKey(const Key('review-star-4')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('review-send')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('review-done')), findsOneWidget);
+    expect(find.byKey(const Key('review-card')), findsNothing);
   });
 
   testWidgets('cancelled flowers order does not claim a payment was voided',

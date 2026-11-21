@@ -52,6 +52,12 @@ class CheckoutScreen extends StatefulWidget {
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
   late Future<List<Map<String, dynamic>>> _addresses;
+  late FoodQuote _quote = widget.quote;
+  bool _pickup = false;
+  final _promo = TextEditingController();
+  String? _appliedPromo;
+  String? _promoMessage;
+  bool _promoBusy = false;
   String? _addressId;
   String _payment = 'TEST_CARD';
   final _comment = TextEditingController();
@@ -68,6 +74,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   @override
   void dispose() {
     _comment.dispose();
+    _promo.dispose();
     super.dispose();
   }
 
@@ -116,9 +123,76 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
   }
 
+  /// Asks the server for the totals of the current choice (delivery or pickup, promo code). Nothing is computed here.
+  Future<FoodQuote?> _requote({bool pickup = false, String? promo}) async {
+    final restaurant = widget.services.cart.restaurant;
+    if (restaurant == null) return null;
+    return widget.services.api.quote(restaurant.id,
+        [for (final l in widget.services.cart.lines) l.toRequest()],
+        pickup: pickup, promoCode: promo);
+  }
+
+  Future<void> _setPickup(bool pickup) async {
+    if (pickup == _pickup || _busy) return;
+    setState(() {
+      _pickup = pickup;
+      _error = null;
+    });
+    try {
+      final next = await _requote(pickup: pickup, promo: _appliedPromo);
+      if (next != null && mounted) setState(() => _quote = next);
+    } on FoodException catch (error) {
+      if (!mounted) return;
+      // The promo may stop applying (for example a minimum); keep the mode and drop the code.
+      final next = await _requote(pickup: pickup).catchError((_) => null);
+      setState(() {
+        _appliedPromo = null;
+        _promoMessage = error.message;
+        if (next != null) _quote = next;
+      });
+    }
+  }
+
+  Future<void> _applyPromo() async {
+    final code = _promo.text.trim();
+    if (code.isEmpty || _promoBusy) return;
+    setState(() {
+      _promoBusy = true;
+      _promoMessage = null;
+    });
+    try {
+      final next = await _requote(pickup: _pickup, promo: code);
+      if (!mounted) return;
+      setState(() {
+        _promoBusy = false;
+        if (next != null) {
+          _quote = next;
+          _appliedPromo = next.promoCode;
+          _promoMessage = null;
+        }
+      });
+    } on FoodException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _promoBusy = false;
+        _promoMessage = error.message;
+      });
+    }
+  }
+
+  Future<void> _removePromo() async {
+    setState(() {
+      _appliedPromo = null;
+      _promo.clear();
+      _promoMessage = null;
+    });
+    final next = await _requote(pickup: _pickup).catchError((_) => null);
+    if (next != null && mounted) setState(() => _quote = next);
+  }
+
   Future<void> _submit() async {
     final restaurant = widget.services.cart.restaurant;
-    if (_addressId == null || restaurant == null) {
+    if ((!_pickup && _addressId == null) || restaurant == null) {
       setState(() => _error = _flowerText(
           context,
           restaurant?.vertical == 'FLOWERS_GIFTS',
@@ -137,14 +211,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         CheckoutRequest(
           restaurantId: restaurant.id,
           items: [for (final l in widget.services.cart.lines) l.toRequest()],
-          addressId: _addressId!,
+          addressId: _pickup ? null : _addressId,
+          pickup: _pickup,
+          promoCode: _appliedPromo,
           paymentMethod: restaurant.vertical == 'FLOWERS_GIFTS'
               ? 'DEV_NO_PAYMENT'
               : _payment,
           comment: _comment.text,
-          expectedTotalMinor: restaurant.vertical == 'FLOWERS_GIFTS'
-              ? widget.quote.totalMinor
-              : null,
+          // The server recomputes everything; this only detects a price change since the quote.
+          expectedTotalMinor: _quote.totalMinor,
         ),
         _key,
       );
@@ -175,7 +250,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final quote = widget.quote;
+    final quote = _quote;
+    final restaurant = widget.services.cart.restaurant;
     final flowers =
         widget.services.cart.restaurant?.vertical == 'FLOWERS_GIFTS';
     final language = Localizations.localeOf(context).languageCode;
@@ -204,78 +280,113 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
               children: [
                 OrderProgressHeader(checkout: true, flowers: flowers),
-                Text(
-                    tx('Адрес доставки', 'Жеткізу мекенжайы',
-                        'Delivery address'),
-                    style: theme.textTheme.titleLarge),
-                const SizedBox(height: 8),
-                FutureBuilder<List<Map<String, dynamic>>>(
-                  future: _addresses,
-                  builder: (context, state) {
-                    if (state.connectionState != ConnectionState.done) {
-                      return const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: LinearProgressIndicator());
-                    }
-                    if (state.hasError) {
-                      return Column(children: [
-                        Text(tx(
-                            'Не удалось загрузить адреса.',
-                            'Мекенжайлар жүктелмеді.',
-                            'Could not load addresses.')),
-                        TextButton(
-                            onPressed: () => setState(() {
-                                  _addresses = _loadAddresses();
-                                }),
-                            child: Text(tx('Повторить', 'Қайталау', 'Retry'))),
-                      ]);
-                    }
-                    final list = state.data!;
-                    return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          if (list.isEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Text(tx(
-                                  'У вас пока нет адресов. Добавьте тестовый адрес в Алматы.',
-                                  'Мекенжай жоқ. Алматыдағы сынақ мекенжайын қосыңыз.',
-                                  'No addresses yet. Add a test address in Almaty.')),
-                            ),
-                          RadioGroup<String>(
-                            groupValue: _addressId,
-                            onChanged: _busy
-                                ? (_) {}
-                                : (v) => setState(() => _addressId = v),
-                            child: Column(children: [
-                              for (final a in list)
-                                RadioListTile<String>(
-                                  value: a['id'] as String,
-                                  title: Text(a['label'] as String),
-                                  subtitle:
-                                      Text(a['formattedAddress'] as String),
-                                ),
-                            ]),
-                          ),
-                          if (list.isEmpty)
-                            for (final p in _presets)
-                              ListTile(
-                                leading:
-                                    const Icon(Icons.add_location_alt_outlined),
-                                title: Text(p.label),
-                                subtitle: Text(p.text),
-                                onTap:
-                                    _busy ? null : () => _addAddress(preset: p),
-                              ),
-                          OutlinedButton.icon(
-                            onPressed: _busy ? null : () => _addAddress(),
-                            icon: const Icon(Icons.edit_location_alt_outlined),
-                            label: Text(tx('Другой адрес', 'Басқа мекенжай',
-                                'Another address')),
-                          ),
+                if (!flowers && (restaurant?.pickupEnabled ?? false)) ...[
+                  SegmentedButton<bool>(
+                    key: const Key('fulfillment-toggle'),
+                    segments: const [
+                      ButtonSegment(
+                          value: false,
+                          icon: Icon(Icons.delivery_dining),
+                          label: Text('Доставка')),
+                      ButtonSegment(
+                          value: true,
+                          icon: Icon(Icons.storefront_outlined),
+                          label: Text('Самовывоз')),
+                    ],
+                    selected: {_pickup},
+                    onSelectionChanged:
+                        _busy ? null : (v) => _setPickup(v.first),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                if (_pickup)
+                  Card(
+                    key: const Key('pickup-info'),
+                    child: ListTile(
+                      leading: const Icon(Icons.storefront_outlined),
+                      title: Text(restaurant?.addressText ??
+                          'Адрес ресторана уточняется'),
+                      subtitle: Text(
+                          'Заберите заказ сами. Будет готов примерно через ${quote.prepMinutes} мин.'),
+                    ),
+                  )
+                else ...[
+                  Text(
+                      tx('Адрес доставки', 'Жеткізу мекенжайы',
+                          'Delivery address'),
+                      style: theme.textTheme.titleLarge),
+                  const SizedBox(height: 8),
+                  FutureBuilder<List<Map<String, dynamic>>>(
+                    future: _addresses,
+                    builder: (context, state) {
+                      if (state.connectionState != ConnectionState.done) {
+                        return const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: LinearProgressIndicator());
+                      }
+                      if (state.hasError) {
+                        return Column(children: [
+                          Text(tx(
+                              'Не удалось загрузить адреса.',
+                              'Мекенжайлар жүктелмеді.',
+                              'Could not load addresses.')),
+                          TextButton(
+                              onPressed: () => setState(() {
+                                    _addresses = _loadAddresses();
+                                  }),
+                              child:
+                                  Text(tx('Повторить', 'Қайталау', 'Retry'))),
                         ]);
-                  },
-                ),
+                      }
+                      final list = state.data!;
+                      return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (list.isEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Text(tx(
+                                    'У вас пока нет адресов. Добавьте тестовый адрес в Алматы.',
+                                    'Мекенжай жоқ. Алматыдағы сынақ мекенжайын қосыңыз.',
+                                    'No addresses yet. Add a test address in Almaty.')),
+                              ),
+                            RadioGroup<String>(
+                              groupValue: _addressId,
+                              onChanged: _busy
+                                  ? (_) {}
+                                  : (v) => setState(() => _addressId = v),
+                              child: Column(children: [
+                                for (final a in list)
+                                  RadioListTile<String>(
+                                    value: a['id'] as String,
+                                    title: Text(a['label'] as String),
+                                    subtitle:
+                                        Text(a['formattedAddress'] as String),
+                                  ),
+                              ]),
+                            ),
+                            if (list.isEmpty)
+                              for (final p in _presets)
+                                ListTile(
+                                  leading: const Icon(
+                                      Icons.add_location_alt_outlined),
+                                  title: Text(p.label),
+                                  subtitle: Text(p.text),
+                                  onTap: _busy
+                                      ? null
+                                      : () => _addAddress(preset: p),
+                                ),
+                            OutlinedButton.icon(
+                              onPressed: _busy ? null : () => _addAddress(),
+                              icon:
+                                  const Icon(Icons.edit_location_alt_outlined),
+                              label: Text(tx('Другой адрес', 'Басқа мекенжай',
+                                  'Another address')),
+                            ),
+                          ]);
+                    },
+                  ),
+                ],
                 const SizedBox(height: 24),
                 Text(tx('Оплата', 'Төлем', 'Payment'),
                     style: theme.textTheme.titleLarge),
@@ -316,6 +427,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           'For example: call 5 minutes ahead'),
                       border: const OutlineInputBorder()),
                 ),
+                if (!flowers) ...[
+                  const SizedBox(height: 8),
+                  _promoSection(theme),
+                ],
                 const SizedBox(height: 8),
                 Text(
                     '${tx('Ваш заказ', 'Тапсырысыңыз', 'Your order')} · ${quote.restaurantName}',
@@ -338,10 +453,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 _total(tx('Блюда', 'Тауарлар', 'Items'),
                     formatTenge(quote.subtotalMinor)),
                 _total(
-                    tx('Доставка', 'Жеткізу', 'Delivery'),
+                    _pickup
+                        ? 'Самовывоз'
+                        : tx('Доставка', 'Жеткізу', 'Delivery'),
                     quote.deliveryFeeMinor == 0
                         ? tx('Бесплатно', 'Тегін', 'Free')
                         : formatTenge(quote.deliveryFeeMinor)),
+                if (quote.discountMinor > 0)
+                  _total('Скидка (${quote.promoCode})',
+                      '−${formatTenge(quote.discountMinor)}'),
                 _total(tx('Итого', 'Барлығы', 'Total'),
                     formatTenge(quote.totalMinor),
                     bold: true),
@@ -355,7 +475,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ),
                 const SizedBox(height: 16),
                 FilledButton(
-                  onPressed: _busy || _addressId == null ? null : _submit,
+                  onPressed: _busy || (!_pickup && _addressId == null)
+                      ? null
+                      : _submit,
                   child: _busy
                       ? const SizedBox(
                           width: 22,
@@ -376,6 +498,61 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
       ),
     );
+  }
+
+  Widget _promoSection(ThemeData theme) {
+    if (_appliedPromo != null) {
+      return Card(
+        key: const Key('promo-applied'),
+        child: ListTile(
+          leading: const Icon(Icons.local_offer_outlined),
+          title: Text('Промокод $_appliedPromo применён'),
+          subtitle: Text(_quote.promoTitle ?? ''),
+          trailing: TextButton(
+              onPressed: _busy ? null : _removePromo,
+              child: const Text('Убрать')),
+        ),
+      );
+    }
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(
+          child: TextField(
+            key: const Key('promo-field'),
+            controller: _promo,
+            enabled: !_busy,
+            textCapitalization: TextCapitalization.characters,
+            maxLength: 32,
+            decoration: const InputDecoration(
+                labelText: 'Промокод',
+                counterText: '',
+                border: OutlineInputBorder()),
+            onSubmitted: (_) => _applyPromo(),
+          ),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          height: 56,
+          child: FilledButton.tonal(
+              key: const Key('promo-apply'),
+              onPressed: _busy || _promoBusy ? null : _applyPromo,
+              child: _promoBusy
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Text('Применить')),
+        ),
+      ]),
+      if (_promoMessage != null)
+        Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Semantics(
+              liveRegion: true,
+              child: Text(_promoMessage!,
+                  style: TextStyle(color: theme.colorScheme.error))),
+        ),
+    ]);
   }
 
   Widget _total(String label, String value, {bool bold = false}) {

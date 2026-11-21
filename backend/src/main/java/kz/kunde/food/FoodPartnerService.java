@@ -25,16 +25,37 @@ import org.springframework.transaction.annotation.Transactional;
 @ConditionalOnProperty(name = "app.food.enabled", havingValue = "true")
 public class FoodPartnerService {
     /** Allowed partner transitions. CANCELLED (rejection) additionally needs a reason. */
-    private static final Map<String, List<String>> NEXT = Map.of(
+    private static final Map<String, List<String>> NEXT_DELIVERY = Map.of(
             "PLACED", List.of("ACCEPTED", "CANCELLED"),
             "ACCEPTED", List.of("PREPARING", "CANCELLED"),
-            "PREPARING", List.of("ON_THE_WAY", "CANCELLED"),
+            "PREPARING", List.of("READY_FOR_PICKUP", "ON_THE_WAY", "CANCELLED"),
+            "READY_FOR_PICKUP", List.of("ON_THE_WAY", "CANCELLED"),
             "ON_THE_WAY", List.of("DELIVERED"));
+    /** Pickup: the customer collects the order, so there is no courier leg; DELIVERED means "handed over". */
+    private static final Map<String, List<String>> NEXT_PICKUP = Map.of(
+            "PLACED", List.of("ACCEPTED", "CANCELLED"),
+            "ACCEPTED", List.of("PREPARING", "CANCELLED"),
+            "PREPARING", List.of("READY_FOR_PICKUP", "CANCELLED"),
+            "READY_FOR_PICKUP", List.of("DELIVERED", "CANCELLED"));
+
+    private static List<String> next(String status, String type) {
+        return ("PICKUP".equals(type) ? NEXT_PICKUP : NEXT_DELIVERY).getOrDefault(status, List.of());
+    }
 
     public record PartnerOrder(OrderView order, String customerRef, List<String> allowedNext, OffsetDateTime respondBy,
             OffsetDateTime reminderAt) {}
 
-    public record RestaurantView(String id, String name, String vertical, boolean open, boolean synthetic) {}
+    public record RestaurantView(String id, String name, String vertical, boolean open, boolean synthetic,
+            boolean pickupEnabled, int prepMinutes, int etaMinMinutes, int etaMaxMinutes, long deliveryFeeMinor,
+            long minOrderMinor, String addressText, String description) {}
+
+    public record RestaurantUpdate(Boolean open, Boolean pickupEnabled, Integer prepMinutes, Integer etaMinMinutes,
+            Integer etaMaxMinutes, Long deliveryFeeMinor, Long minOrderMinor, String addressText, String description) {}
+
+    public record Summary(long ordersToday, long activeOrders, long deliveredToday, long cancelledToday, long revenueTodayMinor,
+            long revenue7dMinor, long orders7d, Double ratingAvg, int ratingCount, List<Day> perDay) {}
+
+    public record Day(java.time.LocalDate day, long orders, long revenueMinor) {}
 
     public record DishView(String id, String name, String section, long priceMinor, boolean available, Integer stockQty,
             String unit, String sectionId, String description) {}
@@ -58,7 +79,7 @@ public class FoodPartnerService {
         orders.expireUnanswered(partnerId);
         boolean history = "history".equals(scope);
         List<UUID> ids = db.queryForList("""
-                select id from transactions.food_orders where partner_id = ? and (status in ('PLACED','ACCEPTED','PREPARING','ON_THE_WAY')) <> ?
+                select id from transactions.food_orders where partner_id = ? and (status in ('PLACED','ACCEPTED','PREPARING','READY_FOR_PICKUP','ON_THE_WAY')) <> ?
                 order by case when status = 'PLACED' then 0 else 1 end, placed_at desc, id limit ? offset ?
                 """, UUID.class, partnerId, history, limit, offset);
         return wrap(ids);
@@ -80,14 +101,15 @@ public class FoodPartnerService {
     public PartnerOrder transition(UUID actor, UUID partnerId, UUID orderId, String to, String reason) {
         partners.requireProcessing(actor, partnerId);
         orders.expireUnanswered(partnerId);
-        String status = db.query("select status from transactions.food_orders where id = ? and partner_id = ? for update",
-                (rs, n) -> rs.getString(1), orderId, partnerId).stream().findFirst()
+        String[] state = db.query("select status, fulfillment_type from transactions.food_orders where id = ? and partner_id = ? for update",
+                (rs, n) -> new String[] {rs.getString(1), rs.getString(2)}, orderId, partnerId).stream().findFirst()
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND", "Order not found"));
+        String status = state[0];
         String clean = reason == null || reason.isBlank() ? null : reason.strip();
         if (to.equals(status)) {
             return wrap(List.of(orderId)).get(0);
         }
-        if (!NEXT.getOrDefault(status, List.of()).contains(to)) {
+        if (!next(status, state[1]).contains(to)) {
             throw new ApiException(HttpStatus.CONFLICT, "ORDER_TRANSITION_INVALID",
                     "The order cannot move from " + status + " to " + to);
         }
@@ -115,16 +137,100 @@ public class FoodPartnerService {
         return wrap(List.of(orderId)).get(0);
     }
 
+    void requireAccess(UUID actor, UUID partnerId) { partners.requireProcessing(actor, partnerId); }
+
+    void requireManager(UUID actor, UUID partnerId) { partners.requireProcessing(actor, partnerId, Role.OWNER, Role.MANAGER); }
+
+    void requireOwnedRestaurantFor(UUID actor, UUID partnerId, UUID restaurantId) {
+        partners.requireProcessing(actor, partnerId);
+        requireOwnedRestaurant(partnerId, restaurantId);
+    }
+
     // ---- catalog / availability ----------------------------------------------------------------
 
     @Transactional(readOnly = true)
     public List<RestaurantView> restaurants(UUID actor, UUID partnerId) {
         partners.requireProcessing(actor, partnerId);
         return db.query("""
-                select id, name, vertical, is_open, is_synthetic from marketplace.food_restaurants
+                select id, name, vertical, is_open, is_synthetic, pickup_enabled, prep_minutes, eta_min_minutes,
+                       eta_max_minutes, delivery_fee_minor, min_order_minor, address_text, description
+                from marketplace.food_restaurants
                 where partner_id = ? order by sort_order, name
                 """, (rs, n) -> new RestaurantView(rs.getString(1), rs.getString(2), rs.getString(3), rs.getBoolean(4),
-                rs.getBoolean(5)), partnerId);
+                rs.getBoolean(5), rs.getBoolean(6), rs.getInt(7), rs.getInt(8), rs.getInt(9), rs.getLong(10), rs.getLong(11),
+                rs.getString(12), rs.getString(13)), partnerId);
+    }
+
+    /** Owner/Manager edits the restaurant profile and ordering conditions; every changed field is audited. */
+    @Transactional
+    public RestaurantView updateRestaurant(UUID actor, UUID partnerId, UUID restaurantId, RestaurantUpdate u) {
+        partners.requireProcessing(actor, partnerId, Role.OWNER, Role.MANAGER);
+        var cur = db.query("""
+                select is_open, pickup_enabled, prep_minutes, eta_min_minutes, eta_max_minutes, delivery_fee_minor, min_order_minor,
+                       address_text, description, moderation_status from marketplace.food_restaurants where id = ? and partner_id = ? for update""",
+                (rs, n) -> new Object[] {rs.getBoolean(1), rs.getBoolean(2), rs.getInt(3), rs.getInt(4), rs.getInt(5), rs.getLong(6),
+                        rs.getLong(7), rs.getString(8), rs.getString(9), rs.getString(10)}, restaurantId, partnerId).stream().findFirst()
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "RESTAURANT_NOT_FOUND", "Restaurant not found"));
+        if (Boolean.TRUE.equals(u.open()) && "BLOCKED".equals(cur[9])) {
+            throw new ApiException(HttpStatus.CONFLICT, "RESTAURANT_BLOCKED", "The restaurant was blocked by an administrator");
+        }
+        boolean open = u.open() != null ? u.open() : (boolean) cur[0];
+        boolean pickup = u.pickupEnabled() != null ? u.pickupEnabled() : (boolean) cur[1];
+        int prep = u.prepMinutes() != null ? u.prepMinutes() : (int) cur[2];
+        int etaMin = u.etaMinMinutes() != null ? u.etaMinMinutes() : (int) cur[3];
+        int etaMax = u.etaMaxMinutes() != null ? u.etaMaxMinutes() : (int) cur[4];
+        long fee = u.deliveryFeeMinor() != null ? u.deliveryFeeMinor() : (long) cur[5];
+        long min = u.minOrderMinor() != null ? u.minOrderMinor() : (long) cur[6];
+        String address = u.addressText() != null ? u.addressText().strip() : (String) cur[7];
+        String description = u.description() != null ? u.description().strip() : (String) cur[8];
+        if (prep < 1 || prep > 240 || etaMin < 1 || etaMax < etaMin || etaMax > 240 || fee < 0 || fee > 10_000_000
+                || min < 0 || min > 100_000_000 || (address != null && address.length() > 300)
+                || (description != null && description.length() > 500)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "RESTAURANT_SETTINGS_INVALID", "Invalid restaurant settings");
+        }
+        if (address != null && address.isEmpty()) { address = null; }
+        db.update("""
+                update marketplace.food_restaurants set is_open = ?, pickup_enabled = ?, prep_minutes = ?, eta_min_minutes = ?,
+                    eta_max_minutes = ?, delivery_fee_minor = ?, min_order_minor = ?, address_text = ?, description = ?
+                where id = ?""", open, pickup, prep, etaMin, etaMax, fee, min, address, description == null ? "" : description, restaurantId);
+        String[] names = {"open", "pickup_enabled", "prep_minutes", "eta_min", "eta_max", "delivery_fee", "min_order", "address", "description"};
+        Object[] after = {open, pickup, prep, etaMin, etaMax, fee, min, address, description};
+        for (int i = 0; i < names.length; i++) {
+            if (!java.util.Objects.equals(cur[i], after[i] == null ? "" : after[i]) && !(cur[i] == null && after[i] == null)) {
+                audit(partnerId, actor, "RESTAURANT", restaurantId, names[i], String.valueOf(cur[i]), String.valueOf(after[i]));
+            }
+        }
+        return restaurants(actor, partnerId).stream().filter(r -> r.id().equals(restaurantId.toString())).findFirst().orElseThrow();
+    }
+
+    /** Dashboard numbers from real orders (Asia/Almaty days). Revenue counts delivered orders at their final total. */
+    @Transactional(readOnly = true)
+    public Summary summary(UUID actor, UUID partnerId) {
+        partners.requireProcessing(actor, partnerId);
+        long[] t = db.query("""
+                select count(*) filter (where (placed_at at time zone 'Asia/Almaty')::date = (now() at time zone 'Asia/Almaty')::date),
+                       count(*) filter (where status in ('PLACED','ACCEPTED','PREPARING','READY_FOR_PICKUP','ON_THE_WAY')),
+                       count(*) filter (where status = 'DELIVERED' and (placed_at at time zone 'Asia/Almaty')::date = (now() at time zone 'Asia/Almaty')::date),
+                       count(*) filter (where status = 'CANCELLED' and (placed_at at time zone 'Asia/Almaty')::date = (now() at time zone 'Asia/Almaty')::date),
+                       coalesce(sum(coalesce(final_total_minor, total_minor)) filter (where status = 'DELIVERED' and (placed_at at time zone 'Asia/Almaty')::date = (now() at time zone 'Asia/Almaty')::date), 0),
+                       coalesce(sum(coalesce(final_total_minor, total_minor)) filter (where status = 'DELIVERED' and placed_at > now() - interval '7 days'), 0),
+                       count(*) filter (where placed_at > now() - interval '7 days')
+                from transactions.food_orders where partner_id = ?""", (rs, n) -> {
+            long[] a = new long[7];
+            for (int i = 0; i < 7; i++) { a[i] = rs.getLong(i + 1); }
+            return a;
+        }, partnerId).get(0);
+        var rating = db.query("""
+                select round(avg(v.rating)::numeric, 1)::float8, count(*) from marketplace.food_reviews v
+                join marketplace.food_restaurants r on r.id = v.restaurant_id
+                where r.partner_id = ? and v.status = 'VISIBLE'""",
+                (rs, n) -> new Object[] {rs.getObject(1, Double.class), rs.getInt(2)}, partnerId).get(0);
+        List<Day> perDay = db.query("""
+                select g::date, count(o.id), coalesce(sum(coalesce(o.final_total_minor, o.total_minor)) filter (where o.status = 'DELIVERED'), 0)
+                from generate_series((now() at time zone 'Asia/Almaty')::date - 6, (now() at time zone 'Asia/Almaty')::date, interval '1 day') g
+                left join transactions.food_orders o on o.partner_id = ? and (o.placed_at at time zone 'Asia/Almaty')::date = g::date
+                group by g order by g""", (rs, n) -> new Day(rs.getDate(1).toLocalDate(), rs.getLong(2), rs.getLong(3)), partnerId);
+        return new Summary(t[0], t[1], t[2], t[3], t[4], t[5], t[6], (Double) rating[0], (int) rating[1], perDay);
     }
 
     @Transactional
@@ -296,7 +402,7 @@ public class FoodPartnerService {
         int window = orders.partnerResponseSeconds;
         return orders.views(ids, null).stream().map(o -> {
             boolean waiting = "PLACED".equals(o.status());
-            return new PartnerOrder(o, customers.get(UUID.fromString(o.id())), NEXT.getOrDefault(o.status(), List.of()),
+            return new PartnerOrder(o, customers.get(UUID.fromString(o.id())), next(o.status(), o.fulfillmentType()),
                     waiting ? o.placedAt().plusSeconds(window) : null,
                     waiting ? o.placedAt().plusSeconds(window * 2L / 5) : null);
         }).toList();

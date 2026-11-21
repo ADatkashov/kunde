@@ -49,8 +49,9 @@ public class FoodOrderController {
 
     @PostMapping("/cart/quote")
     public ResponseEntity<Quote> quote(@AuthenticationPrincipal Jwt principal, @Valid @RequestBody QuoteRequest request) {
-        identity.get(principal);
-        return noStore(HttpStatus.OK, orders.quote(request.restaurantId(), request.items()));
+        UUID user = identity.get(principal).id();
+        return noStore(HttpStatus.OK, orders.quote(request.restaurantId(), request.items(),
+                request.fulfillmentType(), request.promoCode(), user));
     }
 
     @PostMapping("/orders")

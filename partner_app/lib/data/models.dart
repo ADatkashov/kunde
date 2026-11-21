@@ -105,6 +105,9 @@ class PartnerOrder {
     this.paymentStatus,
     this.cancelReason,
     this.cancelledBy,
+    this.fulfillmentType = 'DELIVERY',
+    this.discountMinor = 0,
+    this.promoCode,
   });
 
   /// Parses an inbox entry `{order, allowedNext, respondBy, …}`.
@@ -132,8 +135,17 @@ class PartnerOrder {
       paymentStatus: _str(o['paymentStatus']),
       cancelReason: _str(o['cancelReason']),
       cancelledBy: _str(o['cancelledBy']),
+      fulfillmentType: _str(o['fulfillmentType']) ?? 'DELIVERY',
+      discountMinor: _int(o['discountMinor']),
+      promoCode: _str(o['promoCode']),
     );
   }
+
+  /// `DELIVERY` or `PICKUP` (the customer collects the order at the restaurant).
+  final String fulfillmentType;
+  final int discountMinor;
+  final String? promoCode;
+  bool get pickup => fulfillmentType == 'PICKUP';
 
   final String id;
   final String status;
@@ -156,7 +168,8 @@ class PartnerOrder {
 
   bool get isNew => status == 'PLACED';
   bool get isActive =>
-      const {'PLACED', 'ACCEPTED', 'PREPARING', 'ON_THE_WAY'}.contains(status);
+      const {'PLACED', 'ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP', 'ON_THE_WAY'}
+          .contains(status);
   int get itemCount => items.fold(0, (a, l) => a + l.quantity);
 
   /// Short human reference derived from the id; never the full identifier.

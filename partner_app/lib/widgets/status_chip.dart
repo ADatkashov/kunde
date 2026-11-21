@@ -53,7 +53,8 @@ class StatusChip extends StatelessWidget {
 
 Tone orderTone(String status) => switch (status) {
       'PLACED' => Tone.attention,
-      'ACCEPTED' || 'PREPARING' || 'ON_THE_WAY' => Tone.progress,
+      'ACCEPTED' || 'PREPARING' || 'READY_FOR_PICKUP' || 'ON_THE_WAY' =>
+        Tone.progress,
       'DELIVERED' => Tone.success,
       'CANCELLED' => Tone.danger,
       _ => Tone.neutral,

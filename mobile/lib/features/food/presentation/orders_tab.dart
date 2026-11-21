@@ -243,7 +243,8 @@ class _OrderCard extends StatelessWidget {
                                     Localizations.localeOf(context)
                                         .languageCode,
                                   )
-                                : orderStatusLabel(order.status),
+                                : orderStatusLabel(order.status,
+                                    pickup: order.pickup),
                             style: theme.textTheme.labelMedium?.copyWith(
                               color: chipInk,
                             ),

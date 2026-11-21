@@ -233,6 +233,8 @@ class S {
         return _t('Принят', 'Қабылданды', 'Accepted');
       case 'PREPARING':
         return _t('Готовится', 'Дайындалуда', 'Preparing');
+      case 'READY_FOR_PICKUP':
+        return _t('Готов к выдаче', 'Беруге дайын', 'Ready for pickup');
       case 'ON_THE_WAY':
         return _t('В доставке', 'Жеткізілуде', 'On the way');
       case 'DELIVERED':
@@ -274,6 +276,8 @@ class S {
         return _t('Принять заказ', 'Тапсырысты қабылдау', 'Accept order');
       case 'PREPARING':
         return _t('Начать готовить', 'Дайындауды бастау', 'Start preparing');
+      case 'READY_FOR_PICKUP':
+        return _t('Заказ готов', 'Тапсырыс дайын', 'Order is ready');
       case 'ON_THE_WAY':
         return _t(
             'Передать в доставку', 'Жеткізуге беру', 'Hand over to delivery');
@@ -294,6 +298,9 @@ class S {
       case 'PREPARING':
         return _t('Начать приготовление?', 'Дайындауды бастайсыз ба?',
             'Start preparing?');
+      case 'READY_FOR_PICKUP':
+        return _t('Заказ собран и готов к выдаче?',
+            'Тапсырыс жиналып, беруге дайын ба?', 'Is the order packed and ready?');
       case 'ON_THE_WAY':
         return _t('Заказ передан курьеру?', 'Тапсырыс курьерге берілді ме?',
             'Handed over to the courier?');
@@ -488,6 +495,9 @@ class S {
   String get subtotal => _t('Блюда', 'Тағамдар', 'Items');
   String get delivery => _t('Доставка', 'Жеткізу', 'Delivery');
   String get total => _t('Итого', 'Барлығы', 'Total');
+  String get pickupLabel =>
+      _t('Самовывоз', 'Өзі алып кетеді', 'Customer pickup');
+  String get discountLabel => _t('Скидка', 'Жеңілдік', 'Discount');
   String get orderAddress =>
       _t('Адрес доставки', 'Жеткізу мекенжайы', 'Delivery address');
   String get orderComment =>

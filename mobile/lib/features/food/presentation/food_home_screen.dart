@@ -45,19 +45,65 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
         'en' => 'Flowers & gifts',
         _ => 'Цветы и подарки',
       };
-  bool _openOnly = false;
-  String? _cuisine;
-  String _sort = 'default';
+  RestaurantFilter _filter = const RestaurantFilter();
   final _query = TextEditingController();
   Timer? _debounce;
   late Future<List<Restaurant>> _restaurants;
+  late Future<List<FoodPromotion>> _promotions;
+  late Future<List<FoodCategory>> _categories;
   Future<FoodSearchResult>? _search;
   String _term = '';
+
+  /// Ids of the caller's favorite restaurants; `null` while unknown or when the caller is signed out.
+  Set<String>? _favorites;
+
+  Future<List<Restaurant>> _load() => widget.services.api
+      .restaurants(vertical: widget.vertical, filter: _filter);
 
   @override
   void initState() {
     super.initState();
-    _restaurants = widget.services.api.restaurants(vertical: widget.vertical);
+    _restaurants = _load();
+    _promotions = widget.services.api
+        .promotions(vertical: widget.vertical)
+        .catchError((_) => <FoodPromotion>[]);
+    _categories = widget.services.api
+        .categories(vertical: widget.vertical)
+        .catchError((_) => <FoodCategory>[]);
+    _loadFavorites();
+  }
+
+  Future<void> _loadFavorites() async {
+    if (_flowers) return;
+    try {
+      final list = await widget.services.api.favorites();
+      if (mounted) setState(() => _favorites = {for (final r in list) r.id});
+    } catch (_) {
+      // Signed out or offline: the hearts simply stay hidden.
+    }
+  }
+
+  Future<void> _toggleFavorite(Restaurant r) async {
+    final current = _favorites;
+    if (current == null) return;
+    final next = !current.contains(r.id);
+    setState(() =>
+        _favorites = next ? {...current, r.id} : ({...current}..remove(r.id)));
+    try {
+      await widget.services.api.setFavorite(r.id, next);
+    } on FoodException catch (error) {
+      if (!mounted) return;
+      setState(() => _favorites = current);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error.message)));
+    }
+  }
+
+  void _applyFilter(RestaurantFilter next) {
+    setState(() {
+      _filter = next;
+      _restaurants = _load();
+    });
   }
 
   @override
@@ -87,7 +133,7 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
               services: widget.services, restaurant: restaurant)));
 
   Future<void> _refresh() async {
-    final next = widget.services.api.restaurants(vertical: widget.vertical);
+    final next = _load();
     setState(() {
       _restaurants = next;
     });
@@ -179,9 +225,8 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
                 body: message,
                 onAction: _refresh);
           }
-          final all = state.data!;
-          final list = _filtered(all);
-          if (all.isEmpty) {
+          final list = state.data!;
+          if (list.isEmpty && !_filter.isActive) {
             return FoodStateMessage(
                 icon: Icons.storefront_outlined,
                 title: _grocery
@@ -202,7 +247,7 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
               itemCount: list.length + 1,
               separatorBuilder: (_, __) => const SizedBox(height: 14),
               itemBuilder: (context, i) {
-                if (i == 0) return _filters(all);
+                if (i == 0) return _header();
                 if (list.isEmpty) {
                   return Padding(
                     padding: const EdgeInsets.all(24),
@@ -214,77 +259,216 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
                         textAlign: TextAlign.center),
                   );
                 }
+                final r = list[i - 1];
                 return RestaurantCard(
-                    restaurant: list[i - 1],
-                    onTap: () => _openRestaurant(list[i - 1]));
+                    restaurant: r,
+                    favorite: _favorites?.contains(r.id),
+                    onFavorite: () => _toggleFavorite(r),
+                    onTap: () => _openRestaurant(r));
               },
             ),
           );
         },
       );
 
-  List<Restaurant> _filtered(List<Restaurant> all) {
-    final list = all
-        .where((r) =>
-            (!_openOnly || r.open) &&
-            (_cuisine == null || r.cuisine == _cuisine))
-        .toList();
-    switch (_sort) {
-      case 'eta':
-        list.sort((a, b) => a.etaMinMinutes.compareTo(b.etaMinMinutes));
-      case 'fee':
-        list.sort((a, b) => a.deliveryFeeMinor.compareTo(b.deliveryFeeMinor));
+  Widget _header() =>
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (!_flowers) _promoBanner(),
+        if (!_flowers && !_grocery) _categoryRow(),
+        _filters(),
+      ]);
+
+  /// The banner only exists when the server has an active promotion; it opens the real offer.
+  Widget _promoBanner() => FutureBuilder<List<FoodPromotion>>(
+        future: _promotions,
+        builder: (context, state) {
+          final promos = state.data ?? const <FoodPromotion>[];
+          if (promos.isEmpty) return const SizedBox.shrink();
+          final promo = promos.first;
+          final theme = Theme.of(context);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Semantics(
+              button: true,
+              label: 'Акция: ${promo.title}',
+              child: Material(
+                key: const Key('promo-banner'),
+                color: theme.colorScheme.primary,
+                borderRadius: BorderRadius.circular(20),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: () => _openPromotion(promo),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(children: [
+                      Expanded(
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(promo.title,
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                      color: theme.colorScheme.onPrimary,
+                                      fontWeight: FontWeight.w800)),
+                              if (promo.code != null)
+                                Text('Промокод ${promo.code}',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                        color: theme.colorScheme.onPrimary)),
+                            ]),
+                      ),
+                      Text(promo.valueLabel,
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                              color: theme.colorScheme.onPrimary,
+                              fontWeight: FontWeight.w900)),
+                    ]),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      );
+
+  void _openPromotion(FoodPromotion promo) {
+    final restaurantId = promo.restaurantId;
+    if (restaurantId != null) {
+      widget.services.api.menu(restaurantId).then((menu) {
+        if (!mounted) return;
+        Navigator.of(context).push(MaterialPageRoute<void>(
+            builder: (_) => RestaurantScreen(
+                services: widget.services,
+                restaurant: menu.restaurant,
+                preloaded: menu)));
+      }).catchError((_) {});
+      return;
     }
-    return list;
+    // A promotion for every restaurant: show the conditions and the code to enter in the cart.
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+        child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(promo.title, style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 8),
+              if (promo.description.isNotEmpty) Text(promo.description),
+              if (promo.code != null) ...[
+                const SizedBox(height: 8),
+                SelectableText('Промокод: ${promo.code}',
+                    style: Theme.of(context).textTheme.titleMedium),
+                const Text('Введите его в корзине при оформлении заказа.'),
+              ],
+            ]),
+      ),
+    );
   }
 
-  Widget _filters(List<Restaurant> all) {
-    final cuisines = {for (final r in all) r.cuisine}.toList()..sort();
+  /// Cuisines come from the backend (open restaurants per cuisine); tapping one filters on the server.
+  Widget _categoryRow() => FutureBuilder<List<FoodCategory>>(
+        future: _categories,
+        builder: (context, state) {
+          final list = state.data ?? const <FoodCategory>[];
+          if (list.isEmpty) return const SizedBox.shrink();
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: SizedBox(
+              height: 56,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: list.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, i) => ChoiceChip(
+                  key: Key('category-${list[i].cuisine}'),
+                  label: Text('${list[i].cuisine} · ${list[i].restaurants}'),
+                  selected: _filter.cuisine == list[i].cuisine,
+                  onSelected: (v) => _applyFilter(
+                      _filter.copyWith(cuisine: v ? list[i].cuisine : null)),
+                ),
+              ),
+            ),
+          );
+        },
+      );
+
+  Widget _filters() {
+    final sorts = <String, String>{
+      'recommended': _tx('Рекомендуемые', 'Ұсынылған', 'Recommended'),
+      'rating': _tx('По рейтингу', 'Рейтинг бойынша', 'By rating'),
+      'eta': _tx('Быстрее доставка', 'Жылдам жеткізу', 'Fastest delivery'),
+      'delivery_fee':
+          _tx('Дешевле доставка', 'Арзан жеткізу', 'Lowest delivery fee'),
+    };
     return SizedBox(
       height: 24 + MediaQuery.textScalerOf(context).scale(24),
-      child: ListView(scrollDirection: Axis.horizontal, children: [
-        FilterChip(
-          label: Text(_tx('Открыто сейчас', 'Қазір ашық', 'Open now')),
-          selected: _openOnly,
-          onSelected: (v) => setState(() => _openOnly = v),
-        ),
-        const SizedBox(width: 8),
-        PopupMenuButton<String>(
-          tooltip: _tx('Сортировка', 'Сұрыптау', 'Sort'),
-          onSelected: (v) => setState(() => _sort = v),
-          itemBuilder: (_) => [
-            PopupMenuItem(
-                value: 'default',
-                child: Text(_tx('По умолчанию', 'Әдепкі', 'Default'))),
-            PopupMenuItem(
-                value: 'eta',
-                child: Text(_tx(
-                    'Быстрее доставка', 'Жылдам жеткізу', 'Fastest delivery'))),
-            PopupMenuItem(
-                value: 'fee',
-                child: Text(_tx('Дешевле доставка', 'Арзан жеткізу',
-                    'Lowest delivery fee'))),
-          ],
-          child: Chip(
-            avatar: const Icon(Icons.sort_rounded, size: 18),
-            label: Text(switch (_sort) {
-              'eta' =>
-                _tx('Быстрее доставка', 'Жылдам жеткізу', 'Fastest delivery'),
-              'fee' =>
-                _tx('Дешевле доставка', 'Арзан жеткізу', 'Lowest delivery fee'),
-              _ => _tx('Сортировка', 'Сұрыптау', 'Sort'),
-            }),
-          ),
-        ),
-        for (final c in cuisines) ...[
-          const SizedBox(width: 8),
-          ChoiceChip(
-            label: Text(c),
-            selected: _cuisine == c,
-            onSelected: (v) => setState(() => _cuisine = v ? c : null),
-          ),
-        ],
-      ]),
+      child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(children: [
+            PopupMenuButton<String>(
+              key: const Key('sort-menu'),
+              tooltip: _tx('Сортировка', 'Сұрыптау', 'Sort'),
+              onSelected: (v) => _applyFilter(_filter.copyWith(sort: v)),
+              itemBuilder: (_) => [
+                for (final e in sorts.entries)
+                  PopupMenuItem(value: e.key, child: Text(e.value)),
+              ],
+              child: Chip(
+                avatar: const Icon(Icons.sort_rounded, size: 18),
+                label: Text(_filter.sort == 'recommended'
+                    ? _tx('Сортировка', 'Сұрыптау', 'Sort')
+                    : sorts[_filter.sort]!),
+              ),
+            ),
+            const SizedBox(width: 8),
+            FilterChip(
+              key: const Key('filter-open'),
+              label: Text(_tx('Открыто сейчас', 'Қазір ашық', 'Open now')),
+              selected: _filter.openNow,
+              onSelected: (v) => _applyFilter(_filter.copyWith(openNow: v)),
+            ),
+            if (!_flowers) ...[
+              const SizedBox(width: 8),
+              FilterChip(
+                key: const Key('filter-pickup'),
+                label: const Text('Самовывоз'),
+                selected: _filter.pickup,
+                onSelected: (v) => _applyFilter(_filter.copyWith(pickup: v)),
+              ),
+              const SizedBox(width: 8),
+              FilterChip(
+                key: const Key('filter-free-delivery'),
+                label: const Text('Бесплатная доставка'),
+                selected: _filter.freeDelivery,
+                onSelected: (v) =>
+                    _applyFilter(_filter.copyWith(freeDelivery: v)),
+              ),
+              const SizedBox(width: 8),
+              FilterChip(
+                key: const Key('filter-promo'),
+                label: const Text('Акции'),
+                selected: _filter.promo,
+                onSelected: (v) => _applyFilter(_filter.copyWith(promo: v)),
+              ),
+              const SizedBox(width: 8),
+              FilterChip(
+                key: const Key('filter-rating'),
+                label: const Text('Рейтинг 4+'),
+                selected: _filter.minRating == 4,
+                onSelected: (v) =>
+                    _applyFilter(_filter.copyWith(minRating: v ? 4 : null)),
+              ),
+            ],
+            if (_filter.isActive) ...[
+              const SizedBox(width: 8),
+              ActionChip(
+                key: const Key('filter-reset'),
+                avatar: const Icon(Icons.close_rounded, size: 18),
+                label: Text(_tx('Сбросить', 'Тазалау', 'Reset')),
+                onPressed: () => _applyFilter(const RestaurantFilter()),
+              ),
+            ],
+          ])),
     );
   }
 

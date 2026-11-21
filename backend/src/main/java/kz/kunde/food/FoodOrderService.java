@@ -32,6 +32,8 @@ import org.springframework.transaction.annotation.Transactional;
 @ConditionalOnProperty(name = "app.food.enabled", havingValue = "true")
 public class FoodOrderService {
     public static final List<String> FLOW = List.of("PLACED", "ACCEPTED", "PREPARING", "ON_THE_WAY", "DELIVERED");
+    /** Pickup orders are handed over at the restaurant: the courier leg is replaced by READY_FOR_PICKUP. */
+    public static final List<String> PICKUP_FLOW = List.of("PLACED", "ACCEPTED", "PREPARING", "READY_FOR_PICKUP", "DELIVERED");
     private static final Set<String> TERMINAL = Set.of("DELIVERED", "CANCELLED");
     private static final java.util.regex.Pattern KEY = java.util.regex.Pattern.compile("^[A-Za-z0-9_-]{16,64}$");
     private static final int MAX_ACTIVE_ORDERS = 5;
@@ -49,16 +51,23 @@ public class FoodOrderService {
         List<UUID> substitutes() { return substituteDishIds == null ? List.of() : substituteDishIds; }
     }
 
-    public record QuoteRequest(@NotNull UUID restaurantId, @NotEmpty @Size(max = 30) List<@Valid @NotNull CartItem> items) {}
+    public record QuoteRequest(@NotNull UUID restaurantId, @NotEmpty @Size(max = 30) List<@Valid @NotNull CartItem> items,
+            @jakarta.validation.constraints.Pattern(regexp = "DELIVERY|PICKUP") String fulfillmentType,
+            @Size(max = 32) String promoCode) {}
 
     public record OrderRequest(@NotNull UUID restaurantId, @NotEmpty @Size(max = 30) List<@Valid @NotNull CartItem> items,
-            @NotNull UUID addressId, @NotNull String paymentMethod, @Size(max = 300) String comment, Long expectedTotalMinor) {}
+            UUID addressId, @NotNull String paymentMethod, @Size(max = 300) String comment, Long expectedTotalMinor,
+            @jakarta.validation.constraints.Pattern(regexp = "DELIVERY|PICKUP") String fulfillmentType,
+            @Size(max = 32) String promoCode) {
+        boolean pickup() { return "PICKUP".equals(fulfillmentType); }
+    }
 
     public record QuoteLine(String dishId, String name, String optionsText, List<String> optionIds, String unit,
             long unitPriceMinor, int quantity, long lineTotalMinor, String substitution, List<String> substituteDishIds) {}
 
     public record Quote(String restaurantId, String restaurantName, List<QuoteLine> lines, long subtotalMinor,
-            long deliveryFeeMinor, long totalMinor, String currency, long minOrderMinor) {}
+            long deliveryFeeMinor, long totalMinor, String currency, long minOrderMinor, String fulfillmentType,
+            long discountMinor, String promoCode, String promoTitle, int prepMinutes) {}
 
     public record TimelineEntry(String status, OffsetDateTime at, String actor, String reason) {}
 
@@ -71,7 +80,7 @@ public class FoodOrderService {
             long totalMinor, String addressLabel, String addressText, String comment, OffsetDateTime placedAt,
             List<OrderLine> items, List<TimelineEntry> timeline, boolean cancellable, boolean simulated,
             String vertical, Long finalTotalMinor, boolean hasChanges, String fulfillment, String cancelledBy,
-            String cancelReason) {}
+            String cancelReason, String fulfillmentType, long discountMinor, String promoCode, boolean reviewed) {}
 
     public record RepeatItem(String dishId, String name, int quantity, List<String> optionIds, String unit,
             String substitution, List<String> substituteDishIds) {}
@@ -82,14 +91,16 @@ public class FoodOrderService {
 
     private final JdbcTemplate db;
     private final FoodProperties props;
+    private final FoodPromotionService promotions;
 
     /** D-05: a partner has this long to answer a new order; afterwards the system cancels it (free for the customer). */
     @org.springframework.beans.factory.annotation.Value("${app.partner-ops.response-timeout-seconds:300}")
     int partnerResponseSeconds = 300;
 
-    public FoodOrderService(JdbcTemplate db, FoodProperties props) {
+    public FoodOrderService(JdbcTemplate db, FoodProperties props, FoodPromotionService promotions) {
         this.db = db;
         this.props = props;
+        this.promotions = promotions;
     }
 
     static long lineTotal(String unit, long unitPrice, int quantity) {
@@ -100,9 +111,17 @@ public class FoodOrderService {
 
     @Transactional(readOnly = true)
     public Quote quote(UUID restaurantId, List<CartItem> items) {
+        return quote(restaurantId, items, "DELIVERY", null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public Quote quote(UUID restaurantId, List<CartItem> items, String fulfillmentType, String promoCode, UUID user) {
+        boolean pickup = "PICKUP".equals(fulfillmentType);
         var restaurant = db.query("""
-                select name, delivery_fee_minor, min_order_minor, is_open from marketplace.food_restaurants where id = ?
-                """, (rs, row) -> new Object[] {rs.getString(1), rs.getLong(2), rs.getLong(3), rs.getBoolean(4)},
+                select name, delivery_fee_minor, min_order_minor, is_open and moderation_status = 'ACTIVE', pickup_enabled, prep_minutes
+                from marketplace.food_restaurants where id = ?
+                """, (rs, row) -> new Object[] {rs.getString(1), rs.getLong(2), rs.getLong(3), rs.getBoolean(4),
+                        rs.getBoolean(5), rs.getInt(6)},
                 restaurantId).stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND,
                 "RESTAURANT_NOT_FOUND", "Restaurant is not available"));
         if (!(boolean) restaurant[3]) {
@@ -125,8 +144,21 @@ public class FoodOrderService {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "FOOD_MIN_ORDER_NOT_MET",
                     "Order total is below the restaurant minimum");
         }
-        long fee = (long) restaurant[1];
-        return new Quote(restaurantId.toString(), (String) restaurant[0], lines, subtotal, fee, subtotal + fee, "KZT", minOrder);
+        if (pickup && !(boolean) restaurant[4]) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "PICKUP_UNAVAILABLE", "This restaurant does not offer pickup");
+        }
+        long fee = pickup ? 0 : (long) restaurant[1];
+        long discount = 0;
+        String appliedCode = null;
+        String promoTitle = null;
+        if (promoCode != null && !promoCode.isBlank()) {
+            var promo = promotions.evaluate(promoCode, restaurantId, subtotal, user, false);
+            discount = promo.discountMinor();
+            appliedCode = promo.code();
+            promoTitle = promo.title();
+        }
+        return new Quote(restaurantId.toString(), (String) restaurant[0], lines, subtotal, fee, subtotal + fee - discount,
+                "KZT", minOrder, pickup ? "PICKUP" : "DELIVERY", discount, appliedCode, promoTitle, (int) restaurant[5]);
     }
 
     private QuoteLine priceLine(UUID restaurantId, CartItem item) {
@@ -239,12 +271,20 @@ public class FoodOrderService {
         if (active != null && active >= MAX_ACTIVE_ORDERS) {
             throw new ApiException(HttpStatus.CONFLICT, "TOO_MANY_ACTIVE_ORDERS", "Too many active orders");
         }
-        var address = db.query("""
-                select label, formatted_address from profile.consumer_addresses
-                where id = ? and user_id = ? and deleted_at is null
-                """, (rs, row) -> new String[] {rs.getString(1), rs.getString(2)}, request.addressId(), user)
-                .stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY,
-                        "ADDRESS_NOT_FOUND", "Choose one of your saved delivery addresses"));
+        String[] address;
+        if (request.pickup()) {
+            address = db.query("select 'Самовывоз', coalesce(address_text, name) from marketplace.food_restaurants where id = ?",
+                    (rs, row) -> new String[] {rs.getString(1), rs.getString(2)}, request.restaurantId())
+                    .stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND,
+                            "RESTAURANT_NOT_FOUND", "Restaurant is not available"));
+        } else {
+            address = db.query("""
+                    select label, formatted_address from profile.consumer_addresses
+                    where id = ? and user_id = ? and deleted_at is null
+                    """, (rs, row) -> new String[] {rs.getString(1), rs.getString(2)}, request.addressId(), user)
+                    .stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY,
+                            "ADDRESS_NOT_FOUND", "Choose one of your saved delivery addresses"));
+        }
         var store = db.query("select r.vertical, r.partner_id, p.verification_status from marketplace.food_restaurants r left join marketplace.partners p on p.id = r.partner_id where r.id = ? for share of r",
                 (rs, row) -> new Object[] {rs.getString(1), rs.getObject(2, UUID.class), rs.getString(3)}, request.restaurantId())
                 .stream().findFirst();
@@ -256,7 +296,14 @@ public class FoodOrderService {
         if (!flowers && "DEV_NO_PAYMENT".equals(payment)) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "PAYMENT_METHOD_UNSUPPORTED", "Payment method unsupported");
         }
-        Quote quote = quote(request.restaurantId(), request.items());
+        if (request.pickup() && flowers) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "PICKUP_UNAVAILABLE", "This store does not offer pickup");
+        }
+        Quote quote = quote(request.restaurantId(), request.items(), request.pickup() ? "PICKUP" : "DELIVERY",
+                flowers ? null : request.promoCode(), user);
+        if (request.expectedTotalMinor() != null && !flowers && request.expectedTotalMinor() != quote.totalMinor()) {
+            throw new ApiException(HttpStatus.CONFLICT, "FOOD_PRICE_CHANGED", "The total changed; refresh the cart");
+        }
         if (flowers && (request.expectedTotalMinor() == null || request.expectedTotalMinor() != quote.totalMinor())) {
             throw new ApiException(HttpStatus.CONFLICT, "FOOD_PRICE_CHANGED", "The total changed; refresh the cart");
         }
@@ -274,16 +321,21 @@ public class FoodOrderService {
         UUID orderId = db.queryForObject("""
                 insert into transactions.food_orders (user_id, restaurant_id, restaurant_name, payment_method, payment_status,
                     subtotal_minor, delivery_fee_minor, total_minor, address_label, address_text, comment, idempotency_key, vertical,
-                    partner_id, fulfillment_mode)
+                    partner_id, fulfillment_mode, fulfillment_type, discount_minor, promo_code)
                 values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (select vertical from marketplace.food_restaurants where id = ?),
                     (select partner_id from marketplace.food_restaurants where id = ?),
-                    case when (select partner_id from marketplace.food_restaurants where id = ?) is null then 'SIMULATED' else 'PARTNER' end)
+                    case when (select partner_id from marketplace.food_restaurants where id = ?) is null then 'SIMULATED' else 'PARTNER' end,
+                    ?, ?, ?)
                 returning id
                 """, UUID.class, user, request.restaurantId(), quote.restaurantName(), payment,
                 "DEV_NO_PAYMENT".equals(payment) ? "NO_PAYMENT" :
                         ("TEST_CARD".equals(payment) ? "TEST_PAID" : "PAY_ON_RECEIPT"), quote.subtotalMinor(),
                 quote.deliveryFeeMinor(), quote.totalMinor(), address[0], address[1], comment, idempotencyKey,
-                request.restaurantId(), request.restaurantId(), request.restaurantId());
+                request.restaurantId(), request.restaurantId(), request.restaurantId(), quote.fulfillmentType(),
+                quote.discountMinor(), quote.promoCode());
+        if (quote.promoCode() != null) {
+            promotions.redeem(quote.promoCode(), orderId, user, quote.discountMinor());
+        }
         int lineNo = 0;
         for (QuoteLine line : quote.lines()) {
             db.update("""
@@ -337,6 +389,7 @@ public class FoodOrderService {
     }
 
     void restoreStock(UUID orderId) {
+        promotions.release(orderId);
         db.update("""
                 update marketplace.food_dishes d set stock_qty = d.stock_qty + i.quantity
                 from transactions.food_order_items i
@@ -402,9 +455,9 @@ public class FoodOrderService {
     /** Moves a non-terminal order forward according to elapsed time since placement (explicit DEV simulation). */
     void advance(UUID orderId) {
         var row = db.query("""
-                select status, extract(epoch from (now() - placed_at))::bigint as elapsed, placed_at, fulfillment_mode
+                select status, extract(epoch from (now() - placed_at))::bigint as elapsed, placed_at, fulfillment_mode, fulfillment_type
                 from transactions.food_orders where id = ? for update
-                """, (rs, n) -> new Object[] {rs.getString(1), rs.getLong(2), rs.getObject(3, OffsetDateTime.class), rs.getString(4)}, orderId)
+                """, (rs, n) -> new Object[] {rs.getString(1), rs.getLong(2), rs.getObject(3, OffsetDateTime.class), rs.getString(4), rs.getString(5)}, orderId)
                 .stream().findFirst().orElse(null);
         if (row == null || TERMINAL.contains((String) row[0])) {
             return;
@@ -428,18 +481,20 @@ public class FoodOrderService {
         int[] after = {0, sim.acceptedAfterSeconds(), sim.preparingAfterSeconds(), sim.onTheWayAfterSeconds(),
                 sim.deliveredAfterSeconds()};
         long elapsed = (long) row[1];
-        int current = FLOW.indexOf((String) row[0]);
+        List<String> flow = "PICKUP".equals(row[4]) ? PICKUP_FLOW : FLOW;
+        int current = flow.indexOf((String) row[0]);
+        if (current < 0) { return; }
         int target = current;
-        for (int i = current + 1; i < FLOW.size(); i++) {
+        for (int i = current + 1; i < flow.size(); i++) {
             if (elapsed >= after[i]) { target = i; }
         }
         for (int i = current + 1; i <= target; i++) {
             db.update("insert into transactions.food_order_events (order_id, status, occurred_at) values (?, ?, ?)",
-                    orderId, FLOW.get(i), ((OffsetDateTime) row[2]).plusSeconds(after[i]));
+                    orderId, flow.get(i), ((OffsetDateTime) row[2]).plusSeconds(after[i]));
         }
         if (target != current) {
             db.update("update transactions.food_orders set status = ?, updated_at = now(), version = version + 1 where id = ?",
-                    FLOW.get(target), orderId);
+                    flow.get(target), orderId);
         }
         // The store collects the order when it starts preparing: unavailable products are replaced or removed.
         if (current < FLOW.indexOf("PREPARING") && target >= FLOW.indexOf("PREPARING")) {
@@ -568,7 +623,9 @@ public class FoodOrderService {
         db.query("""
                 select id, restaurant_id, restaurant_name, status, payment_method, payment_status, currency,
                        subtotal_minor, delivery_fee_minor, total_minor, address_label, address_text, comment, placed_at, vertical,
-                       final_total_minor, has_changes, fulfillment_mode, cancelled_by, cancel_reason
+                       final_total_minor, has_changes, fulfillment_mode, cancelled_by, cancel_reason,
+                       fulfillment_type, discount_minor, promo_code,
+                       exists (select 1 from marketplace.food_reviews v where v.order_id = food_orders.id) as reviewed
                 from transactions.food_orders where (?::uuid is null or user_id = ?::uuid) and id = any (?)
                 """, rs -> {
                     UUID id = rs.getObject("id", UUID.class);
@@ -580,7 +637,9 @@ public class FoodOrderService {
                             items.getOrDefault(id, List.of()), timeline.getOrDefault(id, List.of()),
                             "PLACED".equals(rs.getString("status")), "SIMULATED".equals(rs.getString("fulfillment_mode")),
                             rs.getString("vertical"), rs.getObject("final_total_minor", Long.class), rs.getBoolean("has_changes"),
-                            rs.getString("fulfillment_mode"), rs.getString("cancelled_by"), rs.getString("cancel_reason")));
+                            rs.getString("fulfillment_mode"), rs.getString("cancelled_by"), rs.getString("cancel_reason"),
+                            rs.getString("fulfillment_type"), rs.getLong("discount_minor"), rs.getString("promo_code"),
+                            rs.getBoolean("reviewed")));
                 }, user, user, array);
         return ids.stream().map(byId::get).filter(java.util.Objects::nonNull).toList();
     }
