@@ -83,7 +83,7 @@ jobs:
           cache-disabled: true
       - name: Package a local test backend
         working-directory: backend
-        run: mvn -B -ntp -DskipTests package
+        run: mvn -B -ntp -U -DskipTests package # -U: ignore cached "not found" entries left by a transient Central failure
       - name: Build the local-fixture debug Consumer APK
         working-directory: mobile
         run: |
