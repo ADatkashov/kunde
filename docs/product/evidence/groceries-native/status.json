@@ -1,0 +1,9 @@
+{
+  "status": "PASSED",
+  "phase": "completed",
+  "completed": [
+    "consumer_groceries_order"
+  ],
+  "data": "synthetic",
+  "paymentEnabled": false
+}
