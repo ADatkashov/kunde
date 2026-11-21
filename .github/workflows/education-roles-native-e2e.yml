@@ -1,9 +1,11 @@
-name: Education Admin and Executor Android E2E
+name: Education Partner, Admin and Executor Android E2E
 on:
   pull_request:
     paths:
       - '.github/workflows/education-roles-native-e2e.yml'
       - 'scripts/ci/education_roles_native_e2e.py'
+      - 'partner_app/lib/auth/partner_session.dart'
+      - 'partner_app/android/app/src/debug/**'
   workflow_dispatch:
 permissions:
   contents: read
@@ -13,7 +15,7 @@ concurrency:
 jobs:
   emulator:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 50
     services:
       postgres:
         image: postgres:16
@@ -81,6 +83,14 @@ jobs:
           }
           KUNDE_ADMIN_BUILD=true build_role admin lib/admin_rides_main.dart
           KUNDE_EXECUTOR_BUILD=true build_role executor lib/executor_main.dart
+      - name: Build local-fixture debug Partner APK
+        working-directory: partner_app
+        run: |
+          flutter pub get
+          flutter build apk --debug --target-platform android-x64 \
+            --dart-define=API_BASE_URL=http://localhost:8081/api/v1/ \
+            --dart-define=PARTNER_LOCAL_FIXTURE=true
+          cp build/app/outputs/flutter-apk/app-debug.apk "$RUNNER_TEMP/education-role-apk/partner.apk"
       - uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
         env:
           EDUCATION_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}

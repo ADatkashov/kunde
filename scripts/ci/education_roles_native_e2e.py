@@ -1,4 +1,4 @@
-"""Native Education Admin moderation and Executor attendance on isolated CI data."""
+"""Native Education Partner submission, Admin moderation and Executor attendance."""
 
 import datetime
 import os
@@ -60,8 +60,7 @@ def prepare():
         "endsAt": (starts + datetime.timedelta(minutes=30)).isoformat(),
         "capacity": 2, "instructorId": str(instructor),
     })
-    fixture.call("POST", f"{root}/{course_id}/submit", token=owner_token, body={})
-    return course_id, uuid.UUID(cohort["id"])
+    return course_id, uuid.UUID(cohort["id"]), root, owner_token
 
 
 def launch_and_login(app, package, phone, screen_title):
@@ -80,6 +79,27 @@ def launch_and_login(app, package, phone, screen_title):
             android.adb("shell", "pm", "clear", package)
 
 
+def partner_login():
+    package = "com.kunde.kunde_partner"
+    apk = Path(os.environ["RUNNER_TEMP"], "education-role-apk", "partner.apk")
+    android.PACKAGE = package
+    android.adb("install", apk)
+    android.adb("shell", "am", "start", "-W", "-n", f"{package}/.MainActivity")
+    android.tap(node_class="android.widget.EditText")
+    time.sleep(.5)
+    for digit in OWNER[1:]:
+        android.adb("shell", "input", "text", digit)
+    android.adb("shell", "input", "keyevent", "4")
+    mobile.tap("Получить код", "Код алу", "Get code")
+    android.find("Войти", "Кіру", "Sign in", timeout=60)
+    time.sleep(.5)
+    for digit in "123456":
+        android.adb("shell", "input", "text", digit)
+    android.adb("shell", "input", "keyevent", "4")
+    mobile.tap("Войти", "Кіру", "Sign in", clickable=True)
+    android.find("Заведение", "Мекеме", "Business", timeout=60)
+
+
 def enter_reason(label_choices, value):
     android.find(*label_choices)
     android.tap(node_class="android.widget.EditText")
@@ -96,10 +116,27 @@ def main():
     process = None
     try:
         process = fixture.start_backend(False)
-        course, cohort = prepare()
+        course, cohort, partner_courses, owner_token = prepare()
         android.adb("reverse", "tcp:8081", "tcp:8081")
         android.adb("shell", "wm", "size", "390x844")
         android.adb("shell", "wm", "density", "160")
+
+        phase = "partner_submission"
+        partner_login()
+        mobile.tap("Заведение", "Мекеме", "Business", clickable=True)
+        mobile.tap("Управление курсами", "Курстарды басқару", "Manage courses")
+        mobile.reveal(TITLE)
+        mobile.tap("На модерацию", "Модерацияға", "Submit for review")
+        for _ in range(15):
+            draft = next(row for row in fixture.call("GET", partner_courses, token=owner_token)
+                         if row["id"] == str(course))
+            if draft["status"] == "PENDING_REVIEW":
+                break
+            time.sleep(1)
+        else:
+            raise RuntimeError("The Partner APK did not submit the synthetic course")
+        android.screenshot("00-partner-submitted")
+        fixture.completed.append("partner_course_submission")
 
         phase = "admin_moderation"
         launch_and_login("admin", "com.kunde.admin", MODERATOR, "KUNDE Control Center")
