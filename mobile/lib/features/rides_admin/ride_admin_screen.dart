@@ -1,3 +1,4 @@
+import '../education/education_operations_screen.dart';
 import 'package:flutter/material.dart';
 
 import '../admin_employees/admin_employee_screen.dart';
@@ -298,6 +299,19 @@ class _RideAdminScreenState extends State<RideAdminScreen> {
                   ),
                 ),
               ),
+        if (permissions.contains('EDUCATION_OPERATIONS'))
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.school_outlined),
+              title: Text(s.t('Модерация курсов', 'Курстарды модерациялау',
+                  'Course moderation')),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push<void>(MaterialPageRoute(
+                builder: (_) =>
+                    EducationOperationsScreen(auth: widget.auth, admin: true),
+              )),
+            ),
+          ),
         if (permissions.contains('FOOD_OPERATIONS'))
           Card(
             child: ListTile(
