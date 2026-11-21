@@ -2,9 +2,11 @@
 
 ## KUNDE Groceries 1.0
 
-1. Merge V44 после зелёного CI, затем DEV deploy (`kunde-backend-ty81`), `scripts/dev/food_smoke.py` и проверка `/groceries/*` на DEV.
-2. Partner: редактирование бренда/КБЖУ/цены «до скидки»; Admin-экран Groceries; Executor-проверка; Android E2E и подписанные APK.
-3. Команды: `cd backend && mvn test -Dtest='Groceries*'`; `cd mobile && flutter test test/features/groceries`.
+1. Собрать четыре подписанных DEV Release APK из одного `main` SHA (`android-release.yml`: Consumer, `executor=true`, `admin=true`; `partner-release.yml`), проверить подпись, package ID, DEV URL, SHA-256; установить на эмулятор.
+2. Нативный Android E2E Consumer (каталог → товар → корзина → checkout → заказ) и реальные скриншоты Consumer/Partner/Executor/Admin; сверка с референсом.
+3. Открыто: корректировка суммы по фактическому весу, уведомления, лояльность (нужно решение владельца), карта и ETA (нужны координаты магазинов).
+4. Команды: `cd backend && mvn test -Dtest='Groceries*,FoodPartnerAdmin*'`; `cd mobile && flutter test test/features/groceries test/features/executor test/features/food_admin`.
+
 ## KUNDE Education
 
 Реализовать управление курсом и потоком через Partner, модерацию через Admin и назначение преподавателя. Критерии: курс проходит модерацию до появления в каталоге, чужая организация не может читать черновик или менять поток, преподаватель видит только назначенный поток. [Матрица и контракт](docs/product/education.md).
