@@ -106,7 +106,7 @@ public class EducationEnrollmentService {
 
     public Learning learning(UUID user, UUID id) {
         var enrollment = owned(user, id);
-        return new Learning(enrollment, lessons(enrollment), quiz(enrollment));
+        return new Learning(enrollment, lessons(enrollment), quiz(enrollment), assignment(enrollment));
     }
 
     @Transactional
@@ -161,6 +161,67 @@ public class EducationEnrollmentService {
         return learning(user, id);
     }
 
+    @Transactional
+    public Learning submitAssignment(UUID user, UUID id, String response) {
+        var enrollment = lockEnrollment(user, id);
+        var assignment = assignment(enrollment);
+        if (assignment == null) throw notFound();
+        if (!lessons(enrollment).stream().allMatch(Lesson::completed)) {
+            throw conflict("ASSIGNMENT_LOCKED", "Complete the text lessons first");
+        }
+        if (enrollment.completedAt() != null) throw conflict("ASSIGNMENT_CLOSED", "The course is completed");
+        if ("SUBMITTED".equals(assignment.status()) && response.equals(assignment.response())) return learning(user, id);
+        int changed = db.sql("""
+                insert into transactions.education_assignment_submissions(enrollment_id,course_id,response,status)
+                values (:id,:course,:response,'SUBMITTED')
+                on conflict (enrollment_id) do update set response=excluded.response,status='SUBMITTED',
+                    feedback=null,submitted_at=now(),reviewed_at=null
+                where transactions.education_assignment_submissions.status='RETURNED'
+                """).param("id", id).param("course", enrollment.courseId()).param("response", response).update();
+        if (changed == 0) throw conflict("ASSIGNMENT_CLOSED", "Wait for the instructor to review your submission");
+        return learning(user, id);
+    }
+
+    @Transactional
+    public Assignment reviewAssignment(UUID instructor, UUID cohort, UUID id, boolean approved, String feedback) {
+        UUID user = db.sql("""
+                select e.user_id from transactions.education_enrollments e
+                join marketplace.education_cohorts h on h.id=e.cohort_id and h.instructor_id=:actor
+                join marketplace.education_courses c on c.id=e.course_id and c.status='PUBLISHED'
+                join marketplace.partners p on p.id=c.partner_id and p.verification_status='APPROVED'
+                join marketplace.partner_staff s on s.partner_id=p.id and s.user_id=:actor and s.status='ACTIVE'
+                where e.cohort_id=:cohort and e.id=:id for update of e for share of h,c,p,s
+                """).param("actor", instructor).param("cohort", cohort).param("id", id).query(UUID.class).optional()
+                .orElseThrow(EducationEnrollmentService::notFound);
+        var enrollment = owned(user, id);
+        var assignment = assignment(enrollment);
+        if (assignment == null || assignment.response() == null) throw notFound();
+        String next = approved ? "APPROVED" : "RETURNED";
+        if (next.equals(assignment.status()) && feedback.equals(assignment.feedback())) return assignment;
+        int changed = db.sql("""
+                update transactions.education_assignment_submissions set status=:status,feedback=:feedback,reviewed_at=now()
+                where enrollment_id=:id and status='SUBMITTED'
+                """).param("id", id).param("status", next).param("feedback", feedback).update();
+        if (changed == 0) throw conflict("ASSIGNMENT_CLOSED", "The submission has already been reviewed");
+        db.sql("""
+                insert into marketplace.education_course_events(course_id,actor_user_id,action,reason)
+                values (:course,:actor,:action,:id)
+                """).param("course", enrollment.courseId()).param("actor", instructor)
+                .param("action", "ASSIGNMENT_" + next).param("id", id.toString()).update();
+        completeCourseIfEligible(enrollment);
+        return assignment(enrollment);
+    }
+
+    private Assignment assignment(Enrollment enrollment) {
+        return db.sql("""
+                select a.prompt,s.response,s.status,s.feedback from marketplace.education_assignments a
+                left join transactions.education_assignment_submissions s
+                  on s.course_id=a.course_id and s.enrollment_id=:id
+                where a.course_id=:course
+                """).param("id", enrollment.id()).param("course", enrollment.courseId())
+                .query(Assignment.class).optional().orElse(null);
+    }
+
     private Enrollment lockEnrollment(UUID user, UUID id) {
         db.sql("select id from transactions.education_enrollments where user_id=:user and id=:id for update")
                 .param("user", user).param("id", id).query(UUID.class).optional()
@@ -173,7 +234,8 @@ public class EducationEnrollmentService {
         var lessons = lessons(enrollment);
         if (lessons.isEmpty() || !lessons.stream().allMatch(Lesson::completed)) return;
         var quiz = quiz(enrollment);
-        if (quiz == null || quiz.passed()) {
+        var assignment = assignment(enrollment);
+        if ((quiz == null || quiz.passed()) && (assignment == null || "APPROVED".equals(assignment.status()))) {
             db.sql("update transactions.education_enrollments set completed_at=now(), certificate_code=:code where id=:id")
                     .param("id", enrollment.id()).param("code", UUID.randomUUID()).update();
         }
@@ -250,7 +312,8 @@ public class EducationEnrollmentService {
     public record Enrollment(UUID id, UUID cohortId, UUID courseId, String title, String format, OffsetDateTime startsAt,
             OffsetDateTime endsAt, long amountMinor, String status, String paymentStatus, OffsetDateTime completedAt, UUID certificateCode) {}
     public record Lesson(int modulePosition, int lessonPosition, String title, String content, boolean completed) {}
-    public record Learning(Enrollment enrollment, List<Lesson> lessons, Quiz quiz) {}
+    public record Learning(Enrollment enrollment, List<Lesson> lessons, Quiz quiz, Assignment assignment) {}
+    public record Assignment(String prompt, String response, String status, String feedback) {}
     public record Quiz(String question, List<String> choices, int remainingAttempts, boolean passed) {}
     public record Certificate(String title, String organization, OffsetDateTime completedAt) {}
     public record Placed(Enrollment enrollment, boolean created) {}

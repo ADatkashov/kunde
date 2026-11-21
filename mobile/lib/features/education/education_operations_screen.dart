@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../identity/auth_repository.dart';
 import 'education_labels.dart';
+import 'education_text_dialog.dart';
 
 class EducationOperationsScreen extends StatefulWidget {
   const EducationOperationsScreen(
@@ -17,6 +18,7 @@ class _EducationOperationsState extends State<EducationOperationsScreen> {
   String get _root =>
       widget.admin ? 'admin/education/courses' : 'executor/education/sessions';
   String? _session;
+  bool _scheduled = false;
   bool _busy = false;
   late Future<List<Map<String, dynamic>>> _rows = _load();
 
@@ -31,11 +33,29 @@ class _EducationOperationsState extends State<EducationOperationsScreen> {
   Future<void> _decision(String id, String decision) async {
     final reason = await showDialog<String>(
       context: context,
-      builder: (context) => const _ReasonDialog(),
+      builder: (context) => EducationTextDialog(
+        title: educationLabel(
+            context, 'Причина решения', 'Шешімнің себебі', 'Decision reason'),
+        maxLength: 200,
+      ),
     );
     if (reason == null || !mounted) return;
     await _save('POST', '$_root/$id/decision',
         {'decision': decision, 'reason': reason});
+  }
+
+  Future<void> _review(String id, bool approved) async {
+    final feedback = await showDialog<String>(
+      context: context,
+      builder: (context) => EducationTextDialog(
+        title: educationLabel(context, 'Комментарий к ответу', 'Жауапқа пікір',
+            'Answer feedback'),
+        maxLength: 1000,
+      ),
+    );
+    if (!mounted || feedback == null) return;
+    await _save('PUT', '$_root/$_session/roster/$id/assignment',
+        {'approved': approved, 'feedback': feedback});
   }
 
   Future<void> _save(
@@ -152,74 +172,62 @@ class _EducationOperationsState extends State<EducationOperationsScreen> {
               OutlinedButton(
                 onPressed: () {
                   _session = id;
+                  _scheduled = starts != null;
                   _reload();
                 },
                 child: Text(educationLabel(
                     context, 'Открыть список', 'Тізімді ашу', 'Open roster')),
               ),
-            ] else
-              Wrap(
-                spacing: 8,
-                children: [
-                  for (final (code, label) in [
-                    (
-                      'PRESENT',
-                      educationLabel(
-                          context, 'Присутствовал', 'Қатысты', 'Present')
-                    ),
-                    (
-                      'ABSENT',
-                      educationLabel(
-                          context, 'Отсутствовал', 'Қатыспады', 'Absent')
-                    ),
-                  ])
-                    ChoiceChip(
-                      label: Text(label),
-                      selected: row['attendance'] == code,
-                      onSelected: _busy
-                          ? null
-                          : (_) => _save(
-                                'PUT',
-                                '$_root/$_session/roster/$id',
-                                {'status': code},
-                              ),
-                    ),
-                ],
-              ),
+            ] else ...[
+              if (_scheduled)
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    for (final (code, label) in [
+                      (
+                        'PRESENT',
+                        educationLabel(
+                            context, 'Присутствовал', 'Қатысты', 'Present')
+                      ),
+                      (
+                        'ABSENT',
+                        educationLabel(
+                            context, 'Отсутствовал', 'Қатыспады', 'Absent')
+                      ),
+                    ])
+                      ChoiceChip(
+                        label: Text(label),
+                        selected: row['attendance'] == code,
+                        onSelected: _busy
+                            ? null
+                            : (_) => _save(
+                                  'PUT',
+                                  '$_root/$_session/roster/$id',
+                                  {'status': code},
+                                ),
+                      ),
+                  ],
+                ),
+              if (row['response'] case final String response) Text(response),
+              if (row['feedback'] case final String feedback) Text(feedback),
+              if (row['assignmentStatus'] == 'SUBMITTED')
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    FilledButton(
+                        onPressed: _busy ? null : () => _review(id, true),
+                        child: Text(educationLabel(
+                            context, 'Принять', 'Қабылдау', 'Approve'))),
+                    TextButton(
+                        onPressed: _busy ? null : () => _review(id, false),
+                        child: Text(educationLabel(context, 'На доработку',
+                            'Қайта орындау', 'Return'))),
+                  ],
+                ),
+            ],
           ],
         ),
       ),
     );
   }
-}
-
-class _ReasonDialog extends StatefulWidget {
-  const _ReasonDialog();
-
-  @override
-  State<_ReasonDialog> createState() => _ReasonDialogState();
-}
-
-class _ReasonDialogState extends State<_ReasonDialog> {
-  String _reason = '';
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-        title: Text(educationLabel(
-            context, 'Причина решения', 'Шешімнің себебі', 'Decision reason')),
-        content: TextField(
-            maxLength: 200,
-            autofocus: true,
-            onChanged: (value) => setState(() => _reason = value.trim())),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(MaterialLocalizations.of(context).cancelButtonLabel)),
-          FilledButton(
-              onPressed: _reason.isEmpty
-                  ? null
-                  : () => Navigator.pop(context, _reason),
-              child: Text(MaterialLocalizations.of(context).okButtonLabel)),
-        ],
-      );
 }
