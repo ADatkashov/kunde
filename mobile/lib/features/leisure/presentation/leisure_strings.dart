@@ -14,9 +14,9 @@ extension LeisureStrings on KundeLocalizations {
   String get lzTitle => _t('Досуг и развлечения', 'Демалыс және ойын-сауық',
       'Leisure and entertainment');
   String get lzSubtitle => _t(
-      'Кино, мероприятия, активный отдых и развлечения для всей семьи',
-      'Кино, іс-шаралар, белсенді демалыс және бүкіл отбасыға арналған ойын-сауық',
-      'Cinema, events, outdoor fun and entertainment for the whole family');
+      'Квесты, боулинг, караоке, активный отдых и развлечения для всей семьи',
+      'Квесттер, боулинг, караоке, белсенді демалыс және бүкіл отбасыға арналған ойын-сауық',
+      'Quests, bowling, karaoke, outdoor fun and entertainment for the whole family');
   String get lzSearchHint =>
       _t('Найти развлечение', 'Ойын-сауық іздеу', 'Search entertainment');
   // ---- KUNDE Events & Tickets (same screens, other product) ----------------------------------------------------------------
