@@ -80,10 +80,10 @@ public class EducationCertificateService {
                 canvas.setNonStrokingColor(0.13f, 0.08f, 0.23f);
                 float y = 423;
                 if (record.learnerName() != null && !record.learnerName().isBlank()) {
-                    y = lines(canvas, font, 24, y, record.learnerName()) - 17;
+                    y = lines(canvas, font, 24, y, record.learnerName(), 2) - 17;
                 }
-                y = lines(canvas, font, 20, y, record.courseTitle()) - 10;
-                y = lines(canvas, font, 14, y, record.organizationName()) - 8;
+                y = lines(canvas, font, 20, y, record.courseTitle(), 4) - 10;
+                y = lines(canvas, font, 14, y, record.organizationName(), 3) - 8;
                 text(canvas, font, 13, 55, y, "Дата завершения  " +
                         record.completedAt().atZoneSameInstant(ZoneId.of("Asia/Almaty")).toLocalDate());
                 canvas.setNonStrokingColor(0.35f, 0.16f, 0.64f);
@@ -96,34 +96,42 @@ public class EducationCertificateService {
         }
     }
 
-    private static float lines(PDPageContentStream canvas, PDType0Font font, int size, float y, String value) throws IOException {
-        var output = new ArrayList<String>();
-        var current = new StringBuilder();
-        float used = 0;
+    private static float lines(PDPageContentStream canvas, PDType0Font font, int preferredSize, float y,
+            String value, int maxLines) throws IOException {
+        var glyphs = new ArrayList<Glyph>();
+        float totalUnits = 0;
         for (int point : value.codePoints().toArray()) {
             String glyph = Character.isISOControl(point) ? " " : Character.toString(point);
-            float width;
+            float units;
             try {
-                width = font.getStringWidth(glyph) * size / 1000;
+                units = font.getStringWidth(glyph);
             } catch (IllegalArgumentException unsupportedGlyph) {
                 glyph = "?";
-                width = font.getStringWidth(glyph) * size / 1000;
+                units = font.getStringWidth(glyph);
             }
+            glyphs.add(new Glyph(glyph, units));
+            totalUnits += units;
+        }
+        // Leave room for glyph boundaries between lines and for the verification footer.
+        int size = Math.min(preferredSize, (int) (maxLines * 650_000 / Math.max(totalUnits, 1)));
+        var current = new StringBuilder();
+        float used = 0;
+        for (var glyph : glyphs) {
+            float width = glyph.units() * size / 1000;
             if (used + width > 730) {
-                output.add(current.toString());
+                text(canvas, font, size, 55, y, current.toString());
+                y -= size + 6;
                 current.setLength(0);
                 used = 0;
             }
-            current.append(glyph);
+            current.append(glyph.text());
             used += width;
         }
-        output.add(current.toString());
-        for (String line : output) {
-            text(canvas, font, size, 55, y, line);
-            y -= size + 6;
-        }
-        return y;
+        text(canvas, font, size, 55, y, current.toString());
+        return y - size - 6;
     }
+
+    private record Glyph(String text, float units) {}
 
     private static void text(PDPageContentStream canvas, PDType0Font font, int size, float x, float y, String value) throws IOException {
         canvas.beginText();
