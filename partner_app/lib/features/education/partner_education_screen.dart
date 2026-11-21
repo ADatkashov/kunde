@@ -27,7 +27,12 @@ class _PartnerEducationState extends State<PartnerEducationScreen> {
   Future<List<Map<String, dynamic>>> _load() =>
       widget.ops.api.getList('$_root/courses');
 
-  void _reload() => setState(() => _courses = _load());
+  void _reload() {
+    final courses = _load();
+    setState(() {
+      _courses = courses;
+    });
+  }
 
   Future<void> _submit(String path, Map<String, dynamic> payload) async {
     setState(() => _busy = true);
@@ -164,6 +169,8 @@ class _CourseFormState extends State<_CourseForm> {
   final _form = GlobalKey<FormState>();
   final _fields = <String, String>{};
   String _format = 'ONLINE_RECORDED';
+  bool _includeQuiz = false;
+  int _correctChoice = 0;
 
   @override
   Widget build(BuildContext context) => AlertDialog(
@@ -231,6 +238,42 @@ class _CourseFormState extends State<_CourseForm> {
                           'Assignment prompt (optional)'),
                       1500,
                       optional: true),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                        _t(context, 'Добавить тест', 'Тест қосу', 'Add quiz')),
+                    value: _includeQuiz,
+                    onChanged: (value) => setState(() => _includeQuiz = value),
+                  ),
+                  if (_includeQuiz) ...[
+                    _field('quizQuestion',
+                        _t(context, 'Вопрос', 'Сұрақ', 'Question'), 300),
+                    _field('quizChoiceA',
+                        _t(context, 'Ответ A', 'A жауабы', 'Answer A'), 500),
+                    _field('quizChoiceB',
+                        _t(context, 'Ответ B', 'B жауабы', 'Answer B'), 500),
+                    DropdownButtonFormField<int>(
+                      initialValue: _correctChoice,
+                      decoration: InputDecoration(
+                        labelText: _t(context, 'Верный ответ', 'Дұрыс жауап',
+                            'Correct answer'),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 0, child: Text('A')),
+                        DropdownMenuItem(value: 1, child: Text('B')),
+                      ],
+                      onChanged: (value) =>
+                          setState(() => _correctChoice = value!),
+                    ),
+                    _field(
+                        'quizAttempts',
+                        _t(context, 'Число попыток (1–10)',
+                            'Әрекет саны (1–10)', 'Attempts (1–10)'),
+                        2,
+                        number: true,
+                        maxNumber: 10,
+                        initialValue: '3'),
+                  ],
                 ],
               ],
             ),
@@ -241,24 +284,48 @@ class _CourseFormState extends State<_CourseForm> {
               onPressed: () => Navigator.pop(context),
               child: Text(MaterialLocalizations.of(context).cancelButtonLabel)),
           FilledButton(
-            onPressed: () {
-              if (!_form.currentState!.validate()) return;
-              _form.currentState!.save();
-              Navigator.pop(context, {
-                ..._fields,
-                'format': _format,
-                'priceMinor': int.parse(_fields['priceMinor']!),
-                'durationMinutes': int.parse(_fields['durationMinutes']!),
-              });
-            },
+            onPressed: _save,
             child: Text(MaterialLocalizations.of(context).saveButtonLabel),
           ),
         ],
       );
 
+  void _save() {
+    if (!_form.currentState!.validate()) return;
+    _fields.clear();
+    _form.currentState!.save();
+    final quiz = _format == 'ONLINE_RECORDED' && _includeQuiz
+        ? {
+            'question': _fields['quizQuestion'],
+            'choices': [_fields['quizChoiceA'], _fields['quizChoiceB']],
+            'correctChoice': _correctChoice,
+            'maxAttempts': int.parse(_fields['quizAttempts']!),
+          }
+        : null;
+    if (quiz != null && _fields['quizChoiceA'] == _fields['quizChoiceB']) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(_t(context, 'Ответы должны различаться',
+            'Жауаптар әртүрлі болуы керек', 'Use different answers')),
+      ));
+      return;
+    }
+    _fields.removeWhere((key, _) => key.startsWith('quiz'));
+    Navigator.pop(context, {
+      ..._fields,
+      'format': _format,
+      'priceMinor': int.parse(_fields['priceMinor']!),
+      'durationMinutes': int.parse(_fields['durationMinutes']!),
+      if (quiz != null) 'quiz': quiz,
+    });
+  }
+
   Widget _field(String key, String label, int max,
-          {bool number = false, bool optional = false}) =>
+          {bool number = false,
+          bool optional = false,
+          int? maxNumber,
+          String? initialValue}) =>
       TextFormField(
+        initialValue: initialValue,
         decoration: InputDecoration(labelText: label, counterText: ''),
         keyboardType: number ? TextInputType.number : TextInputType.text,
         maxLength: max,
@@ -268,7 +335,9 @@ class _CourseFormState extends State<_CourseForm> {
           final parsed = int.tryParse(input);
           if (!optional && input.isEmpty ||
               number &&
-                  (parsed == null || parsed < (key == 'priceMinor' ? 0 : 1))) {
+                  (parsed == null ||
+                      parsed < (key == 'priceMinor' ? 0 : 1) ||
+                      (maxNumber != null && parsed > maxNumber))) {
             return _t(context, 'Проверьте значение', 'Мәнді тексеріңіз',
                 'Check this value');
           }
