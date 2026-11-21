@@ -1,9 +1,10 @@
 # KUNDE project state
 
-## KUNDE Groceries 1.0 — DEV/TEST срез (2026-11-21, ветка `ccr-7604baac-80k1na`)
+## KUNDE Groceries 1.0 — DEV/TEST (2026-11-21)
 
-- Flyway V45: флаг `GROCERIES`, 12 категорий, атрибуты товара, избранное товаров, списки покупок, серверная корзина; `/api/v1/groceries/*`. Consumer: главная Groceries, каталог с серверными фильтрами, карточка товара, списки, избранное, синхронизация корзины.
-- Проверено локально: `mvn verify` 376 тестов, Flutter analyze чисто и 328 тестов. **Не сделано / NOT VERIFIED:** Partner/Executor/Admin-экраны Groceries, лояльность, push, фото, DEV-деплой V44, Android E2E, APK. Матрица: [groceries](docs/product/groceries.md).
+- В `main` (V45–V52, PR #195, #197, #204): каталог/поиск/фильтры на сервере, карточка товара с галереей, Share, избранное, списки, серверная корзина, фото и поля товара (Partner), интерактивная сборка с согласованием замен, задачи курьера и экран Executor, Groceries Control Center (scoped `GROCERIES_OPERATIONS`), проверенные отзывы и рейтинг. DEV на `3faa0ee`.
+- Проверено: `mvn verify` 389 тестов, Consumer 353, Partner 120; сквозной integration-тест Consumer → Partner → Executor → Consumer → Admin. **Не сделано / NOT VERIFIED:** лояльность (правила не утверждены), уведомления, корректировка по весу, карта в Consumer, нативный Android E2E, реальные Android-скриншоты, APK. Матрица: [groceries](docs/product/groceries.md).
+
 ## KUNDE Education & Courses 1.0 — каталог
 
 - В `main` через [#193](https://github.com/ADatkashov/kunde/pull/193): PostgreSQL V44, серверный флаг, API каталога и программы, плитка и каталог Consumer, переключатель Admin. V48 добавляет запись в синтетические потоки, TEST_CARD, «Мои курсы», текстовый курс и код подтверждения завершения. Задания, посещаемость и панели остаются открытыми. [Матрица и контракт](docs/product/education.md).

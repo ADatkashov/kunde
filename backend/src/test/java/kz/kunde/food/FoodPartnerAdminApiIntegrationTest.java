@@ -499,4 +499,54 @@ class FoodPartnerAdminApiIntegrationTest {
         String foodStore = db.queryForObject("select id::text from marketplace.food_restaurants where vertical = 'FOOD' limit 1", String.class);
         send("POST", "/api/v1/admin/groceries/stores/" + foodStore + "/moderation", groceryAdmin, "{\"decision\":\"BLOCK\",\"reason\":\"Не моё\"}").andExpect(status().isNotFound());
     }
+
+    @Test
+    void groceriesEndToEndConsumerPartnerExecutorConsumerAdmin() throws Exception {
+        String adminLogin = loginBody("+77000000426");
+        db.update("INSERT INTO identity.admin_grants (user_id, permission, reason) VALUES (?, 'GROCERIES_OPERATIONS', 'synthetic DEV admin')", subject(adminLogin));
+        String groceryAdmin = JsonPath.read(body(send("POST", "/api/v1/auth/token/refresh", null,
+                "{\"refreshToken\":\"" + JsonPath.read(adminLogin, "$.refreshToken") + "\"}")), "$.accessToken");
+        String courier = approvedCourier("+77000000424");
+        db.update("update marketplace.food_restaurants set vertical = 'GROCERY' where id = ?", restaurant);
+        List<String> dishes = db.queryForList("select id::text from marketplace.food_dishes d where d.restaurant_id = ? and d.available and d.unit = 'PIECE' "
+                + "and not exists (select 1 from marketplace.food_option_groups g where g.dish_id = d.id and g.min_select > 0) order by d.name limit 2", String.class, restaurant);
+        db.update("update marketplace.food_dishes set grocery_category = 'pantry' where id = any (?::uuid[])", "{" + String.join(",", dishes) + "}");
+
+        // Consumer places a delivery order with a promo code evaluated on the server.
+        String placed = placeGrocery("grocery-e2e-000001", line(dishes.get(0), "NONE"), line(dishes.get(1), "NONE"));
+        String id = JsonPath.read(placed, "$.id");
+        long total = ((Number) JsonPath.read(placed, "$.totalMinor")).longValue();
+        assertThat((String) JsonPath.read(placed, "$.vertical")).isEqualTo("GROCERY");
+
+        // Partner accepts, prepares, picks every line and hands the order over for a courier.
+        move(owner, id, "ACCEPTED").andExpect(status().isOk());
+        String prep = body(move(owner, id, "PREPARING").andExpect(status().isOk()));
+        for (int i = 0; i < 2; i++) {
+            String item = JsonPath.read(prep, "$.order.items[" + i + "].itemId");
+            send("POST", base() + "/orders/" + id + "/items/" + item + "/pick", owner, "{\"action\":\"PICKED\"}").andExpect(status().isOk());
+        }
+        move(owner, id, "READY_FOR_PICKUP").andExpect(status().isOk());
+        assertThat((String) JsonPath.read(body(send("GET", "/api/v1/food/orders/" + id, customer, null)), "$.status")).isEqualTo("READY_FOR_PICKUP");
+
+        // Executor takes the task and delivers; the customer sees every step.
+        String task = JsonPath.read(body(send("GET", "/api/v1/executor/food/tasks/open", courier, null)), "$[0].id");
+        send("POST", "/api/v1/executor/food/tasks/" + task + "/accept", courier, null).andExpect(status().isOk());
+        send("POST", "/api/v1/executor/food/tasks/" + task + "/pickup", courier, null).andExpect(status().isOk());
+        assertThat((String) JsonPath.read(body(send("GET", "/api/v1/food/orders/" + id, customer, null)), "$.status")).isEqualTo("ON_THE_WAY");
+        send("POST", "/api/v1/executor/food/tasks/" + task + "/deliver", courier, null).andExpect(status().isOk());
+        String done = body(send("GET", "/api/v1/food/orders/" + id, customer, null));
+        assertThat((String) JsonPath.read(done, "$.status")).isEqualTo("DELIVERED");
+        assertThat((List<String>) JsonPath.read(done, "$.timeline[*].status")).containsSubsequence("PLACED", "ACCEPTED", "PREPARING", "READY_FOR_PICKUP", "ON_THE_WAY", "DELIVERED");
+
+        // Consumer reviews the delivered product; Admin sees the completed order, the revenue and the category.
+        send("POST", "/api/v1/groceries/products/" + dishes.get(0) + "/reviews", customer, "{\"rating\":5,\"comment\":\"Отлично\"}").andExpect(status().isCreated());
+        String summary = body(send("GET", "/api/v1/admin/groceries/summary", groceryAdmin, null).andExpect(status().isOk()));
+        assertThat(((Number) JsonPath.read(summary, "$.deliveredOrders")).longValue()).isEqualTo(1);
+        assertThat(((Number) JsonPath.read(summary, "$.revenueMinor")).longValue()).isEqualTo(total);
+        assertThat(((Number) JsonPath.read(summary, "$.deliveredCourierTasks")).longValue()).isEqualTo(1);
+        assertThat((String) JsonPath.read(summary, "$.categories[0].category")).isEqualTo("pantry");
+        assertThat((List<String>) JsonPath.read(body(send("GET", "/api/v1/admin/groceries/orders", groceryAdmin, null)), "$[*].status")).contains("DELIVERED");
+        assertThat((List<?>) JsonPath.read(body(send("GET", "/api/v1/admin/groceries/product-reviews", groceryAdmin, null)), "$")).hasSize(1);
+        send("POST", "/api/v1/admin/groceries/orders/" + id + "/refund", groceryAdmin, "{\"reason\":\"Тест возврата\"}").andExpect(status().isOk());
+    }
 }
