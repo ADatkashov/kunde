@@ -22,7 +22,10 @@ class _HealthFavoritesScreenState extends State<HealthFavoritesScreen> {
   bool _busy = false;
 
   void _reload() {
-    setState(() => _favorites = widget.services.api.healthFavorites());
+    final favorites = widget.services.api.healthFavorites();
+    setState(() {
+      _favorites = favorites;
+    });
   }
 
   Future<void> _act(HealthFavorite item, {required bool remove}) async {
