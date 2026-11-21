@@ -112,6 +112,9 @@ class _Backend {
   bool disabled = false;
   bool emptyResults = false;
   List<String> galleryImages = const [];
+  bool canReview = false;
+  final reviewPosts = <Map<String, dynamic>>[];
+  final reviewList = <Map<String, dynamic>>[];
   bool failProducts = false;
   int total = 35;
   final productQueries = <Map<String, String>>[];
@@ -210,6 +213,29 @@ class _Backend {
         'limit': limit,
         'offset': offset,
       });
+    }
+    if (RegExp(r'^groceries/products/[^/]+/reviews$').hasMatch(path)) {
+      if (request.method == 'POST') {
+        reviewPosts.add(body as Map<String, dynamic>);
+        reviewList.add({
+          'id': 'r${reviewList.length}',
+          'rating': body['rating'],
+          'comment': body['comment'],
+          'author': 'Покупатель'
+        });
+        canReview = false;
+        return _json(reviewList.last, 201);
+      }
+      final count = reviewList.length;
+      return _json({
+        'average': count == 0 ? null : 4.5,
+        'count': count,
+        'distribution': [0, 0, 0, count, 0],
+        'reviews': reviewList,
+      });
+    }
+    if (path.endsWith('/review-eligibility')) {
+      return _json({'canReview': canReview});
     }
     if (path.startsWith('groceries/products/')) {
       final id = path.split('/').last;
@@ -822,6 +848,64 @@ void main() {
       await tester.pumpAndSettle();
       expect(copied, contains('Яблоки Айдаред'));
       expect(copied, contains('${formatTenge(59000)} / кг'));
+      await _settleTimers(tester);
+    });
+
+    testWidgets(
+        'verified reviews: shown with the average, written only by eligible buyers',
+        (tester) async {
+      final backend = _Backend()
+        ..canReview = true
+        ..reviewList.add({
+          'id': 'r0',
+          'rating': 5,
+          'comment': 'Свежие',
+          'author': 'Покупатель'
+        });
+      final services = await _services(backend);
+      await _show(
+          tester, ProductScreen(services: services, productId: _apples));
+      await tester.scrollUntilVisible(
+          find.byKey(const Key('product-rating')), 300,
+          scrollable: find.byType(Scrollable).first);
+      expect(find.byKey(const Key('product-rating')), findsOneWidget);
+      expect(find.text('Свежие'), findsOneWidget);
+      await tester.scrollUntilVisible(
+          find.byKey(const Key('product-review-write')), 200,
+          scrollable: find.byType(Scrollable).first);
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -150));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('product-review-write')));
+      await tester.pumpAndSettle();
+      expect(
+          tester
+              .widget<FilledButton>(
+                  find.byKey(const Key('product-review-send')))
+              .onPressed,
+          isNull);
+      await tester.tap(find.byKey(const Key('product-review-star-4')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'Хорошие яблоки');
+      await tester.tap(find.byKey(const Key('product-review-send')));
+      await tester.pumpAndSettle();
+      expect(backend.reviewPosts.single,
+          {'rating': 4, 'comment': 'Хорошие яблоки'});
+      expect(find.text('Спасибо за отзыв!'), findsOneWidget);
+      expect(find.byKey(const Key('product-review-write')), findsNothing);
+      await _settleTimers(tester);
+    });
+
+    testWidgets(
+        'without reviews there is an honest empty text and no invented rating',
+        (tester) async {
+      final services = await _services(_Backend());
+      await _show(
+          tester, ProductScreen(services: services, productId: _apples));
+      await tester.scrollUntilVisible(
+          find.byKey(const Key('product-no-reviews')), 300,
+          scrollable: find.byType(Scrollable).first);
+      expect(find.byKey(const Key('product-rating')), findsNothing);
+      expect(find.byKey(const Key('product-review-write')), findsNothing);
       await _settleTimers(tester);
     });
 

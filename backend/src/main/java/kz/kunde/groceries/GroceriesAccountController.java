@@ -182,6 +182,54 @@ public class GroceriesAccountController {
         return noStore(HttpStatus.OK, new FavoriteState(productId.toString(), false));
     }
 
+    // ---- verified product reviews ---------------------------------------------------------------------
+
+    public record ReviewRequest(@NotNull @Min(1) @Max(5) Integer rating, @Size(max = 1000) String comment) {}
+
+    public record Eligibility(boolean canReview, String orderId) {}
+
+    /** The customer's latest delivered Groceries order that contained the product (as ordered or as an accepted replacement) and has no review of it. */
+    private UUID eligibleOrder(UUID user, UUID productId) {
+        return db.query("""
+                select o.id from transactions.food_orders o
+                where o.user_id = ? and o.vertical = 'GROCERY' and o.status = 'DELIVERED'
+                  and exists (select 1 from transactions.food_order_items i where i.order_id = o.id
+                              and i.fulfillment_status in ('OK', 'SUBSTITUTED') and coalesce(i.replaced_by_dish_id, i.dish_id) = ?)
+                  and not exists (select 1 from marketplace.grocery_product_reviews v where v.order_id = o.id and v.dish_id = ?)
+                order by o.placed_at desc limit 1
+                """, (rs, n) -> rs.getObject(1, UUID.class), user, productId, productId).stream().findFirst().orElse(null);
+    }
+
+    @GetMapping("/products/{productId}/review-eligibility")
+    @PreAuthorize("@consumerAccessPolicy.allowed(authentication)")
+    public ResponseEntity<Eligibility> eligibility(@AuthenticationPrincipal Jwt principal, @PathVariable UUID productId) {
+        UUID order = eligibleOrder(user(principal), productId);
+        return noStore(HttpStatus.OK, new Eligibility(order != null, order == null ? null : order.toString()));
+    }
+
+    @PostMapping("/products/{productId}/reviews")
+    @PreAuthorize("@consumerAccessPolicy.allowed(authentication)")
+    @Transactional
+    public ResponseEntity<GroceriesCatalogController.ReviewView> review(@AuthenticationPrincipal Jwt principal, @PathVariable UUID productId,
+            @Valid @RequestBody ReviewRequest body) {
+        requireOn();
+        UUID user = user(principal);
+        db.query("select pg_advisory_xact_lock(hashtext('grocery-review'), hashtext(?))",
+                (org.springframework.jdbc.core.RowCallbackHandler) rs -> {}, user + ":" + productId);
+        UUID order = eligibleOrder(user, productId);
+        if (order == null) {
+            throw new ApiException(HttpStatus.CONFLICT, "REVIEW_NOT_ALLOWED",
+                    "A review needs a delivered order with this product that you have not reviewed yet");
+        }
+        String comment = body.comment() == null || body.comment().isBlank() ? null : body.comment().strip();
+        var view = db.queryForObject("""
+                insert into marketplace.grocery_product_reviews (dish_id, order_id, user_id, rating, comment) values (?, ?, ?, ?, ?)
+                returning id, rating, comment, author_name, created_at
+                """, (rs, n) -> new GroceriesCatalogController.ReviewView(rs.getString(1), rs.getInt(2), rs.getString(3), rs.getString(4),
+                rs.getObject(5, OffsetDateTime.class)), productId, order, user, body.rating(), comment);
+        return noStore(HttpStatus.CREATED, view);
+    }
+
     // ---- shopping lists -----------------------------------------------------------------------------------
 
     private void ownList(UUID user, UUID listId) {

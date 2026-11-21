@@ -41,7 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
         "app.auth.phone.enabled=true",
         "app.auth.phone.secret=synthetic-test-secret-synthetic-test-secret",
         "app.auth.phone.dev-otp.enabled=true",
-        "app.auth.phone.dev-otp.allowed-phones=+77000000002,+77000000003,+77000000421,+77000000422,+77000000423",
+        "app.auth.phone.dev-otp.allowed-phones=+77000000002,+77000000003,+77000000421,+77000000422,+77000000423,+77000000424,+77000000425,+77000000426",
         "app.security.rate-limit.requests=100000",
         "app.security.authenticated-rate-limit.requests=100000"
 })
@@ -61,7 +61,7 @@ class FoodPartnerAdminApiIntegrationTest {
 
     @BeforeEach
     void seed() throws Exception {
-        db.update("DELETE FROM identity.otp_challenges WHERE phone_e164 IN ('+77000000002','+77000000003','+77000000421','+77000000422','+77000000423')");
+        db.update("DELETE FROM identity.otp_challenges WHERE phone_e164 IN ('+77000000002','+77000000003','+77000000421','+77000000422','+77000000423','+77000000424','+77000000425','+77000000426')");
         FoodDemoSeeder seeder = new FoodDemoSeeder(db);
         for (String file : new String[] {"food/demo-catalog.json", "food/partner-demo-catalog.json"}) {
             try (var in = new ClassPathResource(file).getInputStream()) {
@@ -343,7 +343,7 @@ class FoodPartnerAdminApiIntegrationTest {
         String preparing = body(move(owner, id, "PREPARING").andExpect(status().isOk()));
         // Interactive picking: nothing is decided automatically, the order cannot leave the store yet.
         assertThat((List<String>) JsonPath.read(preparing, "$.order.items[*].fulfillmentStatus")).containsOnly("PENDING");
-        move(owner, id, "ON_THE_WAY").andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("PICKING_INCOMPLETE"));
+        move(owner, id, "READY_FOR_PICKUP").andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("PICKING_INCOMPLETE"));
         String item1 = JsonPath.read(preparing, "$.order.items[0].itemId");
         String item2 = JsonPath.read(preparing, "$.order.items[1].itemId");
         String pick = base() + "/orders/" + id + "/items/";
@@ -357,7 +357,7 @@ class FoodPartnerAdminApiIntegrationTest {
         // The customer did not pre-approve replacements (policy NONE): it becomes a proposal.
         String proposed = body(send("POST", pick + item2 + "/pick", owner, "{\"action\":\"REPLACE\",\"replacementDishId\":\"" + d3 + "\"}").andExpect(status().isOk()));
         assertThat((List<String>) JsonPath.read(proposed, "$.order.items[?(@.itemId=='" + item2 + "')].fulfillmentStatus")).containsExactly("PROPOSED");
-        move(owner, id, "ON_THE_WAY").andExpect(status().isConflict());
+        move(owner, id, "READY_FOR_PICKUP").andExpect(status().isConflict());
         // Only the customer who owns the order can answer.
         send("POST", "/api/v1/food/orders/" + id + "/items/" + item2 + "/decision", owner, "{\"approve\":true}").andExpect(status().isNotFound());
         String decided = body(send("POST", "/api/v1/food/orders/" + id + "/items/" + item2 + "/decision", customer, "{\"approve\":true}").andExpect(status().isOk()));
@@ -365,7 +365,7 @@ class FoodPartnerAdminApiIntegrationTest {
         assertThat(((Number) JsonPath.read(decided, "$.finalTotalMinor")).longValue()).isEqualTo(p1 + p3 + 40000);
         assertThat((Boolean) JsonPath.read(decided, "$.hasChanges")).isTrue();
         send("POST", "/api/v1/food/orders/" + id + "/items/" + item2 + "/decision", customer, "{\"approve\":true}").andExpect(status().isConflict());
-        move(owner, id, "ON_THE_WAY").andExpect(status().isOk());
+        move(owner, id, "READY_FOR_PICKUP").andExpect(status().isOk());
 
         // Declining the proposal removes the line; with nothing left the order is cancelled by the system.
         String second = placeGrocery("grocery-pick-0000002", line(d1, "NONE"));
@@ -377,5 +377,126 @@ class FoodPartnerAdminApiIntegrationTest {
         String declined = body(send("POST", "/api/v1/food/orders/" + id2 + "/items/" + only + "/decision", customer, "{\"approve\":false}").andExpect(status().isOk()));
         assertThat((String) JsonPath.read(declined, "$.status")).isEqualTo("CANCELLED");
         assertThat((String) JsonPath.read(declined, "$.cancelReason")).isEqualTo("NO_ITEMS_AVAILABLE");
+    }
+
+    private String approvedCourier(String phone) throws Exception {
+        String login = loginBody(phone);
+        db.update("insert into transactions.delivery_couriers (user_id, display_name, vehicle, status, online, max_grams, max_side_cm) values (?, 'Курьер DEV', 'CAR', 'APPROVED', true, 20000, 100)", subject(login));
+        return JsonPath.read(login, "$.accessToken");
+    }
+
+    @Test
+    void groceryDeliveryIsHandedToExactlyOneCourierAndMovesTheOrderToDelivered() throws Exception {
+        db.update("update marketplace.food_restaurants set vertical = 'GROCERY' where id = ?", restaurant);
+        String dish = db.queryForObject("select id from marketplace.food_dishes d where d.restaurant_id = ? and d.available and d.unit = 'PIECE' "
+                + "and not exists (select 1 from marketplace.food_option_groups g where g.dish_id = d.id and g.min_select > 0) order by d.name limit 1", String.class, restaurant);
+        String courierA = approvedCourier("+77000000424");
+        String courierB = approvedCourier("+77000000425");
+        // A courier profile is required.
+        send("GET", "/api/v1/executor/food/tasks/open", customer, null).andExpect(status().isForbidden());
+
+        String id = JsonPath.read(placeGrocery("grocery-courier-00001", line(dish, "NONE")), "$.id");
+        move(owner, id, "ACCEPTED").andExpect(status().isOk());
+        String prep = body(move(owner, id, "PREPARING").andExpect(status().isOk()));
+        // The store never drives the courier leg of a grocery delivery.
+        assertThat((List<String>) JsonPath.read(prep, "$.allowedNext")).containsExactly("READY_FOR_PICKUP", "CANCELLED");
+        send("POST", base() + "/orders/" + id + "/items/" + JsonPath.read(prep, "$.order.items[0].itemId") + "/pick", owner, "{\"action\":\"PICKED\"}").andExpect(status().isOk());
+        assertThat((List<?>) JsonPath.read(body(send("GET", "/api/v1/executor/food/tasks/open", courierA, null).andExpect(status().isOk())), "$")).isEmpty();
+        String ready = body(move(owner, id, "READY_FOR_PICKUP").andExpect(status().isOk()));
+        assertThat((List<String>) JsonPath.read(ready, "$.allowedNext")).containsExactly("CANCELLED");
+        move(owner, id, "ON_THE_WAY").andExpect(status().isConflict());
+
+        // Before acceptance the courier sees the store and the order, not the customer's address.
+        String open = body(send("GET", "/api/v1/executor/food/tasks/open", courierA, null).andExpect(status().isOk()));
+        assertThat((List<?>) JsonPath.read(open, "$")).hasSize(1);
+        assertThat((Object) JsonPath.read(open, "$[0].deliveryAddress")).isNull();
+        String task = JsonPath.read(open, "$[0].id");
+        String path = "/api/v1/executor/food/tasks/" + task;
+        send("POST", path + "/accept", courierA, null).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("ASSIGNED"))
+                .andExpect(jsonPath("$.deliveryAddress").value("Алматы, пр. Абая 10 (тестовый адрес)"));
+        send("POST", path + "/accept", courierB, null).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("TASK_UNAVAILABLE"));
+        send("POST", path + "/accept", courierA, null).andExpect(status().isOk());
+        assertThat((List<?>) JsonPath.read(body(send("GET", "/api/v1/executor/food/tasks/open", courierB, null)), "$")).isEmpty();
+        send("POST", path + "/pickup", courierB, null).andExpect(status().isNotFound());
+        send("POST", path + "/deliver", courierA, null).andExpect(status().isConflict());
+        send("POST", path + "/pickup", courierA, null).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("PICKED_UP"));
+        send("POST", path + "/pickup", courierA, null).andExpect(status().isOk());
+        String onTheWay = body(send("GET", "/api/v1/food/orders/" + id, customer, null).andExpect(status().isOk()));
+        assertThat((String) JsonPath.read(onTheWay, "$.status")).isEqualTo("ON_THE_WAY");
+        send("POST", path + "/deliver", courierA, null).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("DELIVERED"));
+        send("POST", path + "/deliver", courierA, null).andExpect(status().isOk());
+        String done = body(send("GET", "/api/v1/food/orders/" + id, customer, null).andExpect(status().isOk()));
+        assertThat((String) JsonPath.read(done, "$.status")).isEqualTo("DELIVERED");
+        assertThat((List<String>) JsonPath.read(done, "$.timeline[*].actor")).contains("COURIER");
+        assertThat((List<?>) JsonPath.read(body(send("GET", "/api/v1/executor/food/tasks/mine", courierA, null)), "$")).hasSize(1);
+        assertThat((List<?>) JsonPath.read(body(send("GET", "/api/v1/executor/food/tasks/mine", courierB, null)), "$")).isEmpty();
+
+        // A store that cancels a waiting order closes the task: nobody can take it any more.
+        String id2 = JsonPath.read(placeGrocery("grocery-courier-00002", line(dish, "NONE")), "$.id");
+        move(owner, id2, "ACCEPTED").andExpect(status().isOk());
+        String prep2 = body(move(owner, id2, "PREPARING").andExpect(status().isOk()));
+        send("POST", base() + "/orders/" + id2 + "/items/" + JsonPath.read(prep2, "$.order.items[0].itemId") + "/pick", owner, "{\"action\":\"PICKED\"}").andExpect(status().isOk());
+        move(owner, id2, "READY_FOR_PICKUP").andExpect(status().isOk());
+        String task2 = JsonPath.read(body(send("GET", "/api/v1/executor/food/tasks/open", courierB, null)), "$[0].id");
+        send("POST", base() + "/orders/" + id2 + "/status", owner, "{\"status\":\"CANCELLED\",\"reason\":\"Магазин закрылся\"}").andExpect(status().isOk());
+        send("POST", "/api/v1/executor/food/tasks/" + task2 + "/accept", courierB, null).andExpect(status().isConflict());
+        assertThat((List<?>) JsonPath.read(body(send("GET", "/api/v1/executor/food/tasks/open", courierB, null)), "$")).isEmpty();
+    }
+
+    @Test
+    void groceriesControlCenterIsScopedAndReportsRealNumbers() throws Exception {
+        String loginBody = loginBody("+77000000426");
+        db.update("INSERT INTO identity.admin_grants (user_id, permission, reason) VALUES (?, 'GROCERIES_OPERATIONS', 'synthetic DEV admin')", subject(loginBody));
+        String groceryAdmin = JsonPath.read(body(send("POST", "/api/v1/auth/token/refresh", null,
+                "{\"refreshToken\":\"" + JsonPath.read(loginBody, "$.refreshToken") + "\"}")), "$.accessToken");
+        String zero = body(send("GET", "/api/v1/admin/groceries/summary", groceryAdmin, null).andExpect(status().isOk()));
+        assertThat(((Number) JsonPath.read(zero, "$.orders")).longValue()).isZero();
+        assertThat((List<?>) JsonPath.read(zero, "$.categories")).isEmpty();
+
+        // Scoped RBAC: each grant opens only its own center.
+        send("GET", "/api/v1/admin/groceries/summary", admin, null).andExpect(status().isForbidden());
+        send("GET", "/api/v1/admin/food/summary", groceryAdmin, null).andExpect(status().isForbidden());
+        send("GET", "/api/v1/admin/groceries/summary", customer, null).andExpect(status().isForbidden());
+        send("GET", "/api/v1/admin/groceries/summary", null, null).andExpect(status().isUnauthorized());
+
+        db.update("update marketplace.food_restaurants set vertical = 'GROCERY' where id = ?", restaurant);
+        String dish = db.queryForObject("select id from marketplace.food_dishes d where d.restaurant_id = ? and d.available and d.unit = 'PIECE' "
+                + "and not exists (select 1 from marketplace.food_option_groups g where g.dish_id = d.id and g.min_select > 0) order by d.name limit 1", String.class, restaurant);
+        db.update("update marketplace.food_dishes set grocery_category = 'dairy', stock_qty = 3 where id = ?::uuid", dish);
+        String order = placeGrocery("grocery-admin-000001", line(dish, "NONE"));
+        String id = JsonPath.read(order, "$.id");
+        long total = ((Number) JsonPath.read(order, "$.totalMinor")).longValue();
+        db.update("update transactions.food_order_items set fulfillment_status = 'OK', final_unit_price_minor = unit_price_minor, final_line_total_minor = line_total_minor where order_id = ?::uuid", id);
+        db.update("update transactions.food_orders set status = 'DELIVERED', final_total_minor = total_minor where id = ?::uuid", id);
+
+        String summary = body(send("GET", "/api/v1/admin/groceries/summary", groceryAdmin, null).andExpect(status().isOk()));
+        assertThat(((Number) JsonPath.read(summary, "$.orders")).longValue()).isEqualTo(1);
+        assertThat(((Number) JsonPath.read(summary, "$.deliveredOrders")).longValue()).isEqualTo(1);
+        assertThat(((Number) JsonPath.read(summary, "$.revenueMinor")).longValue()).isEqualTo(total);
+        assertThat((String) JsonPath.read(summary, "$.categories[0].category")).isEqualTo("dairy");
+        assertThat(((Number) JsonPath.read(summary, "$.lowStockProducts")).longValue()).isEqualTo(1);
+        assertThat((List<?>) JsonPath.read(summary, "$.perDay")).hasSize(7);
+        String problems = body(send("GET", "/api/v1/admin/groceries/catalog/problems", groceryAdmin, null).andExpect(status().isOk()));
+        assertThat((List<String>) JsonPath.read(problems, "$[?(@.id=='" + dish + "')].problem")).containsExactly("LOW_STOCK");
+
+        // Orders carry no personal data; a delivered test-card order can be refunded once (idempotent) and the action is audited.
+        String orders = body(send("GET", "/api/v1/admin/groceries/orders", groceryAdmin, null).andExpect(status().isOk()));
+        assertThat(orders).doesNotContain("Алматы").doesNotContain("+7700");
+        send("POST", "/api/v1/admin/groceries/orders/" + id + "/refund", groceryAdmin, "{\"reason\":\"Тест возврата\"}").andExpect(status().isOk())
+                .andExpect(jsonPath("$.paymentStatus").value("REFUNDED")).andExpect(jsonPath("$.refundedMinor").value(total));
+        send("POST", "/api/v1/admin/groceries/orders/" + id + "/refund", groceryAdmin, "{\"reason\":\"Повтор\"}").andExpect(status().isOk());
+        send("POST", "/api/v1/admin/groceries/orders/" + UUID.randomUUID() + "/refund", groceryAdmin, "{\"reason\":\"Нет такого\"}").andExpect(status().isNotFound());
+
+        // Store moderation: block hides the store from the catalog; the change needs a reason and is audited.
+        send("POST", "/api/v1/admin/groceries/stores/" + restaurant + "/moderation", groceryAdmin, "{\"decision\":\"BLOCK\",\"reason\":\"x\"}").andExpect(status().isBadRequest());
+        send("POST", "/api/v1/admin/groceries/stores/" + restaurant + "/moderation", groceryAdmin, "{\"decision\":\"BLOCK\",\"reason\":\"Проверка качества\"}").andExpect(status().isOk());
+        assertThat((List<String>) JsonPath.read(body(send("GET", "/api/v1/admin/groceries/stores", groceryAdmin, null)), "$[*].moderationStatus")).contains("BLOCKED");
+        send("POST", "/api/v1/admin/groceries/stores/" + restaurant + "/moderation", groceryAdmin, "{\"decision\":\"BLOCK\",\"reason\":\"Повтор\"}").andExpect(status().isConflict());
+        send("POST", "/api/v1/admin/groceries/stores/" + restaurant + "/moderation", groceryAdmin, "{\"decision\":\"UNBLOCK\",\"reason\":\"Проверено\"}").andExpect(status().isOk());
+        assertThat((List<String>) JsonPath.read(body(send("GET", "/api/v1/admin/groceries/audit", groceryAdmin, null)), "$[*].action"))
+                .contains("ORDER_REFUNDED", "STORE_BLOCK", "STORE_UNBLOCK");
+        // Food restaurants are outside the scope: a Food store id is not found for the Groceries center.
+        String foodStore = db.queryForObject("select id::text from marketplace.food_restaurants where vertical = 'FOOD' limit 1", String.class);
+        send("POST", "/api/v1/admin/groceries/stores/" + foodStore + "/moderation", groceryAdmin, "{\"decision\":\"BLOCK\",\"reason\":\"Не моё\"}").andExpect(status().isNotFound());
     }
 }

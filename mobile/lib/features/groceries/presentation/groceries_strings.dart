@@ -108,6 +108,13 @@ class GStr {
   String get requiredLabel => _t('required');
   String get quantity => _t('quantity');
   String get total => _t('total');
+  String get reviews => _t('reviews');
+  String get writeReview => _t('writeReview');
+  String get reviewHint => _t('reviewHint');
+  String get noReviews => _t('noReviews');
+  String get send => _t('send');
+  String get reviewThanks => _t('reviewThanks');
+  String get verifiedBuyer => _t('verifiedBuyer');
 
   String productsCount(int n) => switch (language) {
         'kk' => '$n тауар',
@@ -291,5 +298,24 @@ class GStr {
     'required': ('Обязательно', 'Міндетті', 'Required'),
     'quantity': ('Количество', 'Саны', 'Quantity'),
     'total': ('Итого', 'Барлығы', 'Total'),
+    'reviews': ('Отзывы', 'Пікірлер', 'Reviews'),
+    'writeReview': ('Оставить отзыв', 'Пікір қалдыру', 'Write a review'),
+    'reviewHint': (
+      'Комментарий (необязательно)',
+      'Түсініктеме (міндетті емес)',
+      'Comment (optional)'
+    ),
+    'noReviews': (
+      'Отзывов пока нет. Отзыв можно оставить после доставки.',
+      'Пікір әлі жоқ. Жеткізілгеннен кейін қалдыруға болады.',
+      'No reviews yet. You can review after delivery.'
+    ),
+    'send': ('Отправить', 'Жіберу', 'Send'),
+    'reviewThanks': (
+      'Спасибо за отзыв!',
+      'Пікіріңізге рахмет!',
+      'Thanks for your review!'
+    ),
+    'verifiedBuyer': ('Покупатель', 'Сатып алушы', 'Buyer'),
   };
 }

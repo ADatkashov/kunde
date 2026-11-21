@@ -203,6 +203,13 @@ class ProductRow extends StatelessWidget {
                     style: theme.textTheme.bodySmall
                         ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
+                  if (product.ratingAvg != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                          '★ ${product.ratingAvg!.toStringAsFixed(1).replaceAll('.', ',')} (${product.ratingCount})',
+                          style: theme.textTheme.bodySmall),
+                    ),
                   const SizedBox(height: 6),
                   PriceText(product),
                   if (!sellable)
