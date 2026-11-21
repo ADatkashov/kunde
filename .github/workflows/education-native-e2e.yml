@@ -26,8 +26,8 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --education-cmd "pg_isready -U kunde_e2e" --education-interval 5s
-          --education-timeout 5s --education-retries 12
+          --health-cmd "pg_isready -U kunde_e2e" --health-interval 5s
+          --health-timeout 5s --health-retries 12
     env:
       DB_URL: jdbc:postgresql://127.0.0.1:5432/kunde_e2e
       DB_USERNAME: kunde_e2e
