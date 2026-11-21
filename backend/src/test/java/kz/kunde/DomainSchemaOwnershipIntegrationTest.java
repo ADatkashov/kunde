@@ -81,6 +81,7 @@ class DomainSchemaOwnershipIntegrationTest {
             "serviceability.zone_addresses -> profile.consumer_addresses",
             "transactions.food_orders -> identity.users",
             "marketplace.partner_catalog_events -> identity.users",
+            "marketplace.home_service_category_events -> identity.users",
             "transactions.food_orders -> marketplace.partners",
             "transactions.food_order_events -> identity.users",
             "transactions.booking_events -> identity.users",

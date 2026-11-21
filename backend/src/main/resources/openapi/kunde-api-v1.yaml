@@ -1141,6 +1141,55 @@ paths:
       responses:
         '200':
           description: Items of the past order that can still be ordered, plus names of skipped items.
+  /admin/home-services/categories:
+    get:
+      operationId: listAdminHomeServiceCategories
+      description: Lists active and inactive categories. Requires HOME_SERVICES_CATALOG.
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 10000, default: 0 } }
+      responses:
+        '200':
+          description: Categories with localized names, icon, activity, display order and version.
+        '401':
+          description: Authentication required.
+        '403':
+          description: Missing admin scope or active grant.
+  /admin/home-services/categories/{code}:
+    put:
+      operationId: saveAdminHomeServiceCategory
+      description: Creates or updates a category with an audit entry. Requires HOME_SERVICES_CATALOG.
+      parameters:
+        - { name: code, in: path, required: true, schema: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,31}$' } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nameRu, nameKk, nameEn, icon, active, sortOrder, expectedVersion, reason]
+              properties:
+                nameRu: { type: string, minLength: 1, maxLength: 120 }
+                nameKk: { type: string, minLength: 1, maxLength: 120 }
+                nameEn: { type: string, minLength: 1, maxLength: 120 }
+                icon: { type: string, pattern: '^[a-z][a-z0-9_]{1,39}$' }
+                active: { type: boolean }
+                sortOrder: { type: integer, minimum: 0 }
+                expectedVersion: { type: integer, format: int64, minimum: 0, description: Use zero to create. }
+                reason: { type: string, minLength: 3, maxLength: 200 }
+      responses:
+        '200':
+          description: Updated category with incremented version.
+        '201':
+          description: Category created with version 1.
+        '400':
+          description: Invalid category input.
+        '401':
+          description: Authentication required.
+        '403':
+          description: Missing admin scope or active grant.
+        '409':
+          description: VERSION_CONFLICT. Refresh the category list before editing.
   /home-services/categories:
     get:
       operationId: listHomeServiceCategories
