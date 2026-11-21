@@ -100,6 +100,16 @@ class _ExecutorScreenState extends State<ExecutorScreen>
           leisure = false;
         }
       }
+      var education = capabilities['educationEnabled'] == true;
+      if (!education) {
+        try {
+          final sessions = await widget.auth.authorizedJson(
+              'GET', 'executor/education/sessions') as List<dynamic>;
+          education = sessions.isNotEmpty;
+        } on IdentityApiError {
+          education = false;
+        }
+      }
       var resume = false;
       if (!enabled) {
         try {
@@ -118,7 +128,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
           _autoEnabled = enabled;
           _autoResume = resume;
           _leisureAvailable = leisure;
-          _educationEnabled = capabilities['educationEnabled'] == true;
+          _educationEnabled = education;
         });
       }
     } catch (_) {

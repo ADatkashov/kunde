@@ -143,8 +143,11 @@ void main() {
     await tester.tap(find.text('Submit response'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'A saved value');
+    await tester.pump();
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
+    expect(assignmentStatus, 'SUBMITTED');
+    await tester.scrollUntilVisible(find.text('Under review'), 200);
     expect(find.text('Under review'), findsOneWidget);
     expect(find.text('verified-demo-code'), findsNothing);
   });

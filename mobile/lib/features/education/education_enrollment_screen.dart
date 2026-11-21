@@ -501,3 +501,45 @@ class _EducationLoad<T> extends StatelessWidget {
         },
       );
 }
+
+/// Existing enrollments remain reachable from Profile while intake is paused.
+class ExistingEducationCoursesTile extends StatefulWidget {
+  const ExistingEducationCoursesTile(
+      {required this.api, required this.auth, super.key});
+  final KundeApi api;
+  final AuthRepository auth;
+
+  @override
+  State<ExistingEducationCoursesTile> createState() =>
+      _ExistingEducationCoursesTileState();
+}
+
+class _ExistingEducationCoursesTileState
+    extends State<ExistingEducationCoursesTile> {
+  late final Future<bool> _hasCourses = _check();
+
+  Future<bool> _check() async {
+    final courses = await widget.auth
+        .authorizedJson('GET', 'education/enrollments?limit=1') as List;
+    return courses.isNotEmpty;
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<bool>(
+        future: _hasCourses,
+        builder: (context, snapshot) {
+          if (snapshot.data != true) return const SizedBox.shrink();
+          return Card(
+              child: ListTile(
+            leading: const Icon(Icons.school_outlined),
+            title: Text(educationLabel(
+                context, 'Мои курсы', 'Курстарым', 'My courses')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push<void>(MaterialPageRoute(
+              builder: (_) =>
+                  EducationMyCourses(api: widget.api, auth: widget.auth),
+            )),
+          ));
+        },
+      );
+}
