@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../admin_employees/admin_employee_screen.dart';
 import '../admin_features/admin_features_screen.dart';
 import '../auto_admin/auto_admin_screen.dart';
+import '../food_admin/food_admin_screen.dart';
 import '../leisure_admin/leisure_admin_screen.dart';
 import '../delivery_admin/delivery_admin_screen.dart';
 import '../identity/auth_repository.dart';
@@ -297,6 +298,20 @@ class _RideAdminScreenState extends State<RideAdminScreen> {
                   ),
                 ),
               ),
+        if (permissions.contains('FOOD_OPERATIONS'))
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.restaurant_menu_outlined),
+              title: Text(s.t('Еда: центр управления',
+                  'Тамақ: басқару орталығы', 'Food control center')),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push<void>(
+                MaterialPageRoute(
+                  builder: (_) => FoodAdminScreen(auth: widget.auth),
+                ),
+              ),
+            ),
+          ),
         if (permissions.contains('LEISURE_OPERATIONS'))
           Card(
             child: ListTile(
