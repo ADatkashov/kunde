@@ -304,9 +304,7 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (_) => BeautyCategoryScreen(services: widget.booking!),
         ),
       );
-    } else if (c.label == s.catHome &&
-        c.enabled &&
-        widget.booking != null) {
+    } else if (c.label == s.catHome && c.enabled && widget.booking != null) {
       Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => HomeServicesCategoryScreen(services: widget.booking!),

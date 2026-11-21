@@ -227,6 +227,7 @@ class _SearchTabState extends State<SearchTab> {
         final canBrowseBookings = done &&
             state.data?.bookingEnabled == true &&
             widget.booking != null;
+        final homeServicesEnabled = state.data?.homeServicesEnabled == true;
         final food = widget.food;
         return Center(
           child: ConstrainedBox(
@@ -324,8 +325,7 @@ class _SearchTabState extends State<SearchTab> {
                                   MaterialPageRoute<void>(
                                     builder: (_) => ServicesHomeScreen(
                                       services: widget.booking!,
-                                      homeServicesEnabled:
-                                          state.data?.homeServicesEnabled == true,
+                                      homeServicesEnabled: homeServicesEnabled,
                                     ),
                                   ),
                                 )
