@@ -138,6 +138,7 @@ public class SecurityConfiguration {
                                 "/api/v1/booking/venues/*", "/api/v1/booking/slots", "/api/v1/booking/health/venues", "/api/v1/auto/categories", "/api/v1/auto/venues",
                                 "/api/v1/auto/venues/*", "/api/v1/auto/slots",
                                 "/api/v1/education/courses", "/api/v1/education/courses/*",
+                                "/api/v1/education/courses/*/cohorts", "/api/v1/education/certificates/*",
                                 "/api/v1/leisure/categories", "/api/v1/leisure/home", "/api/v1/leisure/events", "/api/v1/leisure/events/*",
                                 "/api/v1/leisure/events/*/sessions", "/api/v1/leisure/events/*/reviews", "/api/v1/leisure/sessions/*/seats")
                         .permitAll()
@@ -176,6 +177,7 @@ public class SecurityConfiguration {
                                 "/api/v1/booking/venues/*", "/api/v1/booking/slots", "/api/v1/booking/health/venues", "/api/v1/auto/categories", "/api/v1/auto/venues",
                                 "/api/v1/auto/venues/*", "/api/v1/auto/slots",
                                 "/api/v1/education/courses", "/api/v1/education/courses/*",
+                                "/api/v1/education/courses/*/cohorts", "/api/v1/education/certificates/*",
                                 "/api/v1/leisure/categories", "/api/v1/leisure/home", "/api/v1/leisure/events", "/api/v1/leisure/events/*",
                                 "/api/v1/leisure/events/*/sessions", "/api/v1/leisure/events/*/reviews", "/api/v1/leisure/sessions/*/seats")
                         .permitAll()
