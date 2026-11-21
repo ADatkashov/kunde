@@ -2,7 +2,7 @@
 
 ## KUNDE Home Services 1.0
 
-Добавить локализуемый справочник и модерируемые предложения с привязкой к существующим `booking_services`. Критерии первого среза: каталог возвращает только опубликованные предложения, выдача постраничная, Partner видит данные только своей организации, смена состояния требует гранта и записывается в аудит. Проверки текущего флага: `cd backend && mvn -Dtest=HomeServicesSettingsTest,PlatformControllerTest,BookingApiIntegrationTest test` и `cd mobile && flutter test test/features/booking/booking_flow_test.dart`.
+Связать [справочник V60](docs/product/home-services.md) с модерируемыми предложениями на существующих `booking_services`. Критерии: каталог возвращает только опубликованные предложения, выдача постраничная, Partner видит данные только своей организации, смена состояния требует гранта и записывается в аудит. Проверки текущего флага: `cd backend && mvn -Dtest=HomeServicesSettingsTest,PlatformControllerTest,BookingApiIntegrationTest test` и `cd mobile && flutter test test/features/booking/booking_flow_test.dart`.
 
 ## KUNDE Events & Tickets
 

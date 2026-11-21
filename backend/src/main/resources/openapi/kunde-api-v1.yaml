@@ -1141,6 +1141,35 @@ paths:
       responses:
         '200':
           description: Items of the past order that can still be ordered, plus names of skipped items.
+  /home-services/categories:
+    get:
+      operationId: listHomeServiceCategories
+      description: Active service categories in display order. Categories do not imply local supply or availability.
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 10000, default: 0 } }
+      responses:
+        '200':
+          description: Localized categories with code, nameRu, nameKk, nameEn and icon.
+        '400':
+          description: Invalid pagination.
+        '404':
+          description: HOME_SERVICES_DISABLED.
+  /home-services/definitions:
+    get:
+      operationId: listHomeServiceDefinitions
+      description: Active service definitions. A definition does not represent a purchasable offer.
+      parameters:
+        - { name: category, in: query, schema: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,31}$' } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 10000, default: 0 } }
+      responses:
+        '200':
+          description: Localized definitions with code, categoryCode, nameRu, nameKk and nameEn.
+        '400':
+          description: Invalid category code syntax or pagination.
+        '404':
+          description: HOME_SERVICES_DISABLED.
   /booking/venues:
     get:
       operationId: listBookingVenues
