@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @Validated
-@RequestMapping("/api/v1/education/courses")
+@RequestMapping("/api/v1/education")
 public class EducationCatalogController {
     private static final String PUBLISHED = """
             from marketplace.education_courses c
@@ -30,12 +30,15 @@ public class EducationCatalogController {
     private final JdbcClient db;
     private final FeatureToggles toggles;
 
-    public EducationCatalogController(JdbcClient db, FeatureToggles toggles) {
+    private final EducationEnrollmentService enrollments;
+
+    public EducationCatalogController(JdbcClient db, FeatureToggles toggles, EducationEnrollmentService enrollments) {
         this.db = db;
         this.toggles = toggles;
+        this.enrollments = enrollments;
     }
 
-    @GetMapping
+    @GetMapping("/courses")
     ResponseEntity<CoursePage> courses(
             @RequestParam(defaultValue = "") @Size(max = 120) String q,
             @RequestParam(defaultValue = "") @Size(max = 48) String category,
@@ -66,7 +69,17 @@ public class EducationCatalogController {
         return noStore(new CoursePage(items.stream().limit(limit).toList(), items.size() > limit));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/courses/{id}/cohorts")
+    ResponseEntity<List<EducationEnrollmentService.Cohort>> cohorts(@PathVariable UUID id) {
+        return noStore(enrollments.cohorts(id));
+    }
+
+    @GetMapping("/certificates/{code}")
+    ResponseEntity<EducationEnrollmentService.Certificate> certificate(@PathVariable UUID code) {
+        return noStore(enrollments.certificate(code));
+    }
+
+    @GetMapping("/courses/{id}")
     @Transactional(readOnly = true, isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
     public ResponseEntity<CourseDetail> course(@PathVariable UUID id) {
         requireEnabled();

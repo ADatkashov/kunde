@@ -125,7 +125,10 @@ class DomainSchemaOwnershipIntegrationTest {
             "marketplace.food_reviews -> identity.users",
             "marketplace.food_reviews -> transactions.food_orders",
             "transactions.food_promo_redemptions -> identity.users",
-            "transactions.food_promo_redemptions -> marketplace.food_promotions");
+            "transactions.food_promo_redemptions -> marketplace.food_promotions",
+            "transactions.education_enrollments -> identity.users",
+            "transactions.education_enrollments -> marketplace.education_cohorts",
+            "transactions.education_lesson_progress -> marketplace.education_course_lessons");
 
     @Autowired JdbcTemplate jdbc;
     @Autowired PlatformTransactionManager transactionManager;

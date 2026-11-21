@@ -1,52 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../home/data/kunde_api.dart';
-
-String _label(BuildContext context, String ru, String kk, String en) {
-  return switch (Localizations.localeOf(context).languageCode) {
-    'ru' => ru,
-    'kk' => kk,
-    _ => en,
-  };
-}
-
-String _format(BuildContext context, String code) => switch (code) {
-      'ONLINE_RECORDED' => _label(context, 'В записи', 'Жазба', 'Recorded'),
-      'ONLINE_LIVE' => _label(
-          context,
-          'Онлайн с преподавателем',
-          'Оқытушымен онлайн',
-          'Live online',
-        ),
-      'OFFLINE_GROUP' => _label(
-          context,
-          'Очно в группе',
-          'Топпен офлайн',
-          'In-person group',
-        ),
-      'OFFLINE_INDIVIDUAL' => _label(
-          context,
-          'Очно индивидуально',
-          'Жеке офлайн',
-          'In-person one-to-one',
-        ),
-      'HYBRID' => _label(context, 'Смешанный', 'Аралас', 'Hybrid'),
-      _ => _label(context, 'Все форматы', 'Барлық формат', 'All formats'),
-    };
-
-String _price(BuildContext context, int minor) {
-  final whole = MaterialLocalizations.of(context).formatDecimal(minor ~/ 100);
-  final fraction = minor % 100;
-  if (fraction == 0) return '$whole ₸';
-  final separator =
-      Localizations.localeOf(context).languageCode == 'en' ? '.' : ',';
-  return '$whole$separator${fraction.toString().padLeft(2, '0')} ₸';
-}
+import '../identity/auth_repository.dart';
+import 'education_enrollment_screen.dart';
+import 'education_labels.dart';
 
 class EducationScreen extends StatefulWidget {
-  const EducationScreen({required this.api, super.key});
+  const EducationScreen({required this.api, this.auth, super.key});
 
   final KundeApi api;
+  final AuthRepository? auth;
 
   @override
   State<EducationScreen> createState() => _EducationScreenState();
@@ -84,14 +47,24 @@ class _EducationScreenState extends State<EducationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final title = _label(
+    final title = educationLabel(
       context,
       'Образование и курсы',
       'Білім және курстар',
       'Education & Courses',
     );
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(title: Text(title), actions: [
+        if (widget.auth case final auth?)
+          IconButton(
+            tooltip:
+                educationLabel(context, 'Мои курсы', 'Курстарым', 'My courses'),
+            icon: const Icon(Icons.school_outlined),
+            onPressed: () => Navigator.of(context).push<void>(MaterialPageRoute(
+              builder: (_) => EducationMyCourses(api: widget.api, auth: auth),
+            )),
+          ),
+      ]),
       body: FutureBuilder(
         future: _result,
         builder: (context, snapshot) {
@@ -144,7 +117,7 @@ class _EducationScreenState extends State<EducationScreen> {
                 onSubmitted: _searchCourses,
                 decoration: InputDecoration(
                   border: const OutlineInputBorder(),
-                  labelText: _label(
+                  labelText: educationLabel(
                     context,
                     'Курс или школа',
                     'Курс немесе мектеп',
@@ -162,7 +135,8 @@ class _EducationScreenState extends State<EducationScreen> {
                 initialValue: _formatCode,
                 isExpanded: true,
                 decoration: InputDecoration(
-                  labelText: _label(context, 'Формат', 'Формат', 'Format'),
+                  labelText:
+                      educationLabel(context, 'Формат', 'Формат', 'Format'),
                 ),
                 items: [
                   for (final code in const [
@@ -175,7 +149,7 @@ class _EducationScreenState extends State<EducationScreen> {
                   ])
                     DropdownMenuItem(
                       value: code,
-                      child: Text(_format(context, code)),
+                      child: Text(educationFormat(context, code)),
                     ),
                 ],
                 onChanged: (value) {
@@ -195,7 +169,7 @@ class _EducationScreenState extends State<EducationScreen> {
               else ...[
                 if (items.isEmpty)
                   Text(
-                    _label(
+                    educationLabel(
                       context,
                       'Курсы не найдены',
                       'Курстар табылмады',
@@ -206,6 +180,7 @@ class _EducationScreenState extends State<EducationScreen> {
                   _CourseTile(
                     course: raw as Map<String, dynamic>,
                     api: widget.api,
+                    auth: widget.auth,
                   ),
                 Wrap(
                   spacing: 8,
@@ -214,14 +189,14 @@ class _EducationScreenState extends State<EducationScreen> {
                       TextButton(
                         onPressed: () => _page(_offset - 20),
                         child: Text(
-                          _label(context, 'Назад', 'Артқа', 'Previous'),
+                          educationLabel(context, 'Назад', 'Артқа', 'Previous'),
                         ),
                       ),
                     if (snapshot.data?['hasMore'] == true && _offset < 10000)
                       TextButton(
                         onPressed: () => _page(_offset + 20),
                         child: Text(
-                          _label(
+                          educationLabel(
                             context,
                             'Ещё курсы',
                             'Тағы курстар',
@@ -241,10 +216,12 @@ class _EducationScreenState extends State<EducationScreen> {
 }
 
 class _CourseTile extends StatelessWidget {
-  const _CourseTile({required this.course, required this.api});
+  const _CourseTile(
+      {required this.course, required this.api, required this.auth});
 
   final Map<String, dynamic> course;
   final KundeApi api;
+  final AuthRepository? auth;
 
   @override
   Widget build(BuildContext context) => Card(
@@ -254,9 +231,9 @@ class _CourseTile extends StatelessWidget {
           subtitle: Text(
             [
               course['organization'] as String,
-              _price(context, course['priceMinor'] as int),
+              educationPrice(context, course['priceMinor'] as int),
               if (course['synthetic'] == true)
-                _label(
+                educationLabel(
                   context,
                   'Синтетические данные',
                   'Синтетикалық деректер',
@@ -267,7 +244,8 @@ class _CourseTile extends StatelessWidget {
           trailing: const Icon(Icons.chevron_right),
           onTap: () => Navigator.of(context).push<void>(
             MaterialPageRoute(
-              builder: (_) => _CourseDetail(api: api, course: course),
+              builder: (_) =>
+                  _CourseDetail(api: api, course: course, auth: auth),
             ),
           ),
         ),
@@ -275,8 +253,10 @@ class _CourseTile extends StatelessWidget {
 }
 
 class _CourseDetail extends StatefulWidget {
-  const _CourseDetail({required this.api, required this.course});
+  const _CourseDetail(
+      {required this.api, required this.course, required this.auth});
   final KundeApi api;
+  final AuthRepository? auth;
   final Map<String, dynamic> course;
 
   @override
@@ -314,20 +294,36 @@ class _CourseDetailState extends State<_CourseDetail> {
                 Text(widget.course['organization'] as String),
                 const SizedBox(height: 12),
                 Text(data['description'] as String),
+                if (widget.auth case final auth?)
+                  if (widget.course['synthetic'] == true)
+                    FilledButton(
+                      onPressed: () =>
+                          Navigator.of(context).push<void>(MaterialPageRoute(
+                        builder: (_) => EducationEnrollmentScreen(
+                          api: widget.api,
+                          auth: auth,
+                          courseId: widget.course['id'] as String,
+                        ),
+                      )),
+                      child: Text(educationLabel(context, 'Выбрать поток',
+                          'Топты таңдау', 'Choose a cohort')),
+                    ),
                 const SizedBox(height: 16),
                 Text(
-                  _label(context, 'Форматы', 'Форматтар', 'Formats'),
+                  educationLabel(context, 'Форматы', 'Форматтар', 'Formats'),
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 for (final format in data['formats'] as List<dynamic>)
                   ListTile(
-                    title: Text(_format(context, format['format'] as String)),
-                    subtitle:
-                        Text(_price(context, format['priceMinor'] as int)),
+                    title: Text(
+                        educationFormat(context, format['format'] as String)),
+                    subtitle: Text(
+                        educationPrice(context, format['priceMinor'] as int)),
                   ),
                 const SizedBox(height: 16),
                 Text(
-                  _label(context, 'Программа', 'Бағдарлама', 'Curriculum'),
+                  educationLabel(
+                      context, 'Программа', 'Бағдарлама', 'Curriculum'),
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 for (final module in data['modules'] as List<dynamic>)
@@ -354,7 +350,7 @@ class _Retry extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            _label(
+            educationLabel(
               context,
               'Каталог недоступен',
               'Каталог қолжетімсіз',
@@ -363,7 +359,8 @@ class _Retry extends StatelessWidget {
           ),
           TextButton(
             onPressed: onRetry,
-            child: Text(_label(context, 'Повторить', 'Қайталау', 'Retry')),
+            child:
+                Text(educationLabel(context, 'Повторить', 'Қайталау', 'Retry')),
           ),
         ],
       );

@@ -10,6 +10,7 @@ import '../../booking/presentation/category_screens.dart';
 import '../../delivery/delivery_api.dart';
 import '../../delivery/delivery_screen.dart';
 import '../../education/education_screen.dart';
+import '../../identity/auth_repository.dart';
 import '../../food/food_services.dart';
 import '../../food/presentation/food_home_screen.dart';
 import '../../health/health_home_screen.dart';
@@ -36,6 +37,7 @@ class HomeScreen extends StatefulWidget {
     this.booking,
     this.auto,
     this.leisure,
+    this.educationAuth,
     this.rides,
     this.delivery,
     super.key,
@@ -58,6 +60,7 @@ class HomeScreen extends StatefulWidget {
 
   /// KUNDE Leisure; shown when the server enables it.
   final LeisureServices? leisure;
+  final AuthRepository? educationAuth;
   final RideApi? rides;
   final DeliveryApi? delivery;
 
@@ -301,7 +304,8 @@ class _HomeScreenState extends State<HomeScreen> {
     } else if (c.label == s.catEducation && c.enabled) {
       Navigator.of(context).push<void>(MaterialPageRoute(
         settings: const RouteSettings(name: '/education'),
-        builder: (_) => EducationScreen(api: widget.api),
+        builder: (_) =>
+            EducationScreen(api: widget.api, auth: widget.educationAuth),
       ));
     } else if (c.label == s.catLeisure && c.enabled && widget.leisure != null) {
       Navigator.of(context).push(
