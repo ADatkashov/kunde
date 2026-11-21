@@ -54,7 +54,14 @@ void main() {
 
     final reason = find.byKey(const ValueKey('reason'));
     final save = find.widgetWithText(FilledButton, 'Save');
-    await tester.scrollUntilVisible(save, 120);
+    final editorScroll = find.descendant(
+      of: find.byType(Form),
+      matching: find.byWidgetPredicate(
+        (widget) =>
+            widget is Scrollable && widget.axisDirection == AxisDirection.down,
+      ),
+    );
+    await tester.scrollUntilVisible(save, 120, scrollable: editorScroll);
     await tester.tap(save);
     await tester.pumpAndSettle();
     expect(auth.saved, isNull);
