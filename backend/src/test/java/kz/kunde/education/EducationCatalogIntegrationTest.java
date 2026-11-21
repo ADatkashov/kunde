@@ -63,6 +63,22 @@ class EducationCatalogIntegrationTest {
         http.perform(get("/api/v1/education/courses/{id}", published)).andExpect(status().isNotFound());
     }
 
+    @Test
+    void syntheticSeedIsRepeatableAndVisibleInTheCatalog() throws Exception {
+        var env = new org.springframework.mock.env.MockEnvironment().withProperty("app.environment", "test");
+        var seed = new EducationDemoSeeder(db, new EducationSettings(env));
+        seed.run(null);
+        seed.run(null);
+        http.perform(get("/api/v1/education/courses").param("q", "Python").param("city", "Алматы"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].synthetic").value(true));
+        http.perform(get("/api/v1/education/courses").param("city", "Алматы").param("limit", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.hasMore").value(true));
+    }
+
     private UUID partner(UUID owner, String status) {
         return db.queryForObject("""
                 insert into marketplace.partners (created_by_user_id, display_name, verification_status)

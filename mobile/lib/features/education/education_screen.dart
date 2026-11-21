@@ -11,36 +11,35 @@ String _label(BuildContext context, String ru, String kk, String en) {
 }
 
 String _format(BuildContext context, String code) => switch (code) {
-  'ONLINE_RECORDED' => _label(context, 'В записи', 'Жазба', 'Recorded'),
-  'ONLINE_LIVE' => _label(
-    context,
-    'Онлайн с преподавателем',
-    'Оқытушымен онлайн',
-    'Live online',
-  ),
-  'OFFLINE_GROUP' => _label(
-    context,
-    'Очно в группе',
-    'Топпен офлайн',
-    'In-person group',
-  ),
-  'OFFLINE_INDIVIDUAL' => _label(
-    context,
-    'Очно индивидуально',
-    'Жеке офлайн',
-    'In-person one-to-one',
-  ),
-  'HYBRID' => _label(context, 'Смешанный', 'Аралас', 'Hybrid'),
-  _ => _label(context, 'Все форматы', 'Барлық формат', 'All formats'),
-};
+      'ONLINE_RECORDED' => _label(context, 'В записи', 'Жазба', 'Recorded'),
+      'ONLINE_LIVE' => _label(
+          context,
+          'Онлайн с преподавателем',
+          'Оқытушымен онлайн',
+          'Live online',
+        ),
+      'OFFLINE_GROUP' => _label(
+          context,
+          'Очно в группе',
+          'Топпен офлайн',
+          'In-person group',
+        ),
+      'OFFLINE_INDIVIDUAL' => _label(
+          context,
+          'Очно индивидуально',
+          'Жеке офлайн',
+          'In-person one-to-one',
+        ),
+      'HYBRID' => _label(context, 'Смешанный', 'Аралас', 'Hybrid'),
+      _ => _label(context, 'Все форматы', 'Барлық формат', 'All formats'),
+    };
 
 String _price(BuildContext context, int minor) {
   final whole = MaterialLocalizations.of(context).formatDecimal(minor ~/ 100);
   final fraction = minor % 100;
   if (fraction == 0) return '$whole ₸';
-  final separator = Localizations.localeOf(context).languageCode == 'en'
-      ? '.'
-      : ',';
+  final separator =
+      Localizations.localeOf(context).languageCode == 'en' ? '.' : ',';
   return '$whole$separator${fraction.toString().padLeft(2, '0')} ₸';
 }
 
@@ -61,21 +60,21 @@ class _EducationScreenState extends State<EducationScreen> {
   late Future<Map<String, dynamic>> _result = _load();
 
   Future<Map<String, dynamic>> _load() => widget.api.loadEducationCourses(
-    query: _query,
-    format: _formatCode,
-    offset: _offset,
-  );
+        query: _query,
+        format: _formatCode,
+        offset: _offset,
+      );
 
   void _searchCourses(String text) => setState(() {
-    _query = text.trim();
-    _offset = 0;
-    _result = _load();
-  });
+        _query = text.trim();
+        _offset = 0;
+        _result = _load();
+      });
 
   void _page(int offset) => setState(() {
-    _offset = offset;
-    _result = _load();
-  });
+        _offset = offset;
+        _result = _load();
+      });
 
   @override
   void dispose() {
@@ -120,11 +119,11 @@ class _EducationScreenState extends State<EducationScreen> {
                       const SizedBox(height: 12),
                       Text(
                         title,
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
                       ),
                     ],
                   ),
@@ -139,7 +138,8 @@ class _EducationScreenState extends State<EducationScreen> {
                   required currentLength,
                   required isFocused,
                   maxLength,
-                }) => null,
+                }) =>
+                    null,
                 textInputAction: TextInputAction.search,
                 onSubmitted: _searchCourses,
                 decoration: InputDecoration(
@@ -248,30 +248,30 @@ class _CourseTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
-    child: ListTile(
-      leading: const Icon(Icons.menu_book_rounded),
-      title: Text(course['title'] as String),
-      subtitle: Text(
-        [
-          course['organization'] as String,
-          _price(context, course['priceMinor'] as int),
-          if (course['synthetic'] == true)
-            _label(
-              context,
-              'Синтетические данные',
-              'Синтетикалық деректер',
-              'Synthetic data',
+        child: ListTile(
+          leading: const Icon(Icons.menu_book_rounded),
+          title: Text(course['title'] as String),
+          subtitle: Text(
+            [
+              course['organization'] as String,
+              _price(context, course['priceMinor'] as int),
+              if (course['synthetic'] == true)
+                _label(
+                  context,
+                  'Синтетические данные',
+                  'Синтетикалық деректер',
+                  'Synthetic data',
+                ),
+            ].join('\n'),
+          ),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.of(context).push<void>(
+            MaterialPageRoute(
+              builder: (_) => _CourseDetail(api: api, course: course),
             ),
-        ].join('\n'),
-      ),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () => Navigator.of(context).push<void>(
-        MaterialPageRoute(
-          builder: (_) => _CourseDetail(api: api, course: course),
+          ),
         ),
-      ),
-    ),
-  );
+      );
 }
 
 class _CourseDetail extends StatefulWidget {
@@ -291,57 +291,58 @@ class _CourseDetailState extends State<_CourseDetail> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(widget.course['title'] as String)),
-    body: FutureBuilder(
-      future: _result,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final data = snapshot.data;
-        if (data == null) {
-          return Center(
-            child: _Retry(onRetry: () => setState(() => _result = _load())),
-          );
-        }
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text(
-              widget.course['title'] as String,
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            Text(widget.course['organization'] as String),
-            const SizedBox(height: 12),
-            Text(data['description'] as String),
-            const SizedBox(height: 16),
-            Text(
-              _label(context, 'Форматы', 'Форматтар', 'Formats'),
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            for (final format in data['formats'] as List<dynamic>)
-              ListTile(
-                title: Text(_format(context, format['format'] as String)),
-                subtitle: Text(_price(context, format['priceMinor'] as int)),
-              ),
-            const SizedBox(height: 16),
-            Text(
-              _label(context, 'Программа', 'Бағдарлама', 'Curriculum'),
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            for (final module in data['modules'] as List<dynamic>)
-              ExpansionTile(
-                title: Text(module['title'] as String),
-                children: [
-                  for (final lesson in module['lessons'] as List<dynamic>)
-                    ListTile(title: Text(lesson['title'] as String)),
-                ],
-              ),
-          ],
-        );
-      },
-    ),
-  );
+        appBar: AppBar(title: Text(widget.course['title'] as String)),
+        body: FutureBuilder(
+          future: _result,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final data = snapshot.data;
+            if (data == null) {
+              return Center(
+                child: _Retry(onRetry: () => setState(() => _result = _load())),
+              );
+            }
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                Text(
+                  widget.course['title'] as String,
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                Text(widget.course['organization'] as String),
+                const SizedBox(height: 12),
+                Text(data['description'] as String),
+                const SizedBox(height: 16),
+                Text(
+                  _label(context, 'Форматы', 'Форматтар', 'Formats'),
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                for (final format in data['formats'] as List<dynamic>)
+                  ListTile(
+                    title: Text(_format(context, format['format'] as String)),
+                    subtitle:
+                        Text(_price(context, format['priceMinor'] as int)),
+                  ),
+                const SizedBox(height: 16),
+                Text(
+                  _label(context, 'Программа', 'Бағдарлама', 'Curriculum'),
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                for (final module in data['modules'] as List<dynamic>)
+                  ExpansionTile(
+                    title: Text(module['title'] as String),
+                    children: [
+                      for (final lesson in module['lessons'] as List<dynamic>)
+                        ListTile(title: Text(lesson['title'] as String)),
+                    ],
+                  ),
+              ],
+            );
+          },
+        ),
+      );
 }
 
 class _Retry extends StatelessWidget {
@@ -350,20 +351,20 @@ class _Retry extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Text(
-        _label(
-          context,
-          'Каталог недоступен',
-          'Каталог қолжетімсіз',
-          'Catalog unavailable',
-        ),
-      ),
-      TextButton(
-        onPressed: onRetry,
-        child: Text(_label(context, 'Повторить', 'Қайталау', 'Retry')),
-      ),
-    ],
-  );
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            _label(
+              context,
+              'Каталог недоступен',
+              'Каталог қолжетімсіз',
+              'Catalog unavailable',
+            ),
+          ),
+          TextButton(
+            onPressed: onRetry,
+            child: Text(_label(context, 'Повторить', 'Қайталау', 'Retry')),
+          ),
+        ],
+      );
 }
