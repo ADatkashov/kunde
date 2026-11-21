@@ -34,3 +34,22 @@ VALUES ('a00ed000-0000-4000-8000-000000000101', 1, 1, 'Переменные', 30
        ('a00ed000-0000-4000-8000-000000000102', 1, 1, 'Разговор о работе и учёбе', 60),
        ('a00ed000-0000-4000-8000-000000000103', 1, 1, 'Прототип первого экрана', 120)
 ON CONFLICT (course_id, module_position, position) DO NOTHING;
+
+INSERT INTO marketplace.education_cohorts(id, course_id, format, starts_at, ends_at, capacity, open)
+VALUES ('a00ed000-0000-4000-8000-000000000201', 'a00ed000-0000-4000-8000-000000000101',
+        'ONLINE_RECORDED', NULL, NULL, 500, true),
+       ('a00ed000-0000-4000-8000-000000000202', 'a00ed000-0000-4000-8000-000000000102',
+        'ONLINE_LIVE', date_trunc('day', now(), 'Asia/Almaty') + interval '7 days 14 hours',
+        date_trunc('day', now(), 'Asia/Almaty') + interval '7 days 15 hours', 12, true),
+       ('a00ed000-0000-4000-8000-000000000203', 'a00ed000-0000-4000-8000-000000000103',
+        'OFFLINE_GROUP', date_trunc('day', now(), 'Asia/Almaty') + interval '8 days 14 hours',
+        date_trunc('day', now(), 'Asia/Almaty') + interval '8 days 16 hours', 8, true)
+ON CONFLICT (id) DO NOTHING;
+
+UPDATE marketplace.education_course_lessons
+SET recorded_text = CASE position
+    WHEN 1 THEN 'Переменная хранит значение. Запишите name = "KUNDE", затем print(name), чтобы вывести его.'
+    WHEN 2 THEN 'Условие if выполняет код, когда выражение истинно. Цикл for перебирает значения. Попробуйте for n in range(3) и выведите n.'
+END
+WHERE course_id = 'a00ed000-0000-4000-8000-000000000101' AND module_position=1 AND position IN (1,2)
+  AND recorded_text IS NULL;

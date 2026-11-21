@@ -6,7 +6,7 @@
 - Проверено локально: `mvn verify` 376 тестов, Flutter analyze чисто и 328 тестов. **Не сделано / NOT VERIFIED:** Partner/Executor/Admin-экраны Groceries, лояльность, push, фото, DEV-деплой V44, Android E2E, APK. Матрица: [groceries](docs/product/groceries.md).
 ## KUNDE Education & Courses 1.0 — каталог
 
-- В ветке `feat/education-catalog`: PostgreSQL V44, серверный флаг, API каталога и программы, плитка и каталог Consumer, переключатель Admin. Запись, оплата и обучение остаются открытыми. [Матрица и контракт](docs/product/education.md).
+- В `main` через [#193](https://github.com/ADatkashov/kunde/pull/193): PostgreSQL V44, серверный флаг, API каталога и программы, плитка и каталог Consumer, переключатель Admin. V48 добавляет запись в синтетические потоки, TEST_CARD, «Мои курсы», текстовый курс и код подтверждения завершения. Задания, посещаемость и панели остаются открытыми. [Матрица и контракт](docs/product/education.md).
 
 
 ## KUNDE Food Ordering 2.0 — DEV slice (2026-11-21, ветка `ccr-0b95f693-1hsj46`)

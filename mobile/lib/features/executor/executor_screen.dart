@@ -1,3 +1,4 @@
+import '../education/education_operations_screen.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -49,6 +50,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
   bool _deliverySynthetic = false;
   bool _autoEnabled = false;
   bool _leisureAvailable = false;
+  bool _educationEnabled = false;
   bool _autoResume = false;
 
   @override
@@ -121,6 +123,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
           _autoEnabled = enabled;
           _autoResume = resume;
           _leisureAvailable = leisure;
+          _educationEnabled = capabilities['educationEnabled'] == true;
         });
       }
     } catch (_) {
@@ -355,6 +358,15 @@ class _ExecutorScreenState extends State<ExecutorScreen>
                   synthetic: _deliverySynthetic,
                   intakeEnabled: _deliveryEnabled,
                 ),
+              )),
+            ),
+          if (_educationEnabled)
+            IconButton(
+              icon: const Icon(Icons.school_outlined),
+              tooltip: s.t('Мои занятия', 'Сабақтарым', 'My classes'),
+              onPressed: () =>
+                  Navigator.of(context).push<void>(MaterialPageRoute(
+                builder: (_) => EducationOperationsScreen(auth: widget.auth),
               )),
             ),
           if (_leisureAvailable)

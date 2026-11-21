@@ -307,6 +307,7 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                                       booking: widget.booking,
                                       auto: widget.auto,
                                       leisure: widget.leisure,
+                                      educationAuth: widget.auth,
                                       onOpenAssistant: () => setState(
                                           () => _tab = KundeTab.assistant),
                                       onOpenSearch: () => setState(
