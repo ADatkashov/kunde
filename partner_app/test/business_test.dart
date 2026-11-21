@@ -159,6 +159,86 @@ void main() {
     expect(b.dishes.last['priceMinor'], 220000);
   });
 
+  testWidgets(
+      'product card saves Groceries fields, validates the old price and manages photos',
+      (tester) async {
+    final b = backend();
+    final h = Harness(backend: b);
+    await pumpReady(tester, h, tab: 'Заведение');
+    // A tall screen keeps the whole long form built, so the fields can be reached without scrolling.
+    tester.view.physicalSize = const Size(1080, 5200);
+    addTearDown(tester.view.reset);
+    await tester.tap(find.text('Кухня партнёра'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.edit_outlined).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Карточка товара'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Карточка товара ·'), findsOneWidget);
+
+    // The price before a discount must be above the current price: nothing reaches the server otherwise.
+    await tester.enterText(find.widgetWithText(TextField, 'Бренд'), 'Жайлау');
+    await tester.enterText(find.widgetWithText(TextField, 'Ккал'), '52');
+    await tester.enterText(
+        find.widgetWithText(
+            TextField, 'Цена до скидки, ₸ (пусто — без скидки)'),
+        '1');
+    await tester.tap(find.widgetWithText(FilledButton, 'Сохранить'));
+    await tester.pump();
+    expect(find.text('Цена до скидки должна быть выше текущей цены'),
+        findsOneWidget);
+    expect(b.count('PATCH'), 0);
+    await tester.enterText(
+        find.widgetWithText(
+            TextField, 'Цена до скидки, ₸ (пусто — без скидки)'),
+        '99999');
+    await tester.tap(find.widgetWithText(FilledButton, 'Сохранить'));
+    await settle(tester, ms: 80);
+    expect(
+        b.count(
+            'PATCH partner/partners/$partnerId/food/restaurants/rest-1/dishes/dish-1/product'),
+        1);
+    expect(b.dishes.first['brand'], 'Жайлау');
+    expect(b.dishes.first['kcal'], 52);
+    expect(b.dishes.first['compareAtPriceMinor'], 9999900);
+
+    // Photos accept only https links.
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Ссылка на фото (https://…)'),
+        'http://x.test/a.jpg');
+    await tester.scrollUntilVisible(find.text('Добавить фото'), 200,
+        scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.text('Добавить фото'));
+    await tester.pump();
+    expect(find.text('Нужна ссылка https://'), findsOneWidget);
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Ссылка на фото (https://…)'),
+        'https://img.example.test/a.jpg');
+    await tester.tap(find.text('Добавить фото'));
+    await settle(tester, ms: 80);
+    expect((b.dishes.first['photos'] as List), hasLength(1));
+    await tester.tap(find.byTooltip('Убрать фото'));
+    await settle(tester, ms: 80);
+    expect((b.dishes.first['photos'] as List), isEmpty);
+  });
+
+  testWidgets('a weighed product is created with unit KG', (tester) async {
+    final b = backend();
+    final h = Harness(backend: b);
+    await pumpReady(tester, h, tab: 'Заведение');
+    await tester.tap(find.text('Кухня партнёра'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Добавить блюдо'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Название'), 'Яблоки');
+    await tester.tap(find.text('На вес (цена за кг)'));
+    await tester.enterText(find.widgetWithText(TextField, 'Цена, ₸'), '590');
+    await tester.tap(find.widgetWithText(FilledButton, 'Сохранить'));
+    await settle(tester, ms: 80);
+    expect(b.dishes.last['unit'], 'KG');
+  });
+
   testWidgets('a forbidden change is explained and the switch stays unchanged',
       (tester) async {
     final b = backend();

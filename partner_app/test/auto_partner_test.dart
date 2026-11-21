@@ -155,7 +155,10 @@ void main() {
         b.count(
             'PUT partner/partners/$partnerId/booking/venues/venue-1/services/svc-1'),
         1);
-    expect(find.byWidgetPredicate((w) => w is Text && RegExp(r'7\s000').hasMatch(w.data ?? '')), findsOneWidget);
+    expect(
+        find.byWidgetPredicate(
+            (w) => w is Text && RegExp(r'7\s000').hasMatch(w.data ?? '')),
+        findsOneWidget);
     expect(find.textContaining('60 мин'), findsOneWidget);
   });
 

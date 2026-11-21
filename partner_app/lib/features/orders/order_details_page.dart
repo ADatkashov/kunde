@@ -138,8 +138,7 @@ class _Body extends StatelessWidget {
             row(order.pickup ? s.pickupLabel : s.delivery,
                 formatMoney(order.deliveryFeeMinor, currency: order.currency)),
             if (order.discountMinor > 0)
-              row(
-                  '${s.discountLabel}${order.promoCode == null ? '' : ' (${order.promoCode})'}',
+              row('${s.discountLabel}${order.promoCode == null ? '' : ' (${order.promoCode})'}',
                   '−${formatMoney(order.discountMinor, currency: order.currency)}'),
             row(s.total,
                 formatMoney(order.totalMinor, currency: order.currency)),

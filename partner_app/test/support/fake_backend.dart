@@ -416,9 +416,12 @@ class FakeBackend {
     if (promoStatus != null && r.method == 'POST') {
       promotions = [
         for (final x in promotions)
-          x['id'] == promoStatus.group(1) ? {...x, 'status': body()['status']} : x
+          x['id'] == promoStatus.group(1)
+              ? {...x, 'status': body()['status']}
+              : x
       ];
-      return json(promotions.firstWhere((x) => x['id'] == promoStatus.group(1)));
+      return json(
+          promotions.firstWhere((x) => x['id'] == promoStatus.group(1)));
     }
     var m = RegExp(r'^food/restaurants/([^/]+)$').firstMatch(rest);
     if (m != null && r.method == 'PATCH') {
@@ -428,6 +431,46 @@ class FakeBackend {
           x['id'] == m.group(1) ? {...x, ...body()} : x
       ];
       return json(restaurants.firstWhere((x) => x['id'] == m!.group(1)));
+    }
+    m = RegExp(r'^food/restaurants/([^/]+)/dishes/([^/]+)/product$')
+        .firstMatch(rest);
+    if (m != null && r.method == 'PATCH') {
+      if (operatorRole) return forbidden;
+      final b = body();
+      dishes = [
+        for (final d in dishes)
+          d['id'] == m.group(2)
+              ? {
+                  ...d,
+                  if (b.containsKey('groceryCategory'))
+                    'groceryCategory': b['groceryCategory'],
+                  if (b['clearCategory'] == true) 'groceryCategory': null,
+                  if (b.containsKey('brand')) 'brand': b['brand'],
+                  if (b.containsKey('kcal')) 'kcal': b['kcal'],
+                  if (b.containsKey('compareAtPriceMinor'))
+                    'compareAtPriceMinor': b['compareAtPriceMinor'],
+                }
+              : d,
+      ];
+      return json(dishes.firstWhere((d) => d['id'] == m!.group(2)));
+    }
+    m = RegExp(r'^food/restaurants/([^/]+)/dishes/([^/]+)/photos(?:/([^/]+))?$')
+        .firstMatch(rest);
+    if (m != null) {
+      if (operatorRole) return forbidden;
+      final dish = dishes.firstWhere((d) => d['id'] == m!.group(2));
+      final photos = [...((dish['photos'] as List?) ?? const [])];
+      if (r.method == 'POST') {
+        photos.add({'id': 'ph-${photos.length + 1}', 'url': body()['url']});
+      } else {
+        photos.removeWhere((p) => (p as Map)['id'] == m!.group(3));
+      }
+      dishes = [
+        for (final d in dishes)
+          d['id'] == m.group(2) ? {...d, 'photos': photos} : d
+      ];
+      return json(dishes.firstWhere((d) => d['id'] == m!.group(2)),
+          r.method == 'POST' ? 201 : 200);
     }
     m = RegExp(r'^food/restaurants/([^/]+)/dishes/([^/]+)$').firstMatch(rest);
     if (m != null && r.method == 'PATCH') {
@@ -464,6 +507,7 @@ class FakeBackend {
         'section': 'Горячее',
         'sectionId': b['sectionId'],
         'priceMinor': b['priceMinor'],
+        'unit': b['unit'] ?? 'PIECE',
         'available': true,
         'stockQty': null
       };

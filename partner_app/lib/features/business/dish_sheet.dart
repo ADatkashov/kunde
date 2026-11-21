@@ -6,6 +6,7 @@ import '../../core/strings.dart';
 import '../../core/theme.dart';
 import '../../data/models.dart';
 import '../../data/partner_operations.dart';
+import 'product_card_page.dart';
 
 /// Parses a price typed in tenge ("1500", "1 500", "1500,50") to minor units.
 /// Returns null when invalid or outside 0 … 1 000 000 ₸.
@@ -62,6 +63,7 @@ class _DishSheetState extends State<_DishSheet> {
       text: widget.dish == null ? '' : _plain(widget.dish!.priceMinor));
   late final _stock =
       TextEditingController(text: widget.dish?.stockQty?.toString() ?? '');
+  String _unit = 'PIECE';
   late String? _section =
       widget.dish?.sectionId ?? widget.sections.keys.firstOrNull;
   bool _busy = false;
@@ -115,7 +117,8 @@ class _DishSheetState extends State<_DishSheet> {
             sectionId: _section!,
             name: name,
             description: _desc.text.trim(),
-            priceMinor: price);
+            priceMinor: price,
+            unit: _unit);
       } else {
         final desc = _desc.text.trim();
         await widget.ops.updateDish(
@@ -179,6 +182,17 @@ class _DishSheetState extends State<_DishSheet> {
                     labelText: s.dishDescription, counterText: ''),
               ),
               const SizedBox(height: Gap.md),
+              if (widget.dish == null) ...[
+                SegmentedButton<String>(
+                  segments: [
+                    ButtonSegment(value: 'PIECE', label: Text(s.dishUnitPiece)),
+                    ButtonSegment(value: 'KG', label: Text(s.dishUnitKg)),
+                  ],
+                  selected: {_unit},
+                  onSelectionChanged: (v) => setState(() => _unit = v.first),
+                ),
+                const SizedBox(height: Gap.md),
+              ],
               TextField(
                 controller: _price,
                 keyboardType:
@@ -194,7 +208,10 @@ class _DishSheetState extends State<_DishSheet> {
                   controller: _stock,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: InputDecoration(labelText: s.dishStock),
+                  decoration: InputDecoration(
+                      labelText: widget.dish!.weighed
+                          ? s.dishStockGrams
+                          : s.dishStock),
                 ),
               ],
               if (_error != null)
@@ -207,6 +224,26 @@ class _DishSheetState extends State<_DishSheet> {
                             ?.copyWith(color: context.colors.error)),
                   ),
                 ),
+              if (widget.dish != null) ...[
+                const SizedBox(height: Gap.md),
+                OutlinedButton.icon(
+                  onPressed: _busy
+                      ? null
+                      : () async {
+                          final changed = await Navigator.of(context)
+                              .push<bool>(MaterialPageRoute(
+                                  builder: (_) => ProductCardPage(
+                                      ops: widget.ops,
+                                      restaurantId: widget.restaurantId,
+                                      dish: widget.dish!)));
+                          if (changed == true && context.mounted) {
+                            Navigator.pop(context, true);
+                          }
+                        },
+                  icon: const Icon(Icons.inventory_2_outlined),
+                  label: Text(s.productCard),
+                ),
+              ],
               const SizedBox(height: Gap.lg),
               FilledButton(
                 onPressed: _busy ? null : _save,

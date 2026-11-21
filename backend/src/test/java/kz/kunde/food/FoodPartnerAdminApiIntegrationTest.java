@@ -1,6 +1,7 @@
 package kz.kunde.food;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -84,6 +85,7 @@ class FoodPartnerAdminApiIntegrationTest {
         var request = switch (method) {
             case "GET" -> get(path);
             case "PATCH" -> patch(path);
+            case "DELETE" -> delete(path);
             default -> post(path);
         };
         request.contentType(MediaType.APPLICATION_JSON);
@@ -261,5 +263,56 @@ class FoodPartnerAdminApiIntegrationTest {
         send("GET", a + "/restaurants", admin, null).andExpect(status().isOk());
         send("GET", a + "/reviews", admin, null).andExpect(status().isOk());
         send("GET", a + "/promotions", admin, null).andExpect(status().isOk());
+    }
+
+    @Test
+    void partnerManagesGroceryProductFieldsPhotosAndWeighedProducts() throws Exception {
+        String dish = db.queryForObject("select id from marketplace.food_dishes where restaurant_id = ? limit 1", String.class, restaurant);
+        String section = db.queryForObject("select section_id from marketplace.food_dishes where id = ?::uuid", String.class, dish);
+        String path = base() + "/restaurants/" + restaurant + "/dishes/" + dish;
+        long price = db.queryForObject("select price_minor from marketplace.food_dishes where id = ?::uuid", Long.class, dish);
+
+        // Category must exist; the price before a discount must be above the price; nutrition is bounded.
+        send("PATCH", path + "/product", owner, "{\"groceryCategory\":\"nope\"}").andExpect(status().isBadRequest());
+        send("PATCH", path + "/product", owner, "{\"compareAtPriceMinor\":" + price + "}").andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("COMPARE_PRICE_INVALID"));
+        send("PATCH", path + "/product", owner, "{\"protein\":101}").andExpect(status().isBadRequest());
+        String saved = body(send("PATCH", path + "/product", owner,
+                "{\"groceryCategory\":\"dairy\",\"brand\":\" Жайлау \",\"originCountry\":\"Казахстан\",\"composition\":\"Молоко\","
+                        + "\"storageConditions\":\"+2…+6 °C\",\"kcal\":52,\"protein\":2.8,\"fat\":2.5,\"carbs\":4.7,\"compareAtPriceMinor\":" + (price + 1000) + "}")
+                .andExpect(status().isOk()));
+        assertThat((String) JsonPath.read(saved, "$.brand")).isEqualTo("Жайлау");
+        assertThat((Integer) JsonPath.read(saved, "$.kcal")).isEqualTo(52);
+        assertThat(db.queryForObject("select grocery_category from marketplace.food_dishes where id = ?::uuid", String.class, dish)).isEqualTo("dairy");
+        assertThat(db.queryForObject("select compare_at_price_minor from marketplace.food_dishes where id = ?::uuid", Long.class, dish)).isEqualTo(price + 1000);
+        // Raising the price to the old price is refused by the same rule on a later edit of the discount.
+        send("PATCH", path + "/product", owner, "{\"clearCompareAt\":true,\"clearCategory\":true,\"brand\":\"\"}").andExpect(status().isOk());
+        assertThat(db.queryForObject("select compare_at_price_minor from marketplace.food_dishes where id = ?::uuid", Long.class, dish)).isNull();
+        assertThat(db.queryForObject("select brand from marketplace.food_dishes where id = ?::uuid", String.class, dish)).isNull();
+        assertThat(db.queryForObject("select count(*) from marketplace.partner_catalog_events where entity_id = ?::uuid and field in ('category','brand','compareAt')",
+                Integer.class, dish)).isGreaterThanOrEqualTo(3);
+
+        // Photos: HTTPS only, at most six, the first is the cover, removal moves the cover on.
+        send("POST", path + "/photos", owner, "{\"url\":\"http://example.test/a.jpg\"}").andExpect(status().isBadRequest());
+        String first = body(send("POST", path + "/photos", owner, "{\"url\":\"https://img.example.test/a.jpg\"}").andExpect(status().isCreated()));
+        send("POST", path + "/photos", owner, "{\"url\":\"https://img.example.test/b.jpg\"}").andExpect(status().isCreated());
+        assertThat(db.queryForObject("select image_url from marketplace.food_dishes where id = ?::uuid", String.class, dish)).isEqualTo("https://img.example.test/a.jpg");
+        String photoId = JsonPath.read(first, "$.photos[0].id");
+        send("DELETE", path + "/photos/" + photoId, owner, null).andExpect(status().isOk());
+        assertThat(db.queryForObject("select image_url from marketplace.food_dishes where id = ?::uuid", String.class, dish)).isEqualTo("https://img.example.test/b.jpg");
+        for (int i = 0; i < 5; i++) { send("POST", path + "/photos", owner, "{\"url\":\"https://img.example.test/p" + i + ".jpg\"}").andExpect(status().isCreated()); }
+        send("POST", path + "/photos", owner, "{\"url\":\"https://img.example.test/extra.jpg\"}").andExpect(status().isConflict());
+        send("DELETE", path + "/photos/" + UUID.randomUUID(), owner, null).andExpect(status().isNotFound());
+
+        // Tenant isolation: another partner can neither read nor change this store's products.
+        send("PATCH", path + "/product", otherOwner, "{\"brand\":\"x\"}").andExpect(status().is4xxClientError());
+        send("POST", path + "/photos", otherOwner, "{\"url\":\"https://img.example.test/z.jpg\"}").andExpect(status().is4xxClientError());
+
+        // A weighed product: price per kg, stock in grams.
+        String kg = body(send("POST", base() + "/restaurants/" + restaurant + "/dishes", owner,
+                "{\"sectionId\":\"" + section + "\",\"name\":\"Яблоки тест\",\"priceMinor\":59000,\"unit\":\"KG\"}").andExpect(status().isCreated()));
+        assertThat((String) JsonPath.read(kg, "$.unit")).isEqualTo("KG");
+        send("POST", base() + "/restaurants/" + restaurant + "/dishes", owner,
+                "{\"sectionId\":\"" + section + "\",\"name\":\"Плохая единица\",\"priceMinor\":100,\"unit\":\"LITER\"}").andExpect(status().isBadRequest());
     }
 }

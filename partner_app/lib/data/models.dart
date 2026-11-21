@@ -167,9 +167,13 @@ class PartnerOrder {
   final String? cancelledBy;
 
   bool get isNew => status == 'PLACED';
-  bool get isActive =>
-      const {'PLACED', 'ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP', 'ON_THE_WAY'}
-          .contains(status);
+  bool get isActive => const {
+        'PLACED',
+        'ACCEPTED',
+        'PREPARING',
+        'READY_FOR_PICKUP',
+        'ON_THE_WAY'
+      }.contains(status);
   int get itemCount => items.fold(0, (a, l) => a + l.quantity);
 
   /// Short human reference derived from the id; never the full identifier.
@@ -276,8 +280,10 @@ class Restaurant {
         id: _id(j, 'restaurant'),
         name: _str(j['name']) ?? '',
         open: _bool(j['open']),
-        pickupEnabled: j['pickupEnabled'] is bool ? j['pickupEnabled'] as bool : true,
-        prepMinutes: j['prepMinutes'] is num ? (j['prepMinutes'] as num).toInt() : 20,
+        pickupEnabled:
+            j['pickupEnabled'] is bool ? j['pickupEnabled'] as bool : true,
+        prepMinutes:
+            j['prepMinutes'] is num ? (j['prepMinutes'] as num).toInt() : 20,
       );
   final String id;
   final String name;
@@ -318,6 +324,14 @@ class FoodPromotion {
   final DateTime? endsAt;
 }
 
+class DishPhoto {
+  const DishPhoto({required this.id, required this.url});
+  factory DishPhoto.fromJson(Map<String, dynamic> j) =>
+      DishPhoto(id: _str(j['id']) ?? '', url: _str(j['url']) ?? '');
+  final String id;
+  final String url;
+}
+
 class Dish {
   const Dish({
     required this.id,
@@ -328,6 +342,18 @@ class Dish {
     required this.available,
     this.stockQty,
     this.description,
+    this.unit = 'PIECE',
+    this.groceryCategory,
+    this.brand,
+    this.originCountry,
+    this.composition,
+    this.storageConditions,
+    this.kcal,
+    this.protein,
+    this.fat,
+    this.carbs,
+    this.compareAtPriceMinor,
+    this.photos = const [],
   });
   factory Dish.fromJson(Map<String, dynamic> j) => Dish(
         id: _id(j, 'dish'),
@@ -338,6 +364,24 @@ class Dish {
         available: _bool(j['available']),
         stockQty: j['stockQty'] is num ? (j['stockQty'] as num).toInt() : null,
         description: _str(j['description']),
+        unit: _str(j['unit']) ?? 'PIECE',
+        groceryCategory: _str(j['groceryCategory']),
+        brand: _str(j['brand']),
+        originCountry: _str(j['originCountry']),
+        composition: _str(j['composition']),
+        storageConditions: _str(j['storageConditions']),
+        kcal: j['kcal'] is num ? (j['kcal'] as num).toInt() : null,
+        protein: j['protein'] is num ? (j['protein'] as num).toDouble() : null,
+        fat: j['fat'] is num ? (j['fat'] as num).toDouble() : null,
+        carbs: j['carbs'] is num ? (j['carbs'] as num).toDouble() : null,
+        compareAtPriceMinor: j['compareAtPriceMinor'] is num
+            ? (j['compareAtPriceMinor'] as num).toInt()
+            : null,
+        photos: [
+          for (final p
+              in (j['photos'] is List ? j['photos'] as List : const []))
+            if (p is Map<String, dynamic>) DishPhoto.fromJson(p),
+        ],
       );
   final String id;
   final String name;
@@ -347,6 +391,24 @@ class Dish {
   final bool available;
   final int? stockQty;
   final String? description;
+
+  /// `PIECE`, or `KG` for weighed goods (price per kg, stock in grams).
+  final String unit;
+  final String? groceryCategory;
+  final String? brand;
+  final String? originCountry;
+  final String? composition;
+  final String? storageConditions;
+  final int? kcal;
+  final double? protein;
+  final double? fat;
+  final double? carbs;
+
+  /// Price before a discount; shown crossed out to customers. Null = no discount.
+  final int? compareAtPriceMinor;
+  final List<DishPhoto> photos;
+
+  bool get weighed => unit == 'KG';
 }
 
 class Venue {

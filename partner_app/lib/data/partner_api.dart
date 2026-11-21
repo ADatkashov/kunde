@@ -75,6 +75,9 @@ class PartnerApi {
           String path, Map<String, dynamic> body) async =>
       _asMap(await patchJson(path, body));
 
+  Future<Map<String, dynamic>> deleteMap(String path) async =>
+      _asMap(await deleteJson(path));
+
   static Map<String, dynamic> _asMap(Object? value) {
     if (value is Map<String, dynamic>) return value;
     throw const FormatException('Expected a JSON object');

@@ -129,7 +129,29 @@ public class FoodPartnerController {
             @PathVariable UUID restaurantId, @Valid @RequestBody CreateDishRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).body(service.createDish(
                 user(principal), partnerId, restaurantId, request.sectionId(), request.name(), request.description(),
-                request.priceMinor()));
+                request.priceMinor(), request.unit() == null ? "PIECE" : request.unit()));
+    }
+
+    @PatchMapping("/restaurants/{restaurantId}/dishes/{dishId}/product")
+    ResponseEntity<DishView> product(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
+            @PathVariable UUID restaurantId, @PathVariable UUID dishId, @Valid @RequestBody ProductRequest r) {
+        return ok(service.updateProductAttributes(user(principal), partnerId, restaurantId, dishId,
+                new FoodPartnerService.ProductAttributes(r.groceryCategory(), r.brand(), r.originCountry(), r.composition(),
+                        r.storageConditions(), r.kcal(), r.protein(), r.fat(), r.carbs(), r.compareAtPriceMinor(),
+                        Boolean.TRUE.equals(r.clearCompareAt()), Boolean.TRUE.equals(r.clearCategory()))));
+    }
+
+    @PostMapping("/restaurants/{restaurantId}/dishes/{dishId}/photos")
+    ResponseEntity<DishView> addPhoto(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
+            @PathVariable UUID restaurantId, @PathVariable UUID dishId, @Valid @RequestBody PhotoRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore())
+                .body(service.addPhoto(user(principal), partnerId, restaurantId, dishId, request.url()));
+    }
+
+    @org.springframework.web.bind.annotation.DeleteMapping("/restaurants/{restaurantId}/dishes/{dishId}/photos/{photoId}")
+    ResponseEntity<DishView> removePhoto(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
+            @PathVariable UUID restaurantId, @PathVariable UUID dishId, @PathVariable UUID photoId) {
+        return ok(service.removePhoto(user(principal), partnerId, restaurantId, dishId, photoId));
     }
 
     private static UUID user(Jwt principal) {
@@ -160,5 +182,15 @@ public class FoodPartnerController {
             @Size(max = 160) String name, @Size(max = 500) String description, @Min(0) @Max(100000000) Long priceMinor) {}
 
     public record CreateDishRequest(@NotNull UUID sectionId, @NotBlank @Size(max = 160) String name,
-            @Size(max = 500) String description, @NotNull @Min(0) @Max(100000000) Long priceMinor) {}
+            @Size(max = 500) String description, @NotNull @Min(0) @Max(100000000) Long priceMinor,
+            @Pattern(regexp = "PIECE|KG") String unit) {}
+
+    public record ProductRequest(@Size(max = 32) String groceryCategory, @Size(max = 80) String brand, @Size(max = 60) String originCountry,
+            @Size(max = 500) String composition, @Size(max = 300) String storageConditions, @Min(0) @Max(1000) Integer kcal,
+            @jakarta.validation.constraints.DecimalMin("0") @jakarta.validation.constraints.DecimalMax("100") Double protein,
+            @jakarta.validation.constraints.DecimalMin("0") @jakarta.validation.constraints.DecimalMax("100") Double fat,
+            @jakarta.validation.constraints.DecimalMin("0") @jakarta.validation.constraints.DecimalMax("100") Double carbs,
+            @Min(1) @Max(100000000) Long compareAtPriceMinor, Boolean clearCompareAt, Boolean clearCategory) {}
+
+    public record PhotoRequest(@NotBlank @Size(max = 500) String url) {}
 }

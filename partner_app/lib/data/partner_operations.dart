@@ -168,16 +168,65 @@ class PartnerOperations {
         },
       ));
 
+  /// Groceries attributes (category, brand, origin, composition, storage, nutrition per 100 g, price before discount).
+  /// Only the given fields are sent; empty strings clear a text field. Owner/Manager only (enforced by the server).
+  Future<Dish> updateProduct(
+    String restaurantId,
+    String dishId, {
+    String? groceryCategory,
+    bool clearCategory = false,
+    String? brand,
+    String? originCountry,
+    String? composition,
+    String? storageConditions,
+    int? kcal,
+    double? protein,
+    double? fat,
+    double? carbs,
+    int? compareAtPriceMinor,
+    bool clearCompareAt = false,
+  }) async =>
+      Dish.fromJson(await api.patchMap(
+        '${_restaurant(restaurantId)}/dishes/${Uri.encodeComponent(dishId)}/product',
+        {
+          if (groceryCategory != null) 'groceryCategory': groceryCategory,
+          if (clearCategory) 'clearCategory': true,
+          if (brand != null) 'brand': brand,
+          if (originCountry != null) 'originCountry': originCountry,
+          if (composition != null) 'composition': composition,
+          if (storageConditions != null) 'storageConditions': storageConditions,
+          if (kcal != null) 'kcal': kcal,
+          if (protein != null) 'protein': protein,
+          if (fat != null) 'fat': fat,
+          if (carbs != null) 'carbs': carbs,
+          if (compareAtPriceMinor != null)
+            'compareAtPriceMinor': compareAtPriceMinor,
+          if (clearCompareAt) 'clearCompareAt': true,
+        },
+      ));
+
+  Future<Dish> addPhoto(String restaurantId, String dishId, String url) async =>
+      Dish.fromJson(await api.postMap(
+          '${_restaurant(restaurantId)}/dishes/${Uri.encodeComponent(dishId)}/photos',
+          {'url': url}));
+
+  Future<Dish> removePhoto(
+          String restaurantId, String dishId, String photoId) async =>
+      Dish.fromJson(await api.deleteMap(
+          '${_restaurant(restaurantId)}/dishes/${Uri.encodeComponent(dishId)}/photos/${Uri.encodeComponent(photoId)}'));
+
   Future<Dish> createDish(
     String restaurantId, {
     required String sectionId,
     required String name,
     String? description,
     required int priceMinor,
+    String unit = 'PIECE',
   }) async =>
       Dish.fromJson(await api.postMap('${_restaurant(restaurantId)}/dishes', {
         'sectionId': sectionId,
         'name': name,
+        if (unit != 'PIECE') 'unit': unit,
         if (description != null && description.isNotEmpty)
           'description': description,
         'priceMinor': priceMinor,
@@ -228,7 +277,8 @@ class PartnerOperations {
           required String masterId,
           required int priceMinor,
           required int durationMinutes}) async =>
-      VenueService.fromJson(await api.postMap('${_venue(venueId)}/health/services', {
+      VenueService.fromJson(
+          await api.postMap('${_venue(venueId)}/health/services', {
         'name': name,
         'category': category,
         'masterId': masterId,
@@ -237,8 +287,8 @@ class PartnerOperations {
       }));
 
   Future<Master> createHealthSpecialist(String venueId, String name) async =>
-      Master.fromJson(await api.postMap(
-          '${_venue(venueId)}/health/specialists', {'name': name}));
+      Master.fromJson(await api
+          .postMap('${_venue(venueId)}/health/specialists', {'name': name}));
 
   Future<Master> createPost(String venueId, String name) async =>
       Master.fromJson(
