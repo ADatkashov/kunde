@@ -78,10 +78,30 @@ public class AdminLeisureController {
         this.orders = orders;
     }
 
+    private UUID user(Jwt principal) {
+        return PartnerAccessPolicy.userId(principal).orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN", "Access is not allowed"));
+    }
+
+    /** Shared sections (venues, complaints, reviews, audit): either permission opens them. */
     private UUID admin(Jwt principal) {
-        UUID id = PartnerAccessPolicy.userId(principal).orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN", "Access is not allowed"));
-        grants.require(id, Permission.LEISURE_OPERATIONS);
+        UUID id = user(principal);
+        try {
+            grants.require(id, Permission.LEISURE_OPERATIONS);
+        } catch (ApiException denied) {
+            grants.require(id, Permission.EVENTS_OPERATIONS);
+        }
         return id;
+    }
+
+    /** Product-specific sections: EVENTS needs EVENTS_OPERATIONS, anything else (LEISURE or both) needs LEISURE_OPERATIONS. */
+    private UUID adminFor(Jwt principal, String product) {
+        UUID id = user(principal);
+        grants.require(id, "EVENTS".equals(product) ? Permission.EVENTS_OPERATIONS : Permission.LEISURE_OPERATIONS);
+        return id;
+    }
+
+    private String productOf(String sql, Object id) {
+        return db.query(sql, (rs, n) -> rs.getString(1), id).stream().findFirst().orElse("LEISURE");
     }
 
     private static <T> ResponseEntity<T> ok(T body) { return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(body); }
@@ -104,8 +124,8 @@ public class AdminLeisureController {
 
     @GetMapping("/summary")
     ResponseEntity<Summary> summary(@AuthenticationPrincipal Jwt principal, @RequestParam(defaultValue = "7") int days, @RequestParam(required = false) String product) {
-        admin(principal);
         String pr = product(product);
+        adminFor(principal, pr);
         int d = Math.max(1, Math.min(days, 60));
         long[] t = db.query("""
                 select (select count(*) from marketplace.leisure_events e join marketplace.leisure_categories c on c.code = e.category_code where e.status = 'PUBLISHED' and """ + PRODUCT_OK + """
@@ -179,8 +199,8 @@ public class AdminLeisureController {
 
     @GetMapping("/events")
     ResponseEntity<List<EventRow>> events(@AuthenticationPrincipal Jwt principal, @RequestParam(required = false) String status, @RequestParam(required = false) String product) {
-        admin(principal);
         String pr = product(product);
+        adminFor(principal, pr);
         return ok(db.query("""
                 select e.id, e.title, v.name, e.category_code, e.booking_type, e.status, e.moderation_note, e.is_synthetic from marketplace.leisure_events e
                 join marketplace.leisure_venues v on v.id = e.venue_id join marketplace.leisure_categories c on c.code = e.category_code
@@ -192,13 +212,14 @@ public class AdminLeisureController {
     @Transactional
     @PostMapping("/events/{id}/decision")
     ResponseEntity<EventRow> eventDecision(@AuthenticationPrincipal Jwt principal, @PathVariable UUID id, @Valid @RequestBody Decision body) {
-        UUID admin = admin(principal);
+        String product = productOf("select c.product from marketplace.leisure_events e join marketplace.leisure_categories c on c.code = e.category_code where e.id = ?", id);
+        UUID admin = adminFor(principal, product);
         String from = db.query("select status from marketplace.leisure_events where id = ? for update", (rs, n) -> rs.getString(1), id).stream().findFirst()
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "EVENT_NOT_FOUND", "Event not found"));
         String to = transition(from, body, "PENDING", "PUBLISHED", "REJECTED", "BLOCKED", "ARCHIVED");
         db.update("update marketplace.leisure_events set status = ?, moderation_note = ?, version = version + 1, updated_at = now() where id = ?", to, body.reason(), id);
         audit(admin, "EVENT_" + body.decision(), id.toString(), body.reason());
-        return ok(events(principal, null, null).getBody().stream().filter(v -> v.id().equals(id.toString())).findFirst().orElseThrow());
+        return ok(events(principal, null, product).getBody().stream().filter(v -> v.id().equals(id.toString())).findFirst().orElseThrow());
     }
 
     /** APPROVE/REJECT apply to a pending item, BLOCK to anything not blocked, UNBLOCK only to a blocked one (back to the neutral state). */
@@ -220,8 +241,8 @@ public class AdminLeisureController {
 
     @GetMapping("/categories")
     ResponseEntity<List<CategoryRow>> categories(@AuthenticationPrincipal Jwt principal, @RequestParam(required = false) String product) {
-        admin(principal);
         String pr = product(product);
+        adminFor(principal, pr);
         return ok(db.query("select code, name_ru, default_booking_type, enabled from marketplace.leisure_categories c where " + PRODUCT_OK + " order by sort_order",
                 (rs, n) -> new CategoryRow(rs.getString(1), rs.getString(2), rs.getString(3), rs.getBoolean(4)), pr, pr));
     }
@@ -229,7 +250,7 @@ public class AdminLeisureController {
     @Transactional
     @PatchMapping("/categories/{code}")
     ResponseEntity<CategoryRow> category(@AuthenticationPrincipal Jwt principal, @PathVariable String code, @Valid @RequestBody EnabledBody body) {
-        UUID admin = admin(principal);
+        UUID admin = adminFor(principal, productOf("select product from marketplace.leisure_categories where code = ?", code));
         if (db.update("update marketplace.leisure_categories set enabled = ? where code = ?", body.enabled(), code) == 0) {
             throw new ApiException(HttpStatus.NOT_FOUND, "CATEGORY_NOT_FOUND", "Category not found");
         }
@@ -241,8 +262,8 @@ public class AdminLeisureController {
     @GetMapping("/orders")
     ResponseEntity<List<OrderRow>> orderList(@AuthenticationPrincipal Jwt principal, @RequestParam(required = false) String status, @RequestParam(defaultValue = "50") int limit,
             @RequestParam(required = false) String product) {
-        admin(principal);
         String pr = product(product);
+        adminFor(principal, pr);
         return ok(db.query("""
                 select o.id, o.status, e.title, v.name, s.starts_at, o.guests, o.total_minor, o.payment_method, p.status, p.id, o.created_at from transactions.leisure_orders o
                 join marketplace.leisure_events e on e.id = o.event_id join marketplace.leisure_categories c on c.code = e.category_code join marketplace.leisure_venues v on v.id = o.venue_id join marketplace.leisure_sessions s on s.id = o.session_id
@@ -254,30 +275,38 @@ public class AdminLeisureController {
 
     @PostMapping("/orders/{id}/cancel")
     ResponseEntity<Void> cancelOrder(@AuthenticationPrincipal Jwt principal, @PathVariable UUID id, @Valid @RequestBody ReasonBody body) {
-        orders.adminCancel(admin(principal), id, body.reason());
+        orders.adminCancel(adminFor(principal, productOf("select c.product from transactions.leisure_orders o join marketplace.leisure_events e on e.id = o.event_id "
+                + "join marketplace.leisure_categories c on c.code = e.category_code where o.id = ?", id)), id, body.reason());
         return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
     }
 
     @GetMapping("/tickets")
-    ResponseEntity<List<TicketRow>> tickets(@AuthenticationPrincipal Jwt principal, @RequestParam(required = false) String status, @RequestParam(required = false) UUID orderId) {
-        admin(principal);
+    ResponseEntity<List<TicketRow>> tickets(@AuthenticationPrincipal Jwt principal, @RequestParam(required = false) String status, @RequestParam(required = false) UUID orderId,
+            @RequestParam(required = false) String product) {
+        String pr = product(product);
+        adminFor(principal, pr);
         return ok(db.query("""
                 select t.id, t.order_id, t.status, e.title, s.starts_at, st.row_label || st.seat_number, t.used_at from transactions.leisure_tickets t
-                join marketplace.leisure_sessions s on s.id = t.session_id join marketplace.leisure_events e on e.id = s.event_id left join marketplace.leisure_seats st on st.id = t.seat_id
-                where (?::text is null or t.status = ?::text) and (?::uuid is null or t.order_id = ?::uuid) order by t.created_at desc limit 100""",
+                join marketplace.leisure_sessions s on s.id = t.session_id join marketplace.leisure_events e on e.id = s.event_id join marketplace.leisure_categories c on c.code = e.category_code
+                left join marketplace.leisure_seats st on st.id = t.seat_id
+                where (?::text is null or t.status = ?::text) and (?::uuid is null or t.order_id = ?::uuid) and (?::text is null or c.product = ?::text) order by t.created_at desc limit 100""",
                 (rs, n) -> new TicketRow(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), kz.kunde.leisure.LeisureTime.local(rs, 5), rs.getString(6),
-                        kz.kunde.leisure.LeisureTime.local(rs, 7)), status, status, orderId, orderId));
+                        kz.kunde.leisure.LeisureTime.local(rs, 7)), status, status, orderId, orderId, pr, pr));
     }
 
     @GetMapping("/payments")
-    ResponseEntity<List<LeisurePayments.Entry>> paymentList(@AuthenticationPrincipal Jwt principal, @RequestParam(defaultValue = "false") boolean refundableOnly) {
-        admin(principal);
-        return ok(payments.latest(refundableOnly));
+    ResponseEntity<List<LeisurePayments.Entry>> paymentList(@AuthenticationPrincipal Jwt principal, @RequestParam(defaultValue = "false") boolean refundableOnly,
+            @RequestParam(required = false) String product) {
+        String pr = product(product);
+        adminFor(principal, pr);
+        return ok(payments.latest(refundableOnly, pr));
     }
 
     @PostMapping("/payments/{id}/refund")
     ResponseEntity<LeisurePayments.PaymentView> refund(@AuthenticationPrincipal Jwt principal, @PathVariable UUID id, @Valid @RequestBody RefundBody body) {
-        return ok(payments.refund(admin(principal), id, body.amountMinor(), body.reason()));
+        UUID admin = adminFor(principal, productOf("select c.product from transactions.leisure_payments p join transactions.leisure_orders o on o.id = p.order_id "
+                + "join marketplace.leisure_events e on e.id = o.event_id join marketplace.leisure_categories c on c.code = e.category_code where p.id = ?", id));
+        return ok(payments.refund(admin, id, body.amountMinor(), body.reason()));
     }
 
     @GetMapping("/complaints")

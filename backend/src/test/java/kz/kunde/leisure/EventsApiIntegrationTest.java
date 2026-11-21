@@ -149,4 +149,37 @@ class EventsApiIntegrationTest {
         assertThat((String) JsonPath.read(t.body(t.send("GET", "/api/v1/search/route?q=Ночной экспресс", null, null, null)), "$.route")).isEqualTo("EVENTS");
         assertThat((String) JsonPath.read(t.body(t.send("GET", "/api/v1/search/route", null, null, null).andExpect(status().isOk())), "$.route")).isEqualTo("NONE");
     }
+
+    @Test
+    void eventsOperationsGrantSeparatesTheTwoControlCenters() throws Exception {
+        UUID film = t.event("Демо-фильм");
+        String eventsAdminLogin = t.loginBody("+77000000542");
+        UUID eventsAdmin = LeisureTestSupport.subject(eventsAdminLogin);
+        db.update("INSERT INTO identity.admin_grants (user_id, permission, reason) VALUES (?, 'EVENTS_OPERATIONS', 'synthetic DEV admin')", eventsAdmin);
+        String token = t.refreshed(eventsAdminLogin);
+        String base = "/api/v1/admin/leisure";
+        t.send("GET", base + "/summary?product=EVENTS", token, null, null).andExpect(status().isOk());
+        t.send("GET", base + "/events?product=EVENTS", token, null, null).andExpect(status().isOk());
+        t.send("GET", base + "/orders?product=EVENTS", token, null, null).andExpect(status().isOk());
+        t.send("GET", base + "/tickets?product=EVENTS", token, null, null).andExpect(status().isOk());
+        t.send("GET", base + "/payments?product=EVENTS", token, null, null).andExpect(status().isOk());
+        t.send("GET", base + "/audit", token, null, null).andExpect(status().isOk()); // shared journal
+        // the Leisure control center and Leisure data stay closed to an Events administrator
+        t.send("GET", base + "/summary?product=LEISURE", token, null, null).andExpect(status().isForbidden());
+        t.send("GET", base + "/summary", token, null, null).andExpect(status().isForbidden());
+        t.send("GET", base + "/orders?product=LEISURE", token, null, null).andExpect(status().isForbidden());
+        t.send("GET", base + "/payments?product=LEISURE", token, null, null).andExpect(status().isForbidden());
+        UUID bowling = db.queryForObject("select id from marketplace.leisure_events where category_code = 'BOWLING' limit 1", UUID.class);
+        t.send("POST", base + "/events/" + bowling + "/decision", token, "{\"decision\":\"BLOCK\",\"reason\":\"x\"}", null).andExpect(status().isForbidden());
+        t.send("PATCH", base + "/categories/QUEST", token, "{\"enabled\":false}", null).andExpect(status().isForbidden());
+        // but an event of its own product is theirs to moderate
+        t.send("POST", base + "/events/" + film + "/decision", token, "{\"decision\":\"BLOCK\",\"reason\":\"проверка гранта\"}", null).andExpect(status().isOk());
+        // a Leisure administrator cannot reach Events
+        String leisureLogin = t.loginBody("+77000000003");
+        db.update("INSERT INTO identity.admin_grants (user_id, permission, reason) VALUES (?, 'LEISURE_OPERATIONS', 'synthetic DEV admin')", LeisureTestSupport.subject(leisureLogin));
+        String leisure = t.refreshed(leisureLogin);
+        t.send("GET", base + "/summary?product=LEISURE", leisure, null, null).andExpect(status().isOk());
+        t.send("GET", base + "/summary?product=EVENTS", leisure, null, null).andExpect(status().isForbidden());
+        t.send("POST", base + "/events/" + film + "/decision", leisure, "{\"decision\":\"UNBLOCK\"}", null).andExpect(status().isForbidden());
+    }
 }

@@ -312,7 +312,7 @@ class _RideAdminScreenState extends State<RideAdminScreen> {
               ),
             ),
           ),
-        if (permissions.contains('LEISURE_OPERATIONS'))
+        if (permissions.contains('EVENTS_OPERATIONS'))
           Card(
             child: ListTile(
               leading: const Icon(Icons.confirmation_number_outlined),
