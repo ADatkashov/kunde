@@ -154,6 +154,35 @@ class BookingApi {
         );
       });
 
+  Future<List<HealthFavorite>> healthFavorites({String? venueId}) =>
+      _guard(() async {
+        final favorites = <HealthFavorite>[];
+        const limit = 100;
+        for (var offset = 0;; offset += limit) {
+          final uri = Uri(path: 'booking/health/favorites', queryParameters: {
+            'limit': '$limit',
+            'offset': '$offset',
+            if (venueId != null) 'venueId': venueId,
+          });
+          final page = (await auth.authorizedJson('GET', uri.toString())
+              as List<dynamic>);
+          favorites.addAll(page.map(
+            (item) => HealthFavorite.fromJson(item as Map<String, dynamic>),
+          ));
+          if (page.length < limit) return favorites;
+        }
+      });
+
+  Future<void> setHealthFavorite(
+          HealthFavoriteKind kind, String id, bool saved) =>
+      _guard(() async {
+        await auth.authorizedJson(
+          saved ? 'PUT' : 'DELETE',
+          'booking/health/favorites/${kind.code}/$id',
+          expected: const {204},
+        );
+      });
+
   Future<VenueDetail> venue(String id) async => VenueDetail.fromJson(
       (await _public('booking/venues/$id')) as Map<String, dynamic>);
 

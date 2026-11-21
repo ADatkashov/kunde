@@ -24,13 +24,81 @@ class VenueScreen extends StatefulWidget {
 class _VenueScreenState extends State<VenueScreen> {
   late Future<VenueDetail> _detail = widget.services.api.venue(widget.venue.id);
 
+  late Future<List<HealthFavorite>> _favorites =
+      widget.services.api.healthFavorites(venueId: widget.venue.id);
+  final _saving = <(HealthFavoriteKind, String)>{};
+
+  Widget _favoriteButton(HealthFavoriteKind kind, String id) {
+    final s = bkL10n(context);
+    return FutureBuilder<List<HealthFavorite>>(
+      future: _favorites,
+      builder: (context, snapshot) {
+        final items = snapshot.data;
+        if (snapshot.hasError) {
+          return IconButton(
+            tooltip: s.bkRetry,
+            onPressed: () => setState(() {
+              _favorites = widget.services.api.healthFavorites(
+                venueId: widget.venue.id,
+              );
+            }),
+            icon: const Icon(Icons.refresh),
+          );
+        }
+        final key = (kind, id);
+        final saved =
+            items?.any((item) => item.kind == kind && item.id == id) ?? false;
+        return IconButton(
+          tooltip: saved
+              ? s.healthText('Убрать из избранного', 'Таңдаулыдан өшіру',
+                  'Remove from favorites')
+              : s.healthText(
+                  'В избранное', 'Таңдаулыға қосу', 'Add to favorites'),
+          icon: Icon(saved ? Icons.favorite : Icons.favorite_border),
+          onPressed: items == null ||
+                  snapshot.connectionState != ConnectionState.done ||
+                  _saving.contains(key)
+              ? null
+              : () async {
+                  setState(() => _saving.add(key));
+                  try {
+                    await widget.services.api
+                        .setHealthFavorite(kind, id, !saved);
+                    if (!mounted) return;
+                    setState(() {
+                      _favorites = widget.services.api.healthFavorites(
+                        venueId: widget.venue.id,
+                      );
+                    });
+                  } on BookingException catch (error) {
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(this.context).showSnackBar(
+                      SnackBar(content: Text(s.bkError(error.failure))),
+                    );
+                  } finally {
+                    if (mounted) setState(() => _saving.remove(key));
+                  }
+                },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final venue = widget.venue;
     final s = bkL10n(context);
+    final canSave =
+        venue.category == 'HEALTH' && widget.services.auth.authenticated;
     return Scaffold(
-      appBar: AppBar(title: Text(venue.name)),
+      appBar: AppBar(
+        title: Text(venue.name),
+        actions: [
+          if (canSave)
+            _favoriteButton(HealthFavoriteKind.organization, venue.id),
+        ],
+      ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 640),
@@ -107,6 +175,10 @@ class _VenueScreenState extends State<VenueScreen> {
                       enabled: venue.open &&
                           service.available &&
                           detail.mastersFor(service.id).isNotEmpty,
+                      favorite: canSave && service.wellness
+                          ? _favoriteButton(
+                              HealthFavoriteKind.wellnessService, service.id)
+                          : null,
                       onBook: () => Navigator.of(context).push(
                         MaterialPageRoute<void>(
                           builder: (_) => BookingFlowScreen(
@@ -136,9 +208,11 @@ class _VenueScreenState extends State<VenueScreen> {
                       ),
                       title: Text(m.name),
                       subtitle: Text(m.bio),
-                      trailing: venue.category == 'HEALTH'
-                          ? const Icon(Icons.chevron_right)
-                          : null,
+                      trailing: canSave
+                          ? _favoriteButton(HealthFavoriteKind.specialist, m.id)
+                          : venue.category == 'HEALTH'
+                              ? const Icon(Icons.chevron_right)
+                              : null,
                       onTap: venue.category != 'HEALTH'
                           ? null
                           : () => Navigator.of(context).push<void>(
@@ -166,11 +240,13 @@ class _ServiceTile extends StatelessWidget {
     required this.service,
     required this.enabled,
     required this.onBook,
+    this.favorite,
   });
 
   final BookableService service;
   final bool enabled;
   final VoidCallback onBook;
+  final Widget? favorite;
 
   @override
   Widget build(BuildContext context) {
@@ -204,9 +280,18 @@ class _ServiceTile extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          FilledButton.tonal(
-            onPressed: enabled ? onBook : null,
-            child: Text(enabled ? s.bkBookAction : s.bkUnavailable),
+          Flexible(
+            child: Wrap(
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                if (favorite != null) favorite!,
+                FilledButton.tonal(
+                  onPressed: enabled ? onBook : null,
+                  child: Text(enabled ? s.bkBookAction : s.bkUnavailable),
+                ),
+              ],
+            ),
           ),
         ],
       ),

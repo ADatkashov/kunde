@@ -32,7 +32,7 @@ public class BookingCatalogController {
             String emoji, String tone, String imageUrl, boolean open, boolean synthetic, Long fromPriceMinor) {}
 
     public record ServiceItem(String id, String name, String description, int durationMinutes, long priceMinor,
-            boolean available, long pricePerSqmMinor, Integer minAreaSqm, Integer maxAreaSqm) {}
+            boolean available, long pricePerSqmMinor, Integer minAreaSqm, Integer maxAreaSqm, boolean wellness) {}
 
     public record Master(String id, String name, String bio, String emoji, String tone, List<String> serviceIds) {}
 
@@ -152,12 +152,14 @@ public class BookingCatalogController {
                         "Venue is not available"));
         if ("HEALTH".equals(venue.category())) { slots.requireHealthCatalog(); }
         List<ServiceItem> services = jdbc.query("""
-                select id, name, description, duration_minutes, price_minor, available, price_per_sqm_minor, min_area_sqm, max_area_sqm
-                from marketplace.booking_services where venue_id = ? and (not ? or available) order by sort_order, name
+                select id, name, description, duration_minutes, price_minor, available, price_per_sqm_minor,
+                    min_area_sqm, max_area_sqm, exists(select 1 from marketplace.health_categories c
+                        where c.code = s.health_category and not c.medical) as wellness
+                from marketplace.booking_services s where venue_id = ? and (not ? or available) order by sort_order, name
                 """, (rs, row) -> new ServiceItem(rs.getString("id"), rs.getString("name"), rs.getString("description"),
                 rs.getInt("duration_minutes"), rs.getLong("price_minor"), rs.getBoolean("available"),
                 rs.getLong("price_per_sqm_minor"), rs.getObject("min_area_sqm", Integer.class),
-                rs.getObject("max_area_sqm", Integer.class)), venueId, "HEALTH".equals(venue.category()));
+                rs.getObject("max_area_sqm", Integer.class), rs.getBoolean("wellness")), venueId, "HEALTH".equals(venue.category()));
         Map<UUID, List<String>> serviceIds = new LinkedHashMap<>();
         jdbc.query("""
                 select ms.master_id, ms.service_id from marketplace.booking_master_services ms
