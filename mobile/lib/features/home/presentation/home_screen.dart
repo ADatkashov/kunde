@@ -786,6 +786,8 @@ class _CapabilityLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = KundeLocalizations.of(context);
+    final status = Text(enabled ? s.available : s.notAvailable);
+    final largeText = MediaQuery.textScalerOf(context).scale(14) > 20;
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Semantics(
@@ -805,7 +807,7 @@ class _CapabilityLine extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ),
-              Text(enabled ? s.available : s.notAvailable),
+              if (largeText) Flexible(child: status) else status,
             ],
           ),
         ),
