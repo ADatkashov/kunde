@@ -9,6 +9,7 @@ import '../leisure_admin/leisure_admin_screen.dart';
 import '../delivery_admin/delivery_admin_screen.dart';
 import '../identity/auth_repository.dart';
 import '../health/health_admin_screen.dart';
+import '../home_services_admin/home_services_categories_screen.dart';
 import '../rides/ride_strings.dart';
 
 class RideAdminScreen extends StatefulWidget {
@@ -368,6 +369,18 @@ class _RideAdminScreenState extends State<RideAdminScreen> {
                       LeisureAdminScreen(auth: widget.auth, product: 'LEISURE'),
                 ),
               ),
+            ),
+          ),
+        if (permissions.contains('HOME_SERVICES_CATALOG'))
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.home_repair_service_outlined),
+              title: Text(s.t('Дом и быт: категории',
+                  'Үй және тұрмыс санаттары', 'Home services categories')),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push<void>(MaterialPageRoute(
+                builder: (_) => HomeServicesCategoriesScreen(auth: widget.auth),
+              )),
             ),
           ),
         if (permissions.contains('HEALTH_OPERATIONS'))
