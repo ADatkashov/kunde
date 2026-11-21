@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
@@ -55,8 +56,15 @@ class PartnerSession {
   DateTime? _expires;
   Future<String?>? _refreshing;
 
+  // The isolated Android CI fixture uses an ADB reverse tunnel to loopback.
+  bool get _localFixture => kDebugMode &&
+      const bool.fromEnvironment('PARTNER_LOCAL_FIXTURE') &&
+      apiBase.scheme == 'http' &&
+      apiBase.host == 'localhost' &&
+      apiBase.port == 8081;
+
   bool get baseIsValid =>
-      apiBase.scheme == 'https' &&
+      (apiBase.scheme == 'https' || _localFixture) &&
       apiBase.host.isNotEmpty &&
       apiBase.userInfo.isEmpty &&
       !apiBase.hasQuery &&
