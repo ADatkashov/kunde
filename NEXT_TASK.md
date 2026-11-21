@@ -5,6 +5,10 @@
 1. Merge V44 после зелёного CI, затем DEV deploy (`kunde-backend-ty81`), `scripts/dev/food_smoke.py` и проверка `/groceries/*` на DEV.
 2. Partner: редактирование бренда/КБЖУ/цены «до скидки»; Admin-экран Groceries; Executor-проверка; Android E2E и подписанные APK.
 3. Команды: `cd backend && mvn test -Dtest='Groceries*'`; `cd mobile && flutter test test/features/groceries`.
+## KUNDE Education
+
+Провести первый курс от публикации до подтверждения записи через поток и тестовый ledger. Критерии: модерация курса, серверная цена, транзакционная защита вместимости, идемпотентная запись, подтверждённая тестовая оплата. [Матрица и контракт](docs/product/education.md).
+
 
 ## KUNDE Food 2.0
 

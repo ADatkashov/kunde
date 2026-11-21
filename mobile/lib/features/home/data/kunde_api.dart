@@ -87,5 +87,32 @@ class KundeApi {
     }
   }
 
+  Future<Map<String, dynamic>> loadEducationCourses({
+    required String query,
+    required String format,
+    required int offset,
+  }) =>
+      _educationJson('education/courses', {
+        'q': query,
+        if (format.isNotEmpty) 'format': format,
+        'offset': offset.toString(),
+      });
+
+  Future<Map<String, dynamic>> loadEducationCourse(String id) =>
+      _educationJson('education/courses/${Uri.encodeComponent(id)}');
+
+  Future<Map<String, dynamic>> _educationJson(
+    String path, [
+    Map<String, String>? params,
+  ]) async {
+    final response = await _client
+        .get(_baseUri.resolve(path).replace(queryParameters: params))
+        .timeout(timeout);
+    if (response.statusCode != 200) {
+      throw const KundeApiException(KundeApiFailure.unavailable);
+    }
+    return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+  }
+
   void close() => _client.close();
 }

@@ -35,7 +35,7 @@ public class PlatformController {
                 delivery.enabled() && delivery.partnerEnabled(),
                 delivery.enabled() && delivery.syntheticRoutingEnabled(),
                 delivery.enabled() && delivery.executorEnabled(), autoCeiling && toggles.enabled(FeatureToggles.Feature.AUTO), toggles.enabled(FeatureToggles.Feature.LEISURE),
-                toggles.enabled(FeatureToggles.Feature.HEALTH),
+                toggles.enabled(FeatureToggles.Feature.HEALTH), toggles.enabled(FeatureToggles.Feature.EDUCATION),
                 toggles.enabled(FeatureToggles.Feature.GROCERIES));
     }
 
@@ -46,6 +46,6 @@ public class PlatformController {
             boolean aiEnabled,
             boolean bookingEnabled,
             boolean ridesEnabled, boolean ridesFleetEnabled, boolean deliveryEnabled, boolean deliveryPartnerEnabled,
-            boolean deliverySyntheticRouting, boolean deliveryExecutorEnabled, boolean autoEnabled, boolean leisureEnabled, boolean healthEnabled,
+            boolean deliverySyntheticRouting, boolean deliveryExecutorEnabled, boolean autoEnabled, boolean leisureEnabled, boolean healthEnabled, boolean educationEnabled,
             boolean groceriesEnabled) {}
 }
