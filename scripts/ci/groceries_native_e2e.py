@@ -1,6 +1,8 @@
 """Exercise Consumer Groceries on Android against the real API and isolated PostgreSQL (synthetic store, no real payment)."""
 import os
+import re
 import time
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import auto_native_e2e as mobile
@@ -14,8 +16,27 @@ GROCERIES = ("Продукты", "Азық-түлік", "Groceries")
 PRODUCT = "Сыр Российский 200 г"  # 2 190 ₸ on the shelf: two pieces clear the 3 000 ₸ minimum order
 ADD = ("Добавить в корзину", "Себетке қосу", "Add to cart")
 CART = ("Корзина · 2",)
-CHECKOUT = ("Оформить заказ", "Тапсырысты рәсімдеу", "Checkout")
-CONFIRM = ("Подтвердить заказ", "Тапсырысты растау", "Confirm order")
+CHECKOUT = ("Оформить заказ", "Тапсырысты рәсімдеу", "Checkout")  # followed by " · <total>"
+CONFIRM = "Подтвердить заказ"  # followed by " · <total>"
+
+
+def tap_starting(prefix, timeout=60):
+    """Buttons that carry the live total in their label ("Оформить заказ · 4 380 ₸") are matched by their fixed beginning."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        android.adb("shell", "uiautomator", "dump", "/sdcard/kunde-visual.xml")
+        tree = ET.fromstring(android.adb("exec-out", "cat", "/sdcard/kunde-visual.xml"))
+        for node in tree.iter("node"):
+            if node.get("package") != fixture.CONSUMER:
+                continue
+            labels = {node.get("text", ""), *node.get("content-desc", "").splitlines()}
+            if any(value.startswith(prefix) for value in labels):
+                x1, y1, x2, y2 = (int(v) for v in re.findall(r"\d+", node.get("bounds", "")))
+                if x2 > x1 and y2 > y1:
+                    android.adb("shell", "input", "tap", str((x1 + x2) // 2), str((y1 + y2) // 2))
+                    return
+        android.adb("shell", "input", "swipe", "185", "670", "185", "330", "300")
+    raise RuntimeError(f"Could not locate UI element starting with {prefix!r}")
 
 
 def wait_for_order(token):
@@ -62,12 +83,11 @@ def main():
         mobile.tap(*ADD)
         phase = "consumer_checkout"
         mobile.tap(*CART)
-        mobile.reveal(*CHECKOUT)
+        mobile.reveal("Итого", "Барлығы", "Total")
         android.screenshot("04-cart")
-        mobile.tap(*CHECKOUT)
-        mobile.reveal(*CONFIRM)
+        tap_starting(CHECKOUT[0])
         android.screenshot("05-checkout")
-        mobile.tap(*CONFIRM)
+        tap_starting(CONFIRM)
         order = wait_for_order(token)
         assert order["status"] == "PLACED", order
         fixture.completed.append("consumer_groceries_order")
