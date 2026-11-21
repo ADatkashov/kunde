@@ -327,6 +327,14 @@ class LeisureApiIntegrationTest {
         assertThat((String) JsonPath.read(part, "$.status")).isEqualTo("TEST_PART_REFUNDED");
         t.send("POST", "/api/v1/admin/leisure/orders/" + JsonPath.read(o, "$.id") + "/cancel", admin, "{\"reason\":\"Блокировка\"}", null).andExpect(status().isNoContent());
         assertThat((String) JsonPath.read(t.body(t.send("GET", "/api/v1/leisure/orders/" + JsonPath.read(o, "$.id"), alice, null, null)), "$.payment.status")).isEqualTo("TEST_REFUNDED");
+        // the Control Center shows the two products apart: the order of this bowling event counts for Leisure, not for Events
+        String leisureSum = t.body(t.send("GET", "/api/v1/admin/leisure/summary?product=LEISURE", admin, null, null).andExpect(status().isOk()));
+        String eventsSum = t.body(t.send("GET", "/api/v1/admin/leisure/summary?product=EVENTS", admin, null, null).andExpect(status().isOk()));
+        assertThat((Integer) JsonPath.read(leisureSum, "$.orders")).isGreaterThanOrEqualTo(0);
+        assertThat((Integer) JsonPath.read(eventsSum, "$.orders")).isZero();
+        assertThat((List<String>) JsonPath.read(t.body(t.send("GET", "/api/v1/admin/leisure/events?product=EVENTS", admin, null, null)), "$[*].category")).doesNotContain("BILLIARDS");
+        assertThat((List<String>) JsonPath.read(t.body(t.send("GET", "/api/v1/admin/leisure/categories?product=EVENTS", admin, null, null)), "$[*].code")).contains("CINEMA").doesNotContain("QUEST");
+        t.send("GET", "/api/v1/admin/leisure/summary?product=OTHER", admin, null, null).andExpect(status().isBadRequest());
         // blocking an event hides it; the journal records everything
         t.send("POST", "/api/v1/admin/leisure/events/" + eventId + "/decision", admin, "{\"decision\":\"BLOCK\",\"reason\":\"Нарушение правил\"}", null).andExpect(status().isOk());
         t.send("GET", "/api/v1/leisure/events/" + eventId, null, null, null).andExpect(status().isNotFound());

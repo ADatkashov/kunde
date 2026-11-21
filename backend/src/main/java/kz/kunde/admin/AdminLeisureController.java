@@ -90,31 +90,69 @@ public class AdminLeisureController {
         db.update("insert into marketplace.leisure_audit (actor_user_id, actor_type, action, target, detail) values (?, 'ADMIN', ?, ?, ?)", admin, action, target, detail);
     }
 
+    private static final String PRODUCT_OK = " (?::text is null or c.product = ?::text) "; // padded: text blocks strip trailing blanks before the concatenation
+    private static final String ORDERS_OF = " transactions.leisure_orders o join marketplace.leisure_events e on e.id = o.event_id join marketplace.leisure_categories c on c.code = e.category_code ";
+
+    /** {@code product} is EVENTS or LEISURE (the two products share this engine); absent = both. Anything else is a client error. */
+    private static String product(String product) {
+        if (product == null || product.isBlank()) { return null; }
+        if (!"EVENTS".equals(product) && !"LEISURE".equals(product)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "PRODUCT_INVALID", "product must be EVENTS or LEISURE");
+        }
+        return product;
+    }
+
     @GetMapping("/summary")
-    ResponseEntity<Summary> summary(@AuthenticationPrincipal Jwt principal, @RequestParam(defaultValue = "7") int days) {
+    ResponseEntity<Summary> summary(@AuthenticationPrincipal Jwt principal, @RequestParam(defaultValue = "7") int days, @RequestParam(required = false) String product) {
         admin(principal);
+        String pr = product(product);
         int d = Math.max(1, Math.min(days, 60));
         long[] t = db.query("""
-                select (select count(*) from marketplace.leisure_events where status = 'PUBLISHED'),
-                       (select count(*) from marketplace.leisure_venues where status = 'APPROVED'),
-                       (select count(distinct partner_id) from marketplace.leisure_venues where status = 'APPROVED'),
-                       (select count(*) from transactions.leisure_orders where status = 'CONFIRMED'),
-                       (select count(*) from transactions.leisure_tickets where status in ('VALID', 'USED')),
-                       (select coalesce(sum(total_minor), 0) from transactions.leisure_orders where status = 'CONFIRMED'),
-                       (select coalesce(sum(refunded_minor), 0) from transactions.leisure_payments),
-                       (select coalesce(sum(admits), 0) from transactions.leisure_tickets where status = 'USED'),
+                select (select count(*) from marketplace.leisure_events e join marketplace.leisure_categories c on c.code = e.category_code where e.status = 'PUBLISHED' and """ + PRODUCT_OK + """
+                       ),
+                       (select count(distinct v.id) from marketplace.leisure_venues v join marketplace.leisure_events e on e.venue_id = v.id join marketplace.leisure_categories c on c.code = e.category_code
+                          where v.status = 'APPROVED' and """ + PRODUCT_OK + """
+                       ),
+                       (select count(distinct v.partner_id) from marketplace.leisure_venues v join marketplace.leisure_events e on e.venue_id = v.id join marketplace.leisure_categories c on c.code = e.category_code
+                          where v.status = 'APPROVED' and """ + PRODUCT_OK + """
+                       ),
+                       (select count(*) from """ + ORDERS_OF + """
+                          where o.status = 'CONFIRMED' and """ + PRODUCT_OK + """
+                       ),
+                       (select count(*) from transactions.leisure_tickets t join marketplace.leisure_sessions s on s.id = t.session_id join marketplace.leisure_events e on e.id = s.event_id
+                          join marketplace.leisure_categories c on c.code = e.category_code where t.status in ('VALID', 'USED') and """ + PRODUCT_OK + """
+                       ),
+                       (select coalesce(sum(o.total_minor), 0) from """ + ORDERS_OF + """
+                          where o.status = 'CONFIRMED' and """ + PRODUCT_OK + """
+                       ),
+                       (select coalesce(sum(p.refunded_minor), 0) from transactions.leisure_payments p join transactions.leisure_orders o on o.id = p.order_id
+                          join marketplace.leisure_events e on e.id = o.event_id join marketplace.leisure_categories c on c.code = e.category_code where """ + PRODUCT_OK + """
+                       ),
+                       (select coalesce(sum(t.admits), 0) from transactions.leisure_tickets t join marketplace.leisure_sessions s on s.id = t.session_id join marketplace.leisure_events e on e.id = s.event_id
+                          join marketplace.leisure_categories c on c.code = e.category_code where t.status = 'USED' and """ + PRODUCT_OK + """
+                       ),
                        (select count(*) from marketplace.leisure_venues where status = 'PENDING'),
-                       (select count(*) from marketplace.leisure_events where status = 'PENDING'),
+                       (select count(*) from marketplace.leisure_events e join marketplace.leisure_categories c on c.code = e.category_code where e.status = 'PENDING' and """ + PRODUCT_OK + """
+                       ),
                        (select count(*) from transactions.leisure_complaints where status = 'OPEN')""", (rs, n) -> {
             long[] a = new long[11];
             for (int i = 0; i < 11; i++) { a[i] = rs.getLong(i + 1); }
             return a;
-        }).get(0);
+        }, repeat(pr, 9)).get(0);
         List<Day> perDay = db.query("""
-                select g::date, count(o.id), coalesce(sum(o.total_minor), 0) from generate_series((now() at time zone 'Asia/Almaty')::date - (? - 1), (now() at time zone 'Asia/Almaty')::date, interval '1 day') g
-                left join transactions.leisure_orders o on o.status = 'CONFIRMED' and (o.created_at at time zone 'Asia/Almaty')::date = g::date group by g order by g""",
-                (rs, n) -> new Day(rs.getDate(1).toLocalDate(), rs.getLong(2), rs.getLong(3)), d);
+                select g::date, count(x.id), coalesce(sum(x.total_minor), 0) from generate_series((now() at time zone 'Asia/Almaty')::date - (? - 1), (now() at time zone 'Asia/Almaty')::date, interval '1 day') g
+                left join (select o.id, o.total_minor, o.created_at from """ + ORDERS_OF + """
+                           where o.status = 'CONFIRMED' and """ + PRODUCT_OK + """
+                          ) x on (x.created_at at time zone 'Asia/Almaty')::date = g::date group by g order by g""",
+                (rs, n) -> new Day(rs.getDate(1).toLocalDate(), rs.getLong(2), rs.getLong(3)), d, pr, pr);
         return ok(new Summary(t[0], t[1], t[2], t[3], t[4], t[5], t[6], t[7], t[8], t[9], t[10], perDay));
+    }
+
+    /** The product parameter, twice per condition (the SQL repeats it as {@code ?::text is null or ... = ?::text}). */
+    private static Object[] repeat(String pr, int conditions) {
+        Object[] out = new Object[conditions * 2];
+        for (int i = 0; i < out.length; i++) { out[i] = pr; }
+        return out;
     }
 
     @GetMapping("/venues")
@@ -140,12 +178,15 @@ public class AdminLeisureController {
     }
 
     @GetMapping("/events")
-    ResponseEntity<List<EventRow>> events(@AuthenticationPrincipal Jwt principal, @RequestParam(required = false) String status) {
+    ResponseEntity<List<EventRow>> events(@AuthenticationPrincipal Jwt principal, @RequestParam(required = false) String status, @RequestParam(required = false) String product) {
         admin(principal);
+        String pr = product(product);
         return ok(db.query("""
                 select e.id, e.title, v.name, e.category_code, e.booking_type, e.status, e.moderation_note, e.is_synthetic from marketplace.leisure_events e
-                join marketplace.leisure_venues v on v.id = e.venue_id where (?::text is null or e.status = ?::text) order by e.created_at desc limit 200""",
-                (rs, n) -> new EventRow(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6), rs.getString(7), rs.getBoolean(8)), status, status));
+                join marketplace.leisure_venues v on v.id = e.venue_id join marketplace.leisure_categories c on c.code = e.category_code
+                where (?::text is null or e.status = ?::text) and """ + PRODUCT_OK + """
+                 order by e.created_at desc limit 200""",
+                (rs, n) -> new EventRow(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6), rs.getString(7), rs.getBoolean(8)), status, status, pr, pr));
     }
 
     @Transactional
@@ -157,7 +198,7 @@ public class AdminLeisureController {
         String to = transition(from, body, "PENDING", "PUBLISHED", "REJECTED", "BLOCKED", "ARCHIVED");
         db.update("update marketplace.leisure_events set status = ?, moderation_note = ?, version = version + 1, updated_at = now() where id = ?", to, body.reason(), id);
         audit(admin, "EVENT_" + body.decision(), id.toString(), body.reason());
-        return ok(events(principal, null).getBody().stream().filter(v -> v.id().equals(id.toString())).findFirst().orElseThrow());
+        return ok(events(principal, null, null).getBody().stream().filter(v -> v.id().equals(id.toString())).findFirst().orElseThrow());
     }
 
     /** APPROVE/REJECT apply to a pending item, BLOCK to anything not blocked, UNBLOCK only to a blocked one (back to the neutral state). */
@@ -178,10 +219,11 @@ public class AdminLeisureController {
     }
 
     @GetMapping("/categories")
-    ResponseEntity<List<CategoryRow>> categories(@AuthenticationPrincipal Jwt principal) {
+    ResponseEntity<List<CategoryRow>> categories(@AuthenticationPrincipal Jwt principal, @RequestParam(required = false) String product) {
         admin(principal);
-        return ok(db.query("select code, name_ru, default_booking_type, enabled from marketplace.leisure_categories order by sort_order",
-                (rs, n) -> new CategoryRow(rs.getString(1), rs.getString(2), rs.getString(3), rs.getBoolean(4))));
+        String pr = product(product);
+        return ok(db.query("select code, name_ru, default_booking_type, enabled from marketplace.leisure_categories c where " + PRODUCT_OK + " order by sort_order",
+                (rs, n) -> new CategoryRow(rs.getString(1), rs.getString(2), rs.getString(3), rs.getBoolean(4)), pr, pr));
     }
 
     @Transactional
@@ -197,14 +239,17 @@ public class AdminLeisureController {
     }
 
     @GetMapping("/orders")
-    ResponseEntity<List<OrderRow>> orderList(@AuthenticationPrincipal Jwt principal, @RequestParam(required = false) String status, @RequestParam(defaultValue = "50") int limit) {
+    ResponseEntity<List<OrderRow>> orderList(@AuthenticationPrincipal Jwt principal, @RequestParam(required = false) String status, @RequestParam(defaultValue = "50") int limit,
+            @RequestParam(required = false) String product) {
         admin(principal);
+        String pr = product(product);
         return ok(db.query("""
                 select o.id, o.status, e.title, v.name, s.starts_at, o.guests, o.total_minor, o.payment_method, p.status, p.id, o.created_at from transactions.leisure_orders o
-                join marketplace.leisure_events e on e.id = o.event_id join marketplace.leisure_venues v on v.id = o.venue_id join marketplace.leisure_sessions s on s.id = o.session_id
-                left join transactions.leisure_payments p on p.order_id = o.id where (?::text is null or o.status = ?::text) order by o.created_at desc limit ?""",
+                join marketplace.leisure_events e on e.id = o.event_id join marketplace.leisure_categories c on c.code = e.category_code join marketplace.leisure_venues v on v.id = o.venue_id join marketplace.leisure_sessions s on s.id = o.session_id
+                left join transactions.leisure_payments p on p.order_id = o.id where (?::text is null or o.status = ?::text) and """ + PRODUCT_OK + """
+                 order by o.created_at desc limit ?""",
                 (rs, n) -> new OrderRow(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), kz.kunde.leisure.LeisureTime.local(rs, 5), rs.getInt(6), rs.getLong(7),
-                        rs.getString(8), rs.getString(9), rs.getString(10), kz.kunde.leisure.LeisureTime.local(rs, 11)), status, status, Math.max(1, Math.min(limit, 200))));
+                        rs.getString(8), rs.getString(9), rs.getString(10), kz.kunde.leisure.LeisureTime.local(rs, 11)), status, status, pr, pr, Math.max(1, Math.min(limit, 200))));
     }
 
     @PostMapping("/orders/{id}/cancel")
