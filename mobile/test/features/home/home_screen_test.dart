@@ -94,6 +94,48 @@ void main() {
     expect(find.text('Еда и покупки'), findsNothing);
   });
 
+  testWidgets('opens Education only when enabled by the backend',
+      (tester) async {
+    final requests = <String>[];
+    final api = KundeApi(
+      baseUri: Uri.parse('https://api.example.test/api/v1/'),
+      client: MockClient((request) async {
+        requests.add(request.url.path);
+        return http.Response(
+          jsonEncode(request.url.path.endsWith('/capabilities')
+              ? {
+                  'releaseStage': 'FOUNDATION',
+                  'marketplaceEnabled': false,
+                  'oidcIssuerConfigured': false,
+                  'aiEnabled': false,
+                  'educationEnabled': true,
+                }
+              : {'items': [], 'hasMore': false}),
+          200,
+        );
+      }),
+    );
+    addTearDown(api.close);
+    final disabled = _api();
+    addTearDown(disabled.close);
+    await _pump(tester, disabled, locale: 'kk');
+    expect(find.text('Білім'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pump(tester, api,
+        locale: 'kk',
+        size: const Size(390, 1800),
+        textScale: 2,
+        theme: KundeTheme.dark);
+    final tile = find.text('Білім');
+    await tester.ensureVisible(tile);
+    await tester.tap(tile);
+    await tester.pumpAndSettle();
+    expect(find.text('Білім және курстар'), findsWidgets);
+    expect(requests, contains('/api/v1/education/courses'));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('opens the unavailable assistant and returns by Back',
       (tester) async {
     await _pump(tester, _api());
