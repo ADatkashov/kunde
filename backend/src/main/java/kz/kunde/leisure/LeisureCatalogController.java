@@ -27,11 +27,11 @@ public class LeisureCatalogController {
     }
 
     @GetMapping("/categories")
-    ResponseEntity<List<Category>> categories() { return ok(catalog.categories()); }
+    ResponseEntity<List<Category>> categories() { return ok(catalog.categories(LeisureCatalogService.LEISURE)); }
 
     @GetMapping("/home")
     ResponseEntity<Map<String, List<Card>>> home(@RequestParam(required = false) Double lat, @RequestParam(required = false) Double lng) {
-        return ok(catalog.home(lat, lng));
+        return ok(catalog.home(lat, lng, LeisureCatalogService.LEISURE));
     }
 
     @GetMapping("/events")
@@ -47,7 +47,7 @@ public class LeisureCatalogController {
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit, @RequestParam(defaultValue = "0") @Min(0) @Max(10000) int offset) {
         if (!List.of("time", "price", "popular", "distance").contains(sort)) { sort = "time"; }
         return ok(catalog.search(new Search(q, category, district, date, timeFrom, timeTo, minPrice, maxPrice, age, guests, available, family, minRating,
-                lat, lng, radiusKm, sort, preset, limit, offset)));
+                lat, lng, radiusKm, sort, preset, limit, offset), LeisureCatalogService.LEISURE));
     }
 
     @GetMapping("/events/{id}")

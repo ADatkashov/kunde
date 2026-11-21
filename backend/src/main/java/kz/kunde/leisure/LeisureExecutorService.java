@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class LeisureExecutorService {
-    private static final List<String> ROLES = List.of("GUIDE", "HOST", "INSTRUCTOR", "ANIMATOR", "ORGANIZER");
+    private static final List<String> ROLES = List.of("GUIDE", "HOST", "INSTRUCTOR", "ANIMATOR", "ORGANIZER", "GATE");
     private static final Role[] MANAGE = {Role.OWNER, Role.MANAGER};
 
     public record Assignment(String id, String status, String role, String note, String sessionId, String eventTitle, String venueName, String venueAddress,
@@ -62,7 +62,8 @@ public class LeisureExecutorService {
         var s = db.query("select e.needs_executor, s.starts_at, s.status from marketplace.leisure_sessions s join marketplace.leisure_events e on e.id = s.event_id "
                 + "join marketplace.leisure_venues v on v.id = e.venue_id where s.id = ? and v.partner_id = ?", (rs, n) -> new Object[] {rs.getBoolean(1), kz.kunde.leisure.LeisureTime.local(rs, 2), rs.getString(3)},
                 sessionId, partner).stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "SESSION_NOT_FOUND", "Not found"));
-        if (!(boolean) s[0]) { throw new ApiException(HttpStatus.CONFLICT, "EXECUTOR_NOT_NEEDED", "This event does not use an executor"); }
+        boolean gate = "GATE".equalsIgnoreCase(role == null ? "" : role.strip()); // gate controllers serve any ticketed session
+        if (!(boolean) s[0] && !gate) { throw new ApiException(HttpStatus.CONFLICT, "EXECUTOR_NOT_NEEDED", "This event does not use an executor"); }
         if (!"SCHEDULED".equals(s[2]) || !((OffsetDateTime) s[1]).isAfter(OffsetDateTime.now())) { throw new ApiException(HttpStatus.CONFLICT, "SESSION_NOT_AVAILABLE", "The session is over or cancelled"); }
         String r = role == null ? "" : role.toUpperCase(Locale.ROOT);
         if (!ROLES.contains(r)) { throw new ApiException(HttpStatus.BAD_REQUEST, "ROLE_INVALID", "Role is one of " + ROLES); }

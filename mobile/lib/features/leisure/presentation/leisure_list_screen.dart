@@ -146,7 +146,10 @@ class _LeisureListScreenState extends State<LeisureListScreen> {
       _ => s.lzSortTime,
     };
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title ?? s.lzTitle), centerTitle: true),
+      appBar: AppBar(
+          title: Text(widget.title ??
+              (widget.services.isEvents ? s.evTitle : s.lzTitle)),
+          centerTitle: true),
       body: Column(children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
@@ -159,7 +162,8 @@ class _LeisureListScreenState extends State<LeisureListScreen> {
                   () => _apply(_filter.copyWith(query: q)));
             },
             decoration: InputDecoration(
-              hintText: s.lzSearchHint,
+              hintText:
+                  widget.services.isEvents ? s.evSearchHint : s.lzSearchHint,
               prefixIcon: const Icon(Icons.search_rounded),
               filled: true,
               border: OutlineInputBorder(

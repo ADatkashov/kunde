@@ -23,13 +23,17 @@ import org.springframework.web.bind.annotation.*;
 public class LeisureExecutorController {
     private final LeisureExecutorService service;
     private final ConsumerIdentityService identity;
+    private final LeisurePartnerService gate;
 
-    public LeisureExecutorController(LeisureExecutorService service, ConsumerIdentityService identity) {
+    public LeisureExecutorController(LeisureExecutorService service, ConsumerIdentityService identity, LeisurePartnerService gate) {
+        this.gate = gate;
         this.service = service;
         this.identity = identity;
     }
 
     public record StepBody(@Pattern(regexp = "ACCEPT|DECLINE|START|COMPLETE|CANCEL") String step) {}
+
+    public record ScanBody(@jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(max = 100) String code) {}
 
     private static <T> ResponseEntity<T> ok(T body) { return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(body); }
 
@@ -41,5 +45,11 @@ public class LeisureExecutorController {
     @PostMapping("/assignments/{id}/step")
     ResponseEntity<Assignment> step(@AuthenticationPrincipal Jwt p, @PathVariable UUID id, @RequestBody StepBody body) {
         return ok(service.step(identity.get(p).id(), id, LeisureExecutorService.Step.valueOf(body.step() == null ? "ACCEPT" : body.step())));
+    }
+
+    /** Gate scan of an Events ticket by an assigned controller; verification and the single admission happen on the server. */
+    @PostMapping("/checkins")
+    ResponseEntity<LeisurePartnerService.CheckinResult> scan(@AuthenticationPrincipal Jwt p, @jakarta.validation.Valid @RequestBody ScanBody body) {
+        return ok(gate.gateScan(identity.get(p).id(), body.code()));
     }
 }

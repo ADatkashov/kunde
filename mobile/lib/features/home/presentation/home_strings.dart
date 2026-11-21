@@ -75,6 +75,7 @@ extension HomeStrings on KundeLocalizations {
   String get catHealth => _t('Здоровье', 'Денсаулық', 'Health');
   String get catAuto => _t('Авто', 'Авто', 'Auto');
   String get catEducation => _t('Обучение', 'Білім', 'Education');
+  String get catEvents => _t('События', 'Іс-шаралар', 'Events');
   String get catLeisure => _t('Досуг', 'Демалыс', 'Leisure');
   String get catAll => _t('Все сервисы', 'Барлық қызметтер', 'All services');
   String get allServicesTitle =>

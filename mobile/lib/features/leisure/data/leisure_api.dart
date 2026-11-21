@@ -7,6 +7,10 @@ import 'package:http/http.dart' as http;
 import '../../identity/auth_repository.dart';
 import 'leisure_models.dart';
 
+/// The two products on the one ticketing engine: Events (dated tickets) and Leisure (bookable activities). They differ only in the
+/// public catalogue paths; seats, holds, orders and tickets are shared (`leisure/...`).
+enum LeisureProduct { leisure, events }
+
 enum LeisureFailure {
   offline,
   sessionExpired,
@@ -37,6 +41,17 @@ class LeisureException implements Exception {
   String toString() => 'LeisureException($failure)';
 }
 
+/// Where the global search sends a query: Events (ticketed dated events), Leisure (bookable activities), both, or nowhere.
+class SearchRoute {
+  const SearchRoute(this.route, this.category);
+
+  factory SearchRoute.fromJson(Map<String, dynamic> json) => SearchRoute(
+      json['route'] as String? ?? 'NONE', json['category'] as String?);
+
+  final String route;
+  final String? category;
+}
+
 class SeatChoice {
   const SeatChoice(this.seatId, this.ticketTypeId);
 
@@ -52,6 +67,7 @@ class LeisureApi {
     required this.auth,
     http.Client? client,
     this.timeout = const Duration(seconds: 20),
+    this.product = LeisureProduct.leisure,
   })  : _base = baseUri.toString().endsWith('/')
             ? baseUri
             : baseUri.replace(path: '${baseUri.path}/'),
@@ -61,6 +77,24 @@ class LeisureApi {
   final http.Client _client;
   final AuthRepository auth;
   final Duration timeout;
+  final LeisureProduct product;
+
+  /// The same client (connection, session, timeout) reading the catalogue of another product.
+  LeisureApi forProduct(LeisureProduct other) => LeisureApi(
+        baseUri: _base,
+        auth: auth,
+        client: _client,
+        timeout: timeout,
+        product: other,
+      );
+
+  bool get _events => product == LeisureProduct.events;
+  String get _categoriesPath =>
+      _events ? 'events/categories' : 'leisure/categories';
+  String get _listPath => _events ? 'events' : 'leisure/events';
+  String get _homePath => _events ? 'events/home' : 'leisure/home';
+  String _detailPath(String id) =>
+      _events ? 'events/$id' : 'leisure/events/$id';
 
   Future<T> _guard<T>(Future<T> Function() call) async {
     try {
@@ -85,7 +119,7 @@ class LeisureApi {
   }
 
   static LeisureFailure _map(IdentityApiError error) => switch (error.code) {
-        'LEISURE_DISABLED' => LeisureFailure.disabled,
+        'LEISURE_DISABLED' || 'EVENTS_DISABLED' => LeisureFailure.disabled,
         'SEAT_TAKEN' => LeisureFailure.seatTaken,
         'NOT_ENOUGH_PLACES' => LeisureFailure.notEnoughPlaces,
         'HOLD_EXPIRED' || 'HOLD_NOT_FOUND' => LeisureFailure.holdExpired,
@@ -131,14 +165,18 @@ class LeisureApi {
   static String _date(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
+  Future<SearchRoute> route(String query) async =>
+      SearchRoute.fromJson((await _public('search/route', {'q': query.trim()}))
+          as Map<String, dynamic>);
+
   Future<List<LeisureCategory>> categories() async =>
-      ((await _public('leisure/categories')) as List<dynamic>)
+      ((await _public(_categoriesPath)) as List<dynamic>)
           .map((e) => LeisureCategory.fromJson(e as Map<String, dynamic>))
           .toList(growable: false);
 
   Future<List<EventCard>> events(LeisureFilter f,
           {int limit = 30, int offset = 0}) async =>
-      ((await _public('leisure/events', {
+      ((await _public(_listPath, {
         if (f.query.trim().isNotEmpty) 'q': f.query.trim(),
         if (f.category != null) 'category': f.category!,
         if (f.district != null) 'district': f.district!,
@@ -165,7 +203,7 @@ class LeisureApi {
 
   /// Home sections (today, weekend, family, popular, near): every card comes from the real catalogue.
   Future<Map<String, List<EventCard>>> home({double? lat, double? lng}) async {
-    final json = (await _public('leisure/home', {
+    final json = (await _public(_homePath, {
       if (lat != null && lng != null) ...{'lat': '$lat', 'lng': '$lng'},
     })) as Map<String, dynamic>;
     return {
@@ -178,11 +216,11 @@ class LeisureApi {
   }
 
   Future<EventDetail> event(String id) async => EventDetail.fromJson(
-      (await _public('leisure/events/$id')) as Map<String, dynamic>);
+      (await _public(_detailPath(id))) as Map<String, dynamic>);
 
   Future<List<SessionInfo>> sessions(String eventId, DateTime from,
           {int days = 14}) async =>
-      ((await _public('leisure/events/$eventId/sessions',
+      ((await _public('${_detailPath(eventId)}/sessions',
               {'date': _date(from), 'days': '$days'})) as List<dynamic>)
           .map((e) => SessionInfo.fromJson(e as Map<String, dynamic>))
           .toList(growable: false);

@@ -3,6 +3,7 @@ import 'dart:async';
 import '../../assistant/assistant_screen.dart';
 import '../../auto/auto_services.dart';
 import '../../auto/presentation/auto_home_screen.dart';
+import '../../leisure/data/leisure_api.dart';
 import '../../leisure/leisure_services.dart';
 import '../../leisure/presentation/leisure_home_screen.dart';
 import '../../booking/booking_services.dart';
@@ -190,6 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
     bool deliveryEnabled, {
     bool autoEnabled = false,
     bool leisureEnabled = false,
+    bool eventsEnabled = false,
     bool healthEnabled = false,
     bool educationEnabled = false,
     bool groceriesEnabled = false,
@@ -258,6 +260,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ServiceCategory(
           icon: Icons.confirmation_number_rounded,
+          label: s.catEvents,
+          color: const Color(0xFF6425BE),
+          enabled: eventsEnabled && widget.leisure != null,
+        ),
+        ServiceCategory(
+          icon: Icons.sports_esports_rounded,
           label: s.catLeisure,
           color: const Color(0xFF8A5700),
           enabled: leisureEnabled && widget.leisure != null,
@@ -309,6 +317,15 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (_) =>
             EducationScreen(api: widget.api, auth: widget.educationAuth),
       ));
+    } else if (c.label == s.catEvents && c.enabled && widget.leisure != null) {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          settings: const RouteSettings(name: '/events'),
+          builder: (_) => LeisureHomeScreen(
+            services: widget.leisure!.forProduct(LeisureProduct.events),
+          ),
+        ),
+      );
     } else if (c.label == s.catLeisure && c.enabled && widget.leisure != null) {
       Navigator.of(context).push(
         MaterialPageRoute<void>(
@@ -421,6 +438,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   (snapshot?.deliveryEnabled ?? false) || _deliveryResume,
                   autoEnabled: snapshot?.autoEnabled ?? false,
                   leisureEnabled: snapshot?.leisureEnabled ?? false,
+                  eventsEnabled: snapshot?.eventsEnabled ?? false,
                   healthEnabled: snapshot?.healthEnabled ?? false,
                   educationEnabled: snapshot?.educationEnabled ?? false,
                   groceriesEnabled: snapshot?.groceriesEnabled ?? false,
@@ -439,6 +457,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     s.catBeauty,
                     s.catAuto,
                     if (snapshot?.educationEnabled == true) s.catEducation,
+                    s.catEvents,
                     s.catLeisure,
                     s.catHealth,
                     s.catAll,
