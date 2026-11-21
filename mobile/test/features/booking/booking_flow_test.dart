@@ -10,6 +10,8 @@ import 'package:kunde_mobile/features/booking/data/booking_models.dart';
 import 'package:kunde_mobile/features/booking/presentation/bookings_list.dart';
 import 'package:kunde_mobile/features/booking/presentation/category_screens.dart';
 import 'package:kunde_mobile/features/booking/presentation/services_home_screen.dart';
+import 'package:kunde_mobile/features/booking/presentation/venue_screen.dart';
+import 'package:kunde_mobile/features/health/health_favorites_screen.dart';
 import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
 import 'package:kunde_mobile/features/health/health_home_screen.dart';
 import 'package:kunde_mobile/features/home/data/kunde_api.dart';
@@ -91,6 +93,7 @@ class _FakeBackend {
   bool slotTakenOnBook = false;
   int slotRequests = 0;
   Uri? lastHealthSearch;
+  bool healthOrganizationSaved = false;
   Map<String, dynamic>? lastCleaningRequest;
 
   http.Response _json(Object body, [int status = 200]) =>
@@ -103,6 +106,21 @@ class _FakeBackend {
     final body = request.body.isEmpty
         ? null
         : jsonDecode(request.body) as Map<String, dynamic>;
+    if (path == 'booking/health/favorites') {
+      return _json([
+        if (healthOrganizationSaved)
+          {
+            'kind': 'ORGANIZATION',
+            'id': _healthVenueId,
+            'venueId': _healthVenueId,
+            'name': _healthVenue['name'],
+          },
+      ]);
+    }
+    if (path == 'booking/health/favorites/ORGANIZATION/$_healthVenueId') {
+      healthOrganizationSaved = request.method == 'PUT';
+      return http.Response('', 204);
+    }
     if (path == 'booking/health/venues') {
       lastHealthSearch = request.url;
       return _json([_healthVenue]);
@@ -335,6 +353,32 @@ void main() {
     await tester.pumpAndSettle();
     expect(backend.lastHealthSearch?.queryParameters['q'], 'Контур');
     expect(find.text('ДЕМО · Контур'), findsOneWidget);
+  });
+
+  testWidgets('Health favorites persist when the favorites screen reopens',
+      (tester) async {
+    final backend = _FakeBackend();
+    final services = await _services(backend);
+    await _show(
+      tester,
+      VenueScreen(
+          services: services, venue: BookingVenue.fromJson(_healthVenue)),
+    );
+    await tester.tap(find.byTooltip('В избранное').first);
+    await tester.pumpAndSettle();
+    expect(backend.healthOrganizationSaved, isTrue);
+    expect(find.byTooltip('Убрать из избранного'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(
+      MaterialApp(home: HealthFavoritesScreen(services: services)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('ДЕМО · Контур'), findsOneWidget);
+    await tester.tap(find.byTooltip('Убрать из избранного'));
+    await tester.pumpAndSettle();
+    expect(backend.healthOrganizationSaved, isFalse);
+    expect(find.text('Избранное пока пусто'), findsOneWidget);
   });
 
   testWidgets('Health specialist opens at 200% text in dark theme',
