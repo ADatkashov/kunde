@@ -419,6 +419,13 @@ class FoodApi {
       (await auth.authorizedJson('POST', 'food/orders/$id/cancel'))
           as Map<String, dynamic>));
 
+  /// Answers a replacement the store proposed for one line (accept = charged at the proposed price).
+  Future<FoodOrder> decideReplacement(
+          String orderId, String itemId, bool approve) =>
+      _guard(() async => FoodOrder.fromJson((await auth.authorizedJson(
+          'POST', 'food/orders/$orderId/items/$itemId/decision',
+          body: {'approve': approve})) as Map<String, dynamic>));
+
   Future<RepeatResult> repeat(String id) =>
       _guard(() async => RepeatResult.fromJson((await auth.authorizedJson(
           'GET', 'food/orders/$id/repeat')) as Map<String, dynamic>));

@@ -46,6 +46,33 @@ class S {
     }
   }
 
+  // ── Groceries picking ─────────────────────────────────────────────
+  String get pickDone => _t('Собрано', 'Жиналды', 'Picked');
+  String get pickMissing => _t('Нет в наличии', 'Қолда жоқ', 'Missing');
+  String get pickReplace => _t('Заменить', 'Ауыстыру', 'Replace');
+  String get pickChooseReplacement =>
+      _t('Выберите замену', 'Ауыстыруды таңдаңыз', 'Choose a replacement');
+  String get pickNoAlternatives => _t(
+      'Нет доступных замен того же вида',
+      'Сол түрдегі қолжетімді ауыстыру жоқ',
+      'No available replacements of the same kind');
+  String get pickProgress => _t('Сборка заказа', 'Тапсырысты жинау', 'Picking');
+  String get pickWaitingCustomer => _t('Ждём ответ покупателя',
+      'Сатып алушының жауабын күтеміз', 'Waiting for the customer');
+  String get pickMustFinish => _t(
+      'Отметьте каждую позицию, чтобы передать заказ',
+      'Тапсырысты беру үшін әр позицияны белгілеңіз',
+      'Mark every line to hand the order over');
+  String pickStatus(String status) => switch (status) {
+        'PENDING' => _t('Ожидает сборки', 'Жинауды күтеді', 'To pick'),
+        'PROPOSED' =>
+          _t('Замена предложена', 'Ауыстыру ұсынылды', 'Replacement proposed'),
+        'OK' => pickDone,
+        'SUBSTITUTED' => _t('Заменено', 'Ауыстырылды', 'Replaced'),
+        'REMOVED' => pickMissing,
+        _ => status,
+      };
+
   // ── Groceries product card ───────────────────────────────────────────
   String get productCard =>
       _t('Карточка товара', 'Тауар карточкасы', 'Product card');

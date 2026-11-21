@@ -7,6 +7,8 @@ import '../../core/theme.dart';
 import '../../data/models.dart';
 import '../../widgets/header_row.dart';
 import '../../widgets/status_chip.dart';
+import '../../core/error_text.dart';
+import '../../widgets/dialogs.dart';
 import 'order_actions.dart';
 import 'order_card.dart';
 
@@ -124,6 +126,19 @@ class _Body extends StatelessWidget {
                               Text(l.name, style: text.bodyLarge),
                               if (l.optionsText != null)
                                 Text(l.optionsText!, style: muted),
+                              if (l.itemId != null &&
+                                  l.fulfillmentStatus != 'PENDING')
+                                Text(
+                                    l.fulfillmentStatus == 'PROPOSED'
+                                        ? '${s.pickStatus('PROPOSED')}: ${l.proposedName ?? ''}'
+                                        : l.fulfillmentStatus == 'SUBSTITUTED'
+                                            ? '${s.pickStatus('SUBSTITUTED')}: ${l.replacedByName ?? ''}'
+                                            : s.pickStatus(l.fulfillmentStatus),
+                                    style: muted),
+                              if (order.status == 'PREPARING' &&
+                                  l.itemId != null &&
+                                  l.fulfillmentStatus == 'PENDING')
+                                _PickRow(order: order, line: l, store: store),
                             ]),
                       ),
                       Text(
@@ -203,5 +218,93 @@ class _Body extends StatelessWidget {
         ),
       ],
     ]);
+  }
+}
+
+/// Per-line picking while the order is prepared: picked, missing or replace. The server decides whether a replacement
+/// needs the customer's answer (it does unless the customer pre-approved it).
+class _PickRow extends StatelessWidget {
+  const _PickRow(
+      {required this.order, required this.line, required this.store});
+
+  final PartnerOrder order;
+  final OrderLine line;
+  final OpsStore store;
+
+  Future<void> _run(BuildContext context, String action,
+      {String? dishId}) async {
+    final s = S.of(context);
+    try {
+      await store.pickLine(order.id, line.itemId!, action,
+          replacementDishId: dishId);
+    } on Object catch (e) {
+      if (context.mounted) showToast(context, errorText(s, e), error: true);
+    }
+  }
+
+  Future<void> _replace(BuildContext context) async {
+    final s = S.of(context);
+    final restaurantId = order.restaurantId;
+    if (restaurantId == null) return;
+    List<Dish> options;
+    try {
+      options = (await store.ops.dishes(restaurantId))
+          .where((d) =>
+              d.available &&
+              d.id != line.dishId &&
+              (d.unit == (line.unit ?? 'PIECE')) &&
+              (d.stockQty == null || d.stockQty! > 0))
+          .toList();
+    } on Object catch (e) {
+      if (context.mounted) showToast(context, errorText(s, e), error: true);
+      return;
+    }
+    if (!context.mounted) return;
+    final chosen = await showModalBottomSheet<Dish>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(Gap.lg, 0, Gap.lg, Gap.lg),
+          children: [
+            Text(s.pickChooseReplacement, style: context.text.titleMedium),
+            const SizedBox(height: Gap.sm),
+            if (options.isEmpty) Text(s.pickNoAlternatives),
+            for (final d in options)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(d.name),
+                trailing: Text(formatMoney(d.priceMinor)),
+                onTap: () => Navigator.pop(context, d),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (chosen != null && context.mounted) {
+      await _run(context, 'REPLACE', dishId: chosen.id);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    final busy = store.isBusy(order.id);
+    return Padding(
+      padding: const EdgeInsets.only(top: Gap.sm),
+      child: Wrap(spacing: Gap.sm, runSpacing: Gap.sm, children: [
+        FilledButton.tonal(
+            onPressed: busy ? null : () => _run(context, 'PICKED'),
+            child: Text(s.pickDone)),
+        OutlinedButton(
+            onPressed: busy ? null : () => _run(context, 'MISSING'),
+            child: Text(s.pickMissing)),
+        OutlinedButton(
+            onPressed: busy ? null : () => _replace(context),
+            child: Text(s.pickReplace)),
+      ]),
+    );
   }
 }

@@ -123,6 +123,10 @@ public class FoodPartnerService {
             throw new ApiException(HttpStatus.CONFLICT, "ORDER_TRANSITION_INVALID",
                     "The order cannot move from " + status + " to " + to);
         }
+        if (("READY_FOR_PICKUP".equals(to) || "ON_THE_WAY".equals(to)) && orders.interactivePicking(orderId) && orders.pickingOpen(orderId)) {
+            throw new ApiException(HttpStatus.CONFLICT, "PICKING_INCOMPLETE",
+                    "Every line must be picked, replaced or marked missing, and replacements need the customer's answer");
+        }
         if ("CANCELLED".equals(to) && (clean == null || clean.length() < 3 || clean.length() > 300)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "REASON_REQUIRED", "A reason of 3-300 characters is required");
         }
@@ -140,10 +144,18 @@ public class FoodPartnerService {
                 insert into transactions.food_order_events (order_id, status, actor_type, actor_user_id, reason)
                 values (?, ?, 'PARTNER', ?, ?)
                 """, orderId, to, actor, "CANCELLED".equals(to) ? clean : null);
-        if ("PREPARING".equals(to)) {
+        if ("PREPARING".equals(to) && !orders.interactivePicking(orderId)) {
             // The store collects the order: unavailable products are replaced or removed per the customer's choice.
             orders.resolveLines(orderId, OffsetDateTime.now());
         }
+        return wrap(List.of(orderId)).get(0);
+    }
+
+    /** Picking of one line (PICKED, MISSING, REPLACE) by the store that owns the order. */
+    @Transactional
+    public PartnerOrder pick(UUID actor, UUID partnerId, UUID orderId, UUID itemId, String action, UUID replacementDishId) {
+        partners.requireProcessing(actor, partnerId);
+        orders.pickItem(partnerId, orderId, itemId, action, replacementDishId);
         return wrap(List.of(orderId)).get(0);
     }
 

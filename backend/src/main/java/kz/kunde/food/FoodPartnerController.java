@@ -61,6 +61,12 @@ public class FoodPartnerController {
         return ok(service.transition(user(principal), partnerId, orderId, request.status(), request.reason()));
     }
 
+    @PostMapping("/orders/{orderId}/items/{itemId}/pick")
+    ResponseEntity<PartnerOrder> pick(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
+            @PathVariable UUID orderId, @PathVariable UUID itemId, @Valid @RequestBody PickRequest request) {
+        return ok(service.pick(user(principal), partnerId, orderId, itemId, request.action(), request.replacementDishId()));
+    }
+
     @GetMapping("/restaurants")
     ResponseEntity<List<RestaurantView>> restaurants(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId) {
         return ok(service.restaurants(user(principal), partnerId));
@@ -165,6 +171,8 @@ public class FoodPartnerController {
 
     public record StatusRequest(@NotBlank @Pattern(regexp = "ACCEPTED|PREPARING|READY_FOR_PICKUP|ON_THE_WAY|DELIVERED|CANCELLED") String status,
             @Size(max = 300) String reason) {}
+
+    public record PickRequest(@NotBlank @Pattern(regexp = "PICKED|MISSING|REPLACE") String action, UUID replacementDishId) {}
 
     public record OpenRequest(Boolean open, Boolean pickupEnabled, @Min(1) @Max(240) Integer prepMinutes,
             @Min(1) @Max(240) Integer etaMinMinutes, @Min(1) @Max(240) Integer etaMaxMinutes,

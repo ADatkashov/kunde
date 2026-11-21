@@ -108,6 +108,7 @@ class _FakeBackend {
   final restaurantQueries = <Map<String, String>>[];
   final favorites = <String>{};
   final reviews = <Map<String, dynamic>>[];
+  final decisions = <bool>[];
   bool withPromotions = false;
   int minOrder = 0;
 
@@ -158,6 +159,22 @@ class _FakeBackend {
         'distribution': [0, 0, 0, reviews.length, 0],
         'reviews': reviews,
       });
+    }
+    final decision = RegExp(r'^food/orders/([^/]+)/items/([^/]+)/decision$')
+        .firstMatch(path);
+    if (decision != null && request.method == 'POST') {
+      final order = orders.firstWhere((o) => o['id'] == decision.group(1));
+      decisions.add(body!['approve'] as bool);
+      final items = (order['items'] as List).cast<Map<String, dynamic>>();
+      for (final item in items) {
+        if (item['itemId'] == decision.group(2)) {
+          item['fulfillmentStatus'] =
+              body['approve'] == true ? 'SUBSTITUTED' : 'REMOVED';
+          item['replacedByName'] = item['proposedName'];
+          item['finalLineTotalMinor'] = body['approve'] == true ? 80000 : 0;
+        }
+      }
+      return _json(order);
     }
     if (path.endsWith('/review') && request.method == 'POST') {
       final id = path.split('/')[2];
@@ -984,6 +1001,67 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('review-done')), findsOneWidget);
     expect(find.byKey(const Key('review-card')), findsNothing);
+  });
+
+  testWidgets(
+      'a replacement proposed by the store is shown with its price and answered by the customer',
+      (tester) async {
+    final backend = _FakeBackend();
+    backend.orders.add({
+      'id': 'eeeeeeee-0000-0000-0000-000000000001',
+      'restaurantId': _restaurantId,
+      'restaurantName': 'Маркет Тест',
+      'vertical': 'GROCERY',
+      'status': 'PREPARING',
+      'fulfillmentType': 'DELIVERY',
+      'paymentMethod': 'TEST_CARD',
+      'paymentStatus': 'TEST_PAID',
+      'subtotalMinor': 100000,
+      'deliveryFeeMinor': 0,
+      'totalMinor': 100000,
+      'addressLabel': 'Дом',
+      'addressText': 'Алматы',
+      'comment': null,
+      'placedAt': DateTime.now().toUtc().toIso8601String(),
+      'cancellable': false,
+      'timeline': [
+        for (final s in ['PLACED', 'ACCEPTED', 'PREPARING'])
+          {'status': s, 'at': DateTime.now().toUtc().toIso8601String()}
+      ],
+      'items': [
+        {
+          'itemId': 'item-1',
+          'dishId': _dishId,
+          'name': 'Молоко 1 л',
+          'optionsText': '',
+          'unit': 'PIECE',
+          'unitPriceMinor': 50000,
+          'quantity': 2,
+          'lineTotalMinor': 100000,
+          'substitution': 'NONE',
+          'fulfillmentStatus': 'PROPOSED',
+          'proposedName': 'Молоко 0,9 л',
+          'proposedUnitPriceMinor': 40000,
+        },
+      ],
+    });
+    final services = await _services(backend, tester);
+    await _show(
+        tester,
+        OrderScreen(
+            services: services,
+            orderId: 'eeeeeeee-0000-0000-0000-000000000001'),
+        size: const Size(640, 2400),
+        pixelRatio: 1,
+        locale: const Locale('ru'));
+    expect(find.textContaining('Магазин предлагает замену: «Молоко 0,9 л»'),
+        findsOneWidget);
+    expect(find.textContaining(formatTenge(80000)), findsWidgets);
+    await tester.tap(find.text('Принять замену'));
+    await tester.pumpAndSettle();
+    expect(backend.decisions, [true]);
+    expect(find.text('Принять замену'), findsNothing);
+    expect(find.textContaining('Заменено на: Молоко 0,9 л'), findsOneWidget);
   });
 
   testWidgets('cancelled flowers order does not claim a payment was voided',

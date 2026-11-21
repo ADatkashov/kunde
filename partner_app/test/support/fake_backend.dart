@@ -41,7 +41,10 @@ Map<String, dynamic> orderEntry({
   DateTime? placedAt,
   bool withDeadline = true,
   String? cancelReason,
+  Map<String, String>? picks,
 }) {
+  String lineStatus(String item) =>
+      picks == null ? 'PENDING' : (picks[item] ?? 'PENDING');
   final placed =
       placedAt ?? DateTime.now().subtract(const Duration(minutes: 1));
   return {
@@ -61,12 +64,24 @@ Map<String, dynamic> orderEntry({
       'placedAt': placed.toUtc().toIso8601String(),
       'items': [
         {
+          'itemId': 'item-1',
+          'dishId': 'dish-1',
           'name': 'Лагман',
           'quantity': 2,
           'lineTotalMinor': 240000,
-          'optionsText': 'Острый'
+          'optionsText': 'Острый',
+          'unit': 'PIECE',
+          'fulfillmentStatus': lineStatus('item-1'),
         },
-        {'name': 'Чай', 'quantity': 1, 'lineTotalMinor': 120000},
+        {
+          'itemId': 'item-2',
+          'dishId': 'dish-2',
+          'name': 'Чай',
+          'quantity': 1,
+          'lineTotalMinor': 120000,
+          'unit': 'PIECE',
+          'fulfillmentStatus': lineStatus('item-2'),
+        },
       ],
       'timeline': [
         {
@@ -140,6 +155,7 @@ class FakeBackend {
   final List<(String, Map<String, dynamic>)> bodies = [];
   late List<Map<String, dynamic>> partners;
   List<Map<String, dynamic>> activeOrders = [orderEntry()];
+  final picks = <String, String>{};
   List<Map<String, dynamic>> historyOrders = [];
   List<Map<String, dynamic>> requests = [bookingJson()];
   List<Map<String, dynamic>> upcoming = [];
@@ -299,6 +315,21 @@ class FakeBackend {
       }
       final managed = _manage(r, rest);
       if (managed != null) return managed;
+      final pick =
+          RegExp(r'food/orders/([^/]+)/items/([^/]+)/pick').firstMatch(rest);
+      if (pick != null && r.method == 'POST') {
+        final body = jsonDecode(r.body) as Map<String, dynamic>;
+        picks[pick.group(2)!] = switch (body['action']) {
+          'PICKED' => 'OK',
+          'MISSING' => 'REMOVED',
+          _ => 'PROPOSED',
+        };
+        return json(orderEntry(
+            id: pick.group(1)!,
+            status: 'PREPARING',
+            allowedNext: const [],
+            picks: picks));
+      }
       final order = RegExp(r'food/orders/([^/]+)/status').firstMatch(rest);
       if (order != null && r.method == 'POST') {
         final body = jsonDecode(r.body) as Map<String, dynamic>;

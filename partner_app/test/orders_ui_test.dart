@@ -202,4 +202,33 @@ void main() {
     expect(find.textContaining('2× Лагман'), findsOneWidget);
     expect(find.textContaining('Сервис временно недоступен'), findsOneWidget);
   });
+
+  testWidgets(
+      'picking: lines are marked picked or missing, replacements need a choice',
+      (tester) async {
+    final h = Harness();
+    h.backend.activeOrders = [
+      orderEntry(
+          status: 'PREPARING',
+          allowedNext: const ['READY_FOR_PICKUP', 'ON_THE_WAY'],
+          picks: h.backend.picks),
+    ];
+    await pumpReady(tester, h);
+    await tester.tap(find.text('В работе'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Лагман'));
+    await tester.pumpAndSettle();
+    expect(find.text('Собрано'), findsNWidgets(2));
+    await tester.tap(find.text('Собрано').first);
+    await settle(tester);
+    expect(
+        h.backend.count(
+            'POST partner/partners/$partnerId/food/orders/$orderId/items/item-1/pick'),
+        1);
+    expect(h.backend.picks['item-1'], 'OK');
+    await tester.tap(find.text('Нет в наличии'));
+    await settle(tester);
+    expect(h.backend.picks['item-2'], 'REMOVED');
+    expect(find.text('Собрано'), findsWidgets);
+  });
 }

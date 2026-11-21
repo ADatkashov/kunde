@@ -70,8 +70,20 @@ class OrderLine {
     required this.lineTotalMinor,
     this.optionsText,
     this.unit,
+    this.itemId,
+    this.dishId,
+    this.fulfillmentStatus = 'PENDING',
+    this.substitution = 'NONE',
+    this.replacedByName,
+    this.proposedName,
   });
   factory OrderLine.fromJson(Map<String, dynamic> j) => OrderLine(
+        itemId: _str(j['itemId']),
+        dishId: _str(j['dishId']),
+        fulfillmentStatus: _str(j['fulfillmentStatus']) ?? 'PENDING',
+        substitution: _str(j['substitution']) ?? 'NONE',
+        replacedByName: _str(j['replacedByName']),
+        proposedName: _str(j['proposedName']),
         name: _str(j['name']) ?? '',
         quantity: _int(j['quantity']),
         lineTotalMinor: _int(j['finalLineTotalMinor'] ?? j['lineTotalMinor']),
@@ -83,6 +95,16 @@ class OrderLine {
   final int lineTotalMinor;
   final String? optionsText;
   final String? unit;
+  final String? itemId;
+  final String? dishId;
+
+  /// `PENDING` (waits for the store), `PROPOSED` (replacement waits for the customer), `OK`, `SUBSTITUTED`, `REMOVED`.
+  final String fulfillmentStatus;
+
+  /// The customer's consent: `NONE`, `ANY_SIMILAR` or `CHOSEN`.
+  final String substitution;
+  final String? replacedByName;
+  final String? proposedName;
 }
 
 class PartnerOrder {
@@ -90,6 +112,7 @@ class PartnerOrder {
     required this.id,
     required this.status,
     required this.restaurantName,
+    this.restaurantId,
     required this.totalMinor,
     required this.subtotalMinor,
     required this.deliveryFeeMinor,
@@ -120,6 +143,7 @@ class PartnerOrder {
       id: _id(o, 'order'),
       status: _str(o['status']) ?? '',
       restaurantName: _str(o['restaurantName']) ?? '',
+      restaurantId: _str(o['restaurantId']),
       totalMinor: _int(o['finalTotalMinor'] ?? o['totalMinor']),
       subtotalMinor: _int(o['subtotalMinor']),
       deliveryFeeMinor: _int(o['deliveryFeeMinor']),
@@ -150,6 +174,7 @@ class PartnerOrder {
   final String id;
   final String status;
   final String restaurantName;
+  final String? restaurantId;
   final int totalMinor;
   final int subtotalMinor;
   final int deliveryFeeMinor;

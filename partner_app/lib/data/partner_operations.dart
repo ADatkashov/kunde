@@ -65,6 +65,18 @@ class PartnerOperations {
     return PartnerOrder.fromJson(json);
   }
 
+  /// Picking of one order line while the order is being prepared: `PICKED`, `MISSING` or `REPLACE` (with a replacement dish).
+  Future<PartnerOrder> pickItem(String orderId, String itemId, String action,
+      {String? replacementDishId}) async {
+    final json = await api.postMap(
+        '$_root/food/orders/${Uri.encodeComponent(orderId)}/items/${Uri.encodeComponent(itemId)}/pick',
+        {
+          'action': action,
+          if (replacementDishId != null) 'replacementDishId': replacementDishId,
+        });
+    return PartnerOrder.fromJson(json);
+  }
+
   // ── Bookings ──────────────────────────────────────────────────────
   Future<List<PartnerBooking>> bookings(
       {required String scope, int limit = 30, int offset = 0}) async {
