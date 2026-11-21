@@ -2,7 +2,9 @@ package kz.kunde.booking;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -102,6 +104,41 @@ class BookingApiIntegrationTest {
     private String book(String slug, String service, String master, String startsAt, String comment) {
         return "{\"venueId\":\"" + venueId(slug) + "\",\"serviceId\":\"" + serviceId(slug, service) + "\",\"masterId\":\""
                 + masterId(slug, master) + "\",\"startsAt\":\"" + startsAt + "\"" + (comment == null ? "" : ",\"comment\":\"" + comment + "\"") + "}";
+    }
+
+    @Test
+    void healthFavoritesArePrivateIdempotentAndLimitedToPublicTargets() throws Exception {
+        try (var in = new ClassPathResource("health/demo-venues.json").getInputStream()) {
+            new BookingDemoSeeder(db).seed(new ObjectMapper().readTree(in));
+        }
+        var path = "/api/v1/booking/health/favorites";
+        var clinic = "health-demo-clinic";
+        var clinicId = venueId(clinic);
+        var organization = path + "/ORGANIZATION/" + clinicId;
+        var specialist = path + "/SPECIALIST/" + masterId(clinic, "Профиль М-01");
+        var wellness = path + "/WELLNESS_SERVICE/" + serviceId("health-demo-fitness", "Персональная тренировка");
+        var medical = path + "/WELLNESS_SERVICE/" + serviceId(clinic, "Приём терапевта");
+        send("GET", path, null, null, null).andExpect(status().isUnauthorized());
+        var owner = "Bearer " + login("+77000000301");
+        var other = "Bearer " + login("+77000000302");
+        for (String target : List.of(organization, specialist, wellness, organization)) {
+            http.perform(put(target).header("Authorization", owner)).andExpect(status().isNoContent());
+        }
+        http.perform(put(medical).header("Authorization", owner)).andExpect(status().isNotFound());
+        http.perform(get(path).header("Authorization", other)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+        http.perform(delete(organization).header("Authorization", other)).andExpect(status().isNoContent());
+        http.perform(get(path).header("Authorization", owner)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(3));
+
+        db.update("update marketplace.booking_venues set health_published = false where id = ?",
+                UUID.fromString(clinicId));
+        http.perform(get(path).header("Authorization", owner)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].kind").value("WELLNESS_SERVICE"));
+        http.perform(delete(wellness).header("Authorization", owner)).andExpect(status().isNoContent());
+        http.perform(get(path).header("Authorization", owner)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
     }
 
     @Test
