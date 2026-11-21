@@ -86,11 +86,15 @@ def partner_login():
     android.adb("install", apk)
     android.adb("shell", "am", "start", "-W", "-n", f"{package}/.MainActivity")
     android.tap(node_class="android.widget.EditText")
-    android.adb("shell", "input", "text", OWNER[1:])
+    time.sleep(.5)
+    for digit in OWNER[1:]:
+        android.adb("shell", "input", "text", digit)
     android.adb("shell", "input", "keyevent", "4")
     mobile.tap("Получить код", "Код алу", "Get code")
-    android.find("Код подтверждения", "Растау коды", "Verification code", timeout=60)
-    android.adb("shell", "input", "text", "123456")
+    android.find("Войти", "Кіру", "Sign in", timeout=60)
+    time.sleep(.5)
+    for digit in "123456":
+        android.adb("shell", "input", "text", digit)
     android.adb("shell", "input", "keyevent", "4")
     mobile.tap("Войти", "Кіру", "Sign in", clickable=True)
     android.find("Заведение", "Мекеме", "Business", timeout=60)
