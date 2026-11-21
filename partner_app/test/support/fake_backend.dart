@@ -144,6 +144,7 @@ class FakeBackend {
   List<Map<String, dynamic>> requests = [bookingJson()];
   List<Map<String, dynamic>> upcoming = [];
   List<Map<String, dynamic>> bookingHistory = [];
+  List<Map<String, dynamic>> promotions = [];
   List<Map<String, dynamic>> restaurants = [
     {
       'id': 'rest-1',
@@ -293,6 +294,7 @@ class FakeBackend {
           });
         }
         if (rest == 'food/restaurants') return json(restaurants);
+        if (rest == 'food/promotions') return json(promotions);
         if (rest == 'booking/venues') return json(venues);
       }
       final managed = _manage(r, rest);
@@ -397,12 +399,33 @@ class FakeBackend {
       ];
       return json(services.firstWhere((x) => x['id'] == svc.group(1)));
     }
+    if (rest == 'food/promotions' && r.method == 'POST') {
+      if (operatorRole) return forbidden;
+      final b = body();
+      final created = {
+        'id': 'promo-${promotions.length + 1}',
+        'status': 'ACTIVE',
+        'redeemed': 0,
+        ...b,
+      };
+      promotions = [created, ...promotions];
+      return json(created);
+    }
+    final promoStatus =
+        RegExp(r'^food/promotions/([^/]+)/status$').firstMatch(rest);
+    if (promoStatus != null && r.method == 'POST') {
+      promotions = [
+        for (final x in promotions)
+          x['id'] == promoStatus.group(1) ? {...x, 'status': body()['status']} : x
+      ];
+      return json(promotions.firstWhere((x) => x['id'] == promoStatus.group(1)));
+    }
     var m = RegExp(r'^food/restaurants/([^/]+)$').firstMatch(rest);
     if (m != null && r.method == 'PATCH') {
       if (operatorRole) return forbidden;
       restaurants = [
         for (final x in restaurants)
-          x['id'] == m.group(1) ? {...x, 'open': body()['open']} : x
+          x['id'] == m.group(1) ? {...x, ...body()} : x
       ];
       return json(restaurants.firstWhere((x) => x['id'] == m!.group(1)));
     }

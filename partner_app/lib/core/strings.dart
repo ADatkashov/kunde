@@ -719,6 +719,33 @@ class S {
   String get dishUnavailable => _t('Нет в наличии', 'Жоқ', 'Unavailable');
   String stockLeft(int n) => _t('Остаток: $n', 'Қалдық: $n', 'In stock: $n');
   String get addDish => _t('Добавить блюдо', 'Тағам қосу', 'Add dish');
+  String get restaurantSettings => _t(
+      'Условия заказа', 'Тапсырыс шарттары', 'Ordering settings');
+  String get pickupSetting =>
+      _t('Принимать самовывоз', 'Өзі алып кетуді қабылдау', 'Accept pickup');
+  String prepTime(int m) =>
+      _t('Время готовности: $m мин', 'Дайындау уақыты: $m мин', 'Preparation time: $m min');
+  String get promotionsTitle => _t('Акции', 'Акциялар', 'Promotions');
+  String get promotionsEmpty =>
+      _t('Акций пока нет', 'Акциялар әлі жоқ', 'No promotions yet');
+  String get promotionNew => _t('Новая акция', 'Жаңа акция', 'New promotion');
+  String get promotionTitleLabel =>
+      _t('Название акции', 'Акция атауы', 'Promotion title');
+  String get promotionCodeLabel => _t('Промокод (необязательно)',
+      'Промокод (міндетті емес)', 'Promo code (optional)');
+  String get promotionPercent => _t('Процент', 'Пайыз', 'Percent');
+  String get promotionFixed => _t('Сумма', 'Сома', 'Amount');
+  String get promotionValueLabel => _t('Размер скидки (% или ₸)',
+      'Жеңілдік мөлшері (% немесе ₸)', 'Discount (% or ₸)');
+  String get promotionDaysLabel =>
+      _t('Срок, дней (1–90)', 'Мерзімі, күн (1–90)', 'Duration, days (1–90)');
+  String get promotionLimits => _t(
+      'Для партнёра: скидка до 50 % или до 5 000 ₸, срок до 90 дней.',
+      'Серіктес үшін: 50 %-ға дейін немесе 5 000 ₸-ге дейін, 90 күнге дейін.',
+      'For partners: up to 50 % or 5,000 ₸, up to 90 days.');
+  String get promotionPause => _t('Приостановить', 'Тоқтата тұру', 'Pause');
+  String get promotionResume => _t('Возобновить', 'Жалғастыру', 'Resume');
+  String get promotionCreate => _t('Создать', 'Жасау', 'Create');
   String get editDish => _t('Изменить блюдо', 'Тағамды өзгерту', 'Edit dish');
   String get dishName => _t('Название', 'Атауы', 'Name');
   String get dishDescription => _t('Описание (необязательно)',

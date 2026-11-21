@@ -10,6 +10,7 @@ import '../../data/partner_operations.dart';
 import '../../widgets/dialogs.dart';
 import '../../widgets/states.dart';
 import 'dish_sheet.dart';
+import 'restaurant_settings_sheet.dart';
 
 /// Menu of one restaurant: availability for everyone with processing rights,
 /// name/price/stock editing and adding dishes for Owner/Manager.
@@ -93,7 +94,24 @@ class _RestaurantPageState extends State<RestaurantPage> {
     final s = S.of(context);
     final dishes = _dishes;
     return Scaffold(
-      appBar: AppBar(title: Text(widget.restaurant.name)),
+      appBar: AppBar(
+        title: Text(widget.restaurant.name),
+        actions: [
+          if (widget.canManage)
+            IconButton(
+              key: const Key('restaurant-settings'),
+              tooltip: s.restaurantSettings,
+              icon: const Icon(Icons.tune_rounded),
+              onPressed: () => showModalBottomSheet<void>(
+                context: context,
+                isScrollControlled: true,
+                showDragHandle: true,
+                builder: (_) => RestaurantSettingsSheet(
+                    store: widget.store, restaurant: widget.restaurant),
+              ),
+            ),
+        ],
+      ),
       floatingActionButton: widget.canManage && dishes != null
           ? FloatingActionButton.extended(
               onPressed: () => _edit(null),

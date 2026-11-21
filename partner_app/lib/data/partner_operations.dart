@@ -100,6 +100,45 @@ class PartnerOperations {
   Future<Restaurant> setRestaurantOpen(String id, bool open) async =>
       Restaurant.fromJson(await api.patchMap(_restaurant(id), {'open': open}));
 
+  /// Owner/Manager only (the server enforces it and audits every changed field).
+  Future<Restaurant> updateRestaurantSettings(String id,
+          {bool? pickupEnabled, int? prepMinutes}) async =>
+      Restaurant.fromJson(await api.patchMap(_restaurant(id), {
+        if (pickupEnabled != null) 'pickupEnabled': pickupEnabled,
+        if (prepMinutes != null) 'prepMinutes': prepMinutes,
+      }));
+
+  // ── Promotions ────────────────────────────────────────────────────
+  Future<List<FoodPromotion>> promotions() async =>
+      (await api.getList('$_root/food/promotions'))
+          .map(FoodPromotion.fromJson)
+          .toList();
+
+  Future<FoodPromotion> createPromotion({
+    required String restaurantId,
+    required String title,
+    required String kind,
+    required int value,
+    required DateTime endsAt,
+    String? code,
+    int minSubtotalMinor = 0,
+  }) async =>
+      FoodPromotion.fromJson(await api.postMap('$_root/food/promotions', {
+        'restaurantId': restaurantId,
+        'title': title,
+        'kind': kind,
+        'value': value,
+        'endsAt': endsAt.toUtc().toIso8601String(),
+        'minSubtotalMinor': minSubtotalMinor,
+        if (code != null && code.isNotEmpty) 'code': code,
+      }));
+
+  Future<FoodPromotion> setPromotionStatus(String id, String status) async =>
+      FoodPromotion.fromJson(await api
+          .postMap('$_root/food/promotions/${Uri.encodeComponent(id)}/status', {
+        'status': status,
+      }));
+
   Future<List<Dish>> dishes(String restaurantId) async =>
       (await api.getList('${_restaurant(restaurantId)}/dishes'))
           .map(Dish.fromJson)

@@ -23,6 +23,7 @@ FakeBackend backend({String role = 'OWNER'}) {
 }
 
 void main() {
+  foodSettingsTests();
   test('price parsing: tenge with optional kopeks, bounded', () {
     expect(parsePriceMinor('1500'), 150000);
     expect(parsePriceMinor('1 500'), 150000);
@@ -224,5 +225,73 @@ void main() {
     await pumpReady(tester, h, tab: 'Заведение');
     expect(find.text('Услуги и записи'), findsNothing);
     expect(find.text('Рестораны'), findsOneWidget);
+  });
+}
+
+void foodSettingsTests() {
+  testWidgets(
+      'owner changes pickup and preparation time, sent as one PATCH each',
+      (tester) async {
+    final b = backend();
+    final h = Harness(backend: b);
+    await pumpReady(tester, h, tab: 'Заведение');
+    await tester.tap(find.text('Кухня партнёра'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('restaurant-settings')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('pickup-switch')));
+    await settle(tester, ms: 80);
+    expect(
+        b.calls.where((c) =>
+            c.startsWith('PATCH') && c.contains('food/restaurants/rest-1')),
+        hasLength(1));
+    expect(
+        tester
+            .widget<SwitchListTile>(find.byKey(const Key('pickup-switch')))
+            .value,
+        isFalse);
+    await tester.tap(find.byKey(const Key('prep-plus')));
+    await settle(tester, ms: 80);
+    expect(find.textContaining('25 мин'), findsOneWidget);
+  });
+
+  testWidgets('operator has no settings entry', (tester) async {
+    final b = backend(role: 'OPERATOR');
+    final h = Harness(backend: b);
+    await pumpReady(tester, h, tab: 'Заведение');
+    await tester.tap(find.text('Кухня партнёра'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('restaurant-settings')), findsNothing);
+  });
+
+  testWidgets('owner creates a promotion; the form refuses an empty title',
+      (tester) async {
+    final b = backend();
+    final h = Harness(backend: b);
+    await pumpReady(tester, h, tab: 'Заведение');
+    await tester.tap(find.text('Кухня партнёра'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('restaurant-settings')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('open-promotions')));
+    await tester.pumpAndSettle();
+    expect(find.text('Акций пока нет'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('new-promotion')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('promo-submit')));
+    await tester.pumpAndSettle();
+    expect(b.count('POST partner/partners/$partnerId/food/promotions'), 0);
+    await tester.enterText(
+        find.byKey(const Key('promo-title')), 'Скидка недели');
+    await tester.enterText(find.byKey(const Key('promo-code')), 'week15');
+    await tester.enterText(find.byKey(const Key('promo-value')), '15');
+    await tester.tap(find.byKey(const Key('promo-submit')));
+    await settle(tester, ms: 80);
+    expect(b.count('POST partner/partners/$partnerId/food/promotions'), 1);
+    expect(find.text('Скидка недели'), findsOneWidget);
+    expect(find.textContaining('WEEK15'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('promotion-toggle-promo-1')));
+    await settle(tester, ms: 80);
+    expect(find.textContaining('PAUSED'), findsOneWidget);
   });
 }
