@@ -166,15 +166,11 @@ def main():
         launch_and_login("executor", "com.kunde.executor", INSTRUCTOR, "KUNDE Executor")
         mobile.tap("Мои занятия", "Сабақтарым", "My classes")
         mobile.reveal(TITLE)
-        for attempt in range(2):
-            mobile.tap(resource_id=f"education-roster-{cohort}")
-            try:
-                android.find("Посещаемость", "Қатысу", "Attendance", timeout=15)
-                break
-            except RuntimeError:
-                if attempt:
-                    raise
-        mobile.tap(resource_id=f"education-attendance-present-{enrollment['id']}")
+        # Tap the accessible button itself. The parent Semantics node can
+        # expose different hit bounds than the button on Android.
+        mobile.tap("Открыть список", "Тізімді ашу", "Open roster", clickable=True)
+        android.find("Посещаемость", "Қатысу", "Attendance", timeout=20)
+        mobile.tap("Присутствовал", "Қатысты", "Present", clickable=True)
         for _ in range(15):
             result = fixture.call("GET", f"executor/education/sessions/{cohort}/roster", token=teacher)
             if any(row["id"] == enrollment["id"] and row["attendance"] == "PRESENT" for row in result):
@@ -185,8 +181,9 @@ def main():
         android.screenshot("02-executor-attendance")
         fixture.completed.append("executor_attendance")
         fixture.write_report("PASSED", "completed")
-    except Exception:
+    except Exception as error:
         fixture.write_report("FAILED", phase)
+        (REPORT / "failure-step.txt").write_text(str(error), encoding="utf-8")
         try:
             android.screenshot("failure")
         except Exception:
