@@ -106,15 +106,12 @@ public class EducationEnrollmentService {
 
     public Learning learning(UUID user, UUID id) {
         var enrollment = owned(user, id);
-        return new Learning(enrollment, lessons(enrollment));
+        return new Learning(enrollment, lessons(enrollment), quiz(enrollment));
     }
 
     @Transactional
     public Learning completeLesson(UUID user, UUID id, int module, int lesson) {
-        db.sql("select id from transactions.education_enrollments where user_id=:user and id=:id for update")
-                .param("user", user).param("id", id).query(UUID.class).optional()
-                .orElseThrow(EducationEnrollmentService::notFound);
-        var enrollment = owned(user, id);
+        var enrollment = lockEnrollment(user, id);
         var lessons = lessons(enrollment);
         var selected = lessons.stream().filter(item -> item.modulePosition() == module && item.lessonPosition() == lesson)
                 .findFirst().orElseThrow(EducationEnrollmentService::notFound);
@@ -128,11 +125,71 @@ public class EducationEnrollmentService {
                     """).param("id", id).param("course", enrollment.courseId()).param("module", module)
                     .param("lesson", lesson).update();
         }
-        if (enrollment.completedAt() == null && lessons(enrollment).stream().allMatch(Lesson::completed)) {
-            db.sql("update transactions.education_enrollments set completed_at=now(), certificate_code=:code where id=:id")
-                    .param("id", id).param("code", UUID.randomUUID()).update();
-        }
+        completeCourseIfEligible(enrollment);
         return learning(user, id);
+    }
+
+    @Transactional
+    public Learning attemptQuiz(UUID user, UUID id, UUID requestId, int choice) {
+        var enrollment = lockEnrollment(user, id);
+        var quiz = quiz(enrollment);
+        if (quiz == null) throw notFound();
+        var previous = db.sql("""
+                select selected_choice from transactions.education_quiz_attempts
+                where enrollment_id=:id and request_id=:request
+                """).param("id", id).param("request", requestId).query(Integer.class).optional();
+        if (previous.isPresent()) {
+            if (previous.get() != choice) throw conflict("IDEMPOTENCY_CONFLICT", "This request ID already has a different answer");
+            return learning(user, id);
+        }
+        if (!lessons(enrollment).stream().allMatch(Lesson::completed)) {
+            throw conflict("QUIZ_LOCKED", "Complete the text lessons first");
+        }
+        if (quiz.passed() || quiz.remainingAttempts() == 0 || enrollment.completedAt() != null) {
+            throw conflict("QUIZ_CLOSED", "This quiz no longer accepts attempts");
+        }
+        if (choice < 0 || choice >= quiz.choices().size()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_CHOICE", "Choose one answer from the list");
+        }
+        db.sql("""
+                insert into transactions.education_quiz_attempts(enrollment_id,course_id,request_id,selected_choice,passed)
+                select :id,:course,:request,:choice,correct_choice=:choice
+                from marketplace.education_course_quizzes where course_id=:course
+                """).param("id", id).param("course", enrollment.courseId()).param("request", requestId).param("choice", choice)
+                .update();
+        completeCourseIfEligible(enrollment);
+        return learning(user, id);
+    }
+
+    private Enrollment lockEnrollment(UUID user, UUID id) {
+        db.sql("select id from transactions.education_enrollments where user_id=:user and id=:id for update")
+                .param("user", user).param("id", id).query(UUID.class).optional()
+                .orElseThrow(EducationEnrollmentService::notFound);
+        return owned(user, id);
+    }
+
+    private void completeCourseIfEligible(Enrollment enrollment) {
+        if (enrollment.completedAt() != null) return;
+        var lessons = lessons(enrollment);
+        if (lessons.isEmpty() || !lessons.stream().allMatch(Lesson::completed)) return;
+        var quiz = quiz(enrollment);
+        if (quiz == null || quiz.passed()) {
+            db.sql("update transactions.education_enrollments set completed_at=now(), certificate_code=:code where id=:id")
+                    .param("id", enrollment.id()).param("code", UUID.randomUUID()).update();
+        }
+    }
+
+    private Quiz quiz(Enrollment enrollment) {
+        if (!"ONLINE_RECORDED".equals(enrollment.format())) return null;
+        return db.sql("""
+                select q.question,q.choices,q.max_attempts-count(a.request_id) as remaining,
+                       coalesce(bool_or(a.passed),false) as passed
+                from marketplace.education_course_quizzes q
+                left join transactions.education_quiz_attempts a on a.enrollment_id=:id and a.course_id=q.course_id
+                where q.course_id=:course group by q.course_id
+                """).param("id", enrollment.id()).param("course", enrollment.courseId())
+                .query((rs, row) -> new Quiz(rs.getString("question"), List.of((String[]) rs.getArray("choices").getArray()),
+                        rs.getInt("remaining"), rs.getBoolean("passed"))).optional().orElse(null);
     }
 
     public Certificate certificate(UUID code) {
@@ -193,7 +250,8 @@ public class EducationEnrollmentService {
     public record Enrollment(UUID id, UUID cohortId, UUID courseId, String title, String format, OffsetDateTime startsAt,
             OffsetDateTime endsAt, long amountMinor, String status, String paymentStatus, OffsetDateTime completedAt, UUID certificateCode) {}
     public record Lesson(int modulePosition, int lessonPosition, String title, String content, boolean completed) {}
-    public record Learning(Enrollment enrollment, List<Lesson> lessons) {}
+    public record Learning(Enrollment enrollment, List<Lesson> lessons, Quiz quiz) {}
+    public record Quiz(String question, List<String> choices, int remainingAttempts, boolean passed) {}
     public record Certificate(String title, String organization, OffsetDateTime completedAt) {}
     public record Placed(Enrollment enrollment, boolean created) {}
 }

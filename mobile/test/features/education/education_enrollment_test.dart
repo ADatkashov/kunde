@@ -28,7 +28,7 @@ class _Gateway implements OAuthGateway {
 }
 
 void main() {
-  testWidgets('cohort → test card → text lesson → completion code',
+  testWidgets('cohort → test card → text lesson → quiz → completion code',
       (tester) async {
     final endpoint = Uri.parse('https://api.example.test/api/v1/');
     final gateway = _Gateway();
@@ -39,6 +39,7 @@ void main() {
 
     String? key;
     var complete = false;
+    var passed = false;
     final api = KundeApi(
         baseUri: endpoint,
         client: MockClient((request) async {
@@ -56,7 +57,12 @@ void main() {
             ]);
           }
           expect(request.headers['authorization'], 'Bearer access');
-          if (request.method == 'POST') {
+          if (request.url.path.endsWith('/quiz-attempts')) {
+            final answer = jsonDecode(request.body) as Map<String, dynamic>;
+            expect(answer['requestId'], matches(RegExp(r'^[a-f0-9-]{36}$')));
+            expect(answer['choice'], 1);
+            passed = true;
+          } else if (request.method == 'POST') {
             expect(jsonDecode(request.body), {
               'cohortId': 'cohort',
               'expectedPriceMinor': 10000,
@@ -77,7 +83,13 @@ void main() {
           return reply({
             'enrollment': {
               'title': 'Python',
-              if (complete) 'certificateCode': 'verified-demo-code'
+              if (passed) 'certificateCode': 'verified-demo-code'
+            },
+            'quiz': {
+              'question': 'What does a variable do?',
+              'choices': ['Ends the program', 'Stores a value'],
+              'remainingAttempts': passed ? 2 : 3,
+              'passed': passed,
             },
             'lessons': [
               {
@@ -108,6 +120,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('A variable stores a value.'), findsOneWidget);
     await tester.tap(find.text('Complete lesson'));
+    await tester.pumpAndSettle();
+    expect(find.text('verified-demo-code'), findsNothing);
+    await tester.ensureVisible(find.text('Stores a value'));
+    await tester.tap(find.text('Stores a value'));
     await tester.pumpAndSettle();
     expect(find.text('verified-demo-code'), findsOneWidget);
   });

@@ -56,6 +56,7 @@ def main():
         mobile.tap(*COMPLETE)
         mobile.tap("Условия и циклы")
         mobile.tap(*COMPLETE)
+        mobile.tap("Перебирает значения")
         mobile.reveal("Код проверки завершения курса", "Курсты аяқтауды тексеру коды",
                       "Course completion verification code")
         recap = fixture.call("GET", f"education/enrollments/{identifier}/learning", token=token)

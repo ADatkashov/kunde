@@ -87,6 +87,34 @@ class EducationEnrollmentIntegrationTest {
     }
 
     @Test
+    @Transactional
+    void quizHidesAnswerLimitsAttemptsAndGatesCertificate() {
+        UUID user = user();
+        UUID cohort = cohort(1);
+        db.update("""
+                insert into marketplace.education_course_quizzes(course_id,question,choices,correct_choice,max_attempts)
+                select course_id,'Pick the right option',array['Incorrect','Correct'],1,2
+                from marketplace.education_cohorts where id=?
+                """, cohort);
+        UUID id = enrollment.enroll(user, cohort, 750, "quiz-enrollment-0001").enrollment().id();
+        assertThatThrownBy(() -> enrollment.attemptQuiz(user, id, UUID.randomUUID(), 1)).isInstanceOf(ApiException.class);
+        enrollment.completeLesson(user, id, 1, 1);
+        var lessonsDone = enrollment.completeLesson(user, id, 1, 2);
+        assertThat(lessonsDone.enrollment().certificateCode()).isNull();
+        assertThat(lessonsDone.quiz().remainingAttempts()).isEqualTo(2);
+        UUID requestId = UUID.randomUUID();
+        var wrong = enrollment.attemptQuiz(user, id, requestId, 0);
+        assertThat(wrong.quiz().passed()).isFalse();
+        assertThat(wrong.quiz().remainingAttempts()).isEqualTo(1);
+        assertThat(enrollment.attemptQuiz(user, id, requestId, 0).quiz().remainingAttempts()).isEqualTo(1);
+        assertThatThrownBy(() -> enrollment.attemptQuiz(user, id, requestId, 1)).isInstanceOf(ApiException.class);
+        var right = enrollment.attemptQuiz(user, id, UUID.randomUUID(), 1);
+        assertThat(right.quiz().passed()).isTrue();
+        assertThat(right.quiz().remainingAttempts()).isZero();
+        assertThat(right.enrollment().certificateCode()).isNotNull();
+    }
+
+    @Test
     void twoCustomersCannotBothCaptureTheLastSeat() throws Exception {
         UUID cohort = cohort(1);
         UUID first = user();
