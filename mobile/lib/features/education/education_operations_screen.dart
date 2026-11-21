@@ -285,19 +285,16 @@ class _EducationOperationsState extends State<EducationOperationsScreen> {
               ),
             ] else if (_session == null) ...[
               if (starts != null) Text('$starts — ${row['endsAt']}'),
-              OutlinedButton(
-                onPressed: () {
-                  _session = id;
-                  _scheduled = row['format'] != 'ONLINE_RECORDED';
-                  _reload();
-                },
-                child: Text(
-                  educationLabel(
-                    context,
-                    'Открыть список',
-                    'Тізімді ашу',
-                    'Open roster',
-                  ),
+              Semantics(
+                identifier: 'education-roster-$id',
+                child: OutlinedButton(
+                  onPressed: () {
+                    _session = id;
+                    _scheduled = row['format'] != 'ONLINE_RECORDED';
+                    _reload();
+                  },
+                  child: Text(educationLabel(
+                      context, 'Открыть список', 'Тізімді ашу', 'Open roster')),
                 ),
               ),
             ] else ...[

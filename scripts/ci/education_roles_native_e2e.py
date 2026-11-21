@@ -166,8 +166,14 @@ def main():
         launch_and_login("executor", "com.kunde.executor", INSTRUCTOR, "KUNDE Executor")
         mobile.tap("Мои занятия", "Сабақтарым", "My classes")
         mobile.reveal(TITLE)
-        mobile.tap("Открыть список", "Тізімді ашу", "Open roster")
-        android.find("Посещаемость", "Қатысу", "Attendance")
+        for attempt in range(2):
+            mobile.tap(resource_id=f"education-roster-{cohort}")
+            try:
+                android.find("Посещаемость", "Қатысу", "Attendance", timeout=15)
+                break
+            except RuntimeError:
+                if attempt:
+                    raise
         mobile.tap(resource_id=f"education-attendance-present-{enrollment['id']}")
         for _ in range(15):
             result = fixture.call("GET", f"executor/education/sessions/{cohort}/roster", token=teacher)
