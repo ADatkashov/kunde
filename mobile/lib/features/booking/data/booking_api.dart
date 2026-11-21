@@ -101,17 +101,23 @@ class BookingApi {
           error.status == 404 ? BookingFailure.notFound : BookingFailure.other,
       };
 
+  Future<http.Response> _getPublic(
+      String path, Map<String, String>? query) async {
+    final uri = _base.resolve(path).replace(queryParameters: query);
+    final response = await _client
+        .get(uri, headers: {'Accept': 'application/json'}).timeout(timeout);
+    if (response.statusCode == 404) {
+      throw const BookingException(BookingFailure.notFound);
+    }
+    if (response.statusCode != 200) {
+      throw const BookingException(BookingFailure.other);
+    }
+    return response;
+  }
+
   Future<dynamic> _public(String path, [Map<String, String>? query]) =>
       _guard(() async {
-        final uri = _base.resolve(path).replace(queryParameters: query);
-        final response = await _client
-            .get(uri, headers: {'Accept': 'application/json'}).timeout(timeout);
-        if (response.statusCode == 404) {
-          throw const BookingException(BookingFailure.notFound);
-        }
-        if (response.statusCode != 200) {
-          throw const BookingException(BookingFailure.other);
-        }
+        final response = await _getPublic(path, query);
         return jsonDecode(utf8.decode(response.bodyBytes));
       });
 
@@ -122,22 +128,31 @@ class BookingApi {
           .map((e) => BookingVenue.fromJson(e as Map<String, dynamic>))
           .toList(growable: false);
 
-  Future<List<BookingVenue>> healthVenues({
+  Future<({List<BookingVenue> venues, int? total})> healthVenues({
     required String query,
     required String direction,
     required int limit,
     required int offset,
     Map<String, String> filters = const {},
-  }) async =>
-      ((await _public('booking/health/venues', {
-        ...filters,
-        'q': query,
-        'direction': direction,
-        'limit': '$limit',
-        'offset': '$offset',
-      })) as List<dynamic>)
-          .map((item) => BookingVenue.fromJson(item as Map<String, dynamic>))
-          .toList(growable: false);
+  }) =>
+      _guard(() async {
+        final response = await _getPublic('booking/health/venues', {
+          ...filters,
+          'q': query,
+          'direction': direction,
+          'limit': '$limit',
+          'offset': '$offset',
+        });
+        final items =
+            jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
+        return (
+          venues: items
+              .map(
+                  (item) => BookingVenue.fromJson(item as Map<String, dynamic>))
+              .toList(growable: false),
+          total: int.tryParse(response.headers['x-total-count'] ?? ''),
+        );
+      });
 
   Future<List<HealthFavorite>> healthFavorites({String? venueId}) =>
       _guard(() async {

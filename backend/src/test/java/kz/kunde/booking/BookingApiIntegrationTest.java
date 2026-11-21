@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -167,6 +168,23 @@ class BookingApiIntegrationTest {
         http.perform(get(path).param("minPriceMinor", "2").param("maxPriceMinor", "1"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("HEALTH_PRICE_RANGE_INVALID"));
+    }
+
+    @Test
+    void healthCatalogReportsFilteredTotalBeyondTheLastPage() throws Exception {
+        try (var in = new ClassPathResource("health/demo-venues.json").getInputStream()) {
+            new BookingDemoSeeder(db).seed(new ObjectMapper().readTree(in));
+        }
+        var path = "/api/v1/booking/health/venues";
+        send("GET", path + "?limit=1", null, null, null).andExpect(status().isOk())
+                .andExpect(header().string("X-Total-Count", "6"))
+                .andExpect(jsonPath("$.length()").value(1));
+        send("GET", path + "?direction=DOCTORS&offset=20", null, null, null).andExpect(status().isOk())
+                .andExpect(header().string("X-Total-Count", "1"))
+                .andExpect(jsonPath("$.length()").value(0));
+        send("GET", path + "?q=no-matching-venue", null, null, null).andExpect(status().isOk())
+                .andExpect(header().string("X-Total-Count", "0"))
+                .andExpect(jsonPath("$.length()").value(0));
     }
 
     @Test

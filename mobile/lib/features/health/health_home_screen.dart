@@ -24,9 +24,10 @@ class _HealthHomeScreenState extends State<HealthHomeScreen> {
   String _direction = '';
   Map<String, String> _filters = const {};
   int _offset = 0;
-  late Future<List<BookingVenue>> _venues = _load();
+  late Future<({List<BookingVenue> venues, int? total})> _venues = _load();
 
-  Future<List<BookingVenue>> _load() => widget.services.api.healthVenues(
+  Future<({List<BookingVenue> venues, int? total})> _load() =>
+      widget.services.api.healthVenues(
         query: _search.text.trim(),
         direction: _direction,
         limit: _pageSize,
@@ -266,7 +267,7 @@ class _HealthHomeScreenState extends State<HealthHomeScreen> {
                 style: theme.textTheme.titleLarge,
               ),
               const SizedBox(height: 8),
-              FutureBuilder<List<BookingVenue>>(
+              FutureBuilder<({List<BookingVenue> venues, int? total})>(
                 future: _venues,
                 builder: (context, state) {
                   if (state.connectionState != ConnectionState.done) {
@@ -294,9 +295,25 @@ class _HealthHomeScreenState extends State<HealthHomeScreen> {
                       ),
                     );
                   }
-                  final venues = state.data!;
+                  final (:venues, :total) = state.data!;
+                  final hasNextPage = total == null
+                      ? venues.length == _pageSize
+                      : _offset + venues.length < total;
                   return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      if (total != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Semantics(
+                            liveRegion: true,
+                            child: Text(s.healthText(
+                              'Найдено: $total',
+                              'Табылды: $total',
+                              'Results: $total',
+                            )),
+                          ),
+                        ),
                       if (venues.isEmpty)
                         ListTile(
                           title: Text(
@@ -336,7 +353,7 @@ class _HealthHomeScreenState extends State<HealthHomeScreen> {
                             ),
                           ),
                         ),
-                      if (_offset > 0 || venues.length == _pageSize)
+                      if (_offset > 0 || hasNextPage)
                         OverflowBar(
                           spacing: 8,
                           children: [
@@ -347,7 +364,7 @@ class _HealthHomeScreenState extends State<HealthHomeScreen> {
                                   s.healthText('Назад', 'Артқа', 'Previous'),
                                 ),
                               ),
-                            if (venues.length == _pageSize)
+                            if (hasNextPage)
                               TextButton(
                                 onPressed: () => _refresh(_offset + _pageSize),
                                 child: Text(
