@@ -133,7 +133,7 @@ public class PhoneAuthConfiguration {
                                 "/api/v1/education/courses", "/api/v1/education/courses/*",
                                 "/api/v1/leisure/categories", "/api/v1/leisure/home", "/api/v1/leisure/events", "/api/v1/leisure/events/*",
                                 "/api/v1/leisure/events/*/sessions", "/api/v1/leisure/events/*/reviews", "/api/v1/leisure/sessions/*/seats",
-                                "/api/v1/events", "/api/v1/events/categories", "/api/v1/events/home", "/api/v1/events/*", "/api/v1/events/*/sessions")
+                                "/api/v1/events", "/api/v1/events/categories", "/api/v1/events/home", "/api/v1/events/*", "/api/v1/events/*/sessions", "/api/v1/search/route")
                         .permitAll()
                         .requestMatchers("/api/v1/health", "/api/v1/capabilities", "/api/v1/categories",
                                 "/api/v1/categories/*/offerings", "/api/v1/offerings/*", "/api/v1/partners/*", "/api/v1/search",

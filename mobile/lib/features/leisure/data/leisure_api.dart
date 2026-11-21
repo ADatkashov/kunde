@@ -41,6 +41,17 @@ class LeisureException implements Exception {
   String toString() => 'LeisureException($failure)';
 }
 
+/// Where the global search sends a query: Events (ticketed dated events), Leisure (bookable activities), both, or nowhere.
+class SearchRoute {
+  const SearchRoute(this.route, this.category);
+
+  factory SearchRoute.fromJson(Map<String, dynamic> json) => SearchRoute(
+      json['route'] as String? ?? 'NONE', json['category'] as String?);
+
+  final String route;
+  final String? category;
+}
+
 class SeatChoice {
   const SeatChoice(this.seatId, this.ticketTypeId);
 
@@ -153,6 +164,10 @@ class LeisureApi {
 
   static String _date(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  Future<SearchRoute> route(String query) async =>
+      SearchRoute.fromJson((await _public('search/route', {'q': query.trim()}))
+          as Map<String, dynamic>);
 
   Future<List<LeisureCategory>> categories() async =>
       ((await _public(_categoriesPath)) as List<dynamic>)

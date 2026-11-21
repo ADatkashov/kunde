@@ -287,6 +287,7 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                                       api: widget.api,
                                       food: widget.food,
                                       booking: widget.booking,
+                                      leisure: widget.leisure,
                                     ),
                                   KundeTab.assistant => const AssistantScreen(),
                                   KundeTab.orders => widget.food != null &&

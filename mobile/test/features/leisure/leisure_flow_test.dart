@@ -8,7 +8,9 @@ import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
 import 'package:kunde_mobile/features/identity/auth_repository.dart';
 import 'package:kunde_mobile/features/leisure/data/leisure_api.dart';
 import 'package:kunde_mobile/features/leisure/data/leisure_models.dart';
+import 'package:kunde_mobile/features/home/data/kunde_api.dart';
 import 'package:kunde_mobile/features/leisure/leisure_services.dart';
+import 'package:kunde_mobile/features/shell/tabs.dart';
 import 'package:kunde_mobile/features/leisure/presentation/leisure_event_screen.dart';
 import 'package:kunde_mobile/features/leisure/presentation/leisure_home_screen.dart';
 import 'package:kunde_mobile/features/leisure/presentation/leisure_orders_screen.dart';
@@ -158,6 +160,19 @@ class _FakeLeisure {
     final body = request.body.isEmpty
         ? null
         : jsonDecode(request.body) as Map<String, dynamic>;
+    if (path == 'search/route') {
+      final q = request.url.queryParameters['q'] ?? '';
+      return _json({
+        'query': q,
+        'route': switch (q) {
+          'концерт' => 'EVENTS',
+          'квест' => 'LEISURE',
+          'детский' => 'BOTH',
+          _ => 'NONE',
+        },
+        'category': q == 'концерт' ? 'CONCERT' : null,
+      });
+    }
     if (path == 'leisure/categories') {
       return _json(enabled
           ? [
@@ -427,6 +442,55 @@ void main() {
     await tester.tap(find.textContaining('Демо-фильм').first);
     await tester.pumpAndSettle();
     expect(backend.requested, contains('events/$_eventId'));
+  });
+
+  testWidgets('global search sends a concert to Events and a quest to Leisure',
+      (tester) async {
+    _phone(tester);
+    final backend = _FakeLeisure();
+    final api = KundeApi(
+      baseUri: Uri.parse('https://api.example.test/api/v1/'),
+      client: MockClient((_) async => http.Response(
+          jsonEncode({
+            'releaseStage': 'DEV',
+            'marketplaceEnabled': false,
+            'oidcIssuerConfigured': false,
+            'aiEnabled': false,
+            'eventsEnabled': true,
+            'leisureEnabled': true,
+          }),
+          200)),
+    );
+    addTearDown(api.close);
+    final services = await _services(backend);
+    await tester.pumpWidget(
+        _app(Scaffold(body: SearchTab(api: api, leisure: services))));
+    await tester.pumpAndSettle();
+    Future<void> search(String q) async {
+      await tester.enterText(find.byType(TextField).first, q);
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+    }
+
+    await search('концерт');
+    expect(backend.requested, contains('events'));
+    expect(backend.requested.contains('leisure/events'), isFalse);
+    tester.state<NavigatorState>(find.byType(Navigator).first).pop();
+    await tester.pumpAndSettle();
+    backend.requested.clear();
+    await search('квест');
+    expect(backend.requested, contains('leisure/events'));
+    expect(backend.requested.contains('events'), isFalse);
+    tester.state<NavigatorState>(find.byType(Navigator).first).pop();
+    await tester.pumpAndSettle();
+    await search('детский');
+    expect(find.text('Найдено в двух разделах'), findsOneWidget);
+    expect(find.text('События'), findsOneWidget);
+    expect(find.text('Досуг'), findsOneWidget);
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    await search('ничего');
+    expect(find.textContaining('Ничего не найдено'), findsOneWidget);
   });
 
   testWidgets('Leisure product keeps reading /leisure', (tester) async {

@@ -27,6 +27,16 @@ extension LeisureStrings on KundeLocalizations {
       'Concerts, cinema, theatre, sports and festivals in Almaty');
   String get evSearchHint =>
       _t('Найти событие', 'Іс-шара іздеу', 'Search events');
+  String get gsHint => _t(
+      'События и досуг: концерт, квест, боулинг…',
+      'Іс-шаралар және демалыс: концерт, квест…',
+      'Events & leisure: concert, quest, bowling…');
+  String get gsBoth => _t('Найдено в двух разделах', 'Екі бөлімнен табылды',
+      'Found in two sections');
+  String get gsNone => _t(
+      'Ничего не найдено в «События» и «Досуг»',
+      '«Іс-шаралар» және «Демалыс» бөлімдерінен ештеңе табылмады',
+      'Nothing found in Events or Leisure');
   String get lzCity => _t('Алматы', 'Алматы', 'Almaty');
   String get lzCityMore => _t('Другие города появятся позже',
       'Басқа қалалар кейінірек қосылады', 'More cities are coming later');

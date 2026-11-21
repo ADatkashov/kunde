@@ -134,4 +134,19 @@ class EventsApiIntegrationTest {
         assertThat(db.queryForObject("select count(*) from transactions.leisure_checkins where result = 'ADMITTED' and session_id = ?", Integer.class, session)).isEqualTo(1);
         assertThat(db.queryForObject("select count(*) from transactions.leisure_checkins where result = 'ACCESS_DENIED'", Integer.class)).isGreaterThanOrEqualTo(3);
     }
+
+    @Test
+    void globalSearchRoutesEventsAndLeisureApart() throws Exception {
+        String[][] cases = {
+                {"концерт", "EVENTS"}, {"Театр", "EVENTS"}, {"кино на вечер", "EVENTS"}, {"cinema", "EVENTS"}, {"футбол матч", "EVENTS"},
+                {"квест", "LEISURE"}, {"боулинг", "LEISURE"}, {"VR клуб", "LEISURE"}, {"караоке", "LEISURE"}, {"мастер-класс", "LEISURE"}, {"картинг", "LEISURE"},
+                {"zzzzqq", "NONE"}};
+        for (String[] c : cases) {
+            String r = t.body(t.send("GET", "/api/v1/search/route?q=" + c[0], null, null, null).andExpect(status().isOk()));
+            assertThat((String) JsonPath.read(r, "$.route")).as(c[0]).isEqualTo(c[1]);
+        }
+        // a title found only in a catalogue routes by content
+        assertThat((String) JsonPath.read(t.body(t.send("GET", "/api/v1/search/route?q=Ночной экспресс", null, null, null)), "$.route")).isEqualTo("EVENTS");
+        assertThat((String) JsonPath.read(t.body(t.send("GET", "/api/v1/search/route", null, null, null).andExpect(status().isOk())), "$.route")).isEqualTo("NONE");
+    }
 }
