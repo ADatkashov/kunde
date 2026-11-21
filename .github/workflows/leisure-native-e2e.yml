@@ -99,8 +99,9 @@ jobs:
         with:
           api-level: 35
           arch: x86_64
-          target: google_apis
-          # the emulator ran under memory pressure (lowmemorykiller, mem-pressure events) and was lost at the network-recovery step three runs in a row
+          # the google_apis image crash-looped its own system services (idmap/devicelock/GMS restarts) and the device was lost in 4 consecutive runs;
+          # the app needs no Google services, so the plain AOSP image is used
+          target: default
           ram-size: 4096M
           heap-size: 576M
           disable-animations: true
