@@ -1,0 +1,89 @@
+name: Android signed DEV APK install
+on:
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Exact commit used to build all four APKs
+        required: true
+        type: string
+      consumer_run:
+        description: Consumer signed DEV release run ID
+        required: true
+        type: string
+      partner_run:
+        description: Partner signed DEV release run ID
+        required: true
+        type: string
+      executor_run:
+        description: Executor signed DEV release run ID
+        required: true
+        type: string
+      admin_run:
+        description: Admin signed DEV release run ID
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  install:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Download and verify signed DEV artifacts
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ inputs.release_sha }}
+          CONSUMER_RUN: ${{ inputs.consumer_run }}
+          PARTNER_RUN: ${{ inputs.partner_run }}
+          EXECUTOR_RUN: ${{ inputs.executor_run }}
+          ADMIN_RUN: ${{ inputs.admin_run }}
+        run: |
+          [[ "$RELEASE_SHA" =~ ^[a-f0-9]{40}$ ]]
+          mkdir -p reports/release-install "$RUNNER_TEMP/releases"
+          printf '{"status":"NOT_STARTED"}\n' > reports/release-install/status.json
+          fetch() {
+            local run="$1" name="$2" package="$3" workflow="$4"
+            [[ "$run" =~ ^[0-9]+$ ]]
+            local destination="$RUNNER_TEMP/releases/$name"
+            gh run view "$run" --repo "$GITHUB_REPOSITORY" \
+              --json status,conclusion,headSha,headBranch,event,workflowName \
+              | jq -e --arg sha "$RELEASE_SHA" --arg workflow "$workflow" \
+                '.status=="completed" and .conclusion=="success" and .headSha==$sha and
+                 .headBranch=="main" and .event=="workflow_dispatch" and .workflowName==$workflow' >/dev/null
+            gh run download "$run" --repo "$GITHUB_REPOSITORY" --name "$name" --dir "$destination"
+            test "$(cat "$destination/commit.txt")" = "$RELEASE_SHA"
+            local expected observed
+            read -r expected _ < "$destination/$name.apk.sha256"
+            observed="$(sha256sum "$destination/$name.apk" | cut -d' ' -f1)"
+            test "$expected" = "$observed"
+            grep -qF "package: name='$package'" "$destination/version.txt"
+            grep -qE 'Verified using v[23] scheme.*true' "$destination/signing.txt"
+          }
+          fetch "$CONSUMER_RUN" KUNDE-dev-release com.example.kunde_mobile "Android Release APK (DEV)"
+          fetch "$PARTNER_RUN" KUNDE-Partner-dev-release com.kunde.kunde_partner "Partner Android Release APK (DEV)"
+          fetch "$EXECUTOR_RUN" KUNDE-executor-dev-release com.kunde.executor "Android Release APK (DEV)"
+          fetch "$ADMIN_RUN" KUNDE-admin-dev-release com.kunde.admin "Android Release APK (DEV)"
+          printf '%s\n' "$RELEASE_SHA" > reports/release-install/commit.txt
+      - name: Enable Android emulator acceleration
+        run: |
+          test -c /dev/kvm
+          sudo setfacl -m "u:$(id -un):rw" /dev/kvm
+      - uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+          script: bash scripts/ci/check_signed_release_install.sh
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: android-signed-install-evidence
+          path: reports/release-install/
+          retention-days: 3

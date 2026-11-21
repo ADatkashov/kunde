@@ -43,3 +43,7 @@ Consumer и Executor собираются существующим workflow Andr
 ## KUNDE Admin DEV
 
 В Android Release APK (DEV) включите `admin` и оставьте `executor` выключенным. Артефакт `KUNDE-admin-dev-release` содержит подписанный APK для arm64. Приложение `com.kunde.admin` устанавливается рядом с Consumer и Executor. Для разделов Delivery войдите под DEV-аккаунтом с разрешением `DELIVERY_OPERATIONS`.
+
+## Install verification for the four signed DEV APKs
+
+The [Android signed DEV APK install workflow](../../.github/workflows/android-release-install.yml) takes the four successful release run IDs and their shared full main SHA. It validates the version and checksum from each artifact, then installs and launches the four packages on an Android emulator with ARM64 compatibility. The report includes per-package install and launch output and screenshots. The check covers installation and launch. Role workflows and the DEV smoke test cover authentication and product behavior separately.
