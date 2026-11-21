@@ -171,6 +171,7 @@ class ProductDetail {
     required this.quantityStep,
     required this.optionGroups,
     required this.related,
+    this.images = const [],
     this.composition,
     this.storageConditions,
     this.originCountry,
@@ -187,6 +188,9 @@ class ProductDetail {
   final List<OptionGroup> optionGroups;
   final List<GroceryProduct> related;
 
+  /// Product photos in display order (HTTPS links supplied by the store); empty when the store has none.
+  final List<String> images;
+
   factory ProductDetail.fromJson(Map<String, dynamic> json) => ProductDetail(
         product:
             GroceryProduct.fromJson(json['product'] as Map<String, dynamic>),
@@ -200,6 +204,9 @@ class ProductDetail {
         quantityStep: (json['quantityStep'] as num?)?.toInt() ?? 1,
         optionGroups: ((json['optionGroups'] as List<dynamic>?) ?? const [])
             .map((e) => OptionGroup.fromJson(e as Map<String, dynamic>))
+            .toList(growable: false),
+        images: ((json['images'] as List<dynamic>?) ?? const [])
+            .map((e) => e as String)
             .toList(growable: false),
         related: ((json['related'] as List<dynamic>?) ?? const [])
             .map((e) => GroceryProduct.fromJson(e as Map<String, dynamic>))

@@ -65,6 +65,23 @@ class _OrderScreenState extends State<OrderScreen> {
     }
   }
 
+  Future<void> _decide(OrderLine line, bool approve) async {
+    setState(() => _busy = true);
+    try {
+      final order = await widget.services.api
+          .decideReplacement(widget.orderId, line.itemId!, approve);
+      if (mounted) setState(() => _order = order);
+    } on FoodException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error.message)));
+        await _load();
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _cancel() async {
     String tx(String ru, String kk, String en) {
       if (_order?.vertical != 'FLOWERS_GIFTS') return ru;
@@ -283,7 +300,12 @@ class _OrderScreenState extends State<OrderScreen> {
       Text(tx('Состав заказа', 'Тапсырыс құрамы', 'Order items'),
           style: theme.textTheme.titleLarge),
       const SizedBox(height: 8),
-      for (final l in order.items) _OrderLineTile(line: l),
+      for (final l in order.items)
+        _OrderLineTile(
+            line: l,
+            busy: _busy,
+            onDecide:
+                l.itemId == null ? null : (approve) => _decide(l, approve)),
       if (order.hasChanges)
         Padding(
           padding: const EdgeInsets.only(top: 8),
@@ -509,9 +531,13 @@ class _StatusTimeline extends StatelessWidget {
 
 /// One order line: quantity with unit, and what the store did with it once it collected the order.
 class _OrderLineTile extends StatelessWidget {
-  const _OrderLineTile({required this.line});
+  const _OrderLineTile({required this.line, this.busy = false, this.onDecide});
 
   final OrderLine line;
+  final bool busy;
+
+  /// Answers a proposed replacement (true = accept); null when the line has no id.
+  final void Function(bool approve)? onDecide;
 
   @override
   Widget build(BuildContext context) {
@@ -549,6 +575,8 @@ class _OrderLineTile extends StatelessWidget {
               Text(formatTenge(line.finalLineTotalMinor ?? 0)),
             ]),
           ),
+        if (line.fulfillmentStatus == 'PROPOSED' && onDecide != null)
+          _ProposalCard(line: line, busy: busy, onDecide: onDecide!),
         if (removed)
           Padding(
             padding: const EdgeInsets.only(top: 2),
@@ -658,6 +686,59 @@ class _ReviewCardState extends State<_ReviewCard> {
           ),
         ]),
       ),
+    );
+  }
+}
+
+/// A replacement proposed by the store: the customer sees the product and the real price and decides; nothing is
+/// changed without the answer, and the order cannot leave the store until it is given.
+class _ProposalCard extends StatelessWidget {
+  const _ProposalCard(
+      {required this.line, required this.busy, required this.onDecide});
+
+  final OrderLine line;
+  final bool busy;
+  final void Function(bool approve) onDecide;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final lang = Localizations.localeOf(context).languageCode;
+    String t(String ru, String kk, String en) =>
+        switch (lang) { 'kk' => kk, 'en' => en, _ => ru };
+    final unitPrice = line.proposedUnitPriceMinor ?? 0;
+    final total = lineTotalMinor(line.unit, unitPrice, line.quantity);
+    return Container(
+      margin: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+          color: theme.colorScheme.tertiaryContainer,
+          borderRadius: BorderRadius.circular(14)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Semantics(
+          liveRegion: true,
+          child: Text(
+              t(
+                  'Магазин предлагает замену: «${line.proposedName}»',
+                  'Дүкен ауыстыруды ұсынады: «${line.proposedName}»',
+                  'The store suggests a replacement: "${line.proposedName}"'),
+              style: const TextStyle(fontWeight: FontWeight.w700)),
+        ),
+        const SizedBox(height: 4),
+        Text(
+            '${formatQuantity(line.unit, line.quantity)} · ${unitPriceLabel(line.unit, unitPrice)} = ${formatTenge(total)}'
+            ' (${t('было', 'болды', 'was')} ${formatTenge(line.lineTotalMinor)})'),
+        const SizedBox(height: 8),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          FilledButton(
+              onPressed: busy ? null : () => onDecide(true),
+              child: Text(t('Принять замену', 'Қабылдау', 'Accept'))),
+          OutlinedButton(
+              onPressed: busy ? null : () => onDecide(false),
+              child: Text(
+                  t('Убрать товар', 'Тауарды алып тастау', 'Remove item'))),
+        ]),
+      ]),
     );
   }
 }

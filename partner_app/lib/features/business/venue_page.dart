@@ -85,12 +85,12 @@ class _VenuePageState extends State<VenuePage> {
       });
 
   Future<void> _toggleMaster(Master m, bool v) => _run('m${m.id}', () async {
-    final u = await _ops.setMasterActive(widget.venue.id, m.id, v);
-    if (!mounted) return;
-    setState(
-      () => _masters = [for (final e in _masters!) e.id == m.id ? u : e],
-    );
-  });
+        final u = await _ops.setMasterActive(widget.venue.id, m.id, v);
+        if (!mounted) return;
+        setState(
+          () => _masters = [for (final e in _masters!) e.id == m.id ? u : e],
+        );
+      });
 
   Future<void> _editHours(Master m) async {
     final updated = await Navigator.of(context).push<Master>(
@@ -179,8 +179,8 @@ class _VenuePageState extends State<VenuePage> {
       appBar: AppBar(title: Text(widget.venue.name)),
       body: services == null || masters == null
           ? (_error != null
-                ? ErrorView(error: _error!, onRetry: _load)
-                : const SkeletonList(count: 4))
+              ? ErrorView(error: _error!, onRetry: _load)
+              : const SkeletonList(count: 4))
           : RefreshIndicator(
               onRefresh: _load,
               child: ListView(
@@ -323,12 +323,12 @@ class _VenuePageState extends State<VenuePage> {
   }
 
   Widget _heading(BuildContext context, String text) => Padding(
-    padding: const EdgeInsets.only(bottom: Gap.md),
-    child: Semantics(
-      header: true,
-      child: Text(text, style: context.text.titleMedium),
-    ),
-  );
+        padding: const EdgeInsets.only(bottom: Gap.md),
+        child: Semantics(
+          header: true,
+          child: Text(text, style: context.text.titleMedium),
+        ),
+      );
 }
 
 /// Seven-line weekly summary; missing weekdays are shown as days off.

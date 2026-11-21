@@ -72,7 +72,11 @@ class BusinessScreen extends StatelessWidget {
                   ),
                 for (final (title, group, icon) in [
                   (s.venuesTitle, serviceVenues, Icons.content_cut_rounded),
-                  (s.healthTitle, healthVenues, Icons.health_and_safety_outlined),
+                  (
+                    s.healthTitle,
+                    healthVenues,
+                    Icons.health_and_safety_outlined
+                  ),
                 ]) ...[
                   if (group.isNotEmpty) _Section(title),
                   for (final venue in group)
@@ -82,12 +86,14 @@ class BusinessScreen extends StatelessWidget {
                       open: venue.open,
                       openLabel: s.openForBookings,
                       canManage: canManage,
-                      onToggle: (open) => _toggle(
-                          context, () => store.ops.setVenueOpen(venue.id, open)),
+                      onToggle: (open) => _toggle(context,
+                          () => store.ops.setVenueOpen(venue.id, open)),
                       onOpen: () => Navigator.of(context).push(
                           MaterialPageRoute<void>(
                               builder: (_) => VenuePage(
-                                  store: store, venue: venue, canManage: canManage))),
+                                  store: store,
+                                  venue: venue,
+                                  canManage: canManage))),
                     ),
                 ],
                 if (restaurants.isEmpty && venues.isEmpty)

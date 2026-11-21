@@ -71,9 +71,10 @@ public class FoodOrderService {
 
     public record TimelineEntry(String status, OffsetDateTime at, String actor, String reason) {}
 
-    public record OrderLine(String dishId, String name, String optionsText, String unit, long unitPriceMinor, int quantity,
+    /** itemId identifies the line for picking and for the customer's decision; proposed* is set while status is PROPOSED. */
+    public record OrderLine(String itemId, String dishId, String name, String optionsText, String unit, long unitPriceMinor, int quantity,
             long lineTotalMinor, String substitution, String fulfillmentStatus, String replacedByName,
-            Long finalLineTotalMinor) {}
+            Long finalLineTotalMinor, String proposedName, Long proposedUnitPriceMinor) {}
 
     public record OrderView(String id, String restaurantId, String restaurantName, String status,
             String paymentMethod, String paymentStatus, String currency, long subtotalMinor, long deliveryFeeMinor,
@@ -602,6 +603,146 @@ public class FoodOrderService {
                 """, changed, finalSubtotal, orderId);
     }
 
+    // ---- interactive picking (Groceries) -----------------------------------------------------------
+
+    /** True while a line still waits for the store (PENDING) or for the customer (PROPOSED). */
+    boolean pickingOpen(UUID orderId) {
+        Integer open = db.queryForObject("select count(*) from transactions.food_order_items where order_id = ? and fulfillment_status in ('PENDING', 'PROPOSED')",
+                Integer.class, orderId);
+        return open != null && open > 0;
+    }
+
+    boolean interactivePicking(UUID orderId) {
+        return "GROCERY".equals(db.queryForObject("select vertical from transactions.food_orders where id = ?", String.class, orderId));
+    }
+
+    /**
+     * The store's decision for one line of its own order while it is being prepared: PICKED, MISSING or REPLACE.
+     * A replacement the customer pre-approved (policy ANY_SIMILAR, or CHOSEN and listed) is applied at once, never above
+     * the ordered unit price; any other replacement becomes a proposal the customer must accept (price shown to them).
+     */
+    @Transactional
+    public void pickItem(UUID partnerId, UUID orderId, UUID itemId, String action, UUID replacementDishId) {
+        var order = db.query("select status, vertical from transactions.food_orders where id = ? and partner_id = ? for update",
+                (rs, n) -> new String[] {rs.getString(1), rs.getString(2)}, orderId, partnerId).stream().findFirst()
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND", "Order not found"));
+        if (!"PREPARING".equals(order[0])) {
+            throw new ApiException(HttpStatus.CONFLICT, "ORDER_NOT_PREPARING", "Lines can be picked while the order is being prepared");
+        }
+        var line = db.query("""
+                select i.fulfillment_status, i.unit, i.unit_price_minor, i.quantity, i.line_total_minor, i.substitution,
+                       i.substitute_dish_ids, d.section_id, i.dish_id
+                from transactions.food_order_items i join marketplace.food_dishes d on d.id = i.dish_id
+                where i.id = ? and i.order_id = ? for update of i
+                """, (rs, n) -> new Object[] {rs.getString(1), rs.getString(2), rs.getLong(3), rs.getInt(4), rs.getLong(5),
+                        rs.getString(6), uuids(rs.getArray(7)), rs.getObject(8, UUID.class), rs.getObject(9, UUID.class)}, itemId, orderId)
+                .stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ITEM_NOT_FOUND", "Order line not found"));
+        String status = (String) line[0];
+        if (!"PENDING".equals(status)) {
+            throw new ApiException(HttpStatus.CONFLICT, "ITEM_ALREADY_DECIDED", "This line is already decided");
+        }
+        String unit = (String) line[1];
+        long unitPrice = (long) line[2];
+        int quantity = (int) line[3];
+        switch (action) {
+            case "PICKED" -> db.update("update transactions.food_order_items set fulfillment_status = 'OK', final_unit_price_minor = ?, final_line_total_minor = ? where id = ?",
+                    unitPrice, line[4], itemId);
+            case "MISSING" -> db.update("update transactions.food_order_items set fulfillment_status = 'REMOVED', final_unit_price_minor = 0, final_line_total_minor = 0 where id = ?", itemId);
+            case "REPLACE" -> {
+                if (replacementDishId == null) {
+                    throw new ApiException(HttpStatus.BAD_REQUEST, "REPLACEMENT_REQUIRED", "Choose a replacement product");
+                }
+                var repl = db.query("""
+                        select name, price_minor from marketplace.food_dishes d
+                        where d.id = ? and d.restaurant_id = (select restaurant_id from transactions.food_orders where id = ?)
+                          and d.available and d.unit = ? and (d.stock_qty is null or d.stock_qty >= ?) and d.id <> ?
+                        """, (rs, n) -> new Object[] {rs.getString(1), rs.getLong(2)}, replacementDishId, orderId, unit, quantity, line[8])
+                        .stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "REPLACEMENT_UNAVAILABLE",
+                                "The replacement is not available in the required quantity"));
+                String policy = (String) line[5];
+                @SuppressWarnings("unchecked")
+                List<UUID> chosen = (List<UUID>) line[6];
+                boolean preApproved = "ANY_SIMILAR".equals(policy) || ("CHOSEN".equals(policy) && chosen.contains(replacementDishId));
+                if (preApproved) {
+                    long price = Math.min(unitPrice, (long) repl[1]);
+                    db.update("""
+                            update transactions.food_order_items set fulfillment_status = 'SUBSTITUTED', replaced_by_dish_id = ?, replaced_by_name = ?,
+                                final_unit_price_minor = ?, final_line_total_minor = ? where id = ?
+                            """, replacementDishId, repl[0], price, lineTotal(unit, price, quantity), itemId);
+                    db.update("update marketplace.food_dishes set stock_qty = stock_qty - ? where id = ? and stock_qty is not null", quantity, replacementDishId);
+                } else {
+                    db.update("""
+                            update transactions.food_order_items set fulfillment_status = 'PROPOSED', proposed_dish_id = ?, proposed_name = ?,
+                                proposed_unit_price_minor = ? where id = ?
+                            """, replacementDishId, repl[0], repl[1], itemId);
+                }
+            }
+            default -> throw new ApiException(HttpStatus.BAD_REQUEST, "ACTION_INVALID", "action must be PICKED, MISSING or REPLACE");
+        }
+        finalizeIfComplete(orderId);
+    }
+
+    /** The customer's answer to a proposed replacement: accept (charged at the proposed price) or decline (the line is removed). */
+    @Transactional
+    public OrderView decideReplacement(UUID user, UUID orderId, UUID itemId, boolean approve) {
+        requireOwned(user, orderId);
+        db.query("select 1 from transactions.food_orders where id = ? for update", (org.springframework.jdbc.core.RowCallbackHandler) rs -> {}, orderId);
+        var line = db.query("""
+                select fulfillment_status, unit, quantity, proposed_dish_id, proposed_name, proposed_unit_price_minor
+                from transactions.food_order_items where id = ? and order_id = ? for update
+                """, (rs, n) -> new Object[] {rs.getString(1), rs.getString(2), rs.getInt(3), rs.getObject(4, UUID.class),
+                        rs.getString(5), rs.getLong(6)}, itemId, orderId).stream().findFirst()
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ITEM_NOT_FOUND", "Order line not found"));
+        if (!"PROPOSED".equals(line[0])) {
+            throw new ApiException(HttpStatus.CONFLICT, "NO_PROPOSAL", "There is no replacement waiting for your answer");
+        }
+        if (approve) {
+            String unit = (String) line[1];
+            int quantity = (int) line[2];
+            long price = (long) line[5];
+            Integer ok = db.update("""
+                    update marketplace.food_dishes set stock_qty = stock_qty - ? where id = ? and available and (stock_qty is null or stock_qty >= ?)
+                    """, quantity, line[3], quantity);
+            if (ok == 0) {
+                throw new ApiException(HttpStatus.CONFLICT, "REPLACEMENT_UNAVAILABLE", "The replacement is no longer available");
+            }
+            db.update("""
+                    update transactions.food_order_items set fulfillment_status = 'SUBSTITUTED', replaced_by_dish_id = proposed_dish_id,
+                        replaced_by_name = proposed_name, final_unit_price_minor = ?, final_line_total_minor = ?,
+                        proposed_dish_id = null, proposed_name = null, proposed_unit_price_minor = null where id = ?
+                    """, price, lineTotal(unit, price, quantity), itemId);
+        } else {
+            db.update("""
+                    update transactions.food_order_items set fulfillment_status = 'REMOVED', final_unit_price_minor = 0, final_line_total_minor = 0,
+                        proposed_dish_id = null, proposed_name = null, proposed_unit_price_minor = null where id = ?
+                    """, itemId);
+        }
+        finalizeIfComplete(orderId);
+        return views(List.of(orderId), user).get(0);
+    }
+
+    /** When no line waits any more: totals follow the final lines; an order with nothing left is cancelled (stock and promo released). */
+    private void finalizeIfComplete(UUID orderId) {
+        if (pickingOpen(orderId)) { return; }
+        var sums = db.queryForObject("""
+                select coalesce(sum(final_line_total_minor) filter (where fulfillment_status in ('OK', 'SUBSTITUTED')), 0),
+                       count(*) filter (where fulfillment_status in ('OK', 'SUBSTITUTED')),
+                       bool_or(fulfillment_status <> 'OK' or final_line_total_minor <> line_total_minor)
+                from transactions.food_order_items where order_id = ?
+                """, (rs, n) -> new Object[] {rs.getLong(1), rs.getInt(2), rs.getBoolean(3)}, orderId);
+        if ((int) sums[1] == 0) {
+            restoreStock(orderId);
+            db.update("""
+                    update transactions.food_orders set status = 'CANCELLED', payment_status = case when payment_method = 'DEV_NO_PAYMENT' then 'NO_PAYMENT' else 'VOIDED' end,
+                        has_changes = true, cancelled_by = 'SYSTEM', cancel_reason = 'NO_ITEMS_AVAILABLE', final_total_minor = 0, updated_at = now(), version = version + 1 where id = ?
+                    """, orderId);
+            db.update("insert into transactions.food_order_events (order_id, status, actor_type, reason) values (?, 'CANCELLED', 'SYSTEM', 'NO_ITEMS_AVAILABLE')", orderId);
+            return;
+        }
+        db.update("update transactions.food_orders set has_changes = ?, final_total_minor = ? + delivery_fee_minor, updated_at = now() where id = ?",
+                sums[2], sums[0], orderId);
+    }
+
     // ---- views -----------------------------------------------------------------------------------
 
     private void requireOwned(UUID user, UUID orderId) {
@@ -617,16 +758,17 @@ public class FoodOrderService {
         UUID[] array = ids.toArray(UUID[]::new);
         Map<UUID, List<OrderLine>> items = new HashMap<>();
         db.query("""
-                select order_id, dish_id, dish_name, options_text, unit, unit_price_minor, quantity, line_total_minor,
-                       substitution, fulfillment_status, replaced_by_name, final_line_total_minor
+                select order_id, id, dish_id, dish_name, options_text, unit, unit_price_minor, quantity, line_total_minor,
+                       substitution, fulfillment_status, replaced_by_name, final_line_total_minor, proposed_name, proposed_unit_price_minor
                 from transactions.food_order_items where order_id = any (?) order by line_no, id
                 """, rs -> {
                     items.computeIfAbsent(rs.getObject("order_id", UUID.class), k -> new ArrayList<>()).add(new OrderLine(
-                            rs.getString("dish_id"), rs.getString("dish_name"), rs.getString("options_text"),
+                            rs.getString("id"), rs.getString("dish_id"), rs.getString("dish_name"), rs.getString("options_text"),
                             rs.getString("unit"), rs.getLong("unit_price_minor"), rs.getInt("quantity"),
                             rs.getLong("line_total_minor"), rs.getString("substitution"),
                             rs.getString("fulfillment_status"), rs.getString("replaced_by_name"),
-                            rs.getObject("final_line_total_minor", Long.class)));
+                            rs.getObject("final_line_total_minor", Long.class), rs.getString("proposed_name"),
+                            rs.getObject("proposed_unit_price_minor", Long.class)));
                 }, (Object) array);
         Map<UUID, List<TimelineEntry>> timeline = new HashMap<>();
         db.query("select order_id, status, occurred_at, actor_type, reason from transactions.food_order_events where order_id = any (?) order by id",

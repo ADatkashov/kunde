@@ -421,8 +421,17 @@ class OrderLine {
     this.replacedByName,
     this.finalLineTotalMinor,
     this.substitution = 'NONE',
+    this.itemId,
+    this.proposedName,
+    this.proposedUnitPriceMinor,
   });
 
+  /// Server id of the line; used to answer a replacement proposal.
+  final String? itemId;
+
+  /// While [fulfillmentStatus] is `PROPOSED`: the replacement the store offers and its price per unit.
+  final String? proposedName;
+  final int? proposedUnitPriceMinor;
   final String unit;
 
   /// `PENDING` until the store collects the order, then `OK`, `SUBSTITUTED` or `REMOVED`.
@@ -445,6 +454,10 @@ class OrderLine {
         replacedByName: json['replacedByName'] as String?,
         finalLineTotalMinor: (json['finalLineTotalMinor'] as num?)?.toInt(),
         substitution: json['substitution'] as String? ?? 'NONE',
+        itemId: json['itemId'] as String?,
+        proposedName: json['proposedName'] as String?,
+        proposedUnitPriceMinor:
+            (json['proposedUnitPriceMinor'] as num?)?.toInt(),
       );
 }
 

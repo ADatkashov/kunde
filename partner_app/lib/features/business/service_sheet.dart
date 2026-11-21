@@ -157,10 +157,9 @@ class _ServiceSheetState extends State<ServiceSheet> {
                   initialValue: _category,
                   decoration: InputDecoration(labelText: s.serviceCategory),
                   items: [
-                    for (final c
-                        in widget.health
-                            ? healthCategoryCodes
-                            : autoCategoryCodes)
+                    for (final c in widget.health
+                        ? healthCategoryCodes
+                        : autoCategoryCodes)
                       DropdownMenuItem(
                         value: c,
                         child: Text(
