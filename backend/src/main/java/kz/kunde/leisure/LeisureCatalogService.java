@@ -34,7 +34,7 @@ public class LeisureCatalogService {
               - (select count(*) from transactions.leisure_hold_lines hl join transactions.leisure_holds h on h.id = hl.hold_id
                    where h.session_id = s.id and h.status = 'ACTIVE' and h.expires_at > now()))""";
 
-    public record Category(String code, String nameRu, String nameKk, String nameEn, String bookingType, boolean familyFriendly, boolean enabled) {}
+    public record Category(String code, String nameRu, String nameKk, String nameEn, String bookingType, boolean familyFriendly, boolean enabled, String product) {}
 
     public record Card(String id, String title, String venueId, String venueName, String district, String address, String categoryCode,
             String bookingType, String photoUrl, long minPriceMinor, String currency, int minAge, boolean familyFriendly, Double rating,
@@ -51,7 +51,7 @@ public class LeisureCatalogService {
 
     public record Detail(String id, String title, String description, List<String> photos, Category category, String bookingType, int durationMinutes,
             int minAge, boolean familyFriendly, int maxGuests, String confirmation, Venue venue, String organizer, List<TicketType> ticketTypes,
-            Double rating, int reviewCount, boolean bookable, String cancellationTerms, boolean demo) {}
+            Double rating, int reviewCount, boolean bookable, String cancellationTerms, boolean demo, String product) {}
 
     public record SessionView(String id, OffsetDateTime startsAt, OffsetDateTime endsAt, int capacity, int free, long fromPriceMinor) {}
 
@@ -67,19 +67,26 @@ public class LeisureCatalogService {
         this.toggles = toggles;
     }
 
-    public boolean enabled() { return toggles.enabled(Feature.LEISURE); }
+    public static final String EVENTS = "EVENTS";
+    public static final String LEISURE = "LEISURE";
+
+    /** Whether the product ({@code EVENTS} or {@code LEISURE}) is switched on right now. */
+    public boolean enabled(String product) { return toggles.enabled(EVENTS.equals(product) ? Feature.EVENTS : Feature.LEISURE); }
+
+    public boolean enabled() { return enabled(LEISURE); }
 
     @Transactional(readOnly = true)
-    public List<Category> categories() {
-        if (!enabled()) { return List.of(); }
-        return db.query("select code, name_ru, name_kk, name_en, default_booking_type, family_friendly, enabled from marketplace.leisure_categories "
-                + "where enabled order by sort_order", (rs, n) -> new Category(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
-                rs.getString(5), rs.getBoolean(6), rs.getBoolean(7)));
+    public List<Category> categories(String product) {
+        if (!enabled(product)) { return List.of(); }
+        return db.query("select code, name_ru, name_kk, name_en, default_booking_type, family_friendly, enabled, product from marketplace.leisure_categories "
+                + "where enabled and product = ? order by sort_order", (rs, n) -> new Category(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
+                rs.getString(5), rs.getBoolean(6), rs.getBoolean(7), rs.getString(8)), product);
     }
 
+    /** Search inside one product: Events never lists Leisure activities and vice versa (one canonical card per offer, see {@link #detail}). */
     @Transactional(readOnly = true)
-    public List<Card> search(Search p) {
-        if (!enabled()) { return List.of(); }
+    public List<Card> search(Search p, String product) {
+        if (!enabled(product)) { return List.of(); }
         List<Object> args = new ArrayList<>();
         StringBuilder lateral = new StringBuilder("s.status = 'SCHEDULED' and s.starts_at > now() and s.event_id = e.id");
         LocalDate day = p.date();
@@ -101,7 +108,8 @@ public class LeisureCatalogService {
             args.add(guests);
         }
         List<Object> where = new ArrayList<>();
-        StringBuilder w = new StringBuilder("e.status = 'PUBLISHED' and v.status = 'APPROVED' and c.enabled and ns.id is not null");
+        StringBuilder w = new StringBuilder("e.status = 'PUBLISHED' and v.status = 'APPROVED' and c.enabled and c.product = ? and ns.id is not null");
+        where.add(product);
         if (p.category() != null && !p.category().isBlank()) { w.append(" and e.category_code = ?"); where.add(p.category().toUpperCase(Locale.ROOT)); }
         if (p.q() != null && !p.q().isBlank()) {
             w.append(" and (lower(e.title) like ? or lower(v.name) like ? or lower(e.description) like ?)");
@@ -164,14 +172,14 @@ public class LeisureCatalogService {
 
     /** Sections of the Leisure home screen; every card comes from the same search so nothing is invented. */
     @Transactional(readOnly = true)
-    public java.util.Map<String, List<Card>> home(Double lat, Double lng) {
+    public java.util.Map<String, List<Card>> home(Double lat, Double lng, String product) {
         java.util.Map<String, List<Card>> out = new java.util.LinkedHashMap<>();
-        out.put("today", search(new Search(null, null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, "time", "today", 10, 0)));
-        out.put("weekend", search(new Search(null, null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, "time", "weekend", 10, 0)));
-        out.put("family", search(new Search(null, null, null, null, null, null, null, null, null, null, false, true, null, null, null, null, "popular", null, 10, 0)));
-        out.put("popular", search(new Search(null, null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, "popular", "popular", 10, 0)));
+        out.put("today", search(new Search(null, null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, "time", "today", 10, 0), product));
+        out.put("weekend", search(new Search(null, null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, "time", "weekend", 10, 0), product));
+        out.put("family", search(new Search(null, null, null, null, null, null, null, null, null, null, false, true, null, null, null, null, "popular", null, 10, 0), product));
+        out.put("popular", search(new Search(null, null, null, null, null, null, null, null, null, null, false, null, null, null, null, null, "popular", "popular", 10, 0), product));
         if (lat != null && lng != null) {
-            out.put("near", search(new Search(null, null, null, null, null, null, null, null, null, null, false, null, null, lat, lng, 15.0, "distance", null, 10, 0)));
+            out.put("near", search(new Search(null, null, null, null, null, null, null, null, null, null, false, null, null, lat, lng, 15.0, "distance", null, 10, 0), product));
         }
         return out;
     }
@@ -181,13 +189,13 @@ public class LeisureCatalogService {
         var rows = db.query("""
                 select e.id, e.title, e.description, e.photo_urls, e.category_code, e.booking_type, e.duration_minutes, e.min_age, e.family_friendly, e.max_guests,
                        e.confirmation, e.is_synthetic, v.id, v.name, v.description, v.address, v.district, v.latitude, v.longitude, v.photo_urls, v.rules,
-                       v.cancellation_hours, p.display_name, c.name_ru, c.name_kk, c.name_en, c.default_booking_type, c.family_friendly, c.enabled
+                       v.cancellation_hours, p.display_name, c.name_ru, c.name_kk, c.name_en, c.default_booking_type, c.family_friendly, c.enabled, c.product
                 from marketplace.leisure_events e join marketplace.leisure_venues v on v.id = e.venue_id join marketplace.partners p on p.id = v.partner_id
                 join marketplace.leisure_categories c on c.code = e.category_code
                 where e.id = ? and e.status = 'PUBLISHED' and v.status = 'APPROVED' and c.enabled""", (rs, n) -> {
             Venue venue = new Venue(rs.getString(13), rs.getString(14), rs.getString(15), rs.getString(16), rs.getString(17), (Double) rs.getObject(18),
                     (Double) rs.getObject(19), list(rs.getArray(20)), rs.getString(21), rs.getInt(22));
-            Category cat = new Category(rs.getString(5), rs.getString(24), rs.getString(25), rs.getString(26), rs.getString(27), rs.getBoolean(28), rs.getBoolean(29));
+            Category cat = new Category(rs.getString(5), rs.getString(24), rs.getString(25), rs.getString(26), rs.getString(27), rs.getBoolean(28), rs.getBoolean(29), rs.getString(30));
             return new Object[] {rs.getString(1), rs.getString(2), rs.getString(3), list(rs.getArray(4)), cat, rs.getString(6), rs.getInt(7), rs.getInt(8),
                     rs.getBoolean(9), rs.getInt(10), rs.getString(11), venue, rs.getString(23), rs.getBoolean(12)};
         }, id);
@@ -202,8 +210,14 @@ public class LeisureCatalogService {
                 (rs, n) -> new Object[] {rs.getDouble(1), rs.getInt(2)}, id).get(0);
         int count = (int) rating[1];
         return new Detail((String) r[0], (String) r[1], (String) r[2], photos, (Category) r[4], (String) r[5], (int) r[6], (int) r[7], (boolean) r[8], (int) r[9],
-                (String) r[10], venue, (String) r[12], ticketTypes(id), count == 0 ? null : Math.round((double) rating[0] * 10) / 10.0, count, enabled(),
-                cancellationTerms(venue.cancellationHours()), (boolean) r[13]);
+                (String) r[10], venue, (String) r[12], ticketTypes(id), count == 0 ? null : Math.round((double) rating[0] * 10) / 10.0, count, enabled(((Category) r[4]).product()),
+                cancellationTerms(venue.cancellationHours()), (boolean) r[13], ((Category) r[4]).product());
+    }
+
+    /** Product of an event's category; an unknown event yields LEISURE (the caller then finds nothing and answers 404/empty). */
+    String productOf(UUID eventId) {
+        return db.query("select c.product from marketplace.leisure_events e join marketplace.leisure_categories c on c.code = e.category_code where e.id = ?",
+                (rs, n) -> rs.getString(1), eventId).stream().findFirst().orElse(LEISURE);
     }
 
     public static String cancellationTerms(int hours) {
@@ -218,7 +232,7 @@ public class LeisureCatalogService {
 
     @Transactional(readOnly = true)
     public List<SessionView> sessions(UUID eventId, LocalDate date, int days) {
-        if (!enabled()) { return List.of(); }
+        if (!enabled(productOf(eventId))) { return List.of(); }
         ZoneId zone = ALMATY;
         OffsetDateTime from = (date == null ? LocalDate.now(zone) : date).atStartOfDay(zone).toOffsetDateTime();
         OffsetDateTime to = from.plusDays(Math.max(1, Math.min(days, 31)));

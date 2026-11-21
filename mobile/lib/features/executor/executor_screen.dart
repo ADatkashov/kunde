@@ -8,6 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import '../identity/auth_repository.dart';
 import '../rides/ride_strings.dart';
 import 'auto_work_screen.dart';
+import 'gate_scan_screen.dart';
 import 'leisure_work_screen.dart';
 import 'delivery_work_screen.dart';
 import 'food_work_screen.dart';
@@ -50,6 +51,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
   bool _deliverySynthetic = false;
   bool _autoEnabled = false;
   bool _leisureAvailable = false;
+  bool _gateAvailable = false;
   bool _educationEnabled = false;
   bool _autoResume = false;
 
@@ -123,6 +125,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
           _autoEnabled = enabled;
           _autoResume = resume;
           _leisureAvailable = leisure;
+          _gateAvailable = capabilities['eventsEnabled'] == true;
           _educationEnabled = capabilities['educationEnabled'] == true;
         });
       }
@@ -360,6 +363,16 @@ class _ExecutorScreenState extends State<ExecutorScreen>
                 ),
               )),
             ),
+          if (_gateAvailable)
+            IconButton(
+              icon: const Icon(Icons.qr_code_scanner_rounded),
+              tooltip: s.t('Проверка билетов (События)',
+                  'Билеттерді тексеру (Іс-шаралар)', 'Ticket check (Events)'),
+              onPressed: () =>
+                  Navigator.of(context).push<void>(MaterialPageRoute(
+                builder: (_) => GateScanScreen(auth: widget.auth),
+              )),
+            ),
           if (_educationEnabled)
             IconButton(
               icon: const Icon(Icons.school_outlined),
@@ -372,8 +385,10 @@ class _ExecutorScreenState extends State<ExecutorScreen>
           if (_leisureAvailable)
             IconButton(
               icon: const Icon(Icons.confirmation_number_outlined),
-              tooltip: s.t('Мероприятия (гид, ведущий)',
-                  'Іс-шаралар (гид, жүргізуші)', 'Events (guide, host)'),
+              tooltip: s.t(
+                  'Досуг (гид, ведущий, инструктор)',
+                  'Демалыс (гид, жүргізуші, нұсқаушы)',
+                  'Leisure (guide, host, instructor)'),
               onPressed: () =>
                   Navigator.of(context).push<void>(MaterialPageRoute(
                 builder: (_) => LeisureWorkScreen(auth: widget.auth),

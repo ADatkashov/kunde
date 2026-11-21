@@ -89,11 +89,13 @@ class LeisureApiIntegrationTest {
     @Test
     void catalogSearchDetailAndSeatMap() throws Exception {
         t.send("GET", "/api/v1/capabilities", null, null, null).andExpect(status().isOk()).andExpect(jsonPath("$.leisureEnabled").value(true));
-        assertThat((List<?>) JsonPath.read(t.body(t.send("GET", "/api/v1/leisure/categories", null, null, null)), "$")).hasSize(16);
+        assertThat((List<?>) JsonPath.read(t.body(t.send("GET", "/api/v1/leisure/categories", null, null, null)), "$")).hasSize(17); // 12 original + 5 new activity categories; ticketed event categories moved to Events
         String all = t.body(t.send("GET", "/api/v1/leisure/events?limit=50", null, null, null).andExpect(status().isOk()));
-        assertThat((List<?>) JsonPath.read(all, "$")).hasSizeGreaterThanOrEqualTo(9);
-        String cinema = t.body(t.send("GET", "/api/v1/leisure/events?category=CINEMA&available=true&guests=2&sort=price", null, null, null));
-        assertThat((List<String>) JsonPath.read(cinema, "$[*].categoryCode")).containsOnly("CINEMA");
+        assertThat((List<?>) JsonPath.read(all, "$")).hasSizeGreaterThanOrEqualTo(4);
+        assertThat((List<String>) JsonPath.read(all, "$[*].categoryCode")).doesNotContain("CINEMA", "CONCERT", "THEATER", "EXHIBITION"); // those are Events
+        assertThat((List<?>) JsonPath.read(t.body(t.send("GET", "/api/v1/leisure/events?category=CINEMA", null, null, null)), "$")).isEmpty();
+        String bowling = t.body(t.send("GET", "/api/v1/leisure/events?category=BOWLING&available=true&guests=2&sort=price", null, null, null));
+        assertThat((List<String>) JsonPath.read(bowling, "$[*].categoryCode")).containsOnly("BOWLING");
         assertThat((List<?>) JsonPath.read(t.body(t.send("GET", "/api/v1/leisure/events?q=боулинг", null, null, null)), "$")).isNotEmpty();
         assertThat((List<?>) JsonPath.read(t.body(t.send("GET", "/api/v1/leisure/events?age=3&category=KARAOKE", null, null, null)), "$")).isEmpty(); // karaoke is 18+
         assertThat((List<?>) JsonPath.read(t.body(t.send("GET", "/api/v1/leisure/events?family=true", null, null, null)), "$")).isNotEmpty();
@@ -325,6 +327,15 @@ class LeisureApiIntegrationTest {
         assertThat((String) JsonPath.read(part, "$.status")).isEqualTo("TEST_PART_REFUNDED");
         t.send("POST", "/api/v1/admin/leisure/orders/" + JsonPath.read(o, "$.id") + "/cancel", admin, "{\"reason\":\"Блокировка\"}", null).andExpect(status().isNoContent());
         assertThat((String) JsonPath.read(t.body(t.send("GET", "/api/v1/leisure/orders/" + JsonPath.read(o, "$.id"), alice, null, null)), "$.payment.status")).isEqualTo("TEST_REFUNDED");
+        // the Control Center shows the two products apart: the order of this bowling event counts for Leisure, not for Events
+        String leisureSum = t.body(t.send("GET", "/api/v1/admin/leisure/summary?product=LEISURE", admin, null, null).andExpect(status().isOk()));
+        assertThat((Integer) JsonPath.read(leisureSum, "$.orders")).isGreaterThanOrEqualTo(0);
+        // this administrator holds LEISURE_OPERATIONS only: Events data needs EVENTS_OPERATIONS
+        t.send("GET", "/api/v1/admin/leisure/summary?product=EVENTS", admin, null, null).andExpect(status().isForbidden());
+        t.send("GET", "/api/v1/admin/leisure/events?product=EVENTS", admin, null, null).andExpect(status().isForbidden());
+        assertThat((List<String>) JsonPath.read(t.body(t.send("GET", "/api/v1/admin/leisure/events?product=LEISURE", admin, null, null)), "$[*].category")).doesNotContain("CINEMA");
+        assertThat((List<String>) JsonPath.read(t.body(t.send("GET", "/api/v1/admin/leisure/categories?product=LEISURE", admin, null, null)), "$[*].code")).contains("QUEST").doesNotContain("CINEMA");
+        t.send("GET", "/api/v1/admin/leisure/summary?product=OTHER", admin, null, null).andExpect(status().isBadRequest());
         // blocking an event hides it; the journal records everything
         t.send("POST", "/api/v1/admin/leisure/events/" + eventId + "/decision", admin, "{\"decision\":\"BLOCK\",\"reason\":\"Нарушение правил\"}", null).andExpect(status().isOk());
         t.send("GET", "/api/v1/leisure/events/" + eventId, null, null, null).andExpect(status().isNotFound());

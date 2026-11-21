@@ -15,6 +15,7 @@ import 'package:kunde_partner/features/leisure/leisure_screen.dart';
 
 class _Backend {
   final calls = <String>[];
+  final queries = <String>[];
   bool confirmed = false;
 
   http.Response _json(Object body, [int status = 200]) =>
@@ -42,6 +43,7 @@ class _Backend {
 
   Future<http.Response> handle(http.Request r) async {
     calls.add('${r.method} ${r.url.path}');
+    queries.add(r.url.query);
     final path =
         r.url.path.replaceFirst('/api/v1/partner/partners/p1/leisure', '');
     if (path == '/stats') {
@@ -84,13 +86,14 @@ Widget _app(Widget home, {Locale locale = const Locale('ru')}) => MaterialApp(
       home: home,
     );
 
-LeisureOps _ops(_Backend b) => LeisureOps(
+LeisureOps _ops(_Backend b, {String? product}) => LeisureOps(
     PartnerApi(
         baseUri: Uri.parse('https://api.example.test/api/v1/'),
         accessToken: () async => 'token',
         client: MockClient(b.handle),
         getRetries: 0),
-    'p1');
+    'p1',
+    product: product);
 
 void main() {
   setUp(() => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -119,6 +122,21 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Create event'), findsNothing);
     expect(find.text('Scan QR'), findsOneWidget);
+  });
+
+  testWidgets('the Events section is its own product: title and server filter',
+      (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    final b = _Backend();
+    await tester.pumpWidget(_app(PartnerLeisureScreen(
+        ops: _ops(b, product: 'EVENTS'), canManage: true)));
+    await tester.pumpAndSettle();
+    expect(find.text('События'), findsOneWidget);
+    expect(find.text('Досуг'), findsNothing);
+    expect(b.queries, contains('days=7&product=EVENTS'));
+    expect(b.queries.any((q) => q.contains('product=LEISURE')), isFalse);
   });
 
   testWidgets(

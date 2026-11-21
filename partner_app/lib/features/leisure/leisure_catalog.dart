@@ -59,9 +59,7 @@ class _LeisureCatalogState extends State<LeisureCatalog> {
   }
 
   Future<void> _eventForm(String venueId) async {
-    final categories = await widget.ops.api
-        .getList('leisure/categories')
-        .catchError((_) => <Map<String, dynamic>>[]);
+    final categories = await widget.ops.categories();
     if (!mounted) return;
     final result = await showDialog<Map<String, dynamic>>(
         context: context, builder: (_) => _EventDialog(categories: categories));
@@ -497,9 +495,7 @@ class _EventManagePageState extends State<EventManagePage> {
   }
 
   Future<void> _editEvent() async {
-    final categories = await widget.ops.api
-        .getList('leisure/categories')
-        .catchError((_) => <Map<String, dynamic>>[]);
+    final categories = await widget.ops.categories();
     if (!mounted) return;
     final r = await showDialog<Map<String, dynamic>>(
         context: context,
@@ -695,7 +691,8 @@ class _EventManagePageState extends State<EventManagePage> {
     final s = S.of(context);
     final phone = TextEditingController();
     final note = TextEditingController();
-    var role = 'GUIDE';
+    // Events: the executor is a gate controller scanning tickets of this session; Leisure: guide, host, instructor...
+    var role = widget.ops.isEvents ? 'GATE' : 'GUIDE';
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -710,13 +707,15 @@ class _EventManagePageState extends State<EventManagePage> {
               initialValue: role,
               decoration: InputDecoration(labelText: s.lzRole),
               items: [
-                for (final r in [
-                  'GUIDE',
-                  'HOST',
-                  'INSTRUCTOR',
-                  'ANIMATOR',
-                  'ORGANIZER'
-                ])
+                for (final r in widget.ops.isEvents
+                    ? const ['GATE']
+                    : const [
+                        'GUIDE',
+                        'HOST',
+                        'INSTRUCTOR',
+                        'ANIMATOR',
+                        'ORGANIZER'
+                      ])
                   DropdownMenuItem(value: r, child: Text(r))
               ],
               onChanged: (v) => setLocal(() => role = v ?? role),
@@ -858,7 +857,8 @@ class _EventManagePageState extends State<EventManagePage> {
                               TextButton(
                                   onPressed: () => _cancelSession(x),
                                   child: Text(s.lzCancelSession)),
-                              if (_event['needsExecutor'] == true)
+                              if (_event['needsExecutor'] == true ||
+                                  widget.ops.isEvents)
                                 TextButton(
                                     onPressed: () => _assign(x),
                                     child: Text(s.lzAssign)),

@@ -195,6 +195,8 @@ class _LeisureHomeScreenState extends State<LeisureHomeScreen> {
     final s = lzL10n(context);
     final theme = Theme.of(context);
     final lang = Localizations.localeOf(context).languageCode;
+    final searchHint =
+        widget.services.isEvents ? s.evSearchHint : s.lzSearchHint;
     return Scaffold(
       body: RefreshIndicator(
         edgeOffset: 120,
@@ -205,8 +207,8 @@ class _LeisureHomeScreenState extends State<LeisureHomeScreen> {
         child: CustomScrollView(slivers: [
           SliverToBoxAdapter(
               child: _Hero(
-            title: s.lzTitle,
-            subtitle: s.lzSubtitle,
+            title: widget.services.isEvents ? s.evTitle : s.lzTitle,
+            subtitle: widget.services.isEvents ? s.evSubtitle : s.lzSubtitle,
             onBack: () => Navigator.of(context).maybePop(),
             onTickets: () => Navigator.of(context).push(MaterialPageRoute<void>(
                 builder: (_) =>
@@ -243,9 +245,9 @@ class _LeisureHomeScreenState extends State<LeisureHomeScreen> {
                             controller: _search,
                             textInputAction: TextInputAction.search,
                             onSubmitted: (q) =>
-                                _openList(query: q, title: s.lzSearchHint),
+                                _openList(query: q, title: searchHint),
                             decoration: InputDecoration(
-                              hintText: s.lzSearchHint,
+                              hintText: searchHint,
                               prefixIcon: const Icon(Icons.search_rounded),
                               filled: true,
                               border: OutlineInputBorder(

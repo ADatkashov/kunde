@@ -10,6 +10,11 @@ import '../home/presentation/catalog_search_panel.dart';
 import '../home/presentation/super_app_widgets.dart';
 import 'shell_strings.dart';
 import '../booking/booking_services.dart';
+import '../leisure/data/leisure_api.dart';
+import '../leisure/data/leisure_models.dart';
+import '../leisure/leisure_services.dart';
+import '../leisure/presentation/leisure_list_screen.dart';
+import '../leisure/presentation/leisure_strings.dart';
 import '../booking/presentation/services_home_screen.dart';
 
 enum KundeTab { home, search, assistant, orders, profile }
@@ -116,11 +121,13 @@ class KundeNavigationBar extends StatelessWidget {
 /// Search tab: real catalog search when the server enables the marketplace,
 /// otherwise an honest empty state.
 class SearchTab extends StatefulWidget {
-  const SearchTab({required this.api, this.food, this.booking, super.key});
+  const SearchTab(
+      {required this.api, this.food, this.booking, this.leisure, super.key});
 
   final KundeApi api;
   final FoodServices? food;
   final BookingServices? booking;
+  final LeisureServices? leisure;
 
   @override
   State<SearchTab> createState() => _SearchTabState();
@@ -135,6 +142,70 @@ class _SearchTabState extends State<SearchTab> {
   void initState() {
     super.initState();
     _snapshot = widget.api.loadPlatformSnapshot();
+  }
+
+  /// Global search: the server says whether the words are a ticketed event (Events) or a bookable activity (Leisure).
+  Future<void> _searchEverything(String query) async {
+    final leisure = widget.leisure;
+    if (leisure == null || query.trim().isEmpty) return;
+    final s = KundeLocalizations.of(context);
+    SearchRoute route;
+    try {
+      route = await leisure.api.route(query);
+    } on LeisureException {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(s.offline)));
+      }
+      return;
+    }
+    if (!mounted) return;
+    void open(LeisureProduct product) => Navigator.of(context).push<void>(
+          MaterialPageRoute(
+            builder: (_) => LeisureListScreen(
+              services: leisure.forProduct(product),
+              title: query.trim(),
+              initial: LeisureFilter(
+                  query: route.category == null ? query.trim() : '',
+                  category: route.category),
+            ),
+          ),
+        );
+    switch (route.route) {
+      case 'EVENTS':
+        open(LeisureProduct.events);
+      case 'LEISURE':
+        open(LeisureProduct.leisure);
+      case 'BOTH':
+        await showModalBottomSheet<void>(
+          context: context,
+          showDragHandle: true,
+          builder: (sheet) => SafeArea(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              ListTile(title: Text(s.gsBoth)),
+              ListTile(
+                leading: const Icon(Icons.confirmation_number_rounded),
+                title: Text(s.catEvents),
+                onTap: () {
+                  Navigator.pop(sheet);
+                  open(LeisureProduct.events);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.sports_esports_rounded),
+                title: Text(s.catLeisure),
+                onTap: () {
+                  Navigator.pop(sheet);
+                  open(LeisureProduct.leisure);
+                },
+              ),
+            ]),
+          ),
+        );
+      default:
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(s.gsNone)));
+    }
   }
 
   void _openFood(FoodServices food, String vertical) {
@@ -186,6 +257,22 @@ class _SearchTabState extends State<SearchTab> {
                 ),
                 Text(s.catalogSubtitle),
                 const SizedBox(height: 16),
+                if (widget.leisure != null &&
+                    done &&
+                    (state.data?.eventsEnabled == true ||
+                        state.data?.leisureEnabled == true)) ...[
+                  TextField(
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: _searchEverything,
+                    decoration: InputDecoration(
+                      hintText: s.gsHint,
+                      prefixIcon:
+                          const Icon(Icons.confirmation_number_outlined),
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 if (!done)
                   Center(
                     child: const CircularProgressIndicator(),

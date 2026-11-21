@@ -121,12 +121,19 @@ public class LeisurePayments {
     }
 
     @Transactional(readOnly = true)
-    public List<Entry> latest(boolean refundableOnly) {
+    public List<Entry> latest(boolean refundableOnly) { return latest(refundableOnly, null); }
+
+    /** {@code product} EVENTS or LEISURE keeps the payments of that product only (the order's event category decides); null = both. */
+    @Transactional(readOnly = true)
+    public List<Entry> latest(boolean refundableOnly, String product) {
         return db.query("""
-                select id, order_id, method, status, held_minor, captured_minor, refunded_minor, updated_at from transactions.leisure_payments
-                where method = 'TEST_CARD' and (not ? or status in ('TEST_CAPTURED', 'TEST_PART_REFUNDED')) order by updated_at desc limit 100
+                select p.id, p.order_id, p.method, p.status, p.held_minor, p.captured_minor, p.refunded_minor, p.updated_at from transactions.leisure_payments p
+                join transactions.leisure_orders o on o.id = p.order_id join marketplace.leisure_events e on e.id = o.event_id
+                join marketplace.leisure_categories c on c.code = e.category_code
+                where p.method = 'TEST_CARD' and (not ? or p.status in ('TEST_CAPTURED', 'TEST_PART_REFUNDED')) and (?::text is null or c.product = ?::text)
+                order by p.updated_at desc limit 100
                 """, (rs, n) -> new Entry(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getLong(5), rs.getLong(6), rs.getLong(7),
-                rs.getObject(8, OffsetDateTime.class)), refundableOnly);
+                rs.getObject(8, OffsetDateTime.class)), refundableOnly, product, product);
     }
 
     private PaymentView view(UUID id) {

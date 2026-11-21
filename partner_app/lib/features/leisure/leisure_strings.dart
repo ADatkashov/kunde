@@ -9,6 +9,7 @@ extension LeisureS on S {
       };
 
   String get lzTitle => _l('Досуг', 'Демалыс', 'Leisure');
+  String get evTitle => _l('События', 'Іс-шаралар', 'Events');
   String get lzOverview => _l('Обзор', 'Шолу', 'Overview');
   String get lzEvents => _l('Мероприятия', 'Іс-шаралар', 'Events');
   String get lzBookings => _l('Бронирования', 'Брондаулар', 'Bookings');

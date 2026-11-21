@@ -1,4 +1,6 @@
-"""KUNDE Leisure native E2E on a loopback-only fixture: the real Consumer APK on an Android emulator against a real backend and PostgreSQL.
+"""KUNDE Events & Leisure native E2E on a loopback-only fixture. The seat purchase runs through the Events product (cinema), the activity
+booking and the product separation through Leisure; both share one ticketing engine. Original description:
+KUNDE Leisure native E2E on a loopback-only fixture: the real Consumer APK on an Android emulator against a real backend and PostgreSQL.
 
 Consumer steps run through the actual app screens (home -> category -> event -> session -> seats -> summary -> test payment -> QR ticket ->
 history -> review). Partner and Executor actions (QR check-in, executor assignment) are real HTTP calls to the same backend: those apps are
@@ -73,6 +75,7 @@ def sql(statement):
 def start_backend(enabled):
     env = dict(os.environ)
     env["LEISURE_ENABLED"] = "true" if enabled else "false"
+    env["EVENTS_ENABLED"] = "true" if enabled else "false"
     env["LEISURE_SEED_DEMO"] = "true" if enabled else "false"
     env["AUTH_PHONE_SECRET"] = fixture.FIXTURE_AUTH_KEY
     args = ["java", "-Xms128m", "-Xmx640m", "-XX:+UseSerialGC", "-jar", "backend/target/kunde-api-0.1.0-SNAPSHOT.jar", "--server.address=127.0.0.1", "--server.port=8081"]
@@ -88,7 +91,7 @@ def start_backend(enabled):
         except (OSError, RuntimeError):
             time.sleep(1)
             continue
-        if capabilities["leisureEnabled"] == enabled:
+        if capabilities["leisureEnabled"] == enabled and capabilities["eventsEnabled"] == enabled:
             if not enabled:
                 return process
             for _ in range(120):  # the demo seeders run after the web server is up
@@ -110,7 +113,7 @@ world = World()
 
 
 def cinema_event():
-    for card in fixture.call("GET", "leisure/events?category=CINEMA&limit=20"):
+    for card in fixture.call("GET", "events?category=CINEMA&limit=20"):
         if card["bookingType"] == "SEAT_MAP" and card["minAge"] == 12:
             return card
     raise RuntimeError("the synthetic cinema event is not seeded")
@@ -139,7 +142,8 @@ def setup():
     check(world.detail["demo"] is True and world.detail["rating"] is None, "demo data is flagged and carries no invented rating")
     sessions = fixture.call("GET", f"leisure/events/{world.event['id']}/sessions?days=3")
     # a session far enough in the future for the check-in window to be closed until the test moves it
-    world.session = next(s for s in sessions if s["free"] >= 20)
+    horizon = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=3)
+    world.session = next(s for s in sessions if s["free"] >= 20 and datetime.datetime.fromisoformat(s["startsAt"]) > horizon)
     seats = fixture.call("GET", f"leisure/sessions/{world.session['id']}/seats")
     free = [s for s in seats if s["status"] == "FREE" and s["zone"] == "STANDARD"]
     world.seat_a, world.seat_b, world.seat_c = free[-1], free[-2], free[-3]
@@ -199,7 +203,9 @@ def api_checks():
                        body={"lines": [{"ticketTypeId": std["id"], "quantity": 1, "seatIds": [world.seat_a["id"]]}]})
     check(status == 409 and body["code"] == "SEAT_TAKEN", f"the sold seat must be refused: {status} {body}")
     # concurrency: three customers race for one seat; exactly one wins
-    session = next(s for s in fixture.call("GET", f"leisure/events/{world.event['id']}/sessions?days=3") if s["id"] != world.session["id"])
+    horizon = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=6)  # outside the free-cancellation window
+    session = next(s for s in fixture.call("GET", f"leisure/events/{world.event['id']}/sessions?days=3")
+                   if s["id"] != world.session["id"] and datetime.datetime.fromisoformat(s["startsAt"]) > horizon)
     seats = fixture.call("GET", f"leisure/sessions/{session['id']}/seats")
     seat = next(s for s in seats if s["status"] == "FREE" and s["zone"] == "STANDARD")
     tokens = [world.consumer or fixture.session(CONSUMER_PHONE), world.other, fixture.session("+77000000002")]
@@ -239,12 +245,39 @@ def api_checks():
     completed.append("executor_assignment_only_where_needed")
 
 
+def separation_checks():
+    """Events and Leisure are two products on one engine: separate catalogues, one canonical card, one purchase path."""
+    events = fixture.call("GET", "events/categories")
+    leisure = fixture.call("GET", "leisure/categories")
+    check({c["code"] for c in events}.isdisjoint({c["code"] for c in leisure}), "no category is in both catalogues")
+    check({"CINEMA", "CONCERT", "THEATER"} <= {c["code"] for c in events}, "cinema, concerts and theatre are Events")
+    check({"QUEST", "BOWLING", "GAMING_VR"} <= {c["code"] for c in leisure}, "quests, bowling and VR are Leisure")
+    check(fixture.call("GET", "events?category=BOWLING") == [], "bowling is not an event")
+    check(fixture.call("GET", "leisure/events?category=CINEMA") == [], "cinema is not a leisure activity")
+    check(fixture.call("GET", "events/" + world.event["id"])["product"] == "EVENTS", "the cinema card is an Events card")
+    check(fixture.call("GET", "leisure/events/" + world.event["id"])["id"] == world.event["id"], "one canonical card for one offer")
+    completed.append("events_leisure_catalogues_separated")
+    # a Leisure activity (bowling lane, per-booking price) through the same hold/order path, then a refunded cancellation
+    lane = fixture.call("GET", "leisure/events?category=BOWLING&limit=5")[0]
+    detail = fixture.call("GET", "leisure/events/" + lane["id"])
+    session = fixture.call("GET", f"leisure/events/{lane['id']}/sessions?days=3")[-1]  # the latest: outside the free-cancellation window
+    hold = fixture.call("POST", f"leisure/sessions/{session['id']}/holds", token=world.consumer, expected=201,
+                        body={"lines": [{"ticketTypeId": detail["ticketTypes"][0]["id"], "quantity": 1}]})
+    order = fixture.call("POST", "leisure/orders", token=world.consumer, expected=201, key="e2e-" + uuid.uuid4().hex,
+                         body={"holdId": hold["id"], "paymentMethod": "TEST_CARD", "ageConfirmed": True})
+    check(order["status"] == "CONFIRMED" and order["payment"]["mode"] == "DEV_TEST", order)
+    cancelled = fixture.call("POST", f"leisure/orders/{order['id']}/cancel", token=world.consumer)
+    check(cancelled["status"] == "CANCELLED" and cancelled["payment"]["status"] == "TEST_REFUNDED", cancelled)
+    completed.append("leisure_activity_booking_test_payment_cancel_refund")
+
+
 def flag_off_checks(process):
     fixture.stop_backend(process)
     process = start_backend(False)
     check(fixture.call("GET", "leisure/categories") == [], "the catalogue is empty while Leisure is off")
+    check(fixture.call("GET", "events/categories") == [], "the catalogue is empty while Events is off")
     status, body = raw("POST", f"leisure/sessions/{world.session['id']}/holds", token=world.other, body={"lines": []})
-    check(status == 409 and body["code"] == "LEISURE_DISABLED", f"new holds are refused while off: {status} {body}")
+    check(status == 409 and body["code"] == "EVENTS_DISABLED", f"new ticket holds are refused while Events is off: {status} {body}")
     orders = fixture.call("GET", "leisure/orders?scope=completed", token=world.consumer or fixture.session(CONSUMER_PHONE))
     check(isinstance(orders, list), "existing orders stay readable while Leisure is off")
     completed.append("flag_off_new_denied_existing_readable")
@@ -310,7 +343,9 @@ def money(minor):
     return grouped + " ₸"
 
 
-HOME_TITLE = ("Досуг и развлечения", "Leisure and entertainment")
+HOME_TITLE = ("События", "Events")
+EVENTS = ("События", "Events")
+LEISURE_HOME_TITLE = ("Досуг и развлечения", "Leisure and entertainment")
 LEISURE = ("Досуг", "Leisure")
 MY_TICKETS = ("Мои билеты", "My tickets")
 CINEMAS = ("Кинотеатры", "Cinemas")
@@ -330,10 +365,10 @@ THANKS = ("Спасибо за отзыв", "Thanks for your review")
 def ui_purchase():
     std = next(t for t in world.detail["ticketTypes"] if t["zone"] == "STANDARD")
     price = money(world.detail["ticketTypes"][0]["priceMinor"])
-    tap(*LEISURE)
+    tap(*EVENTS)
     android.find(*HOME_TITLE, timeout=40)
-    android.screenshot("consumer-leisure-home")
-    completed.append("consumer_leisure_home")
+    android.screenshot("consumer-events-home")
+    completed.append("consumer_events_home")
     tap(*CINEMAS)
     tap(world.event["title"])
     android.find(*SCHEDULE, timeout=30)
@@ -364,7 +399,7 @@ def ui_purchase():
 
 def ui_after_scan():
     relaunch()
-    tap(*LEISURE)
+    tap(*EVENTS)
     tap(*MY_TICKETS)
     android.find(*UPCOMING, timeout=30)
     tap(world.event["title"])
@@ -391,7 +426,14 @@ def ui_after_scan():
 
 def ui_network_recovery(process):
     relaunch()
+    # Leisure is its own tile and its own catalogue (activities only); checked here to spare the emulator an extra app restart
     tap(*LEISURE)
+    android.find(*LEISURE_HOME_TITLE, timeout=40)
+    reveal("Боулинг", "Bowling")
+    android.screenshot("consumer-leisure-home")
+    completed.append("consumer_leisure_home_activities_only")
+    back(1)
+    tap(*EVENTS)
     android.find(*HOME_TITLE, timeout=40)
     fixture.stop_backend(process)
     tap(*MY_TICKETS)
@@ -418,10 +460,10 @@ def ui_flag_off():
         android.screenshot("flag-off-relaunch-failed")
         raise
     try:
-        tap(*LEISURE)
+        tap(*EVENTS)
         android.find(*HOME_TITLE, timeout=8)
     except RuntimeError:
-        completed.append("consumer_leisure_unavailable_when_flag_off")
+        completed.append("consumer_events_unavailable_when_flag_off")
         return
     raise RuntimeError("Leisure stayed usable in the app after the platform flag was switched off")
 
@@ -460,6 +502,7 @@ def main():
             ui_after_scan()
         phase = "backend_scenarios"
         api_checks()
+        separation_checks()
         if not API_ONLY:
             phase = "network_recovery"
             process = ui_network_recovery(process)

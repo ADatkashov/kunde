@@ -14,11 +14,29 @@ extension LeisureStrings on KundeLocalizations {
   String get lzTitle => _t('Досуг и развлечения', 'Демалыс және ойын-сауық',
       'Leisure and entertainment');
   String get lzSubtitle => _t(
-      'Кино, мероприятия, активный отдых и развлечения для всей семьи',
-      'Кино, іс-шаралар, белсенді демалыс және бүкіл отбасыға арналған ойын-сауық',
-      'Cinema, events, outdoor fun and entertainment for the whole family');
+      'Квесты, боулинг, караоке, активный отдых и развлечения для всей семьи',
+      'Квесттер, боулинг, караоке, белсенді демалыс және бүкіл отбасыға арналған ойын-сауық',
+      'Quests, bowling, karaoke, outdoor fun and entertainment for the whole family');
   String get lzSearchHint =>
       _t('Найти развлечение', 'Ойын-сауық іздеу', 'Search entertainment');
+  // ---- KUNDE Events & Tickets (same screens, other product) ----------------------------------------------------------------
+  String get evTitle => _t('События', 'Іс-шаралар', 'Events');
+  String get evSubtitle => _t(
+      'Концерты, кино, театр, спорт и фестивали Алматы',
+      'Алматыдағы концерттер, кино, театр, спорт және фестивальдер',
+      'Concerts, cinema, theatre, sports and festivals in Almaty');
+  String get evSearchHint =>
+      _t('Найти событие', 'Іс-шара іздеу', 'Search events');
+  String get gsHint => _t(
+      'События и досуг: концерт, квест, боулинг…',
+      'Іс-шаралар және демалыс: концерт, квест…',
+      'Events & leisure: concert, quest, bowling…');
+  String get gsBoth => _t('Найдено в двух разделах', 'Екі бөлімнен табылды',
+      'Found in two sections');
+  String get gsNone => _t(
+      'Ничего не найдено в «События» и «Досуг»',
+      '«Іс-шаралар» және «Демалыс» бөлімдерінен ештеңе табылмады',
+      'Nothing found in Events or Leisure');
   String get lzCity => _t('Алматы', 'Алматы', 'Almaty');
   String get lzCityMore => _t('Другие города появятся позже',
       'Басқа қалалар кейінірек қосылады', 'More cities are coming later');

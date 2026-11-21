@@ -80,8 +80,16 @@ public class LeisureOrderService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "SESSION_NOT_FOUND", "Session not found"));
     }
 
-    private void requireEnabled() {
-        if (!toggles.enabled(Feature.LEISURE)) {
+    /** New sales follow the switch of the product the session belongs to (Events or Leisure); existing orders stay readable either way. */
+    private void requireEnabledForSession(UUID sessionId) {
+        String product = db.query("select c.product from marketplace.leisure_sessions s join marketplace.leisure_events e on e.id = s.event_id "
+                + "join marketplace.leisure_categories c on c.code = e.category_code where s.id = ?", (rs, n) -> rs.getString(1), sessionId)
+                .stream().findFirst().orElse("LEISURE");
+        if ("EVENTS".equals(product)) {
+            if (!toggles.enabled(Feature.EVENTS)) {
+                throw new ApiException(HttpStatus.CONFLICT, "EVENTS_DISABLED", "Events is switched off; new ticket sales are not accepted");
+            }
+        } else if (!toggles.enabled(Feature.LEISURE)) {
             throw new ApiException(HttpStatus.CONFLICT, "LEISURE_DISABLED", "Leisure is switched off; new bookings are not accepted");
         }
     }
@@ -90,7 +98,7 @@ public class LeisureOrderService {
 
     @Transactional
     public HoldView hold(UUID user, UUID sessionId, HoldRequest req) {
-        requireEnabled();
+        requireEnabledForSession(sessionId);
         if (req == null || req.lines() == null || req.lines().isEmpty() || req.lines().size() > 10) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "SELECTION_INVALID", "Choose at least one ticket");
         }
@@ -219,7 +227,8 @@ public class LeisureOrderService {
             }
             return new Placed(order(user, existing.get()[0]), false);
         }
-        requireEnabled();
+        requireEnabledForSession(db.query("select session_id from transactions.leisure_holds where id = ? and user_id = ?", (rs, n) -> rs.getObject(1, UUID.class), body.holdId(), user)
+                .stream().findFirst().orElse(null));
         String method = payments.method(body.paymentMethod());
         var hold = db.query("select session_id, guests, total_minor, status, expires_at from transactions.leisure_holds where id = ? and user_id = ? for update",
                 (rs, n) -> new Object[] {rs.getObject(1, UUID.class), rs.getInt(2), rs.getLong(3), rs.getString(4), kz.kunde.leisure.LeisureTime.local(rs, 5)}, body.holdId(), user)

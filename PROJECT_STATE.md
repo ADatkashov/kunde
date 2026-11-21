@@ -1,5 +1,14 @@
 # KUNDE project state
 
+## KUNDE Events & Tickets / Leisure — разделение продуктов (2026-11-21, ветка `ccr-086450c7-ir0f4p`)
+
+- Аудит: движок билетов (места, удержание, QR, проверка) уже есть в Leisure 1.0; второй движок не создавался. Flyway V53: поле `product` у категорий (EVENTS/LEISURE), флаг `EVENTS`, публичный каталог `/api/v1/events`, раздельная фильтрация каталогов, блокировка продаж по флагу продукта. [Матрица и ограничения](docs/product/events.md).
+- Flutter (Consumer плитка «События» на общих экранах, Admin/Partner с фильтром по продукту, Executor-контролёр `GATE`, V54, грант V55) добавлен в PR #196. Локально: Consumer analyze чисто, 290 тестов; Partner 118; backend `Events*,Leisure*` зелёные. **Не сделано:** Android-скриншоты и нативные E2E на эмуляторе (ждут CI), DEV deploy, APK. Подробности: [events](docs/product/events.md).
+
+
+
+## KUNDE Groceries 1.0 — DEV/TEST срез (2026-11-21, ветка `ccr-7604baac-80k1na`)
+
 ## KUNDE Groceries 1.0 — DEV/TEST (2026-11-21)
 
 - В `main` (V45–V52, PR #195, #197, #204): каталог/поиск/фильтры на сервере, карточка товара с галереей, Share, избранное, списки, серверная корзина, фото и поля товара (Partner), интерактивная сборка с согласованием замен, задачи курьера и экран Executor, Groceries Control Center (scoped `GROCERIES_OPERATIONS`), проверенные отзывы и рейтинг. DEV на `3faa0ee`.
