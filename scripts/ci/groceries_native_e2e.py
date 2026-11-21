@@ -13,7 +13,7 @@ PHONE = "+77000000001"
 GROCERIES = ("Продукты", "Азық-түлік", "Groceries")
 PRODUCT = "Сыр Российский 200 г"  # 2 190 ₸ on the shelf: two pieces clear the 3 000 ₸ minimum order
 ADD = ("Добавить в корзину", "Себетке қосу", "Add to cart")
-CART = ("В корзину", "Себетке", "Cart")
+CART = ("Корзина · 2",)
 CHECKOUT = ("Оформить заказ", "Тапсырысты рәсімдеу", "Checkout")
 CONFIRM = ("Подтвердить заказ", "Тапсырысты растау", "Confirm order")
 
