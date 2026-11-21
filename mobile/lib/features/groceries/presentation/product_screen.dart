@@ -29,6 +29,9 @@ class _ProductScreenState extends State<ProductScreen> {
   final Map<String, Set<String>> _selected = {};
   int? _quantity;
   bool _optionsReady = false;
+  late Future<ProductReviews> _reviews =
+      _services.api.reviews(widget.productId);
+  bool _canReview = false;
 
   GroceriesServices get _services => widget.services;
 
@@ -37,6 +40,9 @@ class _ProductScreenState extends State<ProductScreen> {
     super.initState();
     _future = _load();
     _services.loadFavorites();
+    _services.api.canReview(widget.productId).then((v) {
+      if (mounted) setState(() => _canReview = v);
+    }).catchError((_) {});
   }
 
   Future<ProductDetail> _load() => _services.api.product(widget.productId);
@@ -68,6 +74,59 @@ class _ProductScreenState extends State<ProductScreen> {
         final n = _selected[g.id]?.length ?? 0;
         return n >= g.minSelect && n <= g.maxSelect;
       });
+
+  Future<void> _writeReview() async {
+    final s = GStr.of(context);
+    var rating = 0;
+    final comment = TextEditingController();
+    final send = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setLocal) => AlertDialog(
+          title: Text(s.writeReview),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              for (var i = 1; i <= 5; i++)
+                IconButton(
+                  key: Key('product-review-star-$i'),
+                  tooltip: '$i',
+                  onPressed: () => setLocal(() => rating = i),
+                  icon: Icon(i <= rating ? Icons.star : Icons.star_border),
+                ),
+            ]),
+            TextField(
+                controller: comment,
+                maxLength: 1000,
+                maxLines: 3,
+                decoration: InputDecoration(labelText: s.reviewHint)),
+          ]),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(s.cancel)),
+            FilledButton(
+                key: const Key('product-review-send'),
+                onPressed:
+                    rating == 0 ? null : () => Navigator.pop(context, true),
+                child: Text(s.send)),
+          ],
+        ),
+      ),
+    );
+    if (send != true || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await _services.api.submitReview(widget.productId, rating, comment.text);
+      messenger.showSnackBar(SnackBar(content: Text(s.reviewThanks)));
+      setState(() {
+        _canReview = false;
+        _reviews = _services.api.reviews(widget.productId);
+      });
+    } on GroceriesException catch (error) {
+      messenger
+          .showSnackBar(SnackBar(content: Text(error.messageFor(s.language))));
+    }
+  }
 
   /// Opens the system share sheet. Where no share target exists the text is shown in a dialog instead of failing silently.
   Future<void> _share(ProductDetail detail) async {
@@ -236,6 +295,14 @@ class _ProductScreenState extends State<ProductScreen> {
                       _Block(s.storage, Text(detail.storageConditions!)),
                     if (detail.originCountry != null)
                       _Block(s.origin, Text(detail.originCountry!)),
+                    _Block(
+                        s.reviews,
+                        _ReviewsSection(
+                          future: _reviews,
+                          canReview: _canReview,
+                          onWrite: _writeReview,
+                          s: s,
+                        )),
                     const SizedBox(height: 8),
                     OutlinedButton.icon(
                       onPressed: () =>
@@ -522,4 +589,67 @@ class _Stepper extends StatelessWidget {
         IconButton.filled(
             tooltip: '+', onPressed: onPlus, icon: const Icon(Icons.add)),
       ]);
+}
+
+/// Verified reviews of the product with the average, a distribution and the reviews; "write" only for eligible buyers.
+class _ReviewsSection extends StatelessWidget {
+  const _ReviewsSection(
+      {required this.future,
+      required this.canReview,
+      required this.onWrite,
+      required this.s});
+
+  final Future<ProductReviews> future;
+  final bool canReview;
+  final VoidCallback onWrite;
+  final GStr s;
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<ProductReviews>(
+        future: future,
+        builder: (context, snapshot) {
+          final data = snapshot.data;
+          if (data == null) {
+            return snapshot.hasError
+                ? Text(s.retry)
+                : const SkeletonBox(height: 40);
+          }
+          return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (data.count == 0)
+                  Text(s.noReviews, key: const Key('product-no-reviews'))
+                else ...[
+                  Semantics(
+                    label: '${data.average} / 5, ${data.count}',
+                    child: Text(
+                        '★ ${data.average!.toStringAsFixed(1).replaceAll('.', ',')} · ${data.count}',
+                        key: const Key('product-rating'),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w800, fontSize: 18)),
+                  ),
+                  const SizedBox(height: 6),
+                  for (final r in data.reviews.take(5))
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                                '${'★' * r.rating}${'☆' * (5 - r.rating)} · ${r.author}'),
+                            if (r.comment != null) Text(r.comment!),
+                          ]),
+                    ),
+                ],
+                if (canReview)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: OutlinedButton(
+                        key: const Key('product-review-write'),
+                        onPressed: onWrite,
+                        child: Text(s.writeReview)),
+                  ),
+              ]);
+        },
+      );
 }

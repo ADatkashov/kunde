@@ -456,7 +456,7 @@ class _StatusTimeline extends StatelessWidget {
         ),
       );
     }
-    final flow = orderFlowFor(order.fulfillmentType);
+    final flow = orderFlowFor(order.fulfillmentType, vertical: order.vertical);
     final current = flow.indexOf(order.status);
     final label = order.vertical == 'FLOWERS_GIFTS'
         ? flowersStatusLabel(

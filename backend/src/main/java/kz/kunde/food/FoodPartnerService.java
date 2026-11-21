@@ -38,7 +38,17 @@ public class FoodPartnerService {
             "PREPARING", List.of("READY_FOR_PICKUP", "CANCELLED"),
             "READY_FOR_PICKUP", List.of("DELIVERED", "CANCELLED"));
 
-    private static List<String> next(String status, String type) {
+    /** Groceries delivery: the store only prepares and hands over; a courier collects (ON_THE_WAY) and delivers (DELIVERED). */
+    private static final Map<String, List<String>> NEXT_GROCERY_DELIVERY = Map.of(
+            "PLACED", List.of("ACCEPTED", "CANCELLED"),
+            "ACCEPTED", List.of("PREPARING", "CANCELLED"),
+            "PREPARING", List.of("READY_FOR_PICKUP", "CANCELLED"),
+            "READY_FOR_PICKUP", List.of("CANCELLED"));
+
+    private static List<String> next(String status, String type, String vertical) {
+        if ("GROCERY".equals(vertical) && !"PICKUP".equals(type)) {
+            return NEXT_GROCERY_DELIVERY.getOrDefault(status, List.of());
+        }
         return ("PICKUP".equals(type) ? NEXT_PICKUP : NEXT_DELIVERY).getOrDefault(status, List.of());
     }
 
@@ -73,8 +83,10 @@ public class FoodPartnerService {
     private final JdbcTemplate db;
     private final FoodOrderService orders;
     private final PartnerService partners;
+    private final FoodCourierService couriers;
 
-    public FoodPartnerService(JdbcTemplate db, FoodOrderService orders, PartnerService partners) {
+    public FoodPartnerService(JdbcTemplate db, FoodOrderService orders, PartnerService partners, FoodCourierService couriers) {
+        this.couriers = couriers;
         this.db = db;
         this.orders = orders;
         this.partners = partners;
@@ -111,15 +123,15 @@ public class FoodPartnerService {
     public PartnerOrder transition(UUID actor, UUID partnerId, UUID orderId, String to, String reason) {
         partners.requireProcessing(actor, partnerId);
         orders.expireUnanswered(partnerId);
-        String[] state = db.query("select status, fulfillment_type from transactions.food_orders where id = ? and partner_id = ? for update",
-                (rs, n) -> new String[] {rs.getString(1), rs.getString(2)}, orderId, partnerId).stream().findFirst()
+        String[] state = db.query("select status, fulfillment_type, vertical from transactions.food_orders where id = ? and partner_id = ? for update",
+                (rs, n) -> new String[] {rs.getString(1), rs.getString(2), rs.getString(3)}, orderId, partnerId).stream().findFirst()
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND", "Order not found"));
         String status = state[0];
         String clean = reason == null || reason.isBlank() ? null : reason.strip();
         if (to.equals(status)) {
             return wrap(List.of(orderId)).get(0);
         }
-        if (!next(status, state[1]).contains(to)) {
+        if (!next(status, state[1], state[2]).contains(to)) {
             throw new ApiException(HttpStatus.CONFLICT, "ORDER_TRANSITION_INVALID",
                     "The order cannot move from " + status + " to " + to);
         }
@@ -144,6 +156,9 @@ public class FoodPartnerService {
                 insert into transactions.food_order_events (order_id, status, actor_type, actor_user_id, reason)
                 values (?, ?, 'PARTNER', ?, ?)
                 """, orderId, to, actor, "CANCELLED".equals(to) ? clean : null);
+        boolean groceryDelivery = "GROCERY".equals(state[2]) && !"PICKUP".equals(state[1]);
+        if (groceryDelivery && "READY_FOR_PICKUP".equals(to)) { couriers.openTask(orderId); }
+        if (groceryDelivery && "CANCELLED".equals(to)) { couriers.cancel(orderId); }
         if ("PREPARING".equals(to) && !orders.interactivePicking(orderId)) {
             // The store collects the order: unavailable products are replaced or removed per the customer's choice.
             orders.resolveLines(orderId, OffsetDateTime.now());
@@ -569,7 +584,7 @@ public class FoodPartnerService {
         int window = orders.partnerResponseSeconds;
         return orders.views(ids, null).stream().map(o -> {
             boolean waiting = "PLACED".equals(o.status());
-            return new PartnerOrder(o, customers.get(UUID.fromString(o.id())), next(o.status(), o.fulfillmentType()),
+            return new PartnerOrder(o, customers.get(UUID.fromString(o.id())), next(o.status(), o.fulfillmentType(), o.vertical()),
                     waiting ? o.placedAt().plusSeconds(window) : null,
                     waiting ? o.placedAt().plusSeconds(window * 2L / 5) : null);
         }).toList();
