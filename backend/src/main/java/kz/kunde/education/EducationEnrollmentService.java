@@ -240,16 +240,6 @@ public class EducationEnrollmentService {
         if ((quiz == null || quiz.passed()) && (assignment == null || "APPROVED".equals(assignment.status()))) {
             db.sql("update transactions.education_enrollments set completed_at=now(), certificate_code=:code where id=:id")
                     .param("id", enrollment.id()).param("code", UUID.randomUUID()).update();
-            db.sql("""
-                    insert into transactions.education_certificates
-                       (enrollment_id,code,course_title,organization_name,learner_name,completed_at)
-                    select e.id,e.certificate_code,c.title,p.display_name,cp.display_name,e.completed_at
-                    from transactions.education_enrollments e
-                    join marketplace.education_courses c on c.id=e.course_id
-                    join marketplace.partners p on p.id=c.partner_id
-                    left join profile.consumer_profiles cp on cp.user_id=e.user_id
-                    where e.id=:id
-                    """).param("id", enrollment.id()).update();
         }
     }
 

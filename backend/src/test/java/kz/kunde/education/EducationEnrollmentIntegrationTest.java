@@ -88,6 +88,18 @@ class EducationEnrollmentIntegrationTest {
 
     @Test
     @Transactional
+    void completionWrittenByPriorAppVersionStillGetsCertificateSnapshot() {
+        UUID student = user();
+        UUID id = enrollment.enroll(student, cohort(1), 750, "rolling-release-certificate").enrollment().id();
+        UUID code = UUID.randomUUID();
+        db.update("""
+                update transactions.education_enrollments set completed_at=now(),certificate_code=? where id=?
+                """, code, id);
+        assertThat(certificates.verify(code).status()).isEqualTo("VALID");
+    }
+
+    @Test
+    @Transactional
     void signedInConsumerCanListAndEnrollThroughHttp() throws Exception {
         UUID cohort = cohort(2);
         UUID course = db.queryForObject("select course_id from marketplace.education_cohorts where id=?", UUID.class, cohort);
