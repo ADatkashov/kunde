@@ -85,11 +85,25 @@ class Restaurant {
     required this.synthetic,
     this.vertical = 'FOOD',
     this.imageUrl,
+    this.ratingAvg,
+    this.ratingCount = 0,
+    this.pickupEnabled = true,
+    this.prepMinutes = 20,
+    this.addressText,
+    this.hasPromo = false,
   });
 
   final String id;
   final String name;
   final String? imageUrl;
+
+  /// Average of visible, verified reviews; null while the restaurant has none (no invented ratings).
+  final double? ratingAvg;
+  final int ratingCount;
+  final bool pickupEnabled;
+  final int prepMinutes;
+  final String? addressText;
+  final bool hasPromo;
 
   /// `FOOD` (restaurants) or `GROCERY` (stores); stores reuse the same catalog, cart and order model.
   final String vertical;
@@ -121,6 +135,12 @@ class Restaurant {
         synthetic: json['synthetic'] as bool? ?? false,
         vertical: json['vertical'] as String? ?? 'FOOD',
         imageUrl: json['imageUrl'] as String?,
+        ratingAvg: (json['ratingAvg'] as num?)?.toDouble(),
+        ratingCount: (json['ratingCount'] as num?)?.toInt() ?? 0,
+        pickupEnabled: json['pickupEnabled'] as bool? ?? true,
+        prepMinutes: (json['prepMinutes'] as num?)?.toInt() ?? 20,
+        addressText: json['addressText'] as String?,
+        hasPromo: json['hasPromo'] as bool? ?? false,
       );
 }
 
@@ -341,6 +361,11 @@ class FoodQuote {
     required this.deliveryFeeMinor,
     required this.totalMinor,
     required this.minOrderMinor,
+    this.fulfillmentType = 'DELIVERY',
+    this.discountMinor = 0,
+    this.promoCode,
+    this.promoTitle,
+    this.prepMinutes = 20,
   });
 
   final String restaurantName;
@@ -349,6 +374,13 @@ class FoodQuote {
   final int deliveryFeeMinor;
   final int totalMinor;
   final int minOrderMinor;
+
+  /// `DELIVERY` or `PICKUP`; the discount and every total are computed by the server.
+  final String fulfillmentType;
+  final int discountMinor;
+  final String? promoCode;
+  final String? promoTitle;
+  final int prepMinutes;
 
   factory FoodQuote.fromJson(Map<String, dynamic> json) => FoodQuote(
         restaurantName: json['restaurantName'] as String,
@@ -359,6 +391,11 @@ class FoodQuote {
         deliveryFeeMinor: (json['deliveryFeeMinor'] as num).toInt(),
         totalMinor: (json['totalMinor'] as num).toInt(),
         minOrderMinor: (json['minOrderMinor'] as num).toInt(),
+        fulfillmentType: json['fulfillmentType'] as String? ?? 'DELIVERY',
+        discountMinor: (json['discountMinor'] as num?)?.toInt() ?? 0,
+        promoCode: json['promoCode'] as String?,
+        promoTitle: json['promoTitle'] as String?,
+        prepMinutes: (json['prepMinutes'] as num?)?.toInt() ?? 20,
       );
 }
 
@@ -420,12 +457,26 @@ const orderFlow = [
   'DELIVERED'
 ];
 
-String orderStatusLabel(String status) => switch (status) {
+/// Pickup orders replace the courier leg with `READY_FOR_PICKUP`; `DELIVERED` then means "handed over".
+const pickupOrderFlow = [
+  'PLACED',
+  'ACCEPTED',
+  'PREPARING',
+  'READY_FOR_PICKUP',
+  'DELIVERED'
+];
+
+List<String> orderFlowFor(String fulfillmentType) =>
+    fulfillmentType == 'PICKUP' ? pickupOrderFlow : orderFlow;
+
+String orderStatusLabel(String status, {bool pickup = false}) =>
+    switch (status) {
       'PLACED' => 'Заказ оформлен',
       'ACCEPTED' => 'Ресторан принял заказ',
       'PREPARING' => 'Готовится',
+      'READY_FOR_PICKUP' => pickup ? 'Готов к выдаче' : 'Готов, ждёт курьера',
       'ON_THE_WAY' => 'Курьер в пути',
-      'DELIVERED' => 'Доставлен',
+      'DELIVERED' => pickup ? 'Выдан' : 'Доставлен',
       'CANCELLED' => 'Отменён',
       _ => status,
     };
@@ -492,7 +543,20 @@ class FoodOrder {
     this.hasChanges = false,
     this.cancelledBy,
     this.cancelReason,
+    this.fulfillmentType = 'DELIVERY',
+    this.discountMinor = 0,
+    this.promoCode,
+    this.reviewed = false,
   });
+
+  final String fulfillmentType;
+  final int discountMinor;
+  final String? promoCode;
+
+  /// True once the customer left a review for this order (one review per delivered order).
+  final bool reviewed;
+
+  bool get pickup => fulfillmentType == 'PICKUP';
 
   /// Who cancelled (`CUSTOMER`, `PARTNER`, `SYSTEM`) and the partner's reason, if any.
   final String? cancelledBy;
@@ -526,6 +590,7 @@ class FoodOrder {
         'TEST_PAID' => 'Тестовая карта (DEV) — оплачено',
         'PAY_ON_RECEIPT' => 'Наличными при получении',
         'VOIDED' => 'Платёж аннулирован',
+        'REFUNDED' => 'Тестовый возврат выполнен',
         _ => paymentStatus,
       };
 
@@ -555,6 +620,10 @@ class FoodOrder {
         hasChanges: json['hasChanges'] as bool? ?? false,
         cancelledBy: json['cancelledBy'] as String?,
         cancelReason: json['cancelReason'] as String?,
+        fulfillmentType: json['fulfillmentType'] as String? ?? 'DELIVERY',
+        discountMinor: (json['discountMinor'] as num?)?.toInt() ?? 0,
+        promoCode: json['promoCode'] as String?,
+        reviewed: json['reviewed'] as bool? ?? false,
       );
 }
 
@@ -611,3 +680,180 @@ class RepeatResult {
         skipped: (json['skipped'] as List<dynamic>).cast<String>(),
       );
 }
+
+/// A promotion that can be used now (`GET /food/promotions`); the discount itself is always computed by the server.
+class FoodPromotion {
+  const FoodPromotion({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.kind,
+    required this.value,
+    required this.minSubtotalMinor,
+    this.code,
+    this.restaurantId,
+    this.restaurantName,
+    this.endsAt,
+  });
+
+  final String id;
+  final String? code;
+  final String title;
+  final String description;
+
+  /// `PERCENT` (value 1..100) or `FIXED` (value in tiyn).
+  final String kind;
+  final int value;
+  final int minSubtotalMinor;
+  final String? restaurantId;
+  final String? restaurantName;
+  final DateTime? endsAt;
+
+  String get valueLabel =>
+      kind == 'PERCENT' ? '−$value%' : '−${formatTenge(value)}';
+
+  factory FoodPromotion.fromJson(Map<String, dynamic> json) => FoodPromotion(
+        id: json['id'] as String,
+        code: json['code'] as String?,
+        title: json['title'] as String,
+        description: json['description'] as String? ?? '',
+        kind: json['kind'] as String,
+        value: (json['value'] as num).toInt(),
+        minSubtotalMinor: (json['minSubtotalMinor'] as num?)?.toInt() ?? 0,
+        restaurantId: json['restaurantId'] as String?,
+        restaurantName: json['restaurantName'] as String?,
+        endsAt: json['endsAt'] == null
+            ? null
+            : DateTime.parse(json['endsAt'] as String).toLocal(),
+      );
+}
+
+/// A cuisine with the number of open restaurants (`GET /food/categories`).
+class FoodCategory {
+  const FoodCategory({required this.cuisine, required this.restaurants});
+
+  final String cuisine;
+  final int restaurants;
+
+  factory FoodCategory.fromJson(Map<String, dynamic> json) => FoodCategory(
+        cuisine: json['cuisine'] as String,
+        restaurants: (json['restaurants'] as num).toInt(),
+      );
+}
+
+class FoodReview {
+  const FoodReview({
+    required this.id,
+    required this.rating,
+    required this.author,
+    required this.createdAt,
+    this.comment,
+  });
+
+  final String id;
+  final int rating;
+  final String? comment;
+  final String author;
+  final DateTime createdAt;
+
+  factory FoodReview.fromJson(Map<String, dynamic> json) => FoodReview(
+        id: json['id'] as String,
+        rating: (json['rating'] as num).toInt(),
+        comment: json['comment'] as String?,
+        author: json['author'] as String? ?? 'Гость',
+        createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),
+      );
+}
+
+class FoodReviewSummary {
+  const FoodReviewSummary({
+    required this.average,
+    required this.count,
+    required this.distribution,
+    required this.reviews,
+  });
+
+  final double? average;
+  final int count;
+
+  /// Number of reviews with 1..5 stars (index 0 is one star).
+  final List<int> distribution;
+  final List<FoodReview> reviews;
+
+  factory FoodReviewSummary.fromJson(Map<String, dynamic> json) =>
+      FoodReviewSummary(
+        average: (json['average'] as num?)?.toDouble(),
+        count: (json['count'] as num?)?.toInt() ?? 0,
+        distribution: ((json['distribution'] as List<dynamic>?) ?? const [])
+            .map((e) => (e as num).toInt())
+            .toList(growable: false),
+        reviews: ((json['reviews'] as List<dynamic>?) ?? const [])
+            .map((e) => FoodReview.fromJson(e as Map<String, dynamic>))
+            .toList(growable: false),
+      );
+}
+
+/// Server-side catalog filters of `GET /food/restaurants`; nothing is filtered or sorted on the device.
+class RestaurantFilter {
+  const RestaurantFilter({
+    this.openNow = false,
+    this.pickup = false,
+    this.freeDelivery = false,
+    this.promo = false,
+    this.minRating,
+    this.cuisine,
+    this.sort = 'recommended',
+  });
+
+  final bool openNow;
+  final bool pickup;
+  final bool freeDelivery;
+  final bool promo;
+  final int? minRating;
+  final String? cuisine;
+
+  /// `recommended`, `rating`, `delivery_fee` or `eta` (no distance sort: restaurants have no stored coordinates).
+  final String sort;
+
+  bool get isActive =>
+      openNow ||
+      pickup ||
+      freeDelivery ||
+      promo ||
+      minRating != null ||
+      cuisine != null ||
+      sort != 'recommended';
+
+  RestaurantFilter copyWith({
+    bool? openNow,
+    bool? pickup,
+    bool? freeDelivery,
+    bool? promo,
+    Object? minRating = _keep,
+    Object? cuisine = _keep,
+    String? sort,
+  }) =>
+      RestaurantFilter(
+        openNow: openNow ?? this.openNow,
+        pickup: pickup ?? this.pickup,
+        freeDelivery: freeDelivery ?? this.freeDelivery,
+        promo: promo ?? this.promo,
+        minRating:
+            identical(minRating, _keep) ? this.minRating : minRating as int?,
+        cuisine: identical(cuisine, _keep) ? this.cuisine : cuisine as String?,
+        sort: sort ?? this.sort,
+      );
+
+  Map<String, String> toQuery(String vertical) => {
+        'vertical': vertical,
+        if (openNow) 'openNow': 'true',
+        if (pickup) 'pickup': 'true',
+        if (freeDelivery) 'freeDelivery': 'true',
+        if (promo) 'promo': 'true',
+        if (minRating != null) 'minRating': '$minRating',
+        if (cuisine != null) 'cuisine': cuisine!,
+        if (sort != 'recommended') 'sort': sort,
+      };
+}
+
+const Object _keep = Object();

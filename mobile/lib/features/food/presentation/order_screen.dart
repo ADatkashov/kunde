@@ -301,10 +301,13 @@ class _OrderScreenState extends State<OrderScreen> {
       const Divider(height: 24),
       _kv(tx('Блюда', 'Тауарлар', 'Items'), formatTenge(order.subtotalMinor)),
       _kv(
-          tx('Доставка', 'Жеткізу', 'Delivery'),
+          order.pickup ? 'Самовывоз' : tx('Доставка', 'Жеткізу', 'Delivery'),
           order.deliveryFeeMinor == 0
               ? tx('Бесплатно', 'Тегін', 'Free')
               : formatTenge(order.deliveryFeeMinor)),
+      if (order.discountMinor > 0)
+        _kv('Скидка${order.promoCode == null ? '' : ' (${order.promoCode})'}',
+            '−${formatTenge(order.discountMinor)}'),
       if (order.finalTotalMinor != null &&
           order.finalTotalMinor != order.totalMinor) ...[
         _kv(tx('Было', 'Бұрын', 'Original'), formatTenge(order.totalMinor)),
@@ -319,7 +322,9 @@ class _OrderScreenState extends State<OrderScreen> {
       const Divider(height: 32),
       ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.location_on_outlined),
+          leading: Icon(order.pickup
+              ? Icons.storefront_outlined
+              : Icons.location_on_outlined),
           title: Text(order.addressLabel),
           subtitle: Text(order.addressText)),
       ListTile(
@@ -347,6 +352,18 @@ class _OrderScreenState extends State<OrderScreen> {
           label: Text(
               tx('Отменить заказ', 'Тапсырыстан бас тарту', 'Cancel order')),
         ),
+      if (order.status == 'DELIVERED' && order.vertical == 'FOOD') ...[
+        if (order.reviewed)
+          const ListTile(
+              key: Key('review-done'),
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.star_rounded, color: Color(0xFFF5A623)),
+              title: Text('Спасибо! Ваш отзыв сохранён.'))
+        else
+          _ReviewCard(
+              api: widget.services.api, orderId: order.id, onDone: _load),
+        const SizedBox(height: 12),
+      ],
       if (order.terminal) ...[
         FilledButton.icon(
           onPressed: _busy ? null : _repeat,
@@ -417,32 +434,28 @@ class _StatusTimeline extends StatelessWidget {
         ),
       );
     }
-    final current = orderFlow.indexOf(order.status);
+    final flow = orderFlowFor(order.fulfillmentType);
+    final current = flow.indexOf(order.status);
     final label = order.vertical == 'FLOWERS_GIFTS'
         ? flowersStatusLabel(
             order.status, Localizations.localeOf(context).languageCode)
-        : orderStatusLabel(order.status);
+        : orderStatusLabel(order.status, pickup: order.pickup);
     return Semantics(
       container: true,
       label: label,
       child: Column(children: [
-        for (var i = 0; i < orderFlow.length; i++)
-          _step(
-              context,
-              i,
-              current,
-              order.timeline
-                  .where((e) => e.status == orderFlow[i])
-                  .firstOrNull),
+        for (var i = 0; i < flow.length; i++)
+          _step(context, flow, i, current,
+              order.timeline.where((e) => e.status == flow[i]).firstOrNull),
       ]),
     );
   }
 
-  Widget _step(
-      BuildContext context, int index, int current, TimelineEntry? entry) {
+  Widget _step(BuildContext context, List<String> flow, int index, int current,
+      TimelineEntry? entry) {
     final theme = Theme.of(context);
-    final done = index < current ||
-        (index == current && orderFlow[index] == 'DELIVERED');
+    final done =
+        index < current || (index == current && flow[index] == 'DELIVERED');
     final active = index == current && !done;
     final color =
         done || active ? theme.colorScheme.primary : theme.colorScheme.outline;
@@ -459,7 +472,7 @@ class _StatusTimeline extends StatelessWidget {
                         : Icons.radio_button_unchecked_rounded,
                 color: color,
                 size: 24),
-            if (index < orderFlow.length - 1)
+            if (index < flow.length - 1)
               Expanded(
                   child: Container(
                       width: 2,
@@ -474,9 +487,9 @@ class _StatusTimeline extends StatelessWidget {
               Expanded(
                 child: Text(
                     order.vertical == 'FLOWERS_GIFTS'
-                        ? flowersStatusLabel(orderFlow[index],
+                        ? flowersStatusLabel(flow[index],
                             Localizations.localeOf(context).languageCode)
-                        : orderStatusLabel(orderFlow[index]),
+                        : orderStatusLabel(flow[index], pickup: order.pickup),
                     style: theme.textTheme.bodyLarge?.copyWith(
                         fontWeight: active ? FontWeight.w700 : FontWeight.w400,
                         color: done || active
@@ -543,6 +556,108 @@ class _OrderLineTile extends StatelessWidget {
                 style: TextStyle(color: theme.colorScheme.error)),
           ),
       ]),
+    );
+  }
+}
+
+/// Star rating and optional comment for a delivered order. The server accepts one review per delivered order.
+class _ReviewCard extends StatefulWidget {
+  const _ReviewCard(
+      {required this.api, required this.orderId, required this.onDone});
+
+  final FoodApi api;
+  final String orderId;
+  final Future<void> Function() onDone;
+
+  @override
+  State<_ReviewCard> createState() => _ReviewCardState();
+}
+
+class _ReviewCardState extends State<_ReviewCard> {
+  int _rating = 0;
+  final _comment = TextEditingController();
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _comment.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    if (_rating == 0 || _busy) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await widget.api.submitReview(widget.orderId, _rating, _comment.text);
+      await widget.onDone();
+    } on FoodException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = error.message;
+      });
+      // "Already reviewed": refresh so the card turns into the thank-you line.
+      if (error.failure == FoodFailure.reviewExists) await widget.onDone();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      key: const Key('review-card'),
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Оцените заказ', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 8),
+          Row(children: [
+            for (var i = 1; i <= 5; i++)
+              IconButton(
+                key: Key('review-star-$i'),
+                tooltip: '$i из 5',
+                onPressed: _busy ? null : () => setState(() => _rating = i),
+                icon: Icon(
+                    i <= _rating
+                        ? Icons.star_rounded
+                        : Icons.star_border_rounded,
+                    color: const Color(0xFFF5A623),
+                    size: 32),
+              ),
+          ]),
+          TextField(
+            key: const Key('review-comment'),
+            controller: _comment,
+            enabled: !_busy,
+            maxLength: 1000,
+            maxLines: 3,
+            decoration: const InputDecoration(
+                labelText: 'Комментарий (необязательно)',
+                border: OutlineInputBorder()),
+          ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(_error!,
+                  style: TextStyle(color: theme.colorScheme.error)),
+            ),
+          FilledButton(
+            key: const Key('review-send'),
+            onPressed: _rating == 0 || _busy ? null : _send,
+            child: _busy
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2))
+                : const Text('Отправить отзыв'),
+          ),
+        ]),
+      ),
     );
   }
 }

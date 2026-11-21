@@ -1,5 +1,11 @@
 # KUNDE project state
 
+## KUNDE Food Ordering 2.0 — DEV slice (2026-11-21, ветка `ccr-0b95f693-1hsj46`)
+
+- Flyway V43: самовывоз, акции и промокоды (скидка считается на сервере), избранное и проверенные отзывы с рейтингом в PostgreSQL, `READY_FOR_PICKUP`, настройки ресторана и акции Partner, Admin Food API (`FOOD_OPERATIONS`, дашборд из реальных данных, модерация, тестовый возврат, аудит). Consumer: серверные фильтры и сортировка, категории и баннер акции только из данных backend, переключатель «Доставка/Самовывоз», промокод, вкладки Меню/Отзывы/О заведении, отзыв после доставки. Partner: статус «Готов», самовывоз, скидка в заказе.
+- Проверено локально: `mvn verify` на PostgreSQL 16 — 366 тестов, 0 падений; `scripts/dev/food_smoke.py` против локального jar на чистой БД (V1–V43) — `SMOKE OK`; Consumer `flutter analyze --fatal-infos` чисто, 283 теста (включая 6 тестов Admin Food); Partner 117 тестов. Admin Flutter: экран «Еда: центр управления» (обзор из реальных данных, заказы с тестовым возвратом, рестораны, акции, отзывы, журнал). Partner: условия заказа (самовывоз, время готовности) и акции.
+- **Не сделано:** аналитика и CRUD секций/модификаторов в Partner, фото, карта и маршрут (нет провайдера), расстояние (нет координат), лояльность, push, нативный Android E2E, DEV-деплой V43, подписанные APK. Матрица соответствия референсу: [food-mvp](docs/product/food-mvp.md#food-20-flyway-v43-devtest--2026-11-21).
+
 ## KUNDE Leisure & Entertainment 1.0 — DEV (2026-11-20)
 
 - Backend в `main` ([#175](https://github.com/ADatkashov/kunde/pull/175), Flyway V40): общая модель на 5 типов бронирования и 16 категорий, каталог/поиск, удержание мест, идемпотентные заказы, QR-билеты с серверной проверкой, `TEST_CARD`/`PAY_ON_SITE`, возвраты, модерация, аудит, Executor-назначения, флаг `LEISURE_ENABLED` (включён в local/dev/test, выключен в production). Flutter-интерфейс Consumer/Partner/Admin/Executor — [#177](https://github.com/ADatkashov/kunde/pull/177) (в `main`, `3e77801`).

@@ -27,6 +27,12 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
   late Future<RestaurantMenu> _menu;
   final _sectionKeys = <String, GlobalKey>{};
   bool _inStockOnly = false;
+  int _tab = 0;
+  Future<FoodReviewSummary>? _reviews;
+  Future<List<FoodPromotion>>? _promos;
+  bool? _favorite;
+
+  bool get _food => widget.restaurant.vertical == 'FOOD';
 
   String _tx(String ru, String kk, String en) {
     if (widget.restaurant.vertical != 'FLOWERS_GIFTS') return ru;
@@ -43,6 +49,31 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
     _menu = widget.preloaded != null
         ? Future.value(widget.preloaded)
         : widget.services.api.menu(widget.restaurant.id);
+    if (_food) {
+      _promos = widget.services.api
+          .promotions(restaurantId: widget.restaurant.id)
+          .catchError((_) => <FoodPromotion>[]);
+      widget.services.api.favorites().then((list) {
+        if (mounted) {
+          setState(
+              () => _favorite = list.any((r) => r.id == widget.restaurant.id));
+        }
+      }).catchError((_) {});
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    final current = _favorite;
+    if (current == null) return;
+    setState(() => _favorite = !current);
+    try {
+      await widget.services.api.setFavorite(widget.restaurant.id, !current);
+    } on FoodException catch (error) {
+      if (!mounted) return;
+      setState(() => _favorite = current);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error.message)));
+    }
   }
 
   Future<void> _openDish(Restaurant restaurant, Dish dish) async {
@@ -115,6 +146,19 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                     pinned: true,
                     expandedHeight: 168,
                     title: Text(restaurant.name),
+                    actions: [
+                      if (_favorite != null)
+                        IconButton(
+                          key: const Key('restaurant-favorite'),
+                          tooltip: _favorite!
+                              ? 'Убрать из избранного'
+                              : 'В избранное',
+                          onPressed: _toggleFavorite,
+                          icon: Icon(_favorite!
+                              ? Icons.favorite
+                              : Icons.favorite_border),
+                        ),
+                    ],
                     flexibleSpace: FlexibleSpaceBar(
                       background: Container(
                         color: toneColors(restaurant.tone).background,
@@ -129,7 +173,12 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                     ),
                   ),
                   SliverToBoxAdapter(child: _info(context, restaurant)),
-                  if (state.connectionState != ConnectionState.done)
+                  if (_food) SliverToBoxAdapter(child: _tabs()),
+                  if (_food && _tab == 1)
+                    SliverToBoxAdapter(child: _reviewsPanel(restaurant))
+                  else if (_food && _tab == 2)
+                    SliverToBoxAdapter(child: _about(restaurant))
+                  else if (state.connectionState != ConnectionState.done)
                     const SliverFillRemaining(
                         hasScrollBody: false,
                         child: Center(child: CircularProgressIndicator()))
@@ -204,10 +253,26 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
             style: theme.textTheme.bodyMedium
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
         const SizedBox(height: 12),
+        if (r.ratingAvg != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(children: [
+              const Icon(Icons.star_rounded, color: Color(0xFFF5A623)),
+              const SizedBox(width: 4),
+              Text(
+                  '${r.ratingAvg!.toStringAsFixed(1).replaceAll('.', ',')} · ${r.ratingCount} отзывов',
+                  key: const Key('restaurant-rating-line'),
+                  style: theme.textTheme.titleSmall),
+            ]),
+          ),
         Wrap(spacing: 8, runSpacing: 8, children: [
           Chip(
               avatar: const Icon(Icons.schedule_rounded, size: 18),
               label: Text(r.eta)),
+          if (r.pickupEnabled && r.vertical == 'FOOD')
+            const Chip(
+                avatar: Icon(Icons.storefront_outlined, size: 18),
+                label: Text('Самовывоз')),
           Chip(
               avatar: const Icon(Icons.delivery_dining_rounded, size: 18),
               label: Text(r.deliveryFeeMinor == 0
@@ -232,6 +297,175 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
               ),
             ),
           ),
+      ]),
+    );
+  }
+
+  Widget _tabs() => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        child: Column(children: [
+          FutureBuilder<List<FoodPromotion>>(
+            future: _promos,
+            builder: (context, state) {
+              final promos = state.data ?? const <FoodPromotion>[];
+              if (promos.isEmpty) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Wrap(spacing: 8, runSpacing: 8, children: [
+                  for (final p in promos)
+                    Chip(
+                      key: const Key('restaurant-promo'),
+                      avatar: const Icon(Icons.local_offer_outlined, size: 18),
+                      label: Text(p.code == null
+                          ? '${p.title} ${p.valueLabel}'
+                          : '${p.valueLabel} · код ${p.code}'),
+                    ),
+                ]),
+              );
+            },
+          ),
+          SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<int>(
+              key: const Key('restaurant-tabs'),
+              showSelectedIcon: false,
+              segments: const [
+                ButtonSegment(value: 0, label: Text('Меню')),
+                ButtonSegment(value: 1, label: Text('Отзывы')),
+                ButtonSegment(value: 2, label: Text('О заведении')),
+              ],
+              selected: {_tab},
+              onSelectionChanged: (v) => setState(() {
+                _tab = v.first;
+                if (_tab == 1) {
+                  _reviews ??=
+                      widget.services.api.reviews(widget.restaurant.id);
+                }
+              }),
+            ),
+          ),
+        ]),
+      );
+
+  Widget _reviewsPanel(Restaurant r) => FutureBuilder<FoodReviewSummary>(
+        future: _reviews,
+        builder: (context, state) {
+          if (state.connectionState != ConnectionState.done) {
+            return const Padding(
+                padding: EdgeInsets.all(32),
+                child: Center(child: CircularProgressIndicator()));
+          }
+          if (state.hasError) {
+            return FoodStateMessage(
+                icon: Icons.cloud_off_outlined,
+                title: 'Не удалось загрузить отзывы',
+                onAction: () => setState(() => _reviews =
+                    widget.services.api.reviews(widget.restaurant.id)));
+          }
+          final summary = state.data!;
+          final theme = Theme.of(context);
+          if (summary.count == 0) {
+            return const Padding(
+              padding: EdgeInsets.all(32),
+              child: Center(
+                  child: Text(
+                      'Отзывов пока нет. Оставить отзыв можно после доставленного заказа.',
+                      textAlign: TextAlign.center)),
+            );
+          }
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Text(summary.average!.toStringAsFixed(1).replaceAll('.', ','),
+                    style: theme.textTheme.displaySmall),
+                const SizedBox(width: 8),
+                Text('${summary.count} отзывов',
+                    style: theme.textTheme.bodyLarge),
+              ]),
+              const SizedBox(height: 12),
+              for (final review in summary.reviews)
+                Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    title: Row(children: [
+                      for (var i = 1; i <= 5; i++)
+                        Icon(
+                            i <= review.rating
+                                ? Icons.star_rounded
+                                : Icons.star_border_rounded,
+                            size: 18,
+                            color: const Color(0xFFF5A623)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                          child: Text(review.author,
+                              overflow: TextOverflow.ellipsis)),
+                    ]),
+                    subtitle:
+                        review.comment == null ? null : Text(review.comment!),
+                    trailing: IconButton(
+                      tooltip: 'Пожаловаться на отзыв',
+                      icon: const Icon(Icons.flag_outlined),
+                      onPressed: () => _complain(review),
+                    ),
+                  ),
+                ),
+            ]),
+          );
+        },
+      );
+
+  Future<void> _complain(FoodReview review) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await widget.services.api
+          .complainAboutReview(review.id, 'Отзыв нарушает правила');
+      messenger.showSnackBar(const SnackBar(
+          content: Text('Жалоба отправлена. Спасибо за обращение.')));
+    } on FoodException catch (error) {
+      messenger.showSnackBar(SnackBar(content: Text(error.message)));
+    }
+  }
+
+  Widget _about(Restaurant r) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.place_outlined),
+          title: Text(r.addressText ?? 'Адрес не указан'),
+        ),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.delivery_dining_rounded),
+          title: Text(r.deliveryFeeMinor == 0
+              ? 'Доставка бесплатно'
+              : 'Доставка ${formatTenge(r.deliveryFeeMinor)}'),
+          subtitle: Text('Ориентировочно ${r.eta}'),
+        ),
+        if (r.pickupEnabled)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.storefront_outlined),
+            title: const Text('Самовывоз'),
+            subtitle: Text('Готовность заказа около ${r.prepMinutes} мин'),
+          ),
+        if (r.minOrderMinor > 0)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.shopping_basket_outlined),
+            title: Text('Минимальный заказ ${formatTenge(r.minOrderMinor)}'),
+          ),
+        const SizedBox(height: 8),
+        Text(r.description, style: theme.textTheme.bodyMedium),
+        const SizedBox(height: 8),
+        Text(
+            'Часы работы не публикуются: ресторан открывает и закрывает приём заказов сам.',
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
       ]),
     );
   }

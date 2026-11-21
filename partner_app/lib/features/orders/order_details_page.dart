@@ -135,8 +135,12 @@ class _Body extends StatelessWidget {
             const Divider(height: Gap.xl),
             row(s.subtotal,
                 formatMoney(order.subtotalMinor, currency: order.currency)),
-            row(s.delivery,
+            row(order.pickup ? s.pickupLabel : s.delivery,
                 formatMoney(order.deliveryFeeMinor, currency: order.currency)),
+            if (order.discountMinor > 0)
+              row(
+                  '${s.discountLabel}${order.promoCode == null ? '' : ' (${order.promoCode})'}',
+                  '−${formatMoney(order.discountMinor, currency: order.currency)}'),
             row(s.total,
                 formatMoney(order.totalMinor, currency: order.currency)),
           ]),

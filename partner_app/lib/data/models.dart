@@ -105,6 +105,9 @@ class PartnerOrder {
     this.paymentStatus,
     this.cancelReason,
     this.cancelledBy,
+    this.fulfillmentType = 'DELIVERY',
+    this.discountMinor = 0,
+    this.promoCode,
   });
 
   /// Parses an inbox entry `{order, allowedNext, respondBy, …}`.
@@ -132,8 +135,17 @@ class PartnerOrder {
       paymentStatus: _str(o['paymentStatus']),
       cancelReason: _str(o['cancelReason']),
       cancelledBy: _str(o['cancelledBy']),
+      fulfillmentType: _str(o['fulfillmentType']) ?? 'DELIVERY',
+      discountMinor: _int(o['discountMinor']),
+      promoCode: _str(o['promoCode']),
     );
   }
+
+  /// `DELIVERY` or `PICKUP` (the customer collects the order at the restaurant).
+  final String fulfillmentType;
+  final int discountMinor;
+  final String? promoCode;
+  bool get pickup => fulfillmentType == 'PICKUP';
 
   final String id;
   final String status;
@@ -156,7 +168,8 @@ class PartnerOrder {
 
   bool get isNew => status == 'PLACED';
   bool get isActive =>
-      const {'PLACED', 'ACCEPTED', 'PREPARING', 'ON_THE_WAY'}.contains(status);
+      const {'PLACED', 'ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP', 'ON_THE_WAY'}
+          .contains(status);
   int get itemCount => items.fold(0, (a, l) => a + l.quantity);
 
   /// Short human reference derived from the id; never the full identifier.
@@ -252,14 +265,57 @@ class PartnerBooking {
 }
 
 class Restaurant {
-  const Restaurant({required this.id, required this.name, required this.open});
+  const Restaurant({
+    required this.id,
+    required this.name,
+    required this.open,
+    this.pickupEnabled = true,
+    this.prepMinutes = 20,
+  });
   factory Restaurant.fromJson(Map<String, dynamic> j) => Restaurant(
-      id: _id(j, 'restaurant'),
-      name: _str(j['name']) ?? '',
-      open: _bool(j['open']));
+        id: _id(j, 'restaurant'),
+        name: _str(j['name']) ?? '',
+        open: _bool(j['open']),
+        pickupEnabled: j['pickupEnabled'] is bool ? j['pickupEnabled'] as bool : true,
+        prepMinutes: j['prepMinutes'] is num ? (j['prepMinutes'] as num).toInt() : 20,
+      );
   final String id;
   final String name;
   final bool open;
+  final bool pickupEnabled;
+  final int prepMinutes;
+}
+
+/// A promotion of the partner's own restaurant (`/food/promotions`); the discount is applied by the server.
+class FoodPromotion {
+  const FoodPromotion({
+    required this.id,
+    required this.title,
+    required this.kind,
+    required this.value,
+    required this.status,
+    required this.redeemed,
+    this.code,
+    this.endsAt,
+  });
+  factory FoodPromotion.fromJson(Map<String, dynamic> j) => FoodPromotion(
+        id: _id(j, 'promotion'),
+        title: _str(j['title']) ?? '',
+        kind: _str(j['kind']) ?? 'PERCENT',
+        value: _int(j['value']),
+        status: _str(j['status']) ?? 'ACTIVE',
+        redeemed: _int(j['redeemed']),
+        code: _str(j['code']),
+        endsAt: _time(j['endsAt']),
+      );
+  final String id;
+  final String title;
+  final String kind;
+  final int value;
+  final String status;
+  final int redeemed;
+  final String? code;
+  final DateTime? endsAt;
 }
 
 class Dish {

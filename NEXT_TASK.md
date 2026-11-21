@@ -1,5 +1,12 @@
 # Следующие проверки
 
+## KUNDE Food 2.0
+
+1. После зелёного CI и merge развернуть `main` на DEV (V43), включить `FOOD_SEED_DEMO`, выполнить `python3 scripts/dev/food_smoke.py https://kunde-backend-ty81.onrender.com`.
+2. Partner: экран аналитики (`GET …/food/summary`), CRUD секций и модификаторов меню, удаление/архив блюд; Admin: выдача `FOOD_OPERATIONS` синтетическому сотруднику на DEV и ручная проверка экрана.
+3. Нативный Android E2E Food (вход → ресторан → блюдо → корзина → самовывоз/доставка → промокод → TEST_CARD → статус → отзыв), скриншоты Consumer/Partner/Admin для сравнения с референсом.
+4. Команды: `cd backend && mvn test -Dtest='Food*'`; `cd mobile && flutter test test/features/food`.
+
 ## KUNDE Leisure
 
 1. Установить подписанные DEV APK из [PROJECT_STATE](PROJECT_STATE.md) на устройство, пройти Consumer-сценарий (Досуг → места → TEST_CARD → QR) и Partner/Executor/Admin; сверить скриншоты с референсом (`reports/leisure-native` в артефакте E2E).

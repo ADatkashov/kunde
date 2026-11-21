@@ -37,6 +37,22 @@ public class FoodDemoSeeder implements ApplicationRunner {
                 log.info("Demo seed {}: {} synthetic stores/restaurants inserted", file, inserted);
             }
         }
+        seedPromotions();
+    }
+
+    /** Synthetic DEV promo codes (idempotent by code). They are labelled synthetic and never exist in production. */
+    @Transactional
+    public void seedPromotions() {
+        db.update("""
+                insert into marketplace.food_promotions (code, title, description, kind, value, min_subtotal_minor, ends_at, per_user_limit, banner, is_synthetic)
+                select 'WELCOME10', 'Скидка 10% на первый заказ (DEV)', 'Тестовый промокод: 10% на блюда от 2000 ₸', 'PERCENT', 10, 200000,
+                       now() + interval '365 days', 1, true, true
+                where not exists (select 1 from marketplace.food_promotions where code = 'WELCOME10')""");
+        db.update("""
+                insert into marketplace.food_promotions (code, title, description, kind, value, min_subtotal_minor, ends_at, per_user_limit, banner, is_synthetic)
+                select 'FIX500', 'Минус 500 ₸ (DEV)', 'Тестовый промокод: 500 ₸ при заказе от 4000 ₸', 'FIXED', 50000, 400000,
+                       now() + interval '365 days', 5, false, true
+                where not exists (select 1 from marketplace.food_promotions where code = 'FIX500')""");
     }
 
     /**

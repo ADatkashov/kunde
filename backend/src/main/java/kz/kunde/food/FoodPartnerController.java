@@ -32,9 +32,13 @@ import org.springframework.web.bind.annotation.*;
 @ConditionalOnProperty(name = {"app.food.enabled", "app.identity.consumer-enabled", "app.auth.phone.enabled"}, havingValue = "true")
 public class FoodPartnerController {
     private final FoodPartnerService service;
+    private final FoodPromotionService promotions;
+    private final FoodEngagementController engagement;
 
-    public FoodPartnerController(FoodPartnerService service) {
+    public FoodPartnerController(FoodPartnerService service, FoodPromotionService promotions, FoodEngagementController engagement) {
         this.service = service;
+        this.promotions = promotions;
+        this.engagement = engagement;
     }
 
     @GetMapping("/orders")
@@ -65,7 +69,45 @@ public class FoodPartnerController {
     @PatchMapping("/restaurants/{restaurantId}")
     ResponseEntity<RestaurantView> restaurant(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
             @PathVariable UUID restaurantId, @Valid @RequestBody OpenRequest request) {
-        return ok(service.setOpen(user(principal), partnerId, restaurantId, request.open()));
+        return ok(service.updateRestaurant(user(principal), partnerId, restaurantId, new FoodPartnerService.RestaurantUpdate(
+                request.open(), request.pickupEnabled(), request.prepMinutes(), request.etaMinMinutes(), request.etaMaxMinutes(),
+                request.deliveryFeeMinor(), request.minOrderMinor(), request.addressText(), request.description())));
+    }
+
+    @GetMapping("/summary")
+    ResponseEntity<FoodPartnerService.Summary> summary(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId) {
+        return ok(service.summary(user(principal), partnerId));
+    }
+
+    @GetMapping("/promotions")
+    ResponseEntity<List<FoodPromotionService.PromotionView>> promotions(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId) {
+        service.requireAccess(user(principal), partnerId);
+        return ok(promotions.forPartner(partnerId));
+    }
+
+    @PostMapping("/promotions")
+    ResponseEntity<FoodPromotionService.PromotionView> createPromotion(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
+            @Valid @RequestBody PromotionRequest r) {
+        service.requireManager(user(principal), partnerId);
+        return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).body(promotions.createForPartner(
+                user(principal), partnerId, new FoodPromotionService.CreatePromotion(r.code(), r.title(), r.description(), r.kind(),
+                        r.value(), r.maxDiscountMinor(), r.minSubtotalMinor(), r.restaurantId(), r.startsAt(), r.endsAt(),
+                        r.maxRedemptions(), r.perUserLimit(), r.banner())));
+    }
+
+    @PostMapping("/promotions/{promotionId}/status")
+    ResponseEntity<FoodPromotionService.PromotionView> promotionStatus(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
+            @PathVariable UUID promotionId, @Valid @RequestBody PromotionStatusRequest r) {
+        service.requireManager(user(principal), partnerId);
+        return ok(promotions.setPartnerStatus(user(principal), partnerId, promotionId, r.status()));
+    }
+
+    @GetMapping("/restaurants/{restaurantId}/reviews")
+    ResponseEntity<FoodEngagementController.ReviewSummary> reviews(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
+            @PathVariable UUID restaurantId, @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit,
+            @RequestParam(defaultValue = "0") @Min(0) @Max(10000) int offset) {
+        service.requireOwnedRestaurantFor(user(principal), partnerId, restaurantId);
+        return ok(engagement.summary(restaurantId, limit, offset));
     }
 
     @GetMapping("/restaurants/{restaurantId}/dishes")
@@ -99,10 +141,20 @@ public class FoodPartnerController {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(body);
     }
 
-    public record StatusRequest(@NotBlank @Pattern(regexp = "ACCEPTED|PREPARING|ON_THE_WAY|DELIVERED|CANCELLED") String status,
+    public record StatusRequest(@NotBlank @Pattern(regexp = "ACCEPTED|PREPARING|READY_FOR_PICKUP|ON_THE_WAY|DELIVERED|CANCELLED") String status,
             @Size(max = 300) String reason) {}
 
-    public record OpenRequest(@NotNull Boolean open) {}
+    public record OpenRequest(Boolean open, Boolean pickupEnabled, @Min(1) @Max(240) Integer prepMinutes,
+            @Min(1) @Max(240) Integer etaMinMinutes, @Min(1) @Max(240) Integer etaMaxMinutes,
+            @Min(0) @Max(10000000) Long deliveryFeeMinor, @Min(0) @Max(100000000) Long minOrderMinor,
+            @Size(max = 300) String addressText, @Size(max = 500) String description) {}
+
+    public record PromotionRequest(@Size(max = 32) String code, @NotBlank @Size(max = 120) String title, @Size(max = 300) String description,
+            @NotBlank @jakarta.validation.constraints.Pattern(regexp = "PERCENT|FIXED") String kind, @Min(1) @Max(100000000) long value,
+            @Min(1) Long maxDiscountMinor, @Min(0) long minSubtotalMinor, @NotNull UUID restaurantId, java.time.OffsetDateTime startsAt,
+            @NotNull java.time.OffsetDateTime endsAt, @Min(1) Integer maxRedemptions, @Min(1) @Max(100) Integer perUserLimit, boolean banner) {}
+
+    public record PromotionStatusRequest(@NotBlank @jakarta.validation.constraints.Pattern(regexp = "ACTIVE|PAUSED") String status) {}
 
     public record DishRequest(Boolean available, @Min(0) @Max(100000) Integer stockQty, Boolean clearStock,
             @Size(max = 160) String name, @Size(max = 500) String description, @Min(0) @Max(100000000) Long priceMinor) {}

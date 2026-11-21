@@ -49,3 +49,29 @@ Not included: barcodes, age-restricted goods rules, per-store delivery slots, re
 ## Manual verification status
 
 Owner report (2026-11-15): the Release APK from run 43734913344 (`58cf20a`, Food + Grocery MVP) was installed on a real Samsung phone, checked and "everything works". That is the only manual confirmation; no detailed scenario list, TalkBack or other devices were reported. V17 features (weighed goods, stock, substitutions, filters) are **not yet** manually verified.
+
+## Food 2.0 (Flyway V43, DEV/TEST) — 2026-11-21
+
+Scope of this slice: pickup, server-side promotions and promo codes, favorites in PostgreSQL, verified reviews with a computed rating, server-side catalog filters/sorting, `READY_FOR_PICKUP`, partner restaurant settings/promotions/summary and the Admin Food control center API. Everything keeps the DEV rules above: synthetic data, `TEST_CARD`/`CASH_ON_DELIVERY` only, no real payments, flag `FOOD_ENABLED`.
+
+### Audit against the premium UI reference (matrix)
+
+| Reference element | State before | Done in Food 2.0 | Still missing |
+| --- | --- | --- | --- |
+| Food home: hero, search, cuisine categories, promo banner, popular | Search and client-side filters; no categories/promo | Categories from `GET /food/categories`; promo banner only for a real active promotion (`GET /food/promotions`); server filters (open now, pickup, free delivery, promo, rating 4+, cuisine) and sort (recommended, rating, ETA, delivery fee) | Hero photography and category icons (emoji tiles only; photos need licensed assets); sort by distance (restaurants have no coordinates, so no distance is invented); price-range filter is by minimum order only |
+| Restaurant list card: photo, rating, reviews, ETA, fee, favorite | No rating, no favorite | Rating and review count from visible reviews (hidden when none), promo badge, pickup/min-order chips, favorite heart (PostgreSQL `food_favorites`) | Photos |
+| Restaurant page: gallery, tabs Menu/Reviews/About, address, conditions | Menu only | Tabs Menu / Reviews / About, rating line, promo chips, favorite, address, delivery/pickup conditions, review complaints | Photo gallery, opening hours (the partner opens/closes ordering; no schedule is published), dish categories "Popular" |
+| Cart and checkout | Delivery only, no promo | Delivery/pickup toggle, promo code with server-computed discount, stale-total protection (`FOOD_PRICE_CHANGED`), pickup without address | Scheduled time, multi-restaurant checkout (not allowed by design) |
+| Order tracking | Timeline, polling | Pickup timeline with `READY_FOR_PICKUP`, discount line, review after delivery, test refund shown | Map/route and courier data: no GPS or map provider is connected, so no synthetic map is drawn; ETA is the restaurant's stated range |
+| Partner dashboard | Orders, availability, dish edit | Partner app: pickup switch, preparation time and promotions screen; `READY_FOR_PICKUP` action, pickup orders, restaurant settings API (open, pickup, prep time, ETA, fee, minimum, address), promotions API (limits: ≤50 %, ≤5 000 ₸, ≤90 days, own restaurants only), `GET …/food/summary` with real numbers | Partner analytics screen (the summary API exists), menu CRUD for sections and modifiers, dish photos, dish deletion |
+| Executor delivery | Not used by Food | Unchanged: partner marks the order delivered (merchant delivery scenario of D-02) | Executor assignment for Food (third-party logistics scenario C) |
+| Admin Food control center | None | `/api/v1/admin/food`: summary (real numbers, zeros when empty), orders (no personal data), restaurants + block/unblock, promotions disable, reviews hide/show, complaints, test refund, audit; permission `FOOD_OPERATIONS`; Admin app screen «Еда: центр управления» (overview, orders, restaurants, promotions, reviews, audit) | Admin complaints queue screen, categories management |
+| Loyalty / AI recommendations | None | Not implemented: no loyalty model exists in the repository and recommendations are not offered as "AI" | Loyalty, recommendations, push |
+
+### API additions (`/api/v1/food`)
+
+Public: `GET restaurants` with `openNow`, `pickup`, `freeDelivery`, `promo`, `minRating`, `cuisine`, `maxMinOrderMinor`, `sort` (`recommended|rating|delivery_fee|eta`); `GET categories`, `GET promotions[?restaurantId]`, `GET restaurants/{id}/reviews`. Authenticated: `POST cart/quote` and `POST orders` accept `fulfillmentType` (`DELIVERY|PICKUP`) and `promoCode`; `GET favorites`, `PUT|DELETE favorites/{restaurantId}`; `POST orders/{id}/review` (own `DELIVERED` order, one per order), `POST reviews/{id}/complaints`. Partner (`/partner/partners/{id}/food`): `PATCH restaurants/{id}` (settings), `GET summary`, `GET|POST promotions`, `POST promotions/{id}/status`, `GET restaurants/{id}/reviews`, status `READY_FOR_PICKUP`. Admin: see the table above.
+
+Rules: the discount applies to the items subtotal only, is capped by the subtotal, one code per order (no stacking), per-user and total limits are enforced under a row lock, cancelling releases the redemption. Pickup orders have fee 0 and never pass through `ON_THE_WAY`; for delivery `READY_FOR_PICKUP` ("ready for the courier") is optional. A restaurant blocked by an administrator behaves as closed and the partner cannot reopen it. Test refund (`REFUNDED`) exists only for paid `TEST_CARD` orders that are delivered or cancelled; it moves no money. Ratings are always computed from visible reviews.
+
+Seed: `FOOD_SEED_DEMO=true` also inserts two synthetic promo codes (`WELCOME10`, `FIX500`). Tests: `FoodEngagementApiIntegrationTest`, `FoodPartnerAdminApiIntegrationTest` (PostgreSQL), Flutter `food_flow_test.dart`.
