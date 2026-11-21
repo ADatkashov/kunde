@@ -71,6 +71,11 @@ void main() {
     await tester.testTextInput.receiveAction(TextInputAction.search);
     await tester.pumpAndSettle();
     expect(requests.last.queryParameters['q'], 'Python');
+    await tester.ensureVisible(find.widgetWithText(FilterChip, 'IT'));
+    await tester.tap(find.widgetWithText(FilterChip, 'IT'));
+    await tester.pumpAndSettle();
+    expect(requests.last.queryParameters['category'], 'IT');
+    expect(requests.last.queryParameters['q'], 'Python');
     expect(find.text('Курс немесе мектеп'), findsOneWidget);
     final title = find.text('Python для начинающих');
     await tester.ensureVisible(title);
@@ -80,5 +85,48 @@ void main() {
     await tester.tap(find.text('Основы Python'));
     await tester.pumpAndSettle();
     expect(find.text('Переменные'), findsOneWidget);
+  });
+
+  testWidgets('catalog fits small screens in RU, KK and EN at 200% text',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final api = KundeApi(
+      baseUri: Uri.parse('https://api.example.test/api/v1/'),
+      client: MockClient((request) async =>
+          http.Response('{"items":[],"hasMore":false}', 200)),
+    );
+    addTearDown(api.close);
+    for (final locale in const [Locale('ru'), Locale('kk'), Locale('en')]) {
+      for (final theme in [ThemeData.light(), ThemeData.dark()]) {
+        await tester.pumpWidget(MaterialApp(
+          locale: locale,
+          localizationsDelegates: KundeLocalizations.localizationsDelegates,
+          supportedLocales: KundeLocalizations.supportedLocales,
+          theme: theme,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: EducationScreen(api: api),
+        ));
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+          find.byType(FilterChip).last,
+          120,
+          scrollable: find
+              .descendant(
+                of: find.byType(ListView),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        expect(tester.takeException(), isNull);
+      }
+    }
   });
 }
