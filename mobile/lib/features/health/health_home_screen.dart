@@ -7,6 +7,7 @@ import '../booking/presentation/bookings_list.dart';
 import '../booking/presentation/venue_screen.dart';
 import '../food/presentation/food_widgets.dart';
 import '../home/presentation/home_strings.dart';
+import 'health_favorites_screen.dart';
 
 class HealthHomeScreen extends StatefulWidget {
   const HealthHomeScreen({required this.services, super.key});
@@ -100,7 +101,22 @@ class _HealthHomeScreenState extends State<HealthHomeScreen> {
       ),
     ];
     return Scaffold(
-      appBar: AppBar(title: Text(s.catHealth)),
+      appBar: AppBar(
+        title: Text(s.catHealth),
+        actions: [
+          if (widget.services.auth.authenticated)
+            IconButton(
+              tooltip: s.healthText('Избранное', 'Таңдаулы', 'Favorites'),
+              icon: const Icon(Icons.favorite_border),
+              onPressed: () => Navigator.of(context).push<void>(
+                MaterialPageRoute(
+                  builder: (_) =>
+                      HealthFavoritesScreen(services: widget.services),
+                ),
+              ),
+            ),
+        ],
+      ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),

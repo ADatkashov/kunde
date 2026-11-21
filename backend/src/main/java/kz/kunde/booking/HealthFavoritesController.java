@@ -45,6 +45,7 @@ public class HealthFavoritesController {
 
     @GetMapping
     ResponseEntity<List<Favorite>> list(@AuthenticationPrincipal Jwt principal,
+            @RequestParam(required = false) UUID venueId,
             @RequestParam(defaultValue = "30") @Min(1) @Max(100) int limit,
             @RequestParam(defaultValue = "0") @Min(0) @Max(10000) int offset) {
         slots.requireHealthCatalog();
@@ -54,9 +55,9 @@ public class HealthFavoritesController {
                     (t.kind = 'ORGANIZATION' and t.id = f.venue_id)
                     or (t.kind = 'SPECIALIST' and t.id = f.specialist_id)
                     or (t.kind = 'WELLNESS_SERVICE' and t.id = f.service_id)
-                where f.user_id = ? order by f.created_at desc, t.kind, t.id limit ? offset ?
+                where f.user_id = ? and (cast(? as uuid) is null or t.venue_id = ?) order by f.created_at desc, t.kind, t.id limit ? offset ?
                 """, (rs, n) -> new Favorite(Kind.valueOf(rs.getString(1)), rs.getObject(2, UUID.class),
-                        rs.getObject(3, UUID.class), rs.getString(4)), identity.get(principal).id(), limit, offset);
+                        rs.getObject(3, UUID.class), rs.getString(4)), identity.get(principal).id(), venueId, venueId, limit, offset);
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(favorites);
     }
 

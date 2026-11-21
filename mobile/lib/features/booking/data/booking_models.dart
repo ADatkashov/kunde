@@ -95,6 +95,7 @@ class BookableService {
     required this.durationMinutes,
     required this.priceMinor,
     required this.available,
+    this.wellness = false,
     this.pricePerSqmMinor = 0,
     this.minAreaSqm,
     this.maxAreaSqm,
@@ -106,6 +107,7 @@ class BookableService {
   final int durationMinutes;
   final int priceMinor;
   final bool available;
+  final bool wellness;
 
   /// Area-based pricing (home services): `priceMinor` + `pricePerSqmMinor` x area, area within [minAreaSqm, maxAreaSqm].
   final int pricePerSqmMinor;
@@ -131,6 +133,7 @@ class BookableService {
         durationMinutes: (json['durationMinutes'] as num).toInt(),
         priceMinor: (json['priceMinor'] as num).toInt(),
         available: json['available'] as bool? ?? false,
+        wellness: json['wellness'] as bool? ?? false,
         pricePerSqmMinor: (json['pricePerSqmMinor'] as num?)?.toInt() ?? 0,
         minAreaSqm: (json['minAreaSqm'] as num?)?.toInt(),
         maxAreaSqm: (json['maxAreaSqm'] as num?)?.toInt(),
@@ -302,5 +305,38 @@ class BookingRecord {
         serviceId: json['serviceId'] as String?,
         masterId: json['masterId'] as String?,
         reschedulable: json['reschedulable'] == true,
+      );
+}
+
+enum HealthFavoriteKind {
+  organization('ORGANIZATION'),
+  specialist('SPECIALIST'),
+  wellnessService('WELLNESS_SERVICE');
+
+  const HealthFavoriteKind(this.code);
+  final String code;
+}
+
+class HealthFavorite {
+  const HealthFavorite({
+    required this.kind,
+    required this.id,
+    required this.venueId,
+    required this.name,
+  });
+
+  final HealthFavoriteKind kind;
+  final String id;
+  final String venueId;
+  final String name;
+
+  factory HealthFavorite.fromJson(Map<String, dynamic> json) => HealthFavorite(
+        kind: HealthFavoriteKind.values.firstWhere(
+          (kind) => kind.code == json['kind'],
+          orElse: () => throw const FormatException('Unknown favorite kind'),
+        ),
+        id: json['id'] as String,
+        venueId: json['venueId'] as String,
+        name: json['name'] as String,
       );
 }
