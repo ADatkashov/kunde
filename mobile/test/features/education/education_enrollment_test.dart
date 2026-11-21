@@ -28,7 +28,8 @@ class _Gateway implements OAuthGateway {
 }
 
 void main() {
-  testWidgets('cohort → test card → text lesson → completion code',
+  testWidgets(
+      'cohort → test card → text lesson → quiz → assignment → completion code',
       (tester) async {
     final endpoint = Uri.parse('https://api.example.test/api/v1/');
     final gateway = _Gateway();
@@ -39,6 +40,8 @@ void main() {
 
     String? key;
     var complete = false;
+    var passed = false;
+    var assignmentStatus = '';
     final api = KundeApi(
         baseUri: endpoint,
         client: MockClient((request) async {
@@ -56,7 +59,12 @@ void main() {
             ]);
           }
           expect(request.headers['authorization'], 'Bearer access');
-          if (request.method == 'POST') {
+          if (request.url.path.endsWith('/quiz-attempts')) {
+            final answer = jsonDecode(request.body) as Map<String, dynamic>;
+            expect(answer['requestId'], matches(RegExp(r'^[a-f0-9-]{36}$')));
+            expect(answer['choice'], 1);
+            passed = true;
+          } else if (request.method == 'POST') {
             expect(jsonDecode(request.body), {
               'cohortId': 'cohort',
               'expectedPriceMinor': 10000,
@@ -69,7 +77,11 @@ void main() {
             expect(key, previous);
             return reply({'id': 'enrollment'}, 201);
           }
-          if (request.method == 'PUT') {
+          if (request.url.path.endsWith('/assignment')) {
+            expect(request.method, 'PUT');
+            expect(jsonDecode(request.body)['response'], 'A saved value');
+            assignmentStatus = 'SUBMITTED';
+          } else if (request.method == 'PUT') {
             expect(request.url.path,
                 endsWith('/enrollments/enrollment/lessons/1/1/completion'));
             complete = true;
@@ -77,7 +89,20 @@ void main() {
           return reply({
             'enrollment': {
               'title': 'Python',
-              if (complete) 'certificateCode': 'verified-demo-code'
+              if (passed && assignmentStatus == 'APPROVED')
+                'certificateCode': 'verified-demo-code'
+            },
+            'assignment': {
+              'prompt': 'Explain a variable',
+              if (assignmentStatus.isNotEmpty) 'status': assignmentStatus,
+              if (assignmentStatus.isNotEmpty) 'response': 'A saved value',
+              if (assignmentStatus == 'APPROVED') 'feedback': 'Good example',
+            },
+            'quiz': {
+              'question': 'What does a variable do?',
+              'choices': ['Ends the program', 'Stores a value'],
+              'remainingAttempts': passed ? 2 : 3,
+              'passed': passed,
             },
             'lessons': [
               {
@@ -109,6 +134,21 @@ void main() {
     expect(find.text('A variable stores a value.'), findsOneWidget);
     await tester.tap(find.text('Complete lesson'));
     await tester.pumpAndSettle();
-    expect(find.text('verified-demo-code'), findsOneWidget);
+    expect(find.text('verified-demo-code'), findsNothing);
+    await tester.ensureVisible(find.text('Stores a value'));
+    await tester.tap(find.text('Stores a value'));
+    await tester.pumpAndSettle();
+    expect(find.text('verified-demo-code'), findsNothing);
+    await tester.ensureVisible(find.text('Submit response'));
+    await tester.tap(find.text('Submit response'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'A saved value');
+    await tester.pump();
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(assignmentStatus, 'SUBMITTED');
+    await tester.scrollUntilVisible(find.text('Under review'), 200);
+    expect(find.text('Under review'), findsOneWidget);
+    expect(find.text('verified-demo-code'), findsNothing);
   });
 }

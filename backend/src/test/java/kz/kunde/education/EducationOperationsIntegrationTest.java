@@ -36,7 +36,7 @@ class EducationOperationsIntegrationTest {
                 partner, instructor, owner);
         db.update("insert into identity.admin_grants(user_id,permission,reason) values (?,'EDUCATION_OPERATIONS','Synthetic course moderation')", admin);
         var draft = operations.create(owner, partner,
-                new Draft("Synthetic workshop", "Practice", "IT", "Алматы", "ru", Format.OFFLINE_GROUP, 750L, 40, null));
+                new Draft("Synthetic workshop", "Practice", "IT", "Алматы", "ru", Format.OFFLINE_GROUP, 750L, 40, null, null));
         assertThat(draft.status()).isEqualTo("DRAFT");
         assertThat(operations.partnerCourses(stranger, otherPartner)).isEmpty();
         assertThatThrownBy(() -> operations.submit(stranger, otherPartner, draft.id())).isInstanceOf(ApiException.class);
@@ -60,6 +60,33 @@ class EducationOperationsIntegrationTest {
         assertThat(operations.attendance(instructor, session.id(), entry.id(), Attendance.PRESENT).attendance()).isEqualTo("PRESENT");
         assertThat(db.queryForObject("select count(*) from marketplace.education_course_events where course_id=?", Integer.class, draft.id()))
                 .isEqualTo(5);
+    }
+
+    @Test
+    void assignedInstructorCanReturnAndApproveTextAssignment() {
+        UUID instructor = user();
+        UUID student = user();
+        UUID stranger = user();
+        UUID partner = partner(instructor);
+        var draft = operations.create(instructor, partner,
+                new Draft("Recorded workshop", "Practice", "IT", "Алматы", "ru",
+                        Format.ONLINE_RECORDED, 700L, 40, "Learn about loops", "Describe a loop"));
+        var session = operations.createSession(instructor, partner, draft.id(),
+                new CohortInput(Format.ONLINE_RECORDED, null, null, 2, instructor));
+        db.update("update marketplace.education_courses set status='PUBLISHED' where id=?", draft.id());
+        UUID id = enrollments.enroll(student, session.id(), 700, "test-assignment-0001").enrollment().id();
+        assertThat(enrollments.completeLesson(student, id, 1, 1).enrollment().certificateCode()).isNull();
+        assertThat(enrollments.submitAssignment(student, id, "A loop executes repeatedly").assignment().status())
+                .isEqualTo("SUBMITTED");
+        assertThatThrownBy(() -> enrollments.reviewAssignment(stranger, session.id(), id, true, "OK"))
+                .isInstanceOf(ApiException.class);
+        assertThat(enrollments.reviewAssignment(instructor, session.id(), id, false, "Add an example").status())
+                .isEqualTo("RETURNED");
+        assertThat(enrollments.submitAssignment(student, id, "For each number, print it").assignment().status())
+                .isEqualTo("SUBMITTED");
+        assertThat(enrollments.reviewAssignment(instructor, session.id(), id, true, "Good example").status())
+                .isEqualTo("APPROVED");
+        assertThat(enrollments.learning(student, id).enrollment().certificateCode()).isNotNull();
     }
 
     private UUID user() {

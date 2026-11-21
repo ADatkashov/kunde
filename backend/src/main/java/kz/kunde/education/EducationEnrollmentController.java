@@ -4,7 +4,10 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.Pattern;
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import kz.kunde.education.EducationEnrollmentService.Enrollment;
@@ -13,6 +16,7 @@ import kz.kunde.identity.ConsumerIdentityService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -28,10 +32,12 @@ import org.springframework.web.bind.annotation.*;
 public class EducationEnrollmentController {
     private final EducationEnrollmentService service;
     private final ConsumerIdentityService identity;
+    private final EducationCertificateService certificates;
 
-    public EducationEnrollmentController(EducationEnrollmentService service, ConsumerIdentityService identity) {
+    public EducationEnrollmentController(EducationEnrollmentService service, ConsumerIdentityService identity, EducationCertificateService certificates) {
         this.service = service;
         this.identity = identity;
+        this.certificates = certificates;
     }
 
     @PostMapping
@@ -59,6 +65,30 @@ public class EducationEnrollmentController {
     ResponseEntity<Learning> complete(@AuthenticationPrincipal Jwt user, @PathVariable UUID id,
             @PathVariable @Min(1) int module, @PathVariable @Min(1) int lesson) {
         return ok(service.completeLesson(identity.get(user).id(), id, module, lesson));
+    }
+
+    @PostMapping("/{id}/quiz-attempts")
+    ResponseEntity<Learning> attempt(@AuthenticationPrincipal Jwt user, @PathVariable UUID id,
+            @Valid @RequestBody QuizAnswer answer) {
+        return ok(service.attemptQuiz(identity.get(user).id(), id, answer.requestId(), answer.choice()));
+    }
+
+    public record QuizAnswer(@NotNull UUID requestId, @NotNull @Min(0) @Max(5) Integer choice) {}
+
+    @PutMapping("/{id}/assignment")
+    ResponseEntity<Learning> submitAssignment(@AuthenticationPrincipal Jwt user, @PathVariable UUID id,
+            @Valid @RequestBody AssignmentResponse input) {
+        return ok(service.submitAssignment(identity.get(user).id(), id, input.response().strip()));
+    }
+
+    public record AssignmentResponse(@NotBlank @Size(max=5000) String response) {}
+
+    @GetMapping(value = "/{id}/certificate.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    ResponseEntity<byte[]> pdf(@AuthenticationPrincipal Jwt user, @PathVariable UUID id) throws IOException {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .contentType(MediaType.APPLICATION_PDF)
+                .header("Content-Disposition", "attachment; filename=KUNDE-certificate.pdf")
+                .body(certificates.pdf(identity.get(user).id(), id));
     }
 
     private static <T> ResponseEntity<T> ok(T data) {

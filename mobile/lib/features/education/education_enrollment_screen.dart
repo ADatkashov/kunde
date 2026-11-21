@@ -2,10 +2,12 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../home/data/kunde_api.dart';
 import '../identity/auth_repository.dart';
 import 'education_labels.dart';
+import 'education_text_dialog.dart';
 
 class EducationEnrollmentScreen extends StatefulWidget {
   const EducationEnrollmentScreen({
@@ -255,7 +257,8 @@ class _LearningScreen extends StatefulWidget {
 
 class _LearningState extends State<_LearningScreen> {
   late Future<Map<String, dynamic>> _learning = _load();
-  (int, int)? _pending;
+  Future<Map<String, dynamic>> Function()? _pending;
+  bool _sharing = false;
 
   Future<Map<String, dynamic>> _load() async =>
       await widget.api.educationRequest(
@@ -269,8 +272,83 @@ class _LearningState extends State<_LearningScreen> {
       method: 'PUT',
       token: await widget.auth.accessToken(),
     ) as Map<String, dynamic>;
-    _pending = null;
     return data;
+  }
+
+  void _change(Future<Map<String, dynamic>> Function() action) {
+    setState(() {
+      _pending = action;
+      _learning = action().then((updated) {
+        _pending = null;
+        return updated;
+      });
+    });
+  }
+
+  static String _quizRequestId() {
+    final random = Random.secure();
+    final bytes = List.generate(16, (_) => random.nextInt(256));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    final hex =
+        bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
+    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-'
+        '${hex.substring(16, 20)}-${hex.substring(20)}';
+  }
+
+  void _answer(int choice) {
+    final request = _quizRequestId();
+    _change(() async => await widget.api.educationRequest(
+          'enrollments/${widget.id}/quiz-attempts',
+          method: 'POST',
+          token: await widget.auth.accessToken(),
+          body: {'requestId': request, 'choice': choice},
+        ) as Map<String, dynamic>);
+  }
+
+  Future<void> _shareCertificate() async {
+    setState(() => _sharing = true);
+    try {
+      final bytes = await widget.api
+          .educationCertificatePdf(widget.id, await widget.auth.accessToken());
+      if (!mounted) return;
+      final renderBox = context.findRenderObject() as RenderBox?;
+      await SharePlus.instance.share(ShareParams(
+        files: [XFile.fromData(bytes, mimeType: 'application/pdf')],
+        fileNameOverrides: const ['KUNDE-certificate.pdf'],
+        sharePositionOrigin: renderBox == null
+            ? null
+            : renderBox.localToGlobal(Offset.zero) & renderBox.size,
+      ));
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+          educationLabel(
+              context, 'PDF недоступен', 'PDF қолжетімсіз', 'PDF unavailable'),
+        )));
+      }
+    } finally {
+      if (mounted) setState(() => _sharing = false);
+    }
+  }
+
+  Future<void> _submitAssignment() async {
+    final response = await showDialog<String>(
+      context: context,
+      builder: (context) => EducationTextDialog(
+        title: educationLabel(context, 'Ответ на задание', 'Тапсырмаға жауап',
+            'Assignment response'),
+        maxLength: 5000,
+      ),
+    );
+    if (!mounted || response == null) return;
+    _change(() async => await widget.api.educationRequest(
+          'enrollments/${widget.id}/assignment',
+          method: 'PUT',
+          token: await widget.auth.accessToken(),
+          body: {'response': response},
+        ) as Map<String, dynamic>);
   }
 
   @override
@@ -280,17 +358,25 @@ class _LearningState extends State<_LearningScreen> {
                 Text(educationLabel(context, 'Обучение', 'Оқу', 'Learning'))),
         body: _EducationLoad<Map<String, dynamic>>(
           future: _learning,
-          onRetry: () => setState(() {
-            final pending = _pending;
-            _learning =
-                pending == null ? _load() : _complete(pending.$1, pending.$2);
-          }),
+          onRetry: () => _change(_pending ?? _load),
           builder: (data) {
             final enrollment = data['enrollment'] as Map<String, dynamic>;
             final lessons = data['lessons'] as List<dynamic>;
             final complete =
                 lessons.where((item) => item['completed'] == true).length;
             final code = enrollment['certificateCode'] as String?;
+            final revoked = enrollment['certificateStatus'] == 'REVOKED';
+            final quiz = data['quiz'] as Map<String, dynamic>?;
+            final assignment = data['assignment'] as Map<String, dynamic>?;
+            final quizPassed = quiz?['passed'] == true || code != null;
+            final approved =
+                assignment?['status'] == 'APPROVED' || code != null;
+            final total = lessons.length +
+                (quiz == null ? 0 : 1) +
+                (assignment == null ? 0 : 1);
+            final done = complete +
+                (quiz != null && quizPassed ? 1 : 0) +
+                (assignment != null && approved ? 1 : 0);
             return ListView(
               padding: const EdgeInsets.all(16),
               children: [
@@ -302,10 +388,10 @@ class _LearningState extends State<_LearningScreen> {
                 if (lessons.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   LinearProgressIndicator(
-                      value: complete / lessons.length,
+                      value: done / total,
                       semanticsLabel: educationLabel(context, 'Прогресс курса',
                           'Курс барысы', 'Course progress')),
-                  Text('$complete / ${lessons.length}'),
+                  Text('$done / $total'),
                 ],
                 for (final lesson in lessons)
                   if (lesson['content'] == null)
@@ -323,12 +409,10 @@ class _LearningState extends State<_LearningScreen> {
                         Text(lesson['content'] as String),
                         if (lesson['completed'] != true)
                           FilledButton(
-                            onPressed: () => setState(() {
-                              final module = lesson['modulePosition'] as int;
-                              final position = lesson['lessonPosition'] as int;
-                              _pending = (module, position);
-                              _learning = _complete(module, position);
-                            }),
+                            onPressed: () => _change(() => _complete(
+                                  lesson['modulePosition'] as int,
+                                  lesson['lessonPosition'] as int,
+                                )),
                             child: Text(educationLabel(
                                 context,
                                 'Завершить урок',
@@ -337,6 +421,64 @@ class _LearningState extends State<_LearningScreen> {
                           ),
                       ],
                     ),
+                if (quiz != null && !quizPassed && complete == lessons.length)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(quiz['question'] as String,
+                              style: Theme.of(context).textTheme.titleMedium),
+                          Text(educationLabel(
+                              context,
+                              'Попыток осталось: ${quiz['remainingAttempts']}',
+                              'Қалған әрекеттер: ${quiz['remainingAttempts']}',
+                              'Attempts left: ${quiz['remainingAttempts']}')),
+                          for (final (index, option)
+                              in (quiz['choices'] as List<dynamic>).indexed)
+                            OutlinedButton(
+                              onPressed: quiz['remainingAttempts'] == 0
+                                  ? null
+                                  : () => _answer(index),
+                              child: Text(option as String),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                if (assignment != null && complete == lessons.length)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(assignment['prompt'] as String,
+                              style: Theme.of(context).textTheme.titleMedium),
+                          if (assignment['response'] case final String response)
+                            Text(response),
+                          if (assignment['feedback'] case final String feedback)
+                            Text(feedback),
+                          if (approved)
+                            Text(educationLabel(context, 'Задание принято',
+                                'Тапсырма қабылданды', 'Assignment approved'))
+                          else if (assignment['status'] == 'SUBMITTED')
+                            Text(educationLabel(context, 'На проверке',
+                                'Тексеруде', 'Under review'))
+                          else
+                            FilledButton(
+                              onPressed: _submitAssignment,
+                              child: Text(educationLabel(
+                                  context,
+                                  'Отправить ответ',
+                                  'Жауап жіберу',
+                                  'Submit response')),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
                 if (code != null)
                   ListTile(
                     title: Text(educationLabel(
@@ -352,6 +494,19 @@ class _LearningState extends State<_LearningScreen> {
                       onPressed: () =>
                           Clipboard.setData(ClipboardData(text: code)),
                     ),
+                  ),
+                if (code != null && revoked)
+                  Text(educationLabel(context, 'Подтверждение отозвано',
+                      'Растама қайтарылды', 'Certificate revoked')),
+                if (code != null && !revoked)
+                  OutlinedButton.icon(
+                    onPressed: _sharing ? null : _shareCertificate,
+                    icon: const Icon(Icons.picture_as_pdf_outlined),
+                    label: Text(educationLabel(
+                        context,
+                        'Сохранить или отправить PDF',
+                        'PDF сақтау немесе жіберу',
+                        'Save or share PDF')),
                   ),
               ],
             );
@@ -385,6 +540,48 @@ class _EducationLoad<T> extends StatelessWidget {
                 'Не удалось загрузить. Повторить',
                 'Жүктеу сәтсіз. Қайталау',
                 'Could not load. Retry')),
+          ));
+        },
+      );
+}
+
+/// Existing enrollments remain reachable from Profile while intake is paused.
+class ExistingEducationCoursesTile extends StatefulWidget {
+  const ExistingEducationCoursesTile(
+      {required this.api, required this.auth, super.key});
+  final KundeApi api;
+  final AuthRepository auth;
+
+  @override
+  State<ExistingEducationCoursesTile> createState() =>
+      _ExistingEducationCoursesTileState();
+}
+
+class _ExistingEducationCoursesTileState
+    extends State<ExistingEducationCoursesTile> {
+  late final Future<bool> _hasCourses = _check();
+
+  Future<bool> _check() async {
+    final courses = await widget.auth
+        .authorizedJson('GET', 'education/enrollments?limit=1') as List;
+    return courses.isNotEmpty;
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<bool>(
+        future: _hasCourses,
+        builder: (context, snapshot) {
+          if (snapshot.data != true) return const SizedBox.shrink();
+          return Card(
+              child: ListTile(
+            leading: const Icon(Icons.school_outlined),
+            title: Text(educationLabel(
+                context, 'Мои курсы', 'Курстарым', 'My courses')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push<void>(MaterialPageRoute(
+              builder: (_) =>
+                  EducationMyCourses(api: widget.api, auth: widget.auth),
+            )),
           ));
         },
       );

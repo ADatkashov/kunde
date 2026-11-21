@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 @AutoConfigureMockMvc
 class EducationEnrollmentIntegrationTest {
     @Autowired EducationEnrollmentService enrollment;
+    @Autowired EducationCertificateService certificates;
     @Autowired JdbcTemplate db;
     @Autowired MockMvc http;
     @Autowired org.springframework.transaction.PlatformTransactionManager transactionManager;
@@ -55,9 +56,46 @@ class EducationEnrollmentIntegrationTest {
         UUID code = enrollment.completeLesson(user, id, 1, 2).enrollment().certificateCode();
         assertThat(code).isNotNull();
         assertThat(enrollment.completeLesson(user, id, 1, 2).enrollment().certificateCode()).isEqualTo(code);
-        assertThat(enrollment.certificate(code).title()).isEqualTo("Synthetic course");
+        assertThat(certificates.verify(code).title()).isEqualTo("Synthetic course");
         http.perform(get("/api/v1/education/certificates/{code}", code)).andExpect(status().isOk());
         http.perform(get("/api/v1/education/enrollments/{id}/learning", id)).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @Transactional
+    void completedCertificateIsPrivateToDownloadAndCanBeRevoked() throws Exception {
+        UUID student = user();
+        UUID moderator = user();
+        db.update("insert into profile.consumer_profiles(user_id,display_name) values (?,'Синтетический ученик')", student);
+        db.update("insert into identity.admin_grants(user_id,permission,reason) values (?,'EDUCATION_OPERATIONS','Test revocation')", moderator);
+        UUID id = enrollment.enroll(student, cohort(1), 750, "synthetic-certificate-order").enrollment().id();
+        assertThatThrownBy(() -> certificates.pdf(student, id)).isInstanceOf(ApiException.class);
+        enrollment.completeLesson(student, id, 1, 1);
+        UUID code = enrollment.completeLesson(student, id, 1, 2).enrollment().certificateCode();
+        assertThat(certificates.verify(code).status()).isEqualTo("VALID");
+        assertThatThrownBy(() -> certificates.pdf(moderator, id)).isInstanceOf(ApiException.class);
+        try (var document = org.apache.pdfbox.Loader.loadPDF(certificates.pdf(student, id))) {
+            var text = new org.apache.pdfbox.text.PDFTextStripper().getText(document);
+            assertThat(text).contains("Синтетический ученик", "Synthetic course", code.toString());
+        }
+        http.perform(get("/api/v1/education/certificates/{code}", code)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.learnerName").doesNotExist());
+        assertThatThrownBy(() -> certificates.revoke(student, code, "Unauthorized")).isInstanceOf(ApiException.class);
+        assertThat(certificates.revoke(moderator, code, "Synthetic audit").status()).isEqualTo("REVOKED");
+        assertThat(enrollment.learning(student, id).enrollment().certificateStatus()).isEqualTo("REVOKED");
+        assertThatThrownBy(() -> certificates.pdf(student, id)).isInstanceOf(ApiException.class);
+    }
+
+    @Test
+    @Transactional
+    void completionWrittenByPriorAppVersionStillGetsCertificateSnapshot() {
+        UUID student = user();
+        UUID id = enrollment.enroll(student, cohort(1), 750, "rolling-release-certificate").enrollment().id();
+        UUID code = UUID.randomUUID();
+        db.update("""
+                update transactions.education_enrollments set completed_at=now(),certificate_code=? where id=?
+                """, code, id);
+        assertThat(certificates.verify(code).status()).isEqualTo("VALID");
     }
 
     @Test
@@ -84,6 +122,34 @@ class EducationEnrollmentIntegrationTest {
         http.perform(post("/api/v1/education/enrollments").contentType("application/json")
                 .header("Authorization", "Bearer " + token).header("Idempotency-Key", "test-http-enrollment-2")
                 .content(payload)).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("ALREADY_ENROLLED"));
+    }
+
+    @Test
+    @Transactional
+    void quizHidesAnswerLimitsAttemptsAndGatesCertificate() {
+        UUID user = user();
+        UUID cohort = cohort(1);
+        db.update("""
+                insert into marketplace.education_course_quizzes(course_id,question,choices,correct_choice,max_attempts)
+                select course_id,'Pick the right option',array['Incorrect','Correct'],1,2
+                from marketplace.education_cohorts where id=?
+                """, cohort);
+        UUID id = enrollment.enroll(user, cohort, 750, "quiz-enrollment-0001").enrollment().id();
+        assertThatThrownBy(() -> enrollment.attemptQuiz(user, id, UUID.randomUUID(), 1)).isInstanceOf(ApiException.class);
+        enrollment.completeLesson(user, id, 1, 1);
+        var lessonsDone = enrollment.completeLesson(user, id, 1, 2);
+        assertThat(lessonsDone.enrollment().certificateCode()).isNull();
+        assertThat(lessonsDone.quiz().remainingAttempts()).isEqualTo(2);
+        UUID requestId = UUID.randomUUID();
+        var wrong = enrollment.attemptQuiz(user, id, requestId, 0);
+        assertThat(wrong.quiz().passed()).isFalse();
+        assertThat(wrong.quiz().remainingAttempts()).isEqualTo(1);
+        assertThat(enrollment.attemptQuiz(user, id, requestId, 0).quiz().remainingAttempts()).isEqualTo(1);
+        assertThatThrownBy(() -> enrollment.attemptQuiz(user, id, requestId, 1)).isInstanceOf(ApiException.class);
+        var right = enrollment.attemptQuiz(user, id, UUID.randomUUID(), 1);
+        assertThat(right.quiz().passed()).isTrue();
+        assertThat(right.quiz().remainingAttempts()).isZero();
+        assertThat(right.enrollment().certificateCode()).isNotNull();
     }
 
     @Test

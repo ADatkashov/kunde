@@ -28,10 +28,14 @@ public class EducationOperationsController {
     private static final String EXECUTOR = "/executor/education";
     private final EducationOperationsService operations;
     private final ConsumerIdentityService identity;
+    private final EducationEnrollmentService enrollments;
+    private final EducationCertificateService certificates;
 
-    public EducationOperationsController(EducationOperationsService operations, ConsumerIdentityService identity) {
+    public EducationOperationsController(EducationOperationsService operations, ConsumerIdentityService identity, EducationEnrollmentService enrollments, EducationCertificateService certificates) {
         this.operations = operations;
         this.identity = identity;
+        this.enrollments = enrollments;
+        this.certificates = certificates;
     }
 
     @PreAuthorize("@partnerAccessPolicy.allowed(authentication)")
@@ -95,6 +99,24 @@ public class EducationOperationsController {
             @PathVariable UUID enrollment, @Valid @RequestBody AttendanceInput input) {
         return ok(operations.attendance(identity.get(actor).id(), session, enrollment, input.status()));
     }
+
+    @PreAuthorize("@consumerAccessPolicy.allowed(authentication)")
+    @PutMapping(EXECUTOR + "/sessions/{session}/roster/{enrollment}/assignment")
+    public ResponseEntity<EducationEnrollmentService.Assignment> review(@AuthenticationPrincipal Jwt actor, @PathVariable UUID session,
+            @PathVariable UUID enrollment, @Valid @RequestBody Review input) {
+        return ok(enrollments.reviewAssignment(identity.get(actor).id(), session, enrollment, input.approved(), input.feedback().strip()));
+    }
+
+    public record Review(@NotNull Boolean approved, @NotBlank @Size(max=1000) String feedback) {}
+
+    @PreAuthorize("@adminAccessPolicy.allowed(authentication)")
+    @PutMapping(ADMIN + "/certificates/{code}/revocation")
+    public ResponseEntity<EducationCertificateService.Verification> revokeCertificate(@AuthenticationPrincipal Jwt actor,
+            @PathVariable UUID code, @Valid @RequestBody Revocation input) {
+        return ok(certificates.revoke(user(actor), code, input.reason().strip()));
+    }
+
+    public record Revocation(@NotBlank @Size(max=200) String reason) {}
 
     private static UUID user(Jwt actor) {
         return PartnerAccessPolicy.userId(actor).orElseThrow(

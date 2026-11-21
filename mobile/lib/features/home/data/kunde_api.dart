@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -139,6 +140,22 @@ class KundeApi {
       throw const KundeApiException(KundeApiFailure.unavailable);
     }
     return jsonDecode(utf8.decode(response.bodyBytes));
+  }
+
+  Future<Uint8List> educationCertificatePdf(
+      String enrollmentId, String token) async {
+    final response = await _client.get(
+      _baseUri.resolve(
+          'education/enrollments/${Uri.encodeComponent(enrollmentId)}/certificate.pdf'),
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/pdf'},
+    ).timeout(timeout);
+    if (response.statusCode != 200 ||
+        response.bodyBytes.isEmpty ||
+        response.headers['content-type']?.startsWith('application/pdf') !=
+            true) {
+      throw const KundeApiException(KundeApiFailure.unavailable);
+    }
+    return response.bodyBytes;
   }
 
   void close() => _client.close();
