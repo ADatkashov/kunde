@@ -2,8 +2,8 @@
 
 ## KUNDE Leisure
 
-1. После слияния Flutter-PR [#177](https://github.com/ADatkashov/kunde/pull/177) собрать подписанные DEV Release APK (Consumer, Executor, Admin — `android-release.yml`; Partner — `partner-release.yml`), сверить `applicationId`, подпись, SHA-256, DEV URL и коммит.
-2. Нативный E2E на эмуляторе (по образцу `auto-native-e2e.yml`): вход → Досуг → каталог → мероприятие → места → тестовая оплата → QR-билет → история → отзыв; скриншоты и сверка с референсом. Не выполнялся.
+1. Установить подписанные DEV APK из [PROJECT_STATE](PROJECT_STATE.md) на устройство, пройти Consumer-сценарий (Досуг → места → TEST_CARD → QR) и Partner/Executor/Admin; сверить скриншоты с референсом (`reports/leisure-native` в артефакте E2E).
+2. Выяснить, почему эмулятор CI теряется при запуске приложения против выключенного `LEISURE_ENABLED`, и вернуть шаг `ui_flag_off` в блокирующие.
 3. Команды: `python3 scripts/dev/leisure_smoke.py https://kunde-backend-ty81.onrender.com`; `cd backend && mvn test -Dtest='Leisure*'`; `cd mobile && flutter test test/features/leisure`.
 
 ## Health & Wellness
