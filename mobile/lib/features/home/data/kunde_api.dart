@@ -92,9 +92,11 @@ class KundeApi {
     required String query,
     required String format,
     required int offset,
+    String category = '',
   }) =>
       _educationJson('education/courses', {
         'q': query,
+        if (category.isNotEmpty) 'category': category,
         if (format.isNotEmpty) 'format': format,
         'offset': offset.toString(),
       });

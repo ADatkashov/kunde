@@ -19,6 +19,7 @@ class _EducationScreenState extends State<EducationScreen> {
   final _search = TextEditingController();
   String _query = '';
   String _formatCode = '';
+  String _category = '';
   int _offset = 0;
   late Future<Map<String, dynamic>> _result = _load();
 
@@ -26,6 +27,7 @@ class _EducationScreenState extends State<EducationScreen> {
         query: _query,
         format: _formatCode,
         offset: _offset,
+        category: _category,
       );
 
   void _searchCourses(String text) => setState(() {
@@ -72,36 +74,7 @@ class _EducationScreenState extends State<EducationScreen> {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF2C1159), Color(0xFF6720B3)],
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(
-                        Icons.school_rounded,
-                        color: Color(0xFFE9D5FF),
-                        size: 36,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        title,
-                        style:
-                            Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              _EducationHero(title: title),
               const SizedBox(height: 16),
               TextField(
                 controller: _search,
@@ -129,6 +102,50 @@ class _EducationScreenState extends State<EducationScreen> {
                     onPressed: () => _searchCourses(_search.text),
                   ),
                 ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  for (final (code, icon, label) in [
+                    (
+                      '',
+                      Icons.apps_rounded,
+                      educationLabel(
+                        context,
+                        'Все курсы',
+                        'Барлық курстар',
+                        'All courses',
+                      ),
+                    ),
+                    (
+                      'LANGUAGES',
+                      Icons.translate_rounded,
+                      educationLabel(context, 'Языки', 'Тілдер', 'Languages'),
+                    ),
+                    (
+                      'IT',
+                      Icons.code_rounded,
+                      educationLabel(context, 'IT', 'IT', 'IT'),
+                    ),
+                    (
+                      'DESIGN',
+                      Icons.design_services_outlined,
+                      educationLabel(context, 'Дизайн', 'Дизайн', 'Design'),
+                    ),
+                  ])
+                    FilterChip(
+                      avatar: Icon(icon, size: 18),
+                      label: Text(label),
+                      selected: _category == code,
+                      onSelected: (selected) => setState(() {
+                        _category = selected ? code : '';
+                        _offset = 0;
+                        _result = _load();
+                      }),
+                    ),
+                ],
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
@@ -215,6 +232,81 @@ class _EducationScreenState extends State<EducationScreen> {
   }
 }
 
+class _EducationHero extends StatelessWidget {
+  const _EducationHero({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) => ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Image.asset(
+                'assets/photos/education-hero.webp',
+                fit: BoxFit.cover,
+                alignment: Alignment.centerRight,
+                excludeFromSemantics: true,
+              ),
+            ),
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF281047),
+                      const Color(0xFF281047).withValues(alpha: .82),
+                      const Color(0xFF281047).withValues(alpha: .68),
+                    ],
+                    stops: const [0, .52, 1],
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.school_rounded,
+                    color: Color(0xFFE9D5FF),
+                    size: 30,
+                  ),
+                  const SizedBox(height: 12),
+                  Semantics(
+                    header: true,
+                    child: Text(
+                      title,
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    educationLabel(
+                      context,
+                      'Учитесь онлайн и в Алматы',
+                      'Онлайн және Алматыда оқыңыз',
+                      'Learn online and in Almaty',
+                    ),
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium
+                        ?.copyWith(color: const Color(0xFFF1E8FF)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
 class _CourseTile extends StatelessWidget {
   const _CourseTile(
       {required this.course, required this.api, required this.auth});
@@ -226,20 +318,36 @@ class _CourseTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Card(
         child: ListTile(
-          leading: const Icon(Icons.menu_book_rounded),
-          title: Text(course['title'] as String),
-          subtitle: Text(
-            [
-              course['organization'] as String,
-              educationPrice(context, course['priceMinor'] as int),
-              if (course['synthetic'] == true)
-                educationLabel(
-                  context,
-                  'Синтетические данные',
-                  'Синтетикалық деректер',
-                  'Synthetic data',
+          leading: CircleAvatar(
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+            foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+            child: const Icon(Icons.menu_book_rounded),
+          ),
+          title: Text(
+            course['title'] as String,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(course['organization'] as String),
+              Text(
+                educationPrice(context, course['priceMinor'] as int),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w700,
                 ),
-            ].join('\n'),
+              ),
+              if (course['synthetic'] == true)
+                Text(
+                  educationLabel(
+                    context,
+                    'Синтетические данные',
+                    'Синтетикалық деректер',
+                    'Synthetic data',
+                  ),
+                ),
+            ],
           ),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => Navigator.of(context).push<void>(

@@ -94,11 +94,44 @@ class _EducationEnrollmentState extends State<EducationEnrollmentScreen> {
               for (final raw in groups) _cohort(raw as Map<String, dynamic>),
               if (_selected != null) ...[
                 const SizedBox(height: 16),
-                Text(educationLabel(
-                    context,
-                    'Тестовая карта. Реального списания нет.',
-                    'Сынақ картасы. Нақты төлем алынбайды.',
-                    'Test card. No real charge.')),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.credit_card_rounded,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                educationPrice(
+                                  context,
+                                  _selected!['priceMinor'] as int,
+                                ),
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                              Text(
+                                educationLabel(
+                                  context,
+                                  'Тестовая карта. Реального списания нет.',
+                                  'Сынақ картасы. Нақты төлем алынбайды.',
+                                  'Test card. No real charge.',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
                 FilledButton(
                   onPressed: _busy ? null : _confirm,
                   child: Text(educationLabel(context, 'Оплатить TEST_CARD',

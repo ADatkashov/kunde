@@ -13,6 +13,7 @@
   Used as decorative banner imagery.
 - `photos/nearby-*.webp`: generated category illustrations for the home
   recommendations. They do not depict a catalog merchant or item.
+- `photos/education-hero.webp`: original generated illustrative artwork for the Education landing screen. The student and location are illustrative.
 - Almaty mountains and K mark: original vector artwork in the Flutter source.
 
 All artwork is bundled for offline rendering; no third-party image requests are
