@@ -36,7 +36,7 @@ Groceries — самостоятельный домен поверх общей 
 | Карта и маршрут в Consumer, ETA, расстояния | Не сделано: у магазинов нет координат; адрес курьеру открывается во внешних картах | — |
 | Загрузка файлов фото | Не сделано: нет хранилища, только HTTPS-ссылки | — |
 | Нативный Android E2E, реальные Android-скриншоты, установка APK | NOT VERIFIED | — |
-| Подписанные APK из одного SHA | NOT VERIFIED | — |
+| Подписанные DEV Release APK из одного SHA | Собраны (см. ниже); установка и запуск на устройстве NOT VERIFIED | workflow-проверка подписи |
 
 ## DEV (Render `kunde-backend-ty81`)
 
@@ -45,3 +45,16 @@ Groceries — самостоятельный домен поверх общей 
 ## Проверки (запущены)
 
 Backend `mvn verify` на PostgreSQL 16 — 389 тестов, 0 падений. Consumer: analyze + 353 теста; Partner: analyze + 120 тестов. Golden-рендеры экранов: `mobile/test/features/groceries/goldens/`.
+
+## DEV Release APK из `main` `e22727a` (2026-11-21)
+
+Собраны workflow `android-release.yml` / `partner-release.yml`; шаг «Verify APK» (подпись v2/v3, не debug-сертификат, package ID, INTERNET, не debuggable, DEV URL `kunde-backend-ty81`) прошёл. **Установка на устройство, запуск и нативный E2E не выполнялись.** Это не финальная приёмка: лояльность, уведомления, карта и нативный E2E остаются открытыми.
+
+| Приложение | Package | Run | SHA-256 |
+|---|---|---|---|
+| Consumer | `com.example.kunde_mobile` | [44933153682](https://github.com/ADatkashov/kunde/actions/runs/44933153682) | `287997a721a863fe575750195f366005d9689ec836810b09bb05611b60f7304d` |
+| Executor | `com.kunde.executor` | [44933156811](https://github.com/ADatkashov/kunde/actions/runs/44933156811) | `fccc63a147632767fa3de54ca0c5053ac353b1463cb9128118b02ce515e0d4f4` |
+| Admin | `com.kunde.admin` | [44933159731](https://github.com/ADatkashov/kunde/actions/runs/44933159731) | `0f9315824356f0e7cbe0dbdc5ec51944b6f060af9b715b98536f32f99074fb0b` |
+| Partner | `com.kunde.kunde_partner` | [44933162682](https://github.com/ADatkashov/kunde/actions/runs/44933162682) | `139869c772a293bb39fff09ff024185d05696973783cdb2582b7cb757aee56fa` |
+
+Артефакты хранятся 14 дней в соответствующих запусках.
