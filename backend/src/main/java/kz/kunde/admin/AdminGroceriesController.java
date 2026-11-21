@@ -298,6 +298,35 @@ public class AdminGroceriesController {
         return ok(reviewRows(null));
     }
 
+    public record ProductReviewRow(String id, String product, String store, int rating, String comment, String status, OffsetDateTime createdAt) {}
+
+    private List<ProductReviewRow> productReviewRows() {
+        return db.query("""
+                select v.id, d.name, r.name, v.rating, v.comment, v.status, v.created_at
+                from marketplace.grocery_product_reviews v join marketplace.food_dishes d on d.id = v.dish_id
+                join marketplace.food_restaurants r on r.id = d.restaurant_id where r.vertical = 'GROCERY'
+                order by v.created_at desc limit 200""",
+                (rs, n) -> new ProductReviewRow(rs.getString(1), rs.getString(2), rs.getString(3), rs.getInt(4), rs.getString(5), rs.getString(6),
+                        rs.getObject(7, OffsetDateTime.class)));
+    }
+
+    @GetMapping("/product-reviews")
+    ResponseEntity<List<ProductReviewRow>> productReviews(@AuthenticationPrincipal Jwt principal) {
+        admin(principal);
+        return ok(productReviewRows());
+    }
+
+    @Transactional
+    @PostMapping("/product-reviews/{id}/moderation")
+    ResponseEntity<List<ProductReviewRow>> moderateProductReview(@AuthenticationPrincipal Jwt principal, @PathVariable UUID id, @Valid @RequestBody ReviewBody body) {
+        UUID admin = admin(principal);
+        int n = db.update("update marketplace.grocery_product_reviews set status = ?, moderation_note = ? where id = ?",
+                "HIDE".equals(body.decision()) ? "HIDDEN" : "VISIBLE", body.reason().strip(), id);
+        if (n == 0) { throw new ApiException(HttpStatus.NOT_FOUND, "REVIEW_NOT_FOUND", "Review not found"); }
+        audit(admin, "PRODUCT_REVIEW_" + body.decision(), id.toString(), body.reason().strip());
+        return ok(productReviewRows());
+    }
+
     @GetMapping("/complaints")
     ResponseEntity<List<ComplaintRow>> complaints(@AuthenticationPrincipal Jwt principal, @RequestParam(defaultValue = "OPEN") String status) {
         admin(principal);
@@ -334,6 +363,7 @@ public class AdminGroceriesController {
                 where a.target in (select id::text from marketplace.food_restaurants where vertical = 'GROCERY')
                    or a.target in (select id::text from transactions.food_orders where vertical = 'GROCERY')
                    or a.target in (select p.id::text from marketplace.food_promotions p join marketplace.food_restaurants r on r.id = p.restaurant_id where r.vertical = 'GROCERY')
+                   or a.target in (select v.id::text from marketplace.grocery_product_reviews v)
                    or a.target in (select v.id::text from marketplace.food_reviews v join marketplace.food_restaurants r on r.id = v.restaurant_id where r.vertical = 'GROCERY')
                 order by a.id desc limit 200""",
                 (rs, n) -> new AuditRow(rs.getLong(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getObject(6, OffsetDateTime.class))));

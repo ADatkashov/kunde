@@ -125,6 +125,8 @@ class DomainSchemaOwnershipIntegrationTest {
             "transactions.food_courier_tasks -> identity.users",
             "marketplace.grocery_favorites -> identity.users",
             "marketplace.grocery_lists -> identity.users",
+            "marketplace.grocery_product_reviews -> identity.users",
+            "marketplace.grocery_product_reviews -> transactions.food_orders",
             "marketplace.food_review_complaints -> identity.users",
             "marketplace.food_reviews -> identity.users",
             "marketplace.food_reviews -> transactions.food_orders",
