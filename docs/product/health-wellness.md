@@ -15,13 +15,15 @@
 | Метод и маршрут | Поведение |
 |---|---|
 | `GET /api/v1/capabilities` | `healthEnabled` отражает действующий серверный флаг |
-| `GET /api/v1/booking/health/venues` | `q`, `direction`, `limit`, `offset`. Только открытые опубликованные синтетические площадки |
+| `GET /api/v1/booking/health/venues` | Поиск `q`, направление `direction`, район `district`, организация `organization`, услуга `service`, специалист `specialist`, специальность `specialty`, диапазон `minPriceMinor`–`maxPriceMinor`, пагинация `limit` и `offset`. Только открытые опубликованные синтетические площадки |
 | `GET /api/v1/booking/venues/{id}`, `GET /api/v1/booking/slots` | Тот же серверный запрет доступа к каталогу Health |
 | `POST /api/v1/booking/bookings` | Общий контракт и `Idempotency-Key`. Health дополнительно требует `expectedPriceMinor`, `acceptsTerms=true`, поддерживает `PAY_ON_SITE` и `TEST_CARD` |
 | `GET /api/v1/booking/bookings?healthOnly=true` | История владельца записи, доступная при остановке новых записей |
 | `POST /api/v1/booking/bookings/{id}/cancel` | До начала визита, с освобождением тестового hold |
 | `POST /api/v1/booking/bookings/{id}/reschedule` | `startsAt` и `expectedStartsAt`. Тот же специалист, максимум два переноса, более чем за два часа до начала. Цена и hold сохраняются, партнёр подтверждает новое время. |
 | `GET /api/v1/admin/health`, `PATCH /api/v1/admin/health/venues/{id}` | Обзор и изменение публикации с аудитом |
+
+Цена и категория фильтруются по одной доступной услуге. Если указан специалист или специальность, подходит только активный специалист, оказывающий эту услугу. Текстовые фильтры ищут подстроку без учёта регистра в данных каталога. Цены в запросе передаются в тиынах, обе границы включены. Обратный диапазон возвращает HTTP 400 с кодом `HEALTH_PRICE_RANGE_INVALID`.
 
 V41 добавляет направление услуги, состояние публикации, Health в таблицы Booking и переключателей, грант и журнал. PostgreSQL исключает пересечения записей одного специалиста. Booking Engine использует Asia/Almaty, рабочие интервалы, перерывы, горизонт и минимальное время до визита. Ключ первой записи сохраняет исходное время при переносе.
 
@@ -32,7 +34,7 @@ V41 добавляет направление услуги, состояние �
 ## Подтверждённое развёртывание
 
 - Render DEV `dep-dc0a4hd6e07s73c56f40` перешёл в live на первоначальном коммите `e3edb329d4771c0b291ef04f777c65c7c960fa24`. Текущий backend `fb910f79ad704be9672370851f60c24082a7bdd6` прошёл повторную проверку обоих способов оплаты и создания скрытых черновиков Partner. [Повторный deploy](https://dashboard.render.com/web/srv-dbsb8ct6e07s739c3t7g/deploys/dep-dc0aakc0916s73d4q53g). Заданы `HEALTH_ENABLED=true` и `HEALTH_SEED_DEMO=true`. Публичная capability подтвердила `healthEnabled: true`, а Neon DEV — успешные миграции V39, V40 и V41. [Render](https://dashboard.render.com/web/srv-dbsb8ct6e07s739c3t7g/deploys/dep-dc0a4hd6e07s73c56f40)
-- `python3 scripts/dev/health_smoke.py https://kunde-backend-ty81.onrender.com` прошёл на DEV с `TEST_CARD` и `PAY_ON_SITE`. Проверены каталог, отклонение подменённой цены, запись, идемпотентный повтор, история, перенос и освобождение тестового удержания.
+- 20 ноября 2026 года Render подтвердил статус `live` у `fb910f79`. Повторная проверка capability вернула `healthEnabled: true`, в Neon DEV последняя успешная миграция — V41. Сценарий `scripts/dev/health_smoke.py` повторно прошёл с `TEST_CARD` и `PAY_ON_SITE`. Проверены каталог, отклонение подменённой цены, запись, идемпотентный повтор, история, перенос и освобождение тестового удержания.
 - На локальном PostgreSQL 16.12 прошли 351 backend-тест. HTTP также подтвердил подтверждение и отмену партнёром, запрет другому tenant, проверку Admin-гранта и модерацию. В Neon DEV у синтетических аккаунтов пока нет `HEALTH_OPERATIONS`.
 - GitHub Actions проверил Backend, Flutter, Partner Flutter и Android, а также зависимости, контейнеры и секреты. Нативный Health E2E и визуальные артефакты отслеживаются в [#178](https://github.com/ADatkashov/kunde/pull/178). [Checks #176](https://github.com/ADatkashov/kunde/pull/176/checks)
 
