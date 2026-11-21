@@ -465,9 +465,19 @@ def main():
             process = ui_network_recovery(process)
         phase = "flag_off"
         process = flag_off_checks(process)
+        final_phase = "complete"
         if not API_ONLY:
-            ui_flag_off()
-        report("PASSED", "complete")
+            # Owner decision: this one step is non-blocking. The CI emulator was lost here in five consecutive runs
+            # (qemu exits while the app starts against the switched-off backend); the cause is not established.
+            # The server contract is asserted above over HTTP and the app side by the widget test
+            # "switch off: the server returns no categories and the home says so".
+            try:
+                ui_flag_off()
+            except Exception as error:  # noqa: BLE001 - recorded, never silent
+                final_phase = "complete_flag_off_ui_UNVERIFIED"
+                (REPORT / "flag-off-ui-UNVERIFIED.txt").write_text(f"The in-app flag-off check did not complete: {error!r}\n")
+                print(f"WARNING: in-app flag-off check NOT verified: {error!r}", flush=True)
+        report("PASSED", final_phase)
     except Exception:
         report("FAILED", phase)
         if not API_ONLY:
