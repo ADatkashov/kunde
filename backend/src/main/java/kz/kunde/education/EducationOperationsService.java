@@ -1,5 +1,6 @@
 package kz.kunde.education;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -15,6 +16,7 @@ import kz.kunde.platform.ApiException;
 import kz.kunde.platform.FeatureToggles;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.jdbc.support.SqlArrayValue;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -94,8 +96,27 @@ public class EducationOperationsService {
             db.sql("insert into marketplace.education_assignments(course_id,prompt) values (:id,:prompt)")
                     .param("id", id).param("prompt", input.assignmentPrompt().strip()).update();
         }
+        if (input.quiz() != null) {
+            addQuiz(id, input.format(), input.quiz());
+        }
         event(id, actor, "DRAFT_CREATED", null);
         return course(id);
+    }
+
+    private void addQuiz(UUID course, EducationCatalogController.Format format, QuizInput quiz) {
+        if (format != EducationCatalogController.Format.ONLINE_RECORDED) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "QUIZ_REQUIRES_RECORDED_FORMAT", "Choose recorded training");
+        }
+        var choices = quiz.choices().stream().map(String::strip).toList();
+        if (quiz.correctChoice() >= choices.size() || choices.stream().distinct().count() != choices.size()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_QUIZ_CHOICES", "Choose distinct answers and a valid correct answer");
+        }
+        db.sql("""
+                insert into marketplace.education_course_quizzes(course_id,question,choices,correct_choice,max_attempts)
+                values (:course,:question,:choices,:correct,:attempts)
+                """).param("course", course).param("question", quiz.question().strip())
+                .param("choices", new SqlArrayValue("text", choices.toArray())).param("correct", quiz.correctChoice())
+                .param("attempts", quiz.maxAttempts()).update();
     }
 
     @Transactional
@@ -261,7 +282,11 @@ public class EducationOperationsService {
     public record Draft(@NotBlank @Size(max=180) String title, @NotBlank @Size(max=5000) String description,
             @NotBlank @Size(max=48) String category, @NotBlank @Size(max=100) String city,
             @NotBlank @Size(max=8) String language, @NotNull EducationCatalogController.Format format,
-            @NotNull @Min(0) Long priceMinor, @NotNull @Min(1) @Max(100000) Integer durationMinutes, @Size(max=12000) String recordedText, @Size(max=1500) String assignmentPrompt) {}
+            @NotNull @Min(0) Long priceMinor, @NotNull @Min(1) @Max(100000) Integer durationMinutes, @Size(max=12000) String recordedText,
+            @Size(max=1500) String assignmentPrompt, @Valid QuizInput quiz) {}
+    public record QuizInput(@NotBlank @Size(max=300) String question,
+            @NotNull @Size(min=2, max=6) List<@NotBlank @Size(max=500) String> choices,
+            @NotNull @Min(0) @Max(5) Integer correctChoice, @NotNull @Min(1) @Max(10) Integer maxAttempts) {}
     public record CohortInput(@NotNull EducationCatalogController.Format format, OffsetDateTime startsAt,
             OffsetDateTime endsAt, @NotNull @Min(1) @Max(1000) Integer capacity, UUID instructorId) {}
 }

@@ -4,12 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 import kz.kunde.education.EducationCatalogController.Format;
 import kz.kunde.education.EducationOperationsService.Attendance;
 import kz.kunde.education.EducationOperationsService.CohortInput;
 import kz.kunde.education.EducationOperationsService.Decision;
 import kz.kunde.education.EducationOperationsService.Draft;
+import kz.kunde.education.EducationOperationsService.QuizInput;
 import kz.kunde.platform.ApiException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +38,7 @@ class EducationOperationsIntegrationTest {
                 partner, instructor, owner);
         db.update("insert into identity.admin_grants(user_id,permission,reason) values (?,'EDUCATION_OPERATIONS','Synthetic course moderation')", admin);
         var draft = operations.create(owner, partner,
-                new Draft("Synthetic workshop", "Practice", "IT", "Алматы", "ru", Format.OFFLINE_GROUP, 750L, 40, null, null));
+                new Draft("Synthetic workshop", "Practice", "IT", "Алматы", "ru", Format.OFFLINE_GROUP, 750L, 40, null, null, null));
         assertThat(draft.status()).isEqualTo("DRAFT");
         assertThat(operations.partnerCourses(stranger, otherPartner)).isEmpty();
         assertThatThrownBy(() -> operations.submit(stranger, otherPartner, draft.id())).isInstanceOf(ApiException.class);
@@ -63,14 +65,15 @@ class EducationOperationsIntegrationTest {
     }
 
     @Test
-    void assignedInstructorCanReturnAndApproveTextAssignment() {
+    void assignedInstructorCanReviewTextAssignmentAndCompletionRequiresPartnerQuiz() {
         UUID instructor = user();
         UUID student = user();
         UUID stranger = user();
         UUID partner = partner(instructor);
         var draft = operations.create(instructor, partner,
                 new Draft("Recorded workshop", "Practice", "IT", "Алматы", "ru",
-                        Format.ONLINE_RECORDED, 700L, 40, "Learn about loops", "Describe a loop"));
+                        Format.ONLINE_RECORDED, 700L, 40, "Learn about loops", "Describe a loop",
+                        new QuizInput("What repeats?", List.of("A loop", "A number"), 0, 2)));
         var session = operations.createSession(instructor, partner, draft.id(),
                 new CohortInput(Format.ONLINE_RECORDED, null, null, 2, instructor));
         db.update("update marketplace.education_courses set status='PUBLISHED' where id=?", draft.id());
@@ -86,7 +89,11 @@ class EducationOperationsIntegrationTest {
                 .isEqualTo("SUBMITTED");
         assertThat(enrollments.reviewAssignment(instructor, session.id(), id, true, "Good example").status())
                 .isEqualTo("APPROVED");
-        assertThat(enrollments.learning(student, id).enrollment().certificateCode()).isNotNull();
+        var learning = enrollments.learning(student, id);
+        assertThat(learning.enrollment().certificateCode()).isNull();
+        assertThat(learning.quiz().choices()).containsExactly("A loop", "A number");
+        assertThat(enrollments.attemptQuiz(student, id, UUID.randomUUID(), 0).enrollment().certificateCode())
+                .isNotNull();
     }
 
     private UUID user() {
