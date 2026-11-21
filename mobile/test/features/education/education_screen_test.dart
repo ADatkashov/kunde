@@ -118,10 +118,12 @@ void main() {
         await tester.scrollUntilVisible(
           find.byType(FilterChip).last,
           120,
-          scrollable: find.descendant(
-            of: find.byType(ListView),
-            matching: find.byType(Scrollable),
-          ).first,
+          scrollable: find
+              .descendant(
+                of: find.byType(ListView),
+                matching: find.byType(Scrollable),
+              )
+              .first,
         );
         expect(tester.takeException(), isNull);
       }
