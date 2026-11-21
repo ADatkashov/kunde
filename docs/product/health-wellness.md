@@ -15,7 +15,7 @@
 | Метод и маршрут | Поведение |
 |---|---|
 | `GET /api/v1/capabilities` | `healthEnabled` отражает действующий серверный флаг |
-| `GET /api/v1/booking/health/venues` | Поиск `q`, направление `direction`, район `district`, организация `organization`, услуга `service`, специалист `specialist`, специальность `specialty`, диапазон `minPriceMinor`–`maxPriceMinor`, пагинация `limit` и `offset`. Только открытые опубликованные синтетические площадки |
+| `GET /api/v1/booking/health/venues` | Поиск `q`, направление `direction`, район `district`, организация `organization`, услуга `service`, специалист `specialist`, специальность `specialty`, диапазон `minPriceMinor`–`maxPriceMinor`, пагинация `limit` и `offset`. Заголовок `X-Total-Count` сообщает число совпадений до пагинации, в том числе для пустой страницы. Только открытые опубликованные синтетические площадки |
 | `GET /api/v1/booking/health/favorites` | Избранное текущего Consumer. Допускает фильтр `venueId` и пагинацию `limit`/`offset`. Скрывшиеся из каталога объекты не выдаются. |
 | `PUT /api/v1/booking/health/favorites/{kind}/{id}` | Идемпотентно сохраняет открытый объект с типом `ORGANIZATION`, `SPECIALIST` или `WELLNESS_SERVICE`. Ответ 204. |
 | `DELETE /api/v1/booking/health/favorites/{kind}/{id}` | Идемпотентно удаляет объект из избранного текущего Consumer. Ответ 204. |
@@ -45,7 +45,8 @@ V42 хранит избранное владельца в PostgreSQL и обес
 
 ## Проверки 21 ноября
 
-- Render DEV обслуживает `b782d35913dcdb402fbd3fdb1c704de53c434c68` из [#186](https://github.com/ADatkashov/kunde/pull/186). Neon подтвердил V42. Smoke с синтетическими аккаунтами подтвердил идемпотентное сохранение, изоляцию владельца, сохранение после нового входа и удаление. `TEST_CARD` и `PAY_ON_SITE` повторно прошли. [Render deploy](https://dashboard.render.com/web/srv-dbsb8ct6e07s739c3t7g/deploys/dep-dc0ldhs0916s73c3ne8g)
+- Render DEV обслуживает `14f851dbe81480bbee66c343c9ab83cfbf2c602c` из [#188](https://github.com/ADatkashov/kunde/pull/188). По HTTP проверены счётчик для фильтра, пустая страница за пределами выдачи и ноль совпадений. Избранное, `TEST_CARD` и `PAY_ON_SITE` повторно прошли smoke. [Render deploy](https://dashboard.render.com/web/srv-dbsb8ct6e07s739c3t7g/deploys/dep-dc0lka6k1f9s739hos1g)
+- В deploy `b782d35913dcdb402fbd3fdb1c704de53c434c68` из [#186](https://github.com/ADatkashov/kunde/pull/186). Neon подтвердил V42. Smoke с синтетическими аккаунтами подтвердил идемпотентное сохранение, изоляцию владельца, сохранение после нового входа и удаление. `TEST_CARD` и `PAY_ON_SITE` повторно прошли. [Render deploy](https://dashboard.render.com/web/srv-dbsb8ct6e07s739c3t7g/deploys/dep-dc0ldhs0916s73c3ne8g)
 - На #186 прошли 355 backend-тестов, 273 Flutter-теста, Security CI, Health и Auto Android E2E и визуальная проверка. Нативный сценарий проверяет запись и отмену. Избранное покрыто HTTP-контрактом и Flutter-тестом. [Android Health](https://github.com/ADatkashov/kunde/actions/runs/44883865060/artifacts/14699820358)
 - На первом deploy 21 ноября Render DEV обслуживал `965135ce6ba461622c81e7eefa7e1f8d9f05fa5c`. API вернул `healthEnabled: true`, совместимые фильтры нашли синтетическую площадку, несовместимые условия дали пустой результат. Оба smoke, `TEST_CARD` и `PAY_ON_SITE`, прошли запись, повтор, историю, перенос и отмену. В Neon последняя успешная миграция V41. [Render deploy](https://dashboard.render.com/web/srv-dbsb8ct6e07s739c3t7g/deploys/dep-dc0l4c97lnhs7390jvl0)
 - [#183](https://github.com/ADatkashov/kunde/pull/183) добавил панель фильтров Consumer и серверную фильтрацию по организации, району, услуге, специальности, специалисту и цене. [Backend CI](https://github.com/ADatkashov/kunde/actions/runs/44883528684) и [Flutter CI](https://github.com/ADatkashov/kunde/actions/runs/44883528771) прошли на merge-коммите.
@@ -87,4 +88,4 @@ V42 хранит избранное владельца в PostgreSQL и обес
 
 ## Открытая приёмка
 
-Фильтры по дате, времени, доступности, формату и рейтингу, общее количество результатов, проверенные отзывы, управление Health-ролями и жалобами, возвраты Health, выездной wellness Executor, лицензии и локализованный каталог, визуальная приёмка всех ролей и установка подписанных APK требуют дальнейшей работы. Нативная проверка Partner, Admin, TalkBack и полного RU/KK/EN сценария остаётся открытой.
+Фильтры по дате, времени, доступности, формату и рейтингу, проверенные отзывы, управление Health-ролями и жалобами, возвраты Health, выездной wellness Executor, лицензии и локализованный каталог, визуальная приёмка всех ролей и установка подписанных APK требуют дальнейшей работы. Нативная проверка Partner, Admin, TalkBack и полного RU/KK/EN сценария остаётся открытой.

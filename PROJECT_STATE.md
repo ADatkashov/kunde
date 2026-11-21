@@ -11,7 +11,7 @@
 
 - Стартовый аудит сверил `origin/main` `30f4bc5`, открытый Leisure [#175](https://github.com/ADatkashov/kunde/pull/175) и [последний Security CI на main](https://github.com/ADatkashov/kunde/actions/runs/44784856492). Linear доступен, отдельный Health-тикет поиском не найден.
 - В main через [#176](https://github.com/ADatkashov/kunde/pull/176): V41, синтетический каталог, общий Booking Engine и тестовый ledger, Consumer, управление площадкой через Partner и модерация Admin. Реестр возможностей, проверок и ограничений — в [Health PRD](docs/product/health-wellness.md).
-- Render DEV обслуживает `b782d35913dcdb402fbd3fdb1c704de53c434c68`. Neon V42, `healthEnabled: true`. В DEV проверены фильтры [#183](https://github.com/ADatkashov/kunde/pull/183), избранное [#186](https://github.com/ADatkashov/kunde/pull/186) и оба способа синтетической оплаты. [Доказательства DEV](docs/product/health-wellness.md#проверки-21-ноября)
+- Render DEV обслуживает `14f851dbe81480bbee66c343c9ab83cfbf2c602c`. Neon V42, `healthEnabled: true`. В DEV проверены фильтры [#183](https://github.com/ADatkashov/kunde/pull/183), число результатов [#188](https://github.com/ADatkashov/kunde/pull/188), избранное [#186](https://github.com/ADatkashov/kunde/pull/186) и оба способа синтетической оплаты. [Доказательства DEV](docs/product/health-wellness.md#проверки-21-ноября)
 - Полная приёмка DEV/TEST открыта. Профиль специалиста и Android E2E объединены в [#178](https://github.com/ADatkashov/kunde/pull/178), создание услуг и специалистов Partner объединено в [#179](https://github.com/ADatkashov/kunde/pull/179). Повторный Android E2E после визуальных исправлений [#181](https://github.com/ADatkashov/kunde/pull/181) прошёл. Результаты сверены с Linear ADA-66.
 
 ## KUNDE Control Center 3.0 — DEV
