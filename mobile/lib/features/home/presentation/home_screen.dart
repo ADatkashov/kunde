@@ -9,6 +9,7 @@ import '../../booking/booking_services.dart';
 import '../../booking/presentation/category_screens.dart';
 import '../../delivery/delivery_api.dart';
 import '../../delivery/delivery_screen.dart';
+import '../../education/education_screen.dart';
 import '../../food/food_services.dart';
 import '../../food/presentation/food_home_screen.dart';
 import '../../health/health_home_screen.dart';
@@ -186,6 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
     bool autoEnabled = false,
     bool leisureEnabled = false,
     bool healthEnabled = false,
+    bool educationEnabled = false,
   }) =>
       [
         ServiceCategory(
@@ -242,6 +244,13 @@ class _HomeScreenState extends State<HomeScreen> {
           color: const Color(0xFF1769AA),
           enabled: autoEnabled && widget.auto != null,
         ),
+        if (educationEnabled)
+          ServiceCategory(
+            icon: Icons.school_rounded,
+            label: s.catEducation,
+            color: const Color(0xFF6425BE),
+            enabled: true,
+          ),
         ServiceCategory(
           icon: Icons.confirmation_number_rounded,
           label: s.catLeisure,
@@ -289,6 +298,11 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (_) => HomeServicesCategoryScreen(services: widget.booking!),
         ),
       );
+    } else if (c.label == s.catEducation && c.enabled) {
+      Navigator.of(context).push<void>(MaterialPageRoute(
+        settings: const RouteSettings(name: '/education'),
+        builder: (_) => EducationScreen(api: widget.api),
+      ));
     } else if (c.label == s.catLeisure && c.enabled && widget.leisure != null) {
       Navigator.of(context).push(
         MaterialPageRoute<void>(
@@ -402,6 +416,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   autoEnabled: snapshot?.autoEnabled ?? false,
                   leisureEnabled: snapshot?.leisureEnabled ?? false,
                   healthEnabled: snapshot?.healthEnabled ?? false,
+                  educationEnabled: snapshot?.educationEnabled ?? false,
                 );
                 final visibleCategories = [
                   for (final label in [
@@ -416,6 +431,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     s.catHome,
                     s.catBeauty,
                     s.catAuto,
+                    if (snapshot?.educationEnabled == true) s.catEducation,
                     s.catLeisure,
                     s.catHealth,
                     s.catAll,

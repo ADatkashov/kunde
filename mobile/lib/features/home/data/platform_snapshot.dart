@@ -11,6 +11,7 @@ class PlatformSnapshot {
     this.autoEnabled = false,
     this.leisureEnabled = false,
     this.healthEnabled = false,
+    this.educationEnabled = false,
   });
 
   final String releaseStage;
@@ -27,6 +28,7 @@ class PlatformSnapshot {
   /// KUNDE Auto DEV pilot; absent on older servers.
   final bool autoEnabled;
   final bool healthEnabled;
+  final bool educationEnabled;
 
   /// KUNDE Leisure; on by default in DEV/TEST, decided by the server; absent on older servers.
   final bool leisureEnabled;
@@ -54,6 +56,7 @@ class PlatformSnapshot {
       autoEnabled: json['autoEnabled'] == true,
       leisureEnabled: json['leisureEnabled'] == true,
       healthEnabled: json['healthEnabled'] == true,
+      educationEnabled: json['educationEnabled'] == true,
     );
   }
 }

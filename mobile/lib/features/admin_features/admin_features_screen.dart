@@ -62,6 +62,7 @@ class _AdminFeaturesScreenState extends State<AdminFeaturesScreen> {
         'RIDES' => s.t('Такси', 'Такси', 'Rides'),
         'DELIVERY' => s.t('Доставка', 'Жеткізу', 'Delivery'),
         'LEISURE' => s.t('Досуг', 'Демалыс', 'Leisure'),
+        'EDUCATION' => s.t('Образование', 'Білім', 'Education'),
         _ => feature,
       };
 
