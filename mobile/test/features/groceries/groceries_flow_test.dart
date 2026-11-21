@@ -1085,7 +1085,10 @@ void main() {
     }
 
     testWidgets('home', (tester) async {
-      await shot(tester, GroceriesHomeScreen(services: await _services(_Backend())), 'groceries_home');
+      await shot(
+          tester,
+          GroceriesHomeScreen(services: await _services(_Backend())),
+          'groceries_home');
     });
     testWidgets('catalog', (tester) async {
       await shot(
@@ -1097,7 +1100,11 @@ void main() {
           'groceries_catalog');
     });
     testWidgets('product', (tester) async {
-      await shot(tester, ProductScreen(services: await _services(_Backend()), productId: _apples), 'groceries_product');
+      await shot(
+          tester,
+          ProductScreen(
+              services: await _services(_Backend()), productId: _apples),
+          'groceries_product');
     });
     testWidgets('lists', (tester) async {
       final backend = _Backend()
@@ -1105,10 +1112,21 @@ void main() {
           'id': 'l0000000-0000-0000-0000-000000000001',
           'name': 'На неделю',
           'items': <Map<String, dynamic>>[
-            {'productId': _milk, 'name': 'Молоко 2,5% 1 л', 'unit': 'PIECE', 'quantity': 3, 'checked': false, 'priceMinor': 69000, 'inStock': true, 'emoji': '🥛', 'storeName': 'Фреш Маркет'},
+            {
+              'productId': _milk,
+              'name': 'Молоко 2,5% 1 л',
+              'unit': 'PIECE',
+              'quantity': 3,
+              'checked': false,
+              'priceMinor': 69000,
+              'inStock': true,
+              'emoji': '🥛',
+              'storeName': 'Фреш Маркет'
+            },
           ],
         });
-      await shot(tester, ListsScreen(services: await _services(backend)), 'groceries_lists');
+      await shot(tester, ListsScreen(services: await _services(backend)),
+          'groceries_lists');
     });
   });
 
