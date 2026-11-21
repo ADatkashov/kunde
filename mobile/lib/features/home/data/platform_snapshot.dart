@@ -10,6 +10,7 @@ class PlatformSnapshot {
     this.deliverySyntheticRouting = false,
     this.autoEnabled = false,
     this.leisureEnabled = false,
+    this.eventsEnabled = false,
     this.healthEnabled = false,
     this.educationEnabled = false,
   });
@@ -32,6 +33,7 @@ class PlatformSnapshot {
 
   /// KUNDE Leisure; on by default in DEV/TEST, decided by the server; absent on older servers.
   final bool leisureEnabled;
+  final bool eventsEnabled;
 
   factory PlatformSnapshot.fromJson(Map<String, dynamic> json) {
     final stage = json['releaseStage'];
@@ -55,6 +57,7 @@ class PlatformSnapshot {
       deliverySyntheticRouting: json['deliverySyntheticRouting'] == true,
       autoEnabled: json['autoEnabled'] == true,
       leisureEnabled: json['leisureEnabled'] == true,
+      eventsEnabled: json['eventsEnabled'] == true,
       healthEnabled: json['healthEnabled'] == true,
       educationEnabled: json['educationEnabled'] == true,
     );

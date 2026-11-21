@@ -19,6 +19,14 @@ extension LeisureStrings on KundeLocalizations {
       'Cinema, events, outdoor fun and entertainment for the whole family');
   String get lzSearchHint =>
       _t('Найти развлечение', 'Ойын-сауық іздеу', 'Search entertainment');
+  // ---- KUNDE Events & Tickets (same screens, other product) ----------------------------------------------------------------
+  String get evTitle => _t('События', 'Іс-шаралар', 'Events');
+  String get evSubtitle => _t(
+      'Концерты, кино, театр, спорт и фестивали Алматы',
+      'Алматыдағы концерттер, кино, театр, спорт және фестивальдер',
+      'Concerts, cinema, theatre, sports and festivals in Almaty');
+  String get evSearchHint =>
+      _t('Найти событие', 'Іс-шара іздеу', 'Search events');
   String get lzCity => _t('Алматы', 'Алматы', 'Almaty');
   String get lzCityMore => _t('Другие города появятся позже',
       'Басқа қалалар кейінірек қосылады', 'More cities are coming later');

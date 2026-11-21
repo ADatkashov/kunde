@@ -22,6 +22,16 @@ IconData leisureIcon(String code) => switch (code) {
       'EXCURSION' => Icons.directions_walk_rounded,
       'ACTIVE' => Icons.hiking_rounded,
       'FAMILY' => Icons.family_restroom_rounded,
+      'SPORT' => Icons.sports_soccer_rounded,
+      'FESTIVAL' => Icons.festival_rounded,
+      'SHOW' => Icons.auto_awesome_rounded,
+      'STANDUP' => Icons.mic_rounded,
+      'KIDS_SHOW' => Icons.toys_rounded,
+      'KARTING' => Icons.sports_motorsports_rounded,
+      'LASER_TAG' => Icons.my_location_rounded,
+      'CLIMBING' => Icons.terrain_rounded,
+      'PAINTBALL' => Icons.blur_on_rounded,
+      'BOARD_GAMES' => Icons.casino_rounded,
       _ => Icons.confirmation_number_rounded,
     };
 
@@ -33,7 +43,12 @@ List<Color> leisureGradient(String code) => switch (code) {
       'QUEST' => const [Color(0xFF2C2540), Color(0xFF8A6BD6)],
       'KIDS_CENTER' || 'FAMILY' => const [Color(0xFFB8541E), Color(0xFFF2A65C)],
       'TRAMPOLINE' => const [Color(0xFF0E6B62), Color(0xFF45C2A8)],
-      'CONCERT' || 'THEATER' => const [Color(0xFF6B1B3A), Color(0xFFE05A86)],
+      'CONCERT' || 'THEATER' || 'STANDUP' => const [
+          Color(0xFF6B1B3A),
+          Color(0xFFE05A86)
+        ],
+      'SPORT' || 'FESTIVAL' => const [Color(0xFF1B3A6B), Color(0xFF7055F5)],
+      'SHOW' || 'KIDS_SHOW' => const [Color(0xFFB8541E), Color(0xFFF2A65C)],
       'EXHIBITION' || 'MASTERCLASS' => const [
           Color(0xFF4A3A1B),
           Color(0xFFD6A94A)

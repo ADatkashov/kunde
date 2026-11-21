@@ -139,9 +139,22 @@ class _FakeLeisure {
         'timeline': [],
       };
 
+  final requested = <String>[];
+
   Future<http.Response> handle(http.Request request) async {
     if (offline) throw http.ClientException('offline');
-    final path = request.url.path.replaceFirst('/api/v1/', '');
+    var path = request.url.path.replaceFirst('/api/v1/', '');
+    requested.add(path);
+    // Events is the other product's public catalogue over the same engine: same fixtures, other paths.
+    if (path == 'events' || path.startsWith('events/')) {
+      path = path == 'events/categories'
+          ? 'leisure/categories'
+          : path == 'events/home'
+              ? 'leisure/home'
+              : path == 'events'
+                  ? 'leisure/events'
+                  : path.replaceFirst('events/', 'leisure/events/');
+    }
     final body = request.body.isEmpty
         ? null
         : jsonDecode(request.body) as Map<String, dynamic>;
@@ -390,6 +403,40 @@ void main() {
     expect(find.textContaining('Демо-фильм'), findsWidgets);
     expect(find.byIcon(Icons.star_rounded),
         findsNothing); // no rating without real reviews
+  });
+
+  testWidgets(
+      'Events product reads /events, shows its own title and the cinema',
+      (tester) async {
+    _phone(tester);
+    final backend = _FakeLeisure();
+    final services =
+        (await _services(backend)).forProduct(LeisureProduct.events);
+    expect(services.isEvents, isTrue);
+    await tester.pumpWidget(_app(LeisureHomeScreen(services: services)));
+    await tester.pumpAndSettle();
+    expect(find.text('События'), findsOneWidget);
+    expect(find.text('Досуг и развлечения'), findsNothing);
+    expect(find.text('Кинотеатры'), findsOneWidget);
+    expect(
+        backend.requested, containsAll(['events/categories', 'events/home']));
+    expect(backend.requested, isNot(contains('leisure/categories')));
+    // opening a card reads the event through /events, the seats and purchase stay on the shared engine
+    await tester.scrollUntilVisible(find.text('Популярное'), 300,
+        scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.textContaining('Демо-фильм').first);
+    await tester.pumpAndSettle();
+    expect(backend.requested, contains('events/$_eventId'));
+  });
+
+  testWidgets('Leisure product keeps reading /leisure', (tester) async {
+    _phone(tester);
+    final backend = _FakeLeisure();
+    await tester.pumpWidget(
+        _app(LeisureHomeScreen(services: await _services(backend))));
+    await tester.pumpAndSettle();
+    expect(backend.requested, contains('leisure/categories'));
+    expect(backend.requested.any((p) => p.startsWith('events')), isFalse);
   });
 
   testWidgets(

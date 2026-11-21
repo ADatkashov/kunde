@@ -7,6 +7,8 @@ on:
       - 'scripts/ci/leisure_native_e2e.py'
       - 'mobile/lib/features/leisure/**'
       - 'backend/src/main/java/kz/kunde/leisure/**'
+      - 'backend/src/main/java/kz/kunde/events/**'
+      - 'mobile/lib/features/home/**'
       - 'backend/src/main/resources/db/migration/*leisure*.sql'
   pull_request:
     paths:
@@ -14,6 +16,8 @@ on:
       - 'scripts/ci/leisure_native_e2e.py'
       - 'mobile/lib/features/leisure/**'
       - 'backend/src/main/java/kz/kunde/leisure/**'
+      - 'backend/src/main/java/kz/kunde/events/**'
+      - 'mobile/lib/features/home/**'
       - 'backend/src/main/resources/db/migration/*leisure*.sql'
   workflow_dispatch:
 permissions:
@@ -48,6 +52,7 @@ jobs:
       AUTH_DEV_OTP_ALLOWED_PHONES: '+77000000001,+77000000002,+77000000003,+77000000004,+77000000005'
       PARTNER_OPS_SEED_DEMO: 'true'
       LEISURE_ENABLED: 'true'
+      EVENTS_ENABLED: 'true'
       APP_SECURITY_RATE_LIMIT_REQUESTS: '100000'
       APP_SECURITY_AUTHENTICATED_RATE_LIMIT_REQUESTS: '100000'
       GRADLE_USER_HOME: /tmp/kunde-gradle
