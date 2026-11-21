@@ -1,5 +1,6 @@
 """Exercise Consumer Education with Android, the real API and isolated PostgreSQL."""
 import os
+import time
 from pathlib import Path
 
 import auto_native_e2e as mobile
@@ -12,6 +13,15 @@ PHONE = "+77000000001"
 EDUCATION = ("Обучение", "Білім", "Education")
 MY_COURSES = ("Мои курсы", "Курстарым", "My courses")
 COMPLETE = ("Завершить урок", "Сабақты аяқтау", "Complete lesson")
+
+
+def wait_for_learning(token, identifier, predicate, description):
+    for _ in range(15):
+        snapshot = fixture.call("GET", f"education/enrollments/{identifier}/learning", token=token)
+        if predicate(snapshot):
+            return snapshot
+        time.sleep(1)
+    raise RuntimeError(f"Android did not persist {description}")
 
 
 def main():
@@ -54,16 +64,18 @@ def main():
         mobile.tap(title)
         mobile.tap("Переменные")
         mobile.tap(*COMPLETE)
+        wait_for_learning(token, identifier, lambda data: data["lessons"][0]["completed"], "the first lesson")
         mobile.tap("Условия и циклы")
         mobile.tap(*COMPLETE)
-        mobile.tap("Перебирает значения")
-        mobile.reveal("Код проверки завершения курса", "Курсты аяқтауды тексеру коды",
-                      "Course completion verification code")
-        recap = fixture.call("GET", f"education/enrollments/{identifier}/learning", token=token)
+        recap = wait_for_learning(token, identifier, lambda data: all(
+            lesson["completed"] for lesson in data["lessons"]), "both lessons")
+        if recap.get("quiz"):
+            mobile.tap("Перебирает значения")
+        recap = wait_for_learning(token, identifier, lambda data: data["enrollment"]["certificateCode"],
+                                  "the course completion code")
         code = recap["enrollment"]["certificateCode"]
-        assert code and all(lesson["completed"] for lesson in recap["lessons"])
-        mobile.reveal(code)
         assert fixture.call("GET", f"education/certificates/{code}")["title"] == title
+        mobile.reveal("Копировать", "Көшіру", "Copy", clickable=True)
         android.screenshot("03-course-completed")
         fixture.completed.append("consumer_learning_and_verification_code")
         fixture.write_report("PASSED", "completed")
