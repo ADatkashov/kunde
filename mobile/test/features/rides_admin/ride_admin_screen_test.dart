@@ -5,9 +5,10 @@ import 'package:kunde_mobile/features/identity/auth_repository.dart';
 import 'package:kunde_mobile/features/rides_admin/ride_admin_screen.dart';
 
 class _AdminSession implements AuthRepository {
-  _AdminSession({this.scoped = false});
+  _AdminSession({this.scoped = false, this.homeCatalog = false});
 
   final bool scoped;
+  final bool homeCatalog;
 
   @override
   Future<dynamic> authorizedJson(
@@ -25,9 +26,17 @@ class _AdminSession implements AuthRepository {
         <String, dynamic>{'id': 'shipment-1', 'status': 'DELIVERY_FAILED'},
       ];
     }
+    if (homeCatalog &&
+        (method, path) ==
+            ('GET', 'admin/home-services/categories?limit=20&offset=0')) {
+      return [];
+    }
     expect((method, path), ('GET', 'admin/me/capabilities'));
     return <String, dynamic>{
-      'permissions': [if (!scoped) 'DELIVERY_OPERATIONS'],
+      'permissions': [
+        if (!scoped && !homeCatalog) 'DELIVERY_OPERATIONS',
+        if (homeCatalog) 'HOME_SERVICES_CATALOG',
+      ],
       'deliveryShipmentRead': scoped,
     };
   }
@@ -51,12 +60,28 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Couriers'), findsNothing);
     expect(find.text('Delivery complaints'), findsNothing);
+    expect(find.text('Home services categories'), findsNothing);
     await tester.ensureVisible(find.text('Shipments'));
     await tester.tap(find.text('Shipments'));
     await tester.pumpAndSettle();
     expect(find.text('shipment-1'), findsOneWidget);
     expect(find.text('Audit trail'), findsOneWidget);
     expect(find.text('Request return'), findsNothing);
+  });
+
+  testWidgets('Home Services catalog grant opens the category workspace',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      locale: const Locale('en'),
+      supportedLocales: KundeLocalizations.supportedLocales,
+      localizationsDelegates: KundeLocalizations.localizationsDelegates,
+      home: RideAdminScreen(auth: _AdminSession(homeCatalog: true)),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Home services categories'));
+    await tester.pumpAndSettle();
+    expect(find.text('Add category'), findsOneWidget);
+    expect(find.text('No categories on this page'), findsOneWidget);
   });
 
   for (final width in [320.0, 390.0, 600.0, 840.0, 1280.0, 1920.0]) {
