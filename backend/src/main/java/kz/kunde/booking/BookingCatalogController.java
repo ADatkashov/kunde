@@ -1,9 +1,9 @@
 package kz.kunde.booking;
 
-import java.time.LocalDate;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -74,14 +74,35 @@ public class BookingCatalogController {
     public ResponseEntity<List<Venue>> healthVenues(
             @RequestParam(defaultValue = "") @Size(max = 100) String q,
             @RequestParam(defaultValue = "") @Size(max = 24) String direction,
+            @RequestParam(defaultValue = "") @Size(max = 100) String district,
+            @RequestParam(defaultValue = "") @Size(max = 100) String organization,
+            @RequestParam(defaultValue = "") @Size(max = 100) String service,
+            @RequestParam(defaultValue = "") @Size(max = 100) String specialist,
+            @RequestParam(defaultValue = "") @Size(max = 100) String specialty,
+            @RequestParam(defaultValue = "0") @Min(0) long minPriceMinor,
+            @RequestParam(defaultValue = "9223372036854775807") @Min(0) long maxPriceMinor,
             @RequestParam(defaultValue = "20") @Min(1) @Max(50) int limit,
             @RequestParam(defaultValue = "0") @Min(0) @Max(10000) int offset) {
         slots.requireHealthCatalog();
+        if (minPriceMinor > maxPriceMinor) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "HEALTH_PRICE_RANGE_INVALID",
+                    "minPriceMinor must not exceed maxPriceMinor");
+        }
         String query = q.strip();
         List<Venue> venues = jdbc.query(VENUE_SELECT + """
                 where v.category = 'HEALTH' and v.is_open and v.is_synthetic and v.health_published
+                and strpos(lower(coalesce(v.address_text, '')), lower(?)) > 0
+                and strpos(lower(v.name), lower(?)) > 0
                 and exists (select 1 from marketplace.booking_services s where s.venue_id = v.id and s.available
                     and (? = '' or s.health_category = ?)
+                    and strpos(lower(s.name), lower(?)) > 0
+                    and s.price_minor between ? and ?
+                    and ((? = '' and ? = '') or exists (
+                        select 1 from marketplace.booking_master_services ms
+                        join marketplace.booking_masters m on m.id = ms.master_id
+                        where ms.service_id = s.id and m.venue_id = v.id and m.active
+                        and (? = '' or strpos(lower(m.name), lower(?)) > 0)
+                        and (? = '' or strpos(lower(m.bio), lower(?)) > 0)))
                     and (? = '' or strpos(lower(v.name), lower(?)) > 0 or strpos(lower(v.address_text), lower(?)) > 0
                         or strpos(lower(s.name), lower(?)) > 0
                         or exists (select 1 from marketplace.booking_master_services ms
@@ -89,8 +110,10 @@ public class BookingCatalogController {
                             where ms.service_id = s.id and m.venue_id = v.id and m.active
                             and (strpos(lower(m.name), lower(?)) > 0 or strpos(lower(m.bio), lower(?)) > 0))))
                 order by v.sort_order, v.id limit ? offset ?
-                """, BookingCatalogController::mapVenue, direction, direction, query, query, query, query, query, query,
-                limit, offset);
+                """, BookingCatalogController::mapVenue, district.strip(), organization.strip(),
+                direction, direction, service.strip(), minPriceMinor, maxPriceMinor, specialist.strip(), specialty.strip(),
+                specialist.strip(), specialist.strip(), specialty.strip(), specialty.strip(),
+                query, query, query, query, query, query, limit, offset);
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(venues);
     }
 

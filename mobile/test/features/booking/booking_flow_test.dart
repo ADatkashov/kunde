@@ -352,7 +352,46 @@ void main() {
     await tester.testTextInput.receiveAction(TextInputAction.search);
     await tester.pumpAndSettle();
     expect(backend.lastHealthSearch?.queryParameters['q'], 'Контур');
-    expect(find.text('ДЕМО · Контур'), findsOneWidget);
+    final result = find.text('ДЕМО · Контур');
+    await tester.scrollUntilVisible(result, 200,
+        scrollable: find.byType(Scrollable).first);
+    expect(result.hitTestable(), findsOneWidget);
+  });
+
+  testWidgets('Health filter sheet applies and resets server parameters',
+      (tester) async {
+    final backend = _FakeBackend();
+    await _show(tester, HealthHomeScreen(services: await _services(backend)));
+
+    final filters = find.byTooltip('Фильтры');
+    await tester.tap(filters);
+    await tester.pumpAndSettle();
+    final district = find.widgetWithText(TextFormField, 'Район');
+    await tester.enterText(district, 'Бостандыкский');
+    final minPrice = find.widgetWithText(TextFormField, 'Цена от, ₸');
+    await tester.ensureVisible(minPrice);
+    await tester.enterText(minPrice, '8500');
+    final apply = find.text('Применить');
+    await tester.ensureVisible(apply);
+    await tester.pumpAndSettle();
+    await tester.tap(apply);
+    await tester.pumpAndSettle();
+    expect(
+        backend.lastHealthSearch?.queryParameters['district'], 'Бостандыкский');
+    expect(
+        backend.lastHealthSearch?.queryParameters['minPriceMinor'], '850000');
+
+    await tester.tap(filters);
+    await tester.pumpAndSettle();
+    final reset = find.text('Сбросить');
+    await tester.ensureVisible(reset);
+    await tester.pumpAndSettle();
+    await tester.tap(reset);
+    await tester.pumpAndSettle();
+    expect(
+        backend.lastHealthSearch?.queryParameters, isNot(contains('district')));
+    expect(backend.lastHealthSearch?.queryParameters,
+        isNot(contains('minPriceMinor')));
   });
 
   testWidgets('Health favorites persist when the favorites screen reopens',

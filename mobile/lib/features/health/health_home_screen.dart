@@ -22,6 +22,7 @@ class _HealthHomeScreenState extends State<HealthHomeScreen> {
   static const _pageSize = 20;
   final _search = TextEditingController();
   String _direction = '';
+  Map<String, String> _filters = const {};
   int _offset = 0;
   late Future<List<BookingVenue>> _venues = _load();
 
@@ -30,12 +31,26 @@ class _HealthHomeScreenState extends State<HealthHomeScreen> {
         direction: _direction,
         limit: _pageSize,
         offset: _offset,
+        filters: _filters,
       );
 
   void _refresh([int offset = 0]) => setState(() {
         _offset = offset;
         _venues = _load();
       });
+
+  Future<void> _showFilters() async {
+    final filters = await showModalBottomSheet<Map<String, String>>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (_) => _HealthFiltersSheet(filters: _filters),
+    );
+    if (!mounted || filters == null) return;
+    _filters = filters;
+    _refresh();
+  }
 
   @override
   void dispose() {
@@ -115,6 +130,11 @@ class _HealthHomeScreenState extends State<HealthHomeScreen> {
                 ),
               ),
             ),
+          IconButton(
+            icon: const Icon(Icons.tune),
+            onPressed: _showFilters,
+            tooltip: s.healthText('Фильтры', 'Сүзгілер', 'Filters'),
+          ),
         ],
       ),
       body: Center(
@@ -339,6 +359,149 @@ class _HealthHomeScreenState extends State<HealthHomeScreen> {
                     ],
                   );
                 },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HealthFiltersSheet extends StatefulWidget {
+  const _HealthFiltersSheet({required this.filters});
+
+  final Map<String, String> filters;
+
+  @override
+  State<_HealthFiltersSheet> createState() => _HealthFiltersSheetState();
+}
+
+class _HealthFiltersSheetState extends State<_HealthFiltersSheet> {
+  static const _priceKeys = ['minPriceMinor', 'maxPriceMinor'];
+  final _form = GlobalKey<FormState>();
+  late final _fields = {
+    for (final key in [
+      'district',
+      'organization',
+      'service',
+      'specialist',
+      'specialty',
+      ..._priceKeys,
+    ])
+      key: TextEditingController(
+        text: _priceKeys.contains(key) && widget.filters.containsKey(key)
+            ? (int.parse(widget.filters[key]!) ~/ 100).toString()
+            : widget.filters[key],
+      ),
+  };
+
+  @override
+  void dispose() {
+    for (final controller in _fields.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  void _apply() {
+    if (!_form.currentState!.validate()) return;
+    Navigator.pop(context, {
+      for (final entry in _fields.entries)
+        if (entry.value.text.trim().isNotEmpty)
+          entry.key: _priceKeys.contains(entry.key)
+              ? (int.parse(entry.value.text.trim()) * 100).toString()
+              : entry.value.text.trim(),
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = bkL10n(context);
+    final labels = {
+      'district': s.healthText('Район', 'Аудан', 'District'),
+      'organization': s.healthText('Организация', 'Ұйым', 'Organization'),
+      'service': s.healthText('Услуга', 'Қызмет', 'Service'),
+      'specialist': s.healthText('Специалист', 'Маман', 'Specialist'),
+      'specialty': s.healthText('Специальность', 'Мамандық', 'Specialty'),
+      'minPriceMinor': s.healthText(
+        'Цена от, ₸',
+        'Ең төменгі баға, ₸',
+        'Min price, ₸',
+      ),
+      'maxPriceMinor': s.healthText(
+        'Цена до, ₸',
+        'Ең жоғары баға, ₸',
+        'Max price, ₸',
+      ),
+    };
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          24,
+          0,
+          24,
+          24 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: Form(
+          key: _form,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                s.healthText('Фильтры', 'Сүзгілер', 'Filters'),
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              for (final entry in labels.entries)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: TextFormField(
+                    controller: _fields[entry.key],
+                    maxLength: _priceKeys.contains(entry.key) ? 12 : 100,
+                    keyboardType: _priceKeys.contains(entry.key)
+                        ? TextInputType.number
+                        : TextInputType.text,
+                    decoration: InputDecoration(
+                      labelText: entry.value,
+                      counterText: '',
+                    ),
+                    validator: (input) {
+                      final value = input!.trim();
+                      if (!_priceKeys.contains(entry.key) || value.isEmpty) {
+                        return null;
+                      }
+                      if (!RegExp(r'^\d{1,12}$').hasMatch(value)) {
+                        return s.healthText(
+                          'Введите целую сумму в тенге',
+                          'Теңгемен бүтін соманы енгізіңіз',
+                          'Enter a whole amount in tenge',
+                        );
+                      }
+                      final min = int.tryParse(
+                        _fields['minPriceMinor']!.text.trim(),
+                      );
+                      if (entry.key == 'maxPriceMinor' &&
+                          min != null &&
+                          min > int.parse(value)) {
+                        return s.healthText(
+                          'Укажите сумму не ниже минимальной',
+                          'Ең төменгі бағадан кем емес соманы енгізіңіз',
+                          'Enter an amount at least as high as the minimum',
+                        );
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: _apply,
+                child: Text(s.healthText('Применить', 'Қолдану', 'Apply')),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, <String, String>{}),
+                child: Text(s.healthText('Сбросить', 'Тазарту', 'Reset')),
               ),
             ],
           ),

@@ -143,6 +143,33 @@ class BookingApiIntegrationTest {
     }
 
     @Test
+    void healthCatalogCombinesFiltersOnTheSameAvailableService() throws Exception {
+        try (var in = new ClassPathResource("health/demo-venues.json").getInputStream()) {
+            new BookingDemoSeeder(db).seed(new ObjectMapper().readTree(in));
+        }
+        var path = "/api/v1/booking/health/venues";
+        http.perform(get(path)
+                .param("district", "бостандыкский")
+                .param("organization", "контур")
+                .param("service", "приём")
+                .param("specialist", "м-01")
+                .param("specialty", "терапевт")
+                .param("minPriceMinor", "850000")
+                .param("maxPriceMinor", "850000"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].slug").value("health-demo-clinic"));
+        http.perform(get(path)
+                .param("organization", "контур")
+                .param("service", "приём")
+                .param("minPriceMinor", "1200000"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+        http.perform(get(path).param("minPriceMinor", "2").param("maxPriceMinor", "1"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("HEALTH_PRICE_RANGE_INVALID"));
+    }
+
+    @Test
     void healthCatalogAndSyntheticBookingKeepPriceAndPaymentConsistent() throws Exception {
         try (var in = new ClassPathResource("health/demo-venues.json").getInputStream()) {
             assertThat(new BookingDemoSeeder(db).seed(new ObjectMapper().readTree(in))).isEqualTo(6);
