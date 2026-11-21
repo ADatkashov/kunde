@@ -324,6 +324,8 @@ class _SearchTabState extends State<SearchTab> {
                                   MaterialPageRoute<void>(
                                     builder: (_) => ServicesHomeScreen(
                                       services: widget.booking!,
+                                      homeServicesEnabled:
+                                          state.data?.homeServicesEnabled == true,
                                     ),
                                   ),
                                 )

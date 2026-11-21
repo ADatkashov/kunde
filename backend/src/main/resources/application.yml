@@ -69,6 +69,8 @@ app:
     enabled: ${FOOD_ENABLED:false}
     seed-demo: ${FOOD_SEED_DEMO:false}
   # Service booking (barbershops) DEV pilot: DEV mock confirmation; forbidden outside dev/local/test (BookingGuard).
+  home-services:
+    enabled: ${HOME_SERVICES_ENABLED:false}
   booking:
     enabled: ${BOOKING_ENABLED:false}
     seed-demo: ${BOOKING_SEED_DEMO:false}

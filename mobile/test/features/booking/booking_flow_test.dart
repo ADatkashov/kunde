@@ -331,6 +331,7 @@ void main() {
       'aiEnabled': false
     };
     expect(PlatformSnapshot.fromJson(base).bookingEnabled, isFalse);
+    expect(PlatformSnapshot.fromJson(base).homeServicesEnabled, isFalse);
     expect(
         PlatformSnapshot.fromJson({...base, 'bookingEnabled': true})
             .bookingEnabled,
@@ -546,7 +547,7 @@ void main() {
     await _show(tester, HomeServicesCategoryScreen(services: services));
     expect(find.text('Уборка'), findsOneWidget);
     expect(find.text('Барбершопы'), findsNothing);
-    await _show(tester, ServicesHomeScreen(services: services));
+    await _show(tester, ServicesHomeScreen(services: services, homeServicesEnabled: true));
     expect(find.text('Красота'), findsOneWidget);
     expect(find.text('Дом и быт'), findsOneWidget);
     expect(find.text('Барбершопы'), findsOneWidget);
@@ -622,6 +623,7 @@ void main() {
               'oidcIssuerConfigured': false,
               'aiEnabled': false,
               'bookingEnabled': true,
+              'homeServicesEnabled': true,
             }),
             200)));
     tester.view.physicalSize = const Size(1080, 2400);
