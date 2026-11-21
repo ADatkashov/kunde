@@ -22,7 +22,7 @@ public class WebConfig implements WebMvcConfigurer {
         // Register even an empty allowlist: preflight must fail closed explicitly.
         registry.addMapping("/api/**").allowedOrigins(allowedOrigins.toArray(String[]::new))
                     .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                    .exposedHeaders("Retry-After", "X-Correlation-ID")
+                    .exposedHeaders("Retry-After", "X-Correlation-ID", "X-Total-Count")
                     .allowedHeaders("Content-Type", "Authorization", "X-Correlation-ID");
     }
 

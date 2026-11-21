@@ -89,7 +89,7 @@ public class BookingCatalogController {
                     "minPriceMinor must not exceed maxPriceMinor");
         }
         String query = q.strip();
-        List<Venue> venues = jdbc.query(VENUE_SELECT + """
+        String filters = """
                 where v.category = 'HEALTH' and v.is_open and v.is_synthetic and v.health_published
                 and strpos(lower(coalesce(v.address_text, '')), lower(?)) > 0
                 and strpos(lower(v.name), lower(?)) > 0
@@ -109,12 +109,40 @@ public class BookingCatalogController {
                             join marketplace.booking_masters m on m.id = ms.master_id
                             where ms.service_id = s.id and m.venue_id = v.id and m.active
                             and (strpos(lower(m.name), lower(?)) > 0 or strpos(lower(m.bio), lower(?)) > 0))))
-                order by v.sort_order, v.id limit ? offset ?
-                """, BookingCatalogController::mapVenue, district.strip(), organization.strip(),
-                direction, direction, service.strip(), minPriceMinor, maxPriceMinor, specialist.strip(), specialty.strip(),
-                specialist.strip(), specialist.strip(), specialty.strip(), specialty.strip(),
-                query, query, query, query, query, query, limit, offset);
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(venues);
+                """;
+        Object[] parameters = {
+            district.strip(), organization.strip(), direction, direction, service.strip(), minPriceMinor, maxPriceMinor,
+            specialist.strip(), specialty.strip(), specialist.strip(), specialist.strip(), specialty.strip(), specialty.strip(),
+            query, query, query, query, query, query, limit, offset
+        };
+        // Both the page and total come from one statement snapshot, even when the offset exceeds the result size.
+        String pageQuery = """
+                with matching as materialized (
+                    select v.id, v.sort_order from marketplace.booking_venues v
+                """ + filters + """
+                ), page as (
+                    select id, sort_order from matching order by sort_order, id limit ? offset ?
+                ), total as (select count(*) as count from matching)
+                select total.count, venues.* from total
+                left join page on true
+                left join lateral (
+                """ + VENUE_SELECT + """
+                    where v.id = page.id
+                ) venues on true
+                order by page.sort_order, page.id
+                """;
+        return jdbc.query(pageQuery, rs -> {
+            rs.next();
+            long total = rs.getLong("count");
+            List<Venue> venues = new ArrayList<>();
+            do {
+                if (rs.getString("id") != null) {
+                    venues.add(mapVenue(rs, venues.size()));
+                }
+            } while (rs.next());
+            return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                    .header("X-Total-Count", Long.toString(total)).body(venues);
+        }, parameters);
     }
 
     @GetMapping("/venues/{venueId}")
