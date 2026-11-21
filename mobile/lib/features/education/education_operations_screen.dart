@@ -31,7 +31,12 @@ class _EducationOperationsState extends State<EducationOperationsScreen> {
         .cast<Map<String, dynamic>>();
   }
 
-  void _reload() => setState(() => _rows = _load());
+  void _reload() {
+    final rows = _load();
+    setState(() {
+      _rows = rows;
+    });
+  }
 
   Future<void> _decision(String id, String decision) async {
     final reason = await showDialog<String>(

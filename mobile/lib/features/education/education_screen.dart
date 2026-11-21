@@ -281,7 +281,12 @@ class _CourseDetailState extends State<_CourseDetail> {
             final data = snapshot.data;
             if (data == null) {
               return Center(
-                child: _Retry(onRetry: () => setState(() => _result = _load())),
+                child: _Retry(onRetry: () {
+                  final result = _load();
+                  setState(() {
+                    _result = result;
+                  });
+                }),
               );
             }
             return ListView(
