@@ -152,80 +152,83 @@ class _EducationOperationsState extends State<EducationOperationsScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: Text(
-        widget.admin
-            ? educationLabel(
-                context,
-                'Модерация курсов',
-                'Курстарды модерациялау',
-                'Course moderation',
-              )
-            : _session == null
-            ? educationLabel(context, 'Мои занятия', 'Сабақтарым', 'My classes')
-            : educationLabel(context, 'Посещаемость', 'Қатысу', 'Attendance'),
-      ),
-      actions: [
-        if (widget.admin)
-          IconButton(
-            tooltip: educationLabel(
-              context,
-              'Отозвать сертификат',
-              'Сертификатты қайтару',
-              'Revoke certificate',
-            ),
-            icon: const Icon(Icons.remove_moderator_outlined),
-            onPressed: _busy ? null : _revokeCertificate,
+        appBar: AppBar(
+          title: Text(
+            widget.admin
+                ? educationLabel(
+                    context,
+                    'Модерация курсов',
+                    'Курстарды модерациялау',
+                    'Course moderation',
+                  )
+                : _session == null
+                    ? educationLabel(
+                        context, 'Мои занятия', 'Сабақтарым', 'My classes')
+                    : educationLabel(
+                        context, 'Посещаемость', 'Қатысу', 'Attendance'),
           ),
-        if (_session != null)
-          IconButton(
-            tooltip: educationLabel(
-              context,
-              'К занятиям',
-              'Сабақтарға',
-              'Back to classes',
-            ),
-            icon: const Icon(Icons.calendar_month_outlined),
-            onPressed: _busy
-                ? null
-                : () {
-                    _session = null;
-                    _reload();
-                  },
-          ),
-      ],
-    ),
-    body: FutureBuilder<List<Map<String, dynamic>>>(
-      future: _rows,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final data = snapshot.data;
-        if (data == null) {
-          return Center(
-            child: TextButton(
-              onPressed: _reload,
-              child: Text(
-                educationLabel(context, 'Повторить', 'Қайталау', 'Retry'),
+          actions: [
+            if (widget.admin)
+              IconButton(
+                tooltip: educationLabel(
+                  context,
+                  'Отозвать сертификат',
+                  'Сертификатты қайтару',
+                  'Revoke certificate',
+                ),
+                icon: const Icon(Icons.remove_moderator_outlined),
+                onPressed: _busy ? null : _revokeCertificate,
               ),
-            ),
-          );
-        }
-        if (data.isEmpty) {
-          return Center(
-            child: Text(
-              educationLabel(context, 'Список пуст', 'Тізім бос', 'No items'),
-            ),
-          );
-        }
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [for (final row in data) _row(row)],
-        );
-      },
-    ),
-  );
+            if (_session != null)
+              IconButton(
+                tooltip: educationLabel(
+                  context,
+                  'К занятиям',
+                  'Сабақтарға',
+                  'Back to classes',
+                ),
+                icon: const Icon(Icons.calendar_month_outlined),
+                onPressed: _busy
+                    ? null
+                    : () {
+                        _session = null;
+                        _reload();
+                      },
+              ),
+          ],
+        ),
+        body: FutureBuilder<List<Map<String, dynamic>>>(
+          future: _rows,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final data = snapshot.data;
+            if (data == null) {
+              return Center(
+                child: TextButton(
+                  onPressed: _reload,
+                  child: Text(
+                    educationLabel(context, 'Повторить', 'Қайталау', 'Retry'),
+                  ),
+                ),
+              );
+            }
+            if (data.isEmpty) {
+              return Center(
+                child: Text(
+                  educationLabel(
+                      context, 'Список пуст', 'Тізім бос', 'No items'),
+                ),
+              );
+            }
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [for (final row in data) _row(row)],
+            );
+          },
+        ),
+      );
 
   Widget _row(Map<String, dynamic> row) {
     final id = row['id'] as String;
@@ -331,10 +334,10 @@ class _EducationOperationsState extends State<EducationOperationsScreen> {
                           onSelected: _busy
                               ? null
                               : (_) => _save(
-                                  'PUT',
-                                  '$_root/$_session/roster/$id',
-                                  {'status': code},
-                                ),
+                                    'PUT',
+                                    '$_root/$_session/roster/$id',
+                                    {'status': code},
+                                  ),
                         ),
                       ),
                   ],
