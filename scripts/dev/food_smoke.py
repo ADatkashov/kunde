@@ -105,6 +105,42 @@ call("POST", "/api/v1/food/cart/quote", {"restaurantId": market["id"], "items": 
 call("POST", "/api/v1/food/cart/quote", {"restaurantId": market["id"], "items": [
     {"dishId": bread["id"], "quantity": 20, "optionIds": [], "substitution": "CHOSEN", "substituteDishIds": [alts[0]["id"]]}]}, token=token)
 
+# Food 2.0: server-side filters, promotions, pickup with a promo code, favorites and categories.
+cats = call("GET", "/api/v1/food/categories")
+assert cats and all("cuisine" in c for c in cats), cats
+open_only = call("GET", "/api/v1/food/restaurants?openNow=true&sort=delivery_fee")
+assert open_only and all(r["open"] for r in open_only), "openNow filter must return only open restaurants"
+fees = [r["deliveryFeeMinor"] for r in open_only]
+assert fees == sorted(fees), "sort=delivery_fee must be ascending"
+call("GET", "/api/v1/food/restaurants?sort=distance", expect=400)
+promos = call("GET", "/api/v1/food/promotions")
+welcome = next((p for p in promos if p.get("code") == "WELCOME10"), None)
+p_cart = dict(cart, fulfillmentType="PICKUP")
+p_quote = call("POST", "/api/v1/food/cart/quote", p_cart, token=token)
+assert p_quote["deliveryFeeMinor"] == 0 and p_quote["fulfillmentType"] == "PICKUP", p_quote
+call("POST", "/api/v1/food/cart/quote", dict(p_cart, promoCode="NO-SUCH-CODE"), token=token, expect=422)
+if welcome:
+    d_quote = call("POST", "/api/v1/food/cart/quote", dict(p_cart, promoCode="welcome10"), token=token, expect=[200, 422])
+    if d_quote and "discountMinor" in d_quote and d_quote.get("promoCode"):
+        assert d_quote["discountMinor"] == d_quote["subtotalMinor"] // 10, d_quote
+        assert d_quote["totalMinor"] == d_quote["subtotalMinor"] - d_quote["discountMinor"], d_quote
+pickup_req = dict(p_cart, paymentMethod="CASH_ON_DELIVERY", expectedTotalMinor=p_quote["totalMinor"])
+pickup = call("POST", "/api/v1/food/orders", pickup_req, token=token,
+              headers={"Idempotency-Key": "smoke-" + uuid.uuid4().hex}, expect=201)
+assert pickup["fulfillmentType"] == "PICKUP" and pickup["deliveryFeeMinor"] == 0 and pickup["addressLabel"] == "Самовывоз", pickup
+call("POST", "/api/v1/food/orders", dict(pickup_req, expectedTotalMinor=1), token=token,
+     headers={"Idempotency-Key": "smoke-" + uuid.uuid4().hex}, expect=409)
+call("POST", "/api/v1/food/orders/" + pickup["id"] + "/review", {"rating": 5}, token=token, expect=409)  # not delivered yet
+call("POST", "/api/v1/food/orders/" + pickup["id"] + "/cancel", token=token, expect=[200, 409])
+call("GET", "/api/v1/food/favorites", expect=401)
+call("PUT", "/api/v1/food/favorites/" + pick["id"], token=token)
+favs = call("GET", "/api/v1/food/favorites", token=token)
+assert any(r["id"] == pick["id"] for r in favs), "favorite not stored"
+call("DELETE", "/api/v1/food/favorites/" + pick["id"], token=token)
+reviews = call("GET", "/api/v1/food/restaurants/" + pick["id"] + "/reviews")
+assert "count" in reviews and "distribution" in reviews, reviews
+call("GET", "/api/v1/admin/food/summary", token=token, expect=403)
+
 # Re-open: the app restores its session from the stored refresh token and still sees the persisted order.
 token2 = call("POST", "/api/v1/auth/token/refresh", {"refreshToken": session["refreshToken"]})["accessToken"]
 history2 = call("GET", "/api/v1/food/orders", token=token2)
