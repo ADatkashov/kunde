@@ -1,5 +1,11 @@
 # Следующие проверки
 
+## KUNDE Groceries 1.0
+
+1. Merge V44 после зелёного CI, затем DEV deploy (`kunde-backend-ty81`), `scripts/dev/food_smoke.py` и проверка `/groceries/*` на DEV.
+2. Partner: редактирование бренда/КБЖУ/цены «до скидки»; Admin-экран Groceries; Executor-проверка; Android E2E и подписанные APK.
+3. Команды: `cd backend && mvn test -Dtest='Groceries*'`; `cd mobile && flutter test test/features/groceries`.
+
 ## KUNDE Food 2.0
 
 1. DEV на `fd1fbb6` (V43) проверен смоуком; осталось выдать `FOOD_OPERATIONS` синтетическому сотруднику и вручную проверить Admin-экран.
