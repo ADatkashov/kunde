@@ -3,13 +3,16 @@ package kz.kunde.admin;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import java.util.UUID;
+import kz.kunde.booking.BookingDemoSeeder;
 import kz.kunde.platform.FeatureToggles;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
@@ -34,7 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
         "app.auth.phone.secret=synthetic-test-secret-synthetic-test-secret",
         "app.auth.phone.dev-otp.enabled=true",
         "app.auth.phone.dev-otp.skip-throttle=true",
-        "app.auth.phone.dev-otp.allowed-phones=+77000000801,+77000000802,+77000000803",
+        "app.auth.phone.dev-otp.allowed-phones=+77000000801,+77000000802,+77000000803,+77000000804",
         "app.security.rate-limit.requests=100000",
         "app.security.authenticated-rate-limit.requests=100000"
 })
@@ -52,6 +56,7 @@ class FeatureTogglesApiIntegrationTest {
         var request = (switch (method) {
             case "GET" -> get(path);
             case "PUT" -> put(path);
+            case "PATCH" -> patch(path);
             default -> post(path);
         }).contentType(MediaType.APPLICATION_JSON);
         if (json != null) { request.content(json); }
@@ -102,6 +107,33 @@ class FeatureTogglesApiIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.healthEnabled").value(false));
         send("GET", "/api/v1/booking/health/venues", null, null).andExpect(status().isNotFound());
         send("GET", "/api/v1/booking/bookings?healthOnly=true", consumer, null).andExpect(status().isOk());
+    }
+
+    @Test
+    void healthOperatorCanModerateWithAuditButCannotSwitchIntake() throws Exception {
+        try (var in = new ClassPathResource("health/demo-venues.json").getInputStream()) {
+            new BookingDemoSeeder(db).seed(new ObjectMapper().readTree(in));
+        }
+        UUID venueId = db.queryForObject(
+                "select id from marketplace.booking_venues where slug = 'health-demo-clinic'", UUID.class);
+        String session = loginBody("+77000000804");
+        String operator = adminWith(session, "HEALTH_OPERATIONS");
+        String moderation = "/api/v1/admin/health/venues/" + venueId;
+        String hide = "{\"published\":false}";
+
+        send("GET", "/api/v1/admin/health", operator, null).andExpect(status().isOk());
+        send("PATCH", moderation, otherAdmin, hide).andExpect(status().isForbidden());
+        send("PUT", "/api/v1/admin/features/HEALTH", operator,
+                "{\"enabled\":false,\"reason\":\"insufficient scope\"}").andExpect(status().isForbidden());
+        send("GET", "/api/v1/booking/venues/" + venueId, null, null).andExpect(status().isOk());
+        send("PATCH", moderation, operator, hide).andExpect(status().isNoContent());
+        send("PATCH", moderation, operator, hide).andExpect(status().isNoContent());
+        send("GET", "/api/v1/booking/venues/" + venueId, null, null).andExpect(status().isNotFound());
+
+        assertThat(db.queryForList("""
+                select admin_user_id from marketplace.health_moderation_events
+                where venue_id = ? and not published
+                """, UUID.class, venueId)).containsExactly(subject(session));
     }
 
     @Test
