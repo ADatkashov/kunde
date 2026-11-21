@@ -1,6 +1,7 @@
 package kz.kunde.food;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -84,6 +85,7 @@ class FoodPartnerAdminApiIntegrationTest {
         var request = switch (method) {
             case "GET" -> get(path);
             case "PATCH" -> patch(path);
+            case "DELETE" -> delete(path);
             default -> post(path);
         };
         request.contentType(MediaType.APPLICATION_JSON);
@@ -261,5 +263,119 @@ class FoodPartnerAdminApiIntegrationTest {
         send("GET", a + "/restaurants", admin, null).andExpect(status().isOk());
         send("GET", a + "/reviews", admin, null).andExpect(status().isOk());
         send("GET", a + "/promotions", admin, null).andExpect(status().isOk());
+    }
+
+    @Test
+    void partnerManagesGroceryProductFieldsPhotosAndWeighedProducts() throws Exception {
+        String dish = db.queryForObject("select id from marketplace.food_dishes where restaurant_id = ? limit 1", String.class, restaurant);
+        String section = db.queryForObject("select section_id from marketplace.food_dishes where id = ?::uuid", String.class, dish);
+        String path = base() + "/restaurants/" + restaurant + "/dishes/" + dish;
+        long price = db.queryForObject("select price_minor from marketplace.food_dishes where id = ?::uuid", Long.class, dish);
+
+        // Category must exist; the price before a discount must be above the price; nutrition is bounded.
+        send("PATCH", path + "/product", owner, "{\"groceryCategory\":\"nope\"}").andExpect(status().isBadRequest());
+        send("PATCH", path + "/product", owner, "{\"compareAtPriceMinor\":" + price + "}").andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("COMPARE_PRICE_INVALID"));
+        send("PATCH", path + "/product", owner, "{\"protein\":101}").andExpect(status().isBadRequest());
+        String saved = body(send("PATCH", path + "/product", owner,
+                "{\"groceryCategory\":\"dairy\",\"brand\":\" Жайлау \",\"originCountry\":\"Казахстан\",\"composition\":\"Молоко\","
+                        + "\"storageConditions\":\"+2…+6 °C\",\"kcal\":52,\"protein\":2.8,\"fat\":2.5,\"carbs\":4.7,\"compareAtPriceMinor\":" + (price + 1000) + "}")
+                .andExpect(status().isOk()));
+        assertThat((String) JsonPath.read(saved, "$.brand")).isEqualTo("Жайлау");
+        assertThat((Integer) JsonPath.read(saved, "$.kcal")).isEqualTo(52);
+        assertThat(db.queryForObject("select grocery_category from marketplace.food_dishes where id = ?::uuid", String.class, dish)).isEqualTo("dairy");
+        assertThat(db.queryForObject("select compare_at_price_minor from marketplace.food_dishes where id = ?::uuid", Long.class, dish)).isEqualTo(price + 1000);
+        // Raising the price to the old price is refused by the same rule on a later edit of the discount.
+        send("PATCH", path + "/product", owner, "{\"clearCompareAt\":true,\"clearCategory\":true,\"brand\":\"\"}").andExpect(status().isOk());
+        assertThat(db.queryForObject("select compare_at_price_minor from marketplace.food_dishes where id = ?::uuid", Long.class, dish)).isNull();
+        assertThat(db.queryForObject("select brand from marketplace.food_dishes where id = ?::uuid", String.class, dish)).isNull();
+        assertThat(db.queryForObject("select count(*) from marketplace.partner_catalog_events where entity_id = ?::uuid and field in ('category','brand','compareAt')",
+                Integer.class, dish)).isGreaterThanOrEqualTo(3);
+
+        // Photos: HTTPS only, at most six, the first is the cover, removal moves the cover on.
+        send("POST", path + "/photos", owner, "{\"url\":\"http://example.test/a.jpg\"}").andExpect(status().isBadRequest());
+        String first = body(send("POST", path + "/photos", owner, "{\"url\":\"https://img.example.test/a.jpg\"}").andExpect(status().isCreated()));
+        send("POST", path + "/photos", owner, "{\"url\":\"https://img.example.test/b.jpg\"}").andExpect(status().isCreated());
+        assertThat(db.queryForObject("select image_url from marketplace.food_dishes where id = ?::uuid", String.class, dish)).isEqualTo("https://img.example.test/a.jpg");
+        String photoId = JsonPath.read(first, "$.photos[0].id");
+        send("DELETE", path + "/photos/" + photoId, owner, null).andExpect(status().isOk());
+        assertThat(db.queryForObject("select image_url from marketplace.food_dishes where id = ?::uuid", String.class, dish)).isEqualTo("https://img.example.test/b.jpg");
+        for (int i = 0; i < 5; i++) { send("POST", path + "/photos", owner, "{\"url\":\"https://img.example.test/p" + i + ".jpg\"}").andExpect(status().isCreated()); }
+        send("POST", path + "/photos", owner, "{\"url\":\"https://img.example.test/extra.jpg\"}").andExpect(status().isConflict());
+        send("DELETE", path + "/photos/" + UUID.randomUUID(), owner, null).andExpect(status().isNotFound());
+
+        // Tenant isolation: another partner can neither read nor change this store's products.
+        send("PATCH", path + "/product", otherOwner, "{\"brand\":\"x\"}").andExpect(status().is4xxClientError());
+        send("POST", path + "/photos", otherOwner, "{\"url\":\"https://img.example.test/z.jpg\"}").andExpect(status().is4xxClientError());
+
+        // A weighed product: price per kg, stock in grams.
+        String kg = body(send("POST", base() + "/restaurants/" + restaurant + "/dishes", owner,
+                "{\"sectionId\":\"" + section + "\",\"name\":\"Яблоки тест\",\"priceMinor\":59000,\"unit\":\"KG\"}").andExpect(status().isCreated()));
+        assertThat((String) JsonPath.read(kg, "$.unit")).isEqualTo("KG");
+        send("POST", base() + "/restaurants/" + restaurant + "/dishes", owner,
+                "{\"sectionId\":\"" + section + "\",\"name\":\"Плохая единица\",\"priceMinor\":100,\"unit\":\"LITER\"}").andExpect(status().isBadRequest());
+    }
+
+    private String placeGrocery(String key, String... lines) throws Exception {
+        String json = "{\"restaurantId\":\"" + restaurant + "\",\"items\":[" + String.join(",", lines) + "],\"addressId\":\"" + address(customer)
+                + "\",\"paymentMethod\":\"TEST_CARD\"}";
+        var request = post("/api/v1/food/orders").contentType(MediaType.APPLICATION_JSON).content(json)
+                .header("Authorization", "Bearer " + customer).header("Idempotency-Key", key);
+        return body(http.perform(request).andExpect(status().isCreated()));
+    }
+
+    private static String line(String dish, String policy) {
+        return "{\"dishId\":\"" + dish + "\",\"quantity\":1,\"optionIds\":[],\"substitution\":\"" + policy + "\",\"substituteDishIds\":[]}";
+    }
+
+    @Test
+    void groceryPickingNeedsEveryLineDecidedAndTheCustomersAnswerToAProposal() throws Exception {
+        db.update("update marketplace.food_restaurants set vertical = 'GROCERY' where id = ?", restaurant);
+        List<String> dishes = db.queryForList("select id::text from marketplace.food_dishes d where d.restaurant_id = ? and d.available and d.unit = 'PIECE' "
+                + "and not exists (select 1 from marketplace.food_option_groups g where g.dish_id = d.id and g.min_select > 0) order by d.name limit 3", String.class, restaurant);
+        String d1 = dishes.get(0), d2 = dishes.get(1), d3 = dishes.get(2);
+        long p1 = db.queryForObject("select price_minor from marketplace.food_dishes where id = ?::uuid", Long.class, d1);
+        long p3 = db.queryForObject("select price_minor from marketplace.food_dishes where id = ?::uuid", Long.class, d3);
+
+        String order = placeGrocery("grocery-pick-0000001", line(d1, "NONE"), line(d2, "NONE"));
+        String id = JsonPath.read(order, "$.id");
+        assertThat(move(owner, id, "ACCEPTED").andReturn().getResponse().getStatus()).isEqualTo(200);
+        String preparing = body(move(owner, id, "PREPARING").andExpect(status().isOk()));
+        // Interactive picking: nothing is decided automatically, the order cannot leave the store yet.
+        assertThat((List<String>) JsonPath.read(preparing, "$.order.items[*].fulfillmentStatus")).containsOnly("PENDING");
+        move(owner, id, "ON_THE_WAY").andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("PICKING_INCOMPLETE"));
+        String item1 = JsonPath.read(preparing, "$.order.items[0].itemId");
+        String item2 = JsonPath.read(preparing, "$.order.items[1].itemId");
+        String pick = base() + "/orders/" + id + "/items/";
+
+        send("POST", pick + item1 + "/pick", otherOwner, "{\"action\":\"PICKED\"}").andExpect(status().is4xxClientError());
+        send("POST", pick + item1 + "/pick", owner, "{\"action\":\"DANCE\"}").andExpect(status().isBadRequest());
+        send("POST", pick + item1 + "/pick", owner, "{\"action\":\"PICKED\"}").andExpect(status().isOk());
+        send("POST", pick + item1 + "/pick", owner, "{\"action\":\"MISSING\"}").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("ITEM_ALREADY_DECIDED"));
+        send("POST", pick + item2 + "/pick", owner, "{\"action\":\"REPLACE\"}").andExpect(status().isBadRequest());
+        // The customer did not pre-approve replacements (policy NONE): it becomes a proposal.
+        String proposed = body(send("POST", pick + item2 + "/pick", owner, "{\"action\":\"REPLACE\",\"replacementDishId\":\"" + d3 + "\"}").andExpect(status().isOk()));
+        assertThat((List<String>) JsonPath.read(proposed, "$.order.items[?(@.itemId=='" + item2 + "')].fulfillmentStatus")).containsExactly("PROPOSED");
+        move(owner, id, "ON_THE_WAY").andExpect(status().isConflict());
+        // Only the customer who owns the order can answer.
+        send("POST", "/api/v1/food/orders/" + id + "/items/" + item2 + "/decision", owner, "{\"approve\":true}").andExpect(status().isNotFound());
+        String decided = body(send("POST", "/api/v1/food/orders/" + id + "/items/" + item2 + "/decision", customer, "{\"approve\":true}").andExpect(status().isOk()));
+        assertThat((List<String>) JsonPath.read(decided, "$.items[?(@.itemId=='" + item2 + "')].fulfillmentStatus")).containsExactly("SUBSTITUTED");
+        assertThat(((Number) JsonPath.read(decided, "$.finalTotalMinor")).longValue()).isEqualTo(p1 + p3 + 40000);
+        assertThat((Boolean) JsonPath.read(decided, "$.hasChanges")).isTrue();
+        send("POST", "/api/v1/food/orders/" + id + "/items/" + item2 + "/decision", customer, "{\"approve\":true}").andExpect(status().isConflict());
+        move(owner, id, "ON_THE_WAY").andExpect(status().isOk());
+
+        // Declining the proposal removes the line; with nothing left the order is cancelled by the system.
+        String second = placeGrocery("grocery-pick-0000002", line(d1, "NONE"));
+        String id2 = JsonPath.read(second, "$.id");
+        move(owner, id2, "ACCEPTED").andExpect(status().isOk());
+        String prep = body(move(owner, id2, "PREPARING").andExpect(status().isOk()));
+        String only = JsonPath.read(prep, "$.order.items[0].itemId");
+        send("POST", base() + "/orders/" + id2 + "/items/" + only + "/pick", owner, "{\"action\":\"REPLACE\",\"replacementDishId\":\"" + d3 + "\"}").andExpect(status().isOk());
+        String declined = body(send("POST", "/api/v1/food/orders/" + id2 + "/items/" + only + "/decision", customer, "{\"approve\":false}").andExpect(status().isOk()));
+        assertThat((String) JsonPath.read(declined, "$.status")).isEqualTo("CANCELLED");
+        assertThat((String) JsonPath.read(declined, "$.cancelReason")).isEqualTo("NO_ITEMS_AVAILABLE");
     }
 }

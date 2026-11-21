@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../food/data/food_models.dart';
 import '../../food/presentation/food_widgets.dart';
@@ -69,15 +69,18 @@ class _ProductScreenState extends State<ProductScreen> {
         return n >= g.minSelect && n <= g.maxSelect;
       });
 
+  /// Opens the system share sheet. Where no share target exists the text is shown in a dialog instead of failing silently.
   Future<void> _share(ProductDetail detail) async {
     final s = GStr.of(context);
     final p = detail.product;
     final text =
         '${p.name} — ${unitPriceLabel(p.unit, p.priceMinor)} · ${p.storeName} · KUNDE';
-    await Clipboard.setData(ClipboardData(text: text));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(s.linkCopied)));
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await SharePlus.instance.share(ShareParams(text: text, subject: p.name));
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(s.retry)));
+    }
   }
 
   @override
@@ -154,7 +157,7 @@ class _ProductScreenState extends State<ProductScreen> {
             flexibleSpace: FlexibleSpaceBar(
               background: Padding(
                 padding: const EdgeInsets.fromLTRB(40, 72, 40, 16),
-                child: _Gallery(product: p),
+                child: _Gallery(product: p, images: detail.images),
               ),
             ),
           ),
@@ -340,34 +343,61 @@ class _ProductScreenState extends State<ProductScreen> {
   }
 }
 
-/// Photo area. The catalog API gives one photo per product; with a single image there is nothing to swipe, so no
-/// page indicator is drawn. Without a photo the product tile (licensed illustration or emoji) is used.
-class _Gallery extends StatelessWidget {
-  const _Gallery({required this.product});
+/// Photo gallery: swipe between the store's photos with a page indicator and counter. Without a photo the product
+/// tile (licensed illustration or emoji) is shown, so a missing or failing image never breaks the layout.
+class _Gallery extends StatefulWidget {
+  const _Gallery({required this.product, required this.images});
 
   final GroceryProduct product;
+  final List<String> images;
+
+  @override
+  State<_Gallery> createState() => _GalleryState();
+}
+
+class _GalleryState extends State<_Gallery> {
+  int _page = 0;
 
   @override
   Widget build(BuildContext context) {
-    final images = <String>[if (product.imageUrl != null) product.imageUrl!];
-    if (images.length <= 1) {
-      return Center(
-        child: EmojiTile(
-            emoji: product.emoji,
-            tone: product.tone,
-            size: 220,
-            radius: 28,
-            imageUrl: images.firstOrNull),
-      );
-    }
-    return PageView(children: [
-      for (final url in images)
-        EmojiTile(
-            emoji: product.emoji,
-            tone: product.tone,
-            size: 220,
-            radius: 28,
-            imageUrl: url),
+    final product = widget.product;
+    final images = widget.images.isNotEmpty
+        ? widget.images
+        : [if (product.imageUrl != null) product.imageUrl!];
+    Widget tile(String? url) => Center(
+          child: EmojiTile(
+              emoji: product.emoji,
+              tone: product.tone,
+              size: 220,
+              radius: 28,
+              imageUrl: url),
+        );
+    if (images.length <= 1) return tile(images.firstOrNull);
+    return Column(children: [
+      Expanded(
+        child: PageView(
+          key: const Key('product-gallery'),
+          onPageChanged: (i) => setState(() => _page = i),
+          children: [for (final url in images) tile(url)],
+        ),
+      ),
+      const SizedBox(height: 6),
+      Semantics(
+        label: '${_page + 1}/${images.length}',
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          for (var i = 0; i < images.length; i++)
+            Container(
+              width: i == _page ? 18 : 7,
+              height: 7,
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              decoration: BoxDecoration(
+                  color: i == _page
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.outlineVariant,
+                  borderRadius: BorderRadius.circular(4)),
+            ),
+        ]),
+      ),
     ]);
   }
 }

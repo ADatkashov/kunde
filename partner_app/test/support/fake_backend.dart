@@ -41,7 +41,10 @@ Map<String, dynamic> orderEntry({
   DateTime? placedAt,
   bool withDeadline = true,
   String? cancelReason,
+  Map<String, String>? picks,
 }) {
+  String lineStatus(String item) =>
+      picks == null ? 'PENDING' : (picks[item] ?? 'PENDING');
   final placed =
       placedAt ?? DateTime.now().subtract(const Duration(minutes: 1));
   return {
@@ -61,12 +64,24 @@ Map<String, dynamic> orderEntry({
       'placedAt': placed.toUtc().toIso8601String(),
       'items': [
         {
+          'itemId': 'item-1',
+          'dishId': 'dish-1',
           'name': 'Лагман',
           'quantity': 2,
           'lineTotalMinor': 240000,
-          'optionsText': 'Острый'
+          'optionsText': 'Острый',
+          'unit': 'PIECE',
+          'fulfillmentStatus': lineStatus('item-1'),
         },
-        {'name': 'Чай', 'quantity': 1, 'lineTotalMinor': 120000},
+        {
+          'itemId': 'item-2',
+          'dishId': 'dish-2',
+          'name': 'Чай',
+          'quantity': 1,
+          'lineTotalMinor': 120000,
+          'unit': 'PIECE',
+          'fulfillmentStatus': lineStatus('item-2'),
+        },
       ],
       'timeline': [
         {
@@ -140,6 +155,7 @@ class FakeBackend {
   final List<(String, Map<String, dynamic>)> bodies = [];
   late List<Map<String, dynamic>> partners;
   List<Map<String, dynamic>> activeOrders = [orderEntry()];
+  final picks = <String, String>{};
   List<Map<String, dynamic>> historyOrders = [];
   List<Map<String, dynamic>> requests = [bookingJson()];
   List<Map<String, dynamic>> upcoming = [];
@@ -299,6 +315,21 @@ class FakeBackend {
       }
       final managed = _manage(r, rest);
       if (managed != null) return managed;
+      final pick =
+          RegExp(r'food/orders/([^/]+)/items/([^/]+)/pick').firstMatch(rest);
+      if (pick != null && r.method == 'POST') {
+        final body = jsonDecode(r.body) as Map<String, dynamic>;
+        picks[pick.group(2)!] = switch (body['action']) {
+          'PICKED' => 'OK',
+          'MISSING' => 'REMOVED',
+          _ => 'PROPOSED',
+        };
+        return json(orderEntry(
+            id: pick.group(1)!,
+            status: 'PREPARING',
+            allowedNext: const [],
+            picks: picks));
+      }
       final order = RegExp(r'food/orders/([^/]+)/status').firstMatch(rest);
       if (order != null && r.method == 'POST') {
         final body = jsonDecode(r.body) as Map<String, dynamic>;
@@ -432,6 +463,46 @@ class FakeBackend {
       ];
       return json(restaurants.firstWhere((x) => x['id'] == m!.group(1)));
     }
+    m = RegExp(r'^food/restaurants/([^/]+)/dishes/([^/]+)/product$')
+        .firstMatch(rest);
+    if (m != null && r.method == 'PATCH') {
+      if (operatorRole) return forbidden;
+      final b = body();
+      dishes = [
+        for (final d in dishes)
+          d['id'] == m.group(2)
+              ? {
+                  ...d,
+                  if (b.containsKey('groceryCategory'))
+                    'groceryCategory': b['groceryCategory'],
+                  if (b['clearCategory'] == true) 'groceryCategory': null,
+                  if (b.containsKey('brand')) 'brand': b['brand'],
+                  if (b.containsKey('kcal')) 'kcal': b['kcal'],
+                  if (b.containsKey('compareAtPriceMinor'))
+                    'compareAtPriceMinor': b['compareAtPriceMinor'],
+                }
+              : d,
+      ];
+      return json(dishes.firstWhere((d) => d['id'] == m!.group(2)));
+    }
+    m = RegExp(r'^food/restaurants/([^/]+)/dishes/([^/]+)/photos(?:/([^/]+))?$')
+        .firstMatch(rest);
+    if (m != null) {
+      if (operatorRole) return forbidden;
+      final dish = dishes.firstWhere((d) => d['id'] == m!.group(2));
+      final photos = [...((dish['photos'] as List?) ?? const [])];
+      if (r.method == 'POST') {
+        photos.add({'id': 'ph-${photos.length + 1}', 'url': body()['url']});
+      } else {
+        photos.removeWhere((p) => (p as Map)['id'] == m!.group(3));
+      }
+      dishes = [
+        for (final d in dishes)
+          d['id'] == m.group(2) ? {...d, 'photos': photos} : d
+      ];
+      return json(dishes.firstWhere((d) => d['id'] == m!.group(2)),
+          r.method == 'POST' ? 201 : 200);
+    }
     m = RegExp(r'^food/restaurants/([^/]+)/dishes/([^/]+)$').firstMatch(rest);
     if (m != null && r.method == 'PATCH') {
       final b = body();
@@ -467,6 +538,7 @@ class FakeBackend {
         'section': 'Горячее',
         'sectionId': b['sectionId'],
         'priceMinor': b['priceMinor'],
+        'unit': b['unit'] ?? 'PIECE',
         'available': true,
         'stockQty': null
       };

@@ -70,8 +70,20 @@ class OrderLine {
     required this.lineTotalMinor,
     this.optionsText,
     this.unit,
+    this.itemId,
+    this.dishId,
+    this.fulfillmentStatus = 'PENDING',
+    this.substitution = 'NONE',
+    this.replacedByName,
+    this.proposedName,
   });
   factory OrderLine.fromJson(Map<String, dynamic> j) => OrderLine(
+        itemId: _str(j['itemId']),
+        dishId: _str(j['dishId']),
+        fulfillmentStatus: _str(j['fulfillmentStatus']) ?? 'PENDING',
+        substitution: _str(j['substitution']) ?? 'NONE',
+        replacedByName: _str(j['replacedByName']),
+        proposedName: _str(j['proposedName']),
         name: _str(j['name']) ?? '',
         quantity: _int(j['quantity']),
         lineTotalMinor: _int(j['finalLineTotalMinor'] ?? j['lineTotalMinor']),
@@ -83,6 +95,16 @@ class OrderLine {
   final int lineTotalMinor;
   final String? optionsText;
   final String? unit;
+  final String? itemId;
+  final String? dishId;
+
+  /// `PENDING` (waits for the store), `PROPOSED` (replacement waits for the customer), `OK`, `SUBSTITUTED`, `REMOVED`.
+  final String fulfillmentStatus;
+
+  /// The customer's consent: `NONE`, `ANY_SIMILAR` or `CHOSEN`.
+  final String substitution;
+  final String? replacedByName;
+  final String? proposedName;
 }
 
 class PartnerOrder {
@@ -90,6 +112,7 @@ class PartnerOrder {
     required this.id,
     required this.status,
     required this.restaurantName,
+    this.restaurantId,
     required this.totalMinor,
     required this.subtotalMinor,
     required this.deliveryFeeMinor,
@@ -120,6 +143,7 @@ class PartnerOrder {
       id: _id(o, 'order'),
       status: _str(o['status']) ?? '',
       restaurantName: _str(o['restaurantName']) ?? '',
+      restaurantId: _str(o['restaurantId']),
       totalMinor: _int(o['finalTotalMinor'] ?? o['totalMinor']),
       subtotalMinor: _int(o['subtotalMinor']),
       deliveryFeeMinor: _int(o['deliveryFeeMinor']),
@@ -150,6 +174,7 @@ class PartnerOrder {
   final String id;
   final String status;
   final String restaurantName;
+  final String? restaurantId;
   final int totalMinor;
   final int subtotalMinor;
   final int deliveryFeeMinor;
@@ -324,6 +349,14 @@ class FoodPromotion {
   final DateTime? endsAt;
 }
 
+class DishPhoto {
+  const DishPhoto({required this.id, required this.url});
+  factory DishPhoto.fromJson(Map<String, dynamic> j) =>
+      DishPhoto(id: _str(j['id']) ?? '', url: _str(j['url']) ?? '');
+  final String id;
+  final String url;
+}
+
 class Dish {
   const Dish({
     required this.id,
@@ -334,6 +367,18 @@ class Dish {
     required this.available,
     this.stockQty,
     this.description,
+    this.unit = 'PIECE',
+    this.groceryCategory,
+    this.brand,
+    this.originCountry,
+    this.composition,
+    this.storageConditions,
+    this.kcal,
+    this.protein,
+    this.fat,
+    this.carbs,
+    this.compareAtPriceMinor,
+    this.photos = const [],
   });
   factory Dish.fromJson(Map<String, dynamic> j) => Dish(
         id: _id(j, 'dish'),
@@ -344,6 +389,24 @@ class Dish {
         available: _bool(j['available']),
         stockQty: j['stockQty'] is num ? (j['stockQty'] as num).toInt() : null,
         description: _str(j['description']),
+        unit: _str(j['unit']) ?? 'PIECE',
+        groceryCategory: _str(j['groceryCategory']),
+        brand: _str(j['brand']),
+        originCountry: _str(j['originCountry']),
+        composition: _str(j['composition']),
+        storageConditions: _str(j['storageConditions']),
+        kcal: j['kcal'] is num ? (j['kcal'] as num).toInt() : null,
+        protein: j['protein'] is num ? (j['protein'] as num).toDouble() : null,
+        fat: j['fat'] is num ? (j['fat'] as num).toDouble() : null,
+        carbs: j['carbs'] is num ? (j['carbs'] as num).toDouble() : null,
+        compareAtPriceMinor: j['compareAtPriceMinor'] is num
+            ? (j['compareAtPriceMinor'] as num).toInt()
+            : null,
+        photos: [
+          for (final p
+              in (j['photos'] is List ? j['photos'] as List : const []))
+            if (p is Map<String, dynamic>) DishPhoto.fromJson(p),
+        ],
       );
   final String id;
   final String name;
@@ -353,6 +416,24 @@ class Dish {
   final bool available;
   final int? stockQty;
   final String? description;
+
+  /// `PIECE`, or `KG` for weighed goods (price per kg, stock in grams).
+  final String unit;
+  final String? groceryCategory;
+  final String? brand;
+  final String? originCountry;
+  final String? composition;
+  final String? storageConditions;
+  final int? kcal;
+  final double? protein;
+  final double? fat;
+  final double? carbs;
+
+  /// Price before a discount; shown crossed out to customers. Null = no discount.
+  final int? compareAtPriceMinor;
+  final List<DishPhoto> photos;
+
+  bool get weighed => unit == 'KG';
 }
 
 class Venue {

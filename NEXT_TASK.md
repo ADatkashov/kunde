@@ -3,7 +3,7 @@
 ## KUNDE Events & Tickets
 
 1. Дождаться зелёных обязательных проверок PR #196 (включая `Leisure Android E2E`), снять Android-скриншоты Events/Leisure (Android visual CI), перевести PR из Draft и слить. Глобальный поиск «концерт» → Events, «боулинг» → Leisure ещё не сделан.
-2. DEV: после merge развернуть `main`, проверить V46/V47, `eventsEnabled: true`, купить место через `TEST_CARD`, проверить QR. Команды: `cd backend && mvn test -Dtest='Events*,Leisure*'`. [Матрица](docs/product/events.md).
+2. DEV: после merge развернуть `main`, проверить V48–V50, `eventsEnabled: true`, купить место через `TEST_CARD`, проверить QR. Команды: `cd backend && mvn test -Dtest='Events*,Leisure*'`. [Матрица](docs/product/events.md).
 
 
 ## KUNDE Groceries 1.0

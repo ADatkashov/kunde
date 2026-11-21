@@ -187,6 +187,10 @@ class GroceriesApiIntegrationTest {
         assertThat((Integer) JsonPath.read(detail, "$.product.maxQuantity")).isEqualTo(5000);
         assertThat((List<?>) JsonPath.read(detail, "$.related")).isNotEmpty().hasSizeLessThanOrEqualTo(6);
         assertThat((List<String>) JsonPath.read(detail, "$.related[*].id")).doesNotContain(apples);
+        // Photos added by the partner form the gallery in order; without photos the cover (if any) is the only image.
+        db.update("insert into marketplace.food_dish_photos (dish_id, url, sort_order) values (?::uuid, 'https://img.example.test/1.jpg', 0), (?::uuid, 'https://img.example.test/2.jpg', 1)", apples, apples);
+        assertThat((List<String>) JsonPath.read(body(send("GET", API + "/products/" + apples, null, null)), "$.images"))
+                .containsExactly("https://img.example.test/1.jpg", "https://img.example.test/2.jpg");
         send("GET", API + "/products/" + UUID.randomUUID(), null, null).andExpect(status().isNotFound());
         // A product with a mandatory choice (fat content) is flagged so clients open the product page instead of quick-adding it.
         String choice = db.queryForObject("select d.id from marketplace.food_dishes d join marketplace.food_restaurants r on r.id = d.restaurant_id "

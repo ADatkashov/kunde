@@ -80,6 +80,16 @@ public class FoodOrderController {
         return noStore(HttpStatus.OK, orders.cancel(identity.get(principal).id(), orderId));
     }
 
+    @PostMapping("/orders/{orderId}/items/{itemId}/decision")
+    @PreAuthorize("@consumerAccessPolicy.allowed(authentication)")
+    public ResponseEntity<FoodOrderService.OrderView> decision(@AuthenticationPrincipal Jwt principal, @PathVariable UUID orderId,
+            @PathVariable UUID itemId, @Valid @RequestBody DecisionRequest request) {
+        return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(orders.decideReplacement(identity.get(principal).id(), orderId, itemId, request.approve()));
+    }
+
+    public record DecisionRequest(@jakarta.validation.constraints.NotNull Boolean approve) {}
+
     @GetMapping("/orders/{orderId}/repeat")
     public ResponseEntity<RepeatResult> repeat(@AuthenticationPrincipal Jwt principal, @PathVariable UUID orderId) {
         return noStore(HttpStatus.OK, orders.repeat(identity.get(principal).id(), orderId));

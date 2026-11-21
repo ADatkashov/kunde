@@ -222,6 +222,28 @@ class OpsStore extends ChangeNotifier {
     }
   }
 
+  /// Picks one line of an order (same conflict handling as [changeOrder]).
+  Future<PartnerOrder?> pickLine(String orderId, String itemId, String action,
+      {String? replacementDishId}) async {
+    if (!_busy.add(orderId)) return null;
+    _notify();
+    try {
+      final updated = await ops.pickItem(orderId, itemId, action,
+          replacementDishId: replacementDishId);
+      _applyOrder(updated);
+      return updated;
+    } on PartnerApiException catch (e) {
+      _reportFatal(e);
+      if (e.kind == ApiErrorKind.conflict || e.kind == ApiErrorKind.notFound) {
+        unawaited(refreshOrders());
+      }
+      rethrow;
+    } finally {
+      _busy.remove(orderId);
+      _notify();
+    }
+  }
+
   void _applyOrder(PartnerOrder o) {
     final active = [...?activeOrders.data];
     final history = [...?historyOrders.data];

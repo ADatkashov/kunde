@@ -46,6 +46,118 @@ class S {
     }
   }
 
+  // ── Groceries picking ─────────────────────────────────────────────
+  String get pickDone => _t('Собрано', 'Жиналды', 'Picked');
+  String get pickMissing => _t('Нет в наличии', 'Қолда жоқ', 'Missing');
+  String get pickReplace => _t('Заменить', 'Ауыстыру', 'Replace');
+  String get pickChooseReplacement =>
+      _t('Выберите замену', 'Ауыстыруды таңдаңыз', 'Choose a replacement');
+  String get pickNoAlternatives => _t(
+      'Нет доступных замен того же вида',
+      'Сол түрдегі қолжетімді ауыстыру жоқ',
+      'No available replacements of the same kind');
+  String get pickProgress => _t('Сборка заказа', 'Тапсырысты жинау', 'Picking');
+  String get pickWaitingCustomer => _t('Ждём ответ покупателя',
+      'Сатып алушының жауабын күтеміз', 'Waiting for the customer');
+  String get pickMustFinish => _t(
+      'Отметьте каждую позицию, чтобы передать заказ',
+      'Тапсырысты беру үшін әр позицияны белгілеңіз',
+      'Mark every line to hand the order over');
+  String pickStatus(String status) => switch (status) {
+        'PENDING' => _t('Ожидает сборки', 'Жинауды күтеді', 'To pick'),
+        'PROPOSED' =>
+          _t('Замена предложена', 'Ауыстыру ұсынылды', 'Replacement proposed'),
+        'OK' => pickDone,
+        'SUBSTITUTED' => _t('Заменено', 'Ауыстырылды', 'Replaced'),
+        'REMOVED' => pickMissing,
+        _ => status,
+      };
+
+  // ── Groceries product card ───────────────────────────────────────────
+  String get productCard =>
+      _t('Карточка товара', 'Тауар карточкасы', 'Product card');
+  String get productCategory => _t('Категория', 'Санат', 'Category');
+  String get productNoCategory =>
+      _t('Без категории', 'Санатсыз', 'No category');
+  String get productBrand => _t('Бренд', 'Бренд', 'Brand');
+  String get productOrigin =>
+      _t('Страна происхождения', 'Шыққан елі', 'Country of origin');
+  String get productComposition => _t('Состав', 'Құрамы', 'Composition');
+  String get productStorage =>
+      _t('Условия хранения', 'Сақтау шарттары', 'Storage conditions');
+  String get productNutrition => _t('Пищевая ценность на 100 г',
+      '100 г үшін тағамдық құндылығы', 'Nutrition per 100 g');
+  String get productKcal => _t('Ккал', 'Ккал', 'Kcal');
+  String get productProtein => _t('Белки, г', 'Ақуыз, г', 'Protein, g');
+  String get productFat => _t('Жиры, г', 'Май, г', 'Fat, g');
+  String get productCarbs => _t('Углеводы, г', 'Көмірсу, г', 'Carbs, g');
+  String get productOldPrice => _t(
+      'Цена до скидки, ₸ (пусто — без скидки)',
+      'Жеңілдікке дейінгі баға, ₸ (бос — жеңілдіксіз)',
+      'Price before discount, ₸ (empty = none)');
+  String get productOldPriceInvalid => _t(
+      'Цена до скидки должна быть выше текущей цены',
+      'Жеңілдікке дейінгі баға ағымдағыдан жоғары болуы керек',
+      'The price before discount must be above the current price');
+  String get productNutritionInvalid => _t(
+      'Проверьте значения: ккал 0–1000, остальные 0–100',
+      'Мәндерді тексеріңіз: ккал 0–1000, қалғаны 0–100',
+      'Check the values: kcal 0–1000, others 0–100');
+  String get productPhotos =>
+      _t('Фотографии (до 6)', 'Суреттер (6-ға дейін)', 'Photos (up to 6)');
+  String get productPhotoUrl => _t('Ссылка на фото (https://…)',
+      'Сурет сілтемесі (https://…)', 'Photo link (https://…)');
+  String get productPhotoAdd => _t('Добавить фото', 'Сурет қосу', 'Add photo');
+  String get productPhotoInvalid => _t('Нужна ссылка https://',
+      'https:// сілтемесі қажет', 'An https:// link is required');
+  String get productPhotoHint => _t(
+      'Первое фото — обложка. Загрузка файлов появится после подключения хранилища.',
+      'Бірінші сурет — мұқаба. Файл жүктеу сақтау орны қосылғаннан кейін пайда болады.',
+      'The first photo is the cover. File upload comes with a storage provider.');
+  String get productRemovePhoto =>
+      _t('Убрать фото', 'Суретті жою', 'Remove photo');
+  String get productSaved =>
+      _t('Карточка сохранена', 'Карточка сақталды', 'Product card saved');
+  String get dishUnit => _t('Единица', 'Бірлік', 'Unit');
+  String get dishUnitPiece => _t('Штуки', 'Дана', 'Pieces');
+  String get dishUnitKg => _t('На вес (цена за кг)', 'Салмақпен (кг бағасы)',
+      'By weight (price per kg)');
+  String get dishStockGrams => _t('Остаток, г (пусто — без ограничения)',
+      'Қалдық, г (бос — шектеусіз)', 'Stock, g (empty = unlimited)');
+  String productCategoryName(String slug) => switch (slug) {
+        'fruit_veg' =>
+          _t('Овощи и фрукты', 'Көкөніс және жеміс', 'Fruit & vegetables'),
+        'dairy' => _t('Молочные продукты', 'Сүт өнімдері', 'Dairy'),
+        'meat' => _t('Мясо и птица', 'Ет және құс еті', 'Meat & poultry'),
+        'fish' => _t('Рыба и морепродукты', 'Балық және теңіз өнімдері',
+            'Fish & seafood'),
+        'bakery' => _t('Хлеб и выпечка', 'Нан және тоқаш', 'Bread & bakery'),
+        'drinks' => _t('Напитки', 'Сусындар', 'Drinks'),
+        'pantry' => _t('Бакалея', 'Бакалея', 'Pantry'),
+        'sweets' => _t('Сладости', 'Тәттілер', 'Sweets & snacks'),
+        'frozen' =>
+          _t('Замороженные продукты', 'Мұздатылған өнімдер', 'Frozen'),
+        'ready_meals' => _t('Готовая еда', 'Дайын тағам', 'Ready meals'),
+        'household' =>
+          _t('Бытовая химия и дом', 'Тұрмыстық химия және үй', 'Household'),
+        'kids' => _t('Детские товары', 'Балалар тауарлары', 'Kids'),
+        _ => slug,
+      };
+  static const productCategories = [
+    'fruit_veg',
+    'dairy',
+    'meat',
+    'fish',
+    'bakery',
+    'drinks',
+    'pantry',
+    'sweets',
+    'frozen',
+    'ready_meals',
+    'household',
+    'kids'
+  ];
+
   // ── App & navigation ────────────────────────────────────────────────
   String get appName => 'KUNDE Partner';
   String get navHome => _t('Главная', 'Басты бет', 'Home');

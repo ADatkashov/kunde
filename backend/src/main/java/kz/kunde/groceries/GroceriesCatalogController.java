@@ -55,7 +55,7 @@ public class GroceriesCatalogController {
 
     public record ProductDetail(Product product, String composition, String storageConditions, String originCountry,
             Nutrition nutrition, int minQuantity, int quantityStep, List<OptionGroup> optionGroups,
-            List<Product> related) {}
+            List<Product> related, List<String> images) {}
 
     private static final Map<String, String> SORTS = Map.of(
             "popularity", "popularity desc, d.name, d.id",
@@ -238,8 +238,11 @@ public class GroceriesCatalogController {
                  order by (r.id = ?::uuid) desc, (d.grocery_category is not distinct from ?::varchar) desc, popularity desc, d.name limit 6
                 """, GroceriesCatalogController::mapProduct, productId, product.storeId(), product.category(),
                 product.storeId(), product.category());
+        List<String> images = db.queryForList("select url from marketplace.food_dish_photos where dish_id = ? order by sort_order, created_at, id",
+                String.class, productId);
+        if (images.isEmpty() && product.imageUrl() != null) { images = List.of(product.imageUrl()); }
         boolean kg = "KG".equals(product.unit());
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(new ProductDetail(product,
-                (String) extra[0], (String) extra[1], (String) extra[2], nutrition, kg ? 100 : 1, kg ? 100 : 1, groups, related));
+                (String) extra[0], (String) extra[1], (String) extra[2], nutrition, kg ? 100 : 1, kg ? 100 : 1, groups, related, images));
     }
 }

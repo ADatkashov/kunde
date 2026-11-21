@@ -111,6 +111,7 @@ class _Backend {
   bool offline = false;
   bool disabled = false;
   bool emptyResults = false;
+  List<String> galleryImages = const [];
   bool failProducts = false;
   int total = 35;
   final productQueries = <Map<String, String>>[];
@@ -223,6 +224,7 @@ class _Backend {
           'minQuantity': 100,
           'quantityStep': 100,
           'optionGroups': [],
+          'images': galleryImages,
           'related': [_product(_milk, 'Молоко 2,5% 1 л')],
         });
       }
@@ -792,20 +794,21 @@ void main() {
     });
 
     testWidgets(
-        'favorite toggles on the server and share copies the product text',
+        'favorite toggles on the server and share opens the system share sheet',
         (tester) async {
       final backend = _Backend();
       final services = await _services(backend);
       String? copied;
+      const shareChannel = MethodChannel('dev.fluttercommunity.plus/share');
       tester.binding.defaultBinaryMessenger
-          .setMockMethodCallHandler(SystemChannels.platform, (call) async {
-        if (call.method == 'Clipboard.setData') {
+          .setMockMethodCallHandler(shareChannel, (call) async {
+        if (call.method == 'share') {
           copied = (call.arguments as Map)['text'] as String;
         }
-        return null;
+        return 'dev.fluttercommunity.plus/share/unavailable';
       });
       addTearDown(() => tester.binding.defaultBinaryMessenger
-          .setMockMethodCallHandler(SystemChannels.platform, null));
+          .setMockMethodCallHandler(shareChannel, null));
       await _show(
           tester, ProductScreen(services: services, productId: _apples));
       await tester.tap(find.byIcon(Icons.favorite_border));
@@ -819,6 +822,26 @@ void main() {
       await tester.pumpAndSettle();
       expect(copied, contains('Яблоки Айдаред'));
       expect(copied, contains('${formatTenge(59000)} / кг'));
+      await _settleTimers(tester);
+    });
+
+    testWidgets('several photos form a swipeable gallery with a page indicator',
+        (tester) async {
+      final backend = _Backend()
+        ..galleryImages = [
+          'https://img.example.test/1.jpg',
+          'https://img.example.test/2.jpg',
+          'https://img.example.test/3.jpg',
+        ];
+      final services = await _services(backend);
+      await _show(
+          tester, ProductScreen(services: services, productId: _apples));
+      expect(find.byKey(const Key('product-gallery')), findsOneWidget);
+      expect(find.bySemanticsLabel('1/3'), findsOneWidget);
+      await tester.fling(find.byKey(const Key('product-gallery')),
+          const Offset(-300, 0), 1500);
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsLabel('2/3'), findsOneWidget);
       await _settleTimers(tester);
     });
 

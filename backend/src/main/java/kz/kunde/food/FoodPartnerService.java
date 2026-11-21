@@ -57,8 +57,18 @@ public class FoodPartnerService {
 
     public record Day(java.time.LocalDate day, long orders, long revenueMinor) {}
 
+    public record Photo(String id, String url) {}
+
+    /** Product card of the partner app. The Groceries fields are null for restaurant dishes that never set them. */
     public record DishView(String id, String name, String section, long priceMinor, boolean available, Integer stockQty,
-            String unit, String sectionId, String description) {}
+            String unit, String sectionId, String description, String groceryCategory, String brand, String originCountry,
+            String composition, String storageConditions, Integer kcal, Double protein, Double fat, Double carbs,
+            Long compareAtPriceMinor, List<Photo> photos) {}
+
+    /** Groceries product attributes; a null field is left alone, the clear flags remove a stored value. */
+    public record ProductAttributes(String groceryCategory, String brand, String originCountry, String composition,
+            String storageConditions, Integer kcal, Double protein, Double fat, Double carbs, Long compareAtPriceMinor,
+            boolean clearCompareAt, boolean clearCategory) {}
 
     private final JdbcTemplate db;
     private final FoodOrderService orders;
@@ -113,6 +123,10 @@ public class FoodPartnerService {
             throw new ApiException(HttpStatus.CONFLICT, "ORDER_TRANSITION_INVALID",
                     "The order cannot move from " + status + " to " + to);
         }
+        if (("READY_FOR_PICKUP".equals(to) || "ON_THE_WAY".equals(to)) && orders.interactivePicking(orderId) && orders.pickingOpen(orderId)) {
+            throw new ApiException(HttpStatus.CONFLICT, "PICKING_INCOMPLETE",
+                    "Every line must be picked, replaced or marked missing, and replacements need the customer's answer");
+        }
         if ("CANCELLED".equals(to) && (clean == null || clean.length() < 3 || clean.length() > 300)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "REASON_REQUIRED", "A reason of 3-300 characters is required");
         }
@@ -130,10 +144,18 @@ public class FoodPartnerService {
                 insert into transactions.food_order_events (order_id, status, actor_type, actor_user_id, reason)
                 values (?, ?, 'PARTNER', ?, ?)
                 """, orderId, to, actor, "CANCELLED".equals(to) ? clean : null);
-        if ("PREPARING".equals(to)) {
+        if ("PREPARING".equals(to) && !orders.interactivePicking(orderId)) {
             // The store collects the order: unavailable products are replaced or removed per the customer's choice.
             orders.resolveLines(orderId, OffsetDateTime.now());
         }
+        return wrap(List.of(orderId)).get(0);
+    }
+
+    /** Picking of one line (PICKED, MISSING, REPLACE) by the store that owns the order. */
+    @Transactional
+    public PartnerOrder pick(UUID actor, UUID partnerId, UUID orderId, UUID itemId, String action, UUID replacementDishId) {
+        partners.requireProcessing(actor, partnerId);
+        orders.pickItem(partnerId, orderId, itemId, action, replacementDishId);
         return wrap(List.of(orderId)).get(0);
     }
 
@@ -250,13 +272,27 @@ public class FoodPartnerService {
     public List<DishView> dishes(UUID actor, UUID partnerId, UUID restaurantId) {
         partners.requireProcessing(actor, partnerId);
         requireOwnedRestaurant(partnerId, restaurantId);
+        java.util.Map<String, List<Photo>> photos = new java.util.HashMap<>();
+        db.query("""
+                select p.dish_id, p.id, p.url from marketplace.food_dish_photos p
+                join marketplace.food_dishes d on d.id = p.dish_id where d.restaurant_id = ? order by p.sort_order, p.created_at, p.id
+                """, rs -> {
+                    photos.computeIfAbsent(rs.getString(1), k -> new java.util.ArrayList<>()).add(new Photo(rs.getString(2), rs.getString(3)));
+                }, restaurantId);
         return db.query("""
-                select d.id, d.name, s.name, d.price_minor, d.available, d.stock_qty, d.unit, s.id, d.description
+                select d.id, d.name, s.name, d.price_minor, d.available, d.stock_qty, d.unit, s.id, d.description,
+                       d.grocery_category, d.brand, d.origin_country, d.composition, d.storage_conditions, d.kcal_100,
+                       d.protein_100, d.fat_100, d.carbs_100, d.compare_at_price_minor
                 from marketplace.food_dishes d join marketplace.food_menu_sections s on s.id = d.section_id
                 where d.restaurant_id = ? order by s.sort_order, d.sort_order, d.name
                 """, (rs, n) -> new DishView(rs.getString(1), rs.getString(2), rs.getString(3), rs.getLong(4),
-                rs.getBoolean(5), rs.getObject(6, Integer.class), rs.getString(7), rs.getString(8), rs.getString(9)), restaurantId);
+                rs.getBoolean(5), rs.getObject(6, Integer.class), rs.getString(7), rs.getString(8), rs.getString(9),
+                rs.getString(10), rs.getString(11), rs.getString(12), rs.getString(13), rs.getString(14),
+                rs.getObject(15, Integer.class), dbl(rs.getBigDecimal(16)), dbl(rs.getBigDecimal(17)), dbl(rs.getBigDecimal(18)),
+                rs.getObject(19, Long.class), photos.getOrDefault(rs.getString(1), List.of())), restaurantId);
     }
+
+    private static Double dbl(java.math.BigDecimal v) { return v == null ? null : v.doubleValue(); }
 
     /** Availability and the stock counter only; names and prices stay with the existing offering flow. */
     @Transactional
@@ -311,6 +347,16 @@ public class FoodPartnerService {
     @Transactional
     public DishView createDish(UUID actor, UUID partnerId, UUID restaurantId, UUID sectionId, String name, String description,
             long priceMinor) {
+        return createDish(actor, partnerId, restaurantId, sectionId, name, description, priceMinor, "PIECE");
+    }
+
+    /** {@code unit} KG creates a weighed product: the price is per kg and stock is counted in grams. */
+    @Transactional
+    public DishView createDish(UUID actor, UUID partnerId, UUID restaurantId, UUID sectionId, String name, String description,
+            long priceMinor, String unit) {
+        if (!"PIECE".equals(unit) && !"KG".equals(unit)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "UNIT_INVALID", "unit must be PIECE or KG");
+        }
         partners.requireProcessing(actor, partnerId, Role.OWNER, Role.MANAGER);
         requireOwnedRestaurant(partnerId, restaurantId);
         String cleanName = validName(name);
@@ -331,12 +377,133 @@ public class FoodPartnerService {
             throw new ApiException(HttpStatus.CONFLICT, "MENU_FULL", "The menu has too many dishes");
         }
         UUID id = db.queryForObject("""
-                insert into marketplace.food_dishes (restaurant_id, section_id, name, description, price_minor, sort_order)
-                values (?, ?, ?, ?, ?, coalesce((select max(sort_order) + 1 from marketplace.food_dishes where section_id = ?), 0))
+                insert into marketplace.food_dishes (restaurant_id, section_id, name, description, price_minor, unit, sort_order)
+                values (?, ?, ?, ?, ?, ?, coalesce((select max(sort_order) + 1 from marketplace.food_dishes where section_id = ?), 0))
                 returning id
-                """, UUID.class, restaurantId, sectionId, cleanName, cleanDescription, priceMinor, sectionId);
+                """, UUID.class, restaurantId, sectionId, cleanName, cleanDescription, priceMinor, unit, sectionId);
         audit(partnerId, actor, "DISH", id, "created", null, cleanName);
         return dishes(actor, partnerId, restaurantId).stream().filter(d -> d.id().equals(id.toString())).findFirst().orElseThrow();
+    }
+
+    private DishView dish(UUID actor, UUID partnerId, UUID restaurantId, UUID dishId) {
+        return dishes(actor, partnerId, restaurantId).stream().filter(d -> d.id().equals(dishId.toString())).findFirst()
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "DISH_NOT_FOUND", "Dish not found"));
+    }
+
+    private static String clean(String value, int max, String field) {
+        if (value == null) { return null; }
+        String v = value.strip();
+        if (v.length() > max) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "ATTRIBUTE_INVALID", field + " is too long");
+        }
+        return v.isEmpty() ? "" : v;
+    }
+
+    private static void inRange(Number value, double max, String field) {
+        if (value != null && (value.doubleValue() < 0 || value.doubleValue() > max)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "ATTRIBUTE_INVALID", field + " is out of range");
+        }
+    }
+
+    /**
+     * Sets the Groceries attributes of a product of the partner's own store (owner/manager only): category, brand, origin,
+     * composition, storage, nutrition per 100 g and the price before a discount (must stay above the price). Every change is audited.
+     */
+    @Transactional
+    public DishView updateProductAttributes(UUID actor, UUID partnerId, UUID restaurantId, UUID dishId, ProductAttributes a) {
+        partners.requireProcessing(actor, partnerId, Role.OWNER, Role.MANAGER);
+        requireOwnedRestaurant(partnerId, restaurantId);
+        var row = db.query("select price_minor, compare_at_price_minor, grocery_category, brand from marketplace.food_dishes where id = ? and restaurant_id = ? for update",
+                (rs, n) -> new Object[] {rs.getLong(1), rs.getObject(2, Long.class), rs.getString(3), rs.getString(4)}, dishId, restaurantId)
+                .stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "DISH_NOT_FOUND", "Dish not found"));
+        long price = (long) row[0];
+        if (a.groceryCategory() != null && !a.groceryCategory().isBlank()) {
+            Integer known = db.queryForObject("select count(*) from marketplace.grocery_categories where slug = ? and enabled", Integer.class, a.groceryCategory());
+            if (known == null || known == 0) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "CATEGORY_INVALID", "Unknown product category");
+            }
+            db.update("update marketplace.food_dishes set grocery_category = ? where id = ?", a.groceryCategory(), dishId);
+            audit(partnerId, actor, "DISH", dishId, "category", (String) row[2], a.groceryCategory());
+        } else if (a.clearCategory()) {
+            db.update("update marketplace.food_dishes set grocery_category = null where id = ?", dishId);
+            audit(partnerId, actor, "DISH", dishId, "category", (String) row[2], null);
+        }
+        String brand = clean(a.brand(), 80, "brand");
+        if (brand != null) {
+            db.update("update marketplace.food_dishes set brand = ? where id = ?", brand.isEmpty() ? null : brand, dishId);
+            audit(partnerId, actor, "DISH", dishId, "brand", (String) row[3], brand);
+        }
+        String origin = clean(a.originCountry(), 60, "originCountry");
+        if (origin != null) { db.update("update marketplace.food_dishes set origin_country = ? where id = ?", origin.isEmpty() ? null : origin, dishId); }
+        String composition = clean(a.composition(), 500, "composition");
+        if (composition != null) { db.update("update marketplace.food_dishes set composition = ? where id = ?", composition.isEmpty() ? null : composition, dishId); }
+        String storage = clean(a.storageConditions(), 300, "storageConditions");
+        if (storage != null) { db.update("update marketplace.food_dishes set storage_conditions = ? where id = ?", storage.isEmpty() ? null : storage, dishId); }
+        inRange(a.kcal(), 1000, "kcal");
+        inRange(a.protein(), 100, "protein");
+        inRange(a.fat(), 100, "fat");
+        inRange(a.carbs(), 100, "carbs");
+        if (a.kcal() != null) { db.update("update marketplace.food_dishes set kcal_100 = ? where id = ?", a.kcal(), dishId); }
+        if (a.protein() != null) { db.update("update marketplace.food_dishes set protein_100 = ? where id = ?", a.protein(), dishId); }
+        if (a.fat() != null) { db.update("update marketplace.food_dishes set fat_100 = ? where id = ?", a.fat(), dishId); }
+        if (a.carbs() != null) { db.update("update marketplace.food_dishes set carbs_100 = ? where id = ?", a.carbs(), dishId); }
+        if (a.compareAtPriceMinor() != null) {
+            if (a.compareAtPriceMinor() <= price || a.compareAtPriceMinor() > MAX_PRICE_MINOR) {
+                throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "COMPARE_PRICE_INVALID", "The price before discount must be above the current price");
+            }
+            db.update("update marketplace.food_dishes set compare_at_price_minor = ? where id = ?", a.compareAtPriceMinor(), dishId);
+            audit(partnerId, actor, "DISH", dishId, "compareAt", String.valueOf(row[1]), String.valueOf(a.compareAtPriceMinor()));
+        } else if (a.clearCompareAt() && row[1] != null) {
+            db.update("update marketplace.food_dishes set compare_at_price_minor = null where id = ?", dishId);
+            audit(partnerId, actor, "DISH", dishId, "compareAt", String.valueOf(row[1]), null);
+        }
+        return dish(actor, partnerId, restaurantId, dishId);
+    }
+
+    private static final int MAX_PHOTOS = 6;
+
+    /** Adds a photo by HTTPS URL (at most 6 per product); the first photo becomes the cover. */
+    @Transactional
+    public DishView addPhoto(UUID actor, UUID partnerId, UUID restaurantId, UUID dishId, String url) {
+        partners.requireProcessing(actor, partnerId, Role.OWNER, Role.MANAGER);
+        requireOwnedRestaurant(partnerId, restaurantId);
+        String clean = url == null ? "" : url.strip();
+        if (!clean.matches("^https://[^\\s]{4,480}$")) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "PHOTO_URL_INVALID", "A photo must be an HTTPS link");
+        }
+        db.query("select id from marketplace.food_dishes where id = ? and restaurant_id = ? for update",
+                (org.springframework.jdbc.core.RowCallbackHandler) rs -> {}, dishId, restaurantId);
+        Integer exists = db.queryForObject("select count(*) from marketplace.food_dishes where id = ? and restaurant_id = ?", Integer.class, dishId, restaurantId);
+        if (exists == null || exists == 0) { throw new ApiException(HttpStatus.NOT_FOUND, "DISH_NOT_FOUND", "Dish not found"); }
+        Integer count = db.queryForObject("select count(*) from marketplace.food_dish_photos where dish_id = ?", Integer.class, dishId);
+        if (count != null && count >= MAX_PHOTOS) {
+            throw new ApiException(HttpStatus.CONFLICT, "PHOTO_LIMIT", "At most 6 photos per product");
+        }
+        db.update("insert into marketplace.food_dish_photos (dish_id, url, sort_order) values (?, ?, ?)", dishId, clean, count == null ? 0 : count);
+        syncCover(dishId);
+        audit(partnerId, actor, "DISH", dishId, "photo+", null, abbreviate(clean));
+        return dish(actor, partnerId, restaurantId, dishId);
+    }
+
+    @Transactional
+    public DishView removePhoto(UUID actor, UUID partnerId, UUID restaurantId, UUID dishId, UUID photoId) {
+        partners.requireProcessing(actor, partnerId, Role.OWNER, Role.MANAGER);
+        requireOwnedRestaurant(partnerId, restaurantId);
+        int removed = db.update("""
+                delete from marketplace.food_dish_photos p using marketplace.food_dishes d
+                where p.id = ? and p.dish_id = d.id and d.id = ? and d.restaurant_id = ?
+                """, photoId, dishId, restaurantId);
+        if (removed == 0) { throw new ApiException(HttpStatus.NOT_FOUND, "PHOTO_NOT_FOUND", "Photo not found"); }
+        syncCover(dishId);
+        audit(partnerId, actor, "DISH", dishId, "photo-", photoId.toString(), null);
+        return dish(actor, partnerId, restaurantId, dishId);
+    }
+
+    private void syncCover(UUID dishId) {
+        db.update("""
+                update marketplace.food_dishes set image_url = (select url from marketplace.food_dish_photos
+                    where dish_id = ? order by sort_order, created_at, id limit 1) where id = ?
+                """, dishId, dishId);
     }
 
     private static final int MAX_DISHES = 300;
