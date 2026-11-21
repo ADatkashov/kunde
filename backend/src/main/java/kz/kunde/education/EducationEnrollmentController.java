@@ -61,6 +61,14 @@ public class EducationEnrollmentController {
         return ok(service.completeLesson(identity.get(user).id(), id, module, lesson));
     }
 
+    @PostMapping("/{id}/quiz-attempts")
+    ResponseEntity<Learning> attempt(@AuthenticationPrincipal Jwt user, @PathVariable UUID id,
+            @Valid @RequestBody QuizAnswer answer) {
+        return ok(service.attemptQuiz(identity.get(user).id(), id, answer.requestId(), answer.choice()));
+    }
+
+    public record QuizAnswer(@NotNull UUID requestId, @NotNull @Min(0) @Max(5) Integer choice) {}
+
     private static <T> ResponseEntity<T> ok(T data) {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(data);
     }

@@ -53,3 +53,10 @@ SET recorded_text = CASE position
 END
 WHERE course_id = 'a00ed000-0000-4000-8000-000000000101' AND module_position=1 AND position IN (1,2)
   AND recorded_text IS NULL;
+
+INSERT INTO marketplace.education_course_quizzes(course_id,question,choices,correct_choice,max_attempts)
+VALUES ('a00ed000-0000-4000-8000-000000000101',
+        'Что делает цикл for в Python?',
+        ARRAY['Завершает программу','Перебирает значения','Переименовывает переменную'],
+        1, 3)
+ON CONFLICT (course_id) DO NOTHING;

@@ -255,7 +255,7 @@ class _LearningScreen extends StatefulWidget {
 
 class _LearningState extends State<_LearningScreen> {
   late Future<Map<String, dynamic>> _learning = _load();
-  (int, int)? _pending;
+  Future<Map<String, dynamic>> Function()? _pending;
 
   Future<Map<String, dynamic>> _load() async =>
       await widget.api.educationRequest(
@@ -269,8 +269,38 @@ class _LearningState extends State<_LearningScreen> {
       method: 'PUT',
       token: await widget.auth.accessToken(),
     ) as Map<String, dynamic>;
-    _pending = null;
     return data;
+  }
+
+  void _change(Future<Map<String, dynamic>> Function() action) {
+    setState(() {
+      _pending = action;
+      _learning = action().then((updated) {
+        _pending = null;
+        return updated;
+      });
+    });
+  }
+
+  static String _quizRequestId() {
+    final random = Random.secure();
+    final bytes = List.generate(16, (_) => random.nextInt(256));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    final hex =
+        bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
+    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-'
+        '${hex.substring(16, 20)}-${hex.substring(20)}';
+  }
+
+  void _answer(int choice) {
+    final request = _quizRequestId();
+    _change(() async => await widget.api.educationRequest(
+          'enrollments/${widget.id}/quiz-attempts',
+          method: 'POST',
+          token: await widget.auth.accessToken(),
+          body: {'requestId': request, 'choice': choice},
+        ) as Map<String, dynamic>);
   }
 
   @override
@@ -280,17 +310,16 @@ class _LearningState extends State<_LearningScreen> {
                 Text(educationLabel(context, 'Обучение', 'Оқу', 'Learning'))),
         body: _EducationLoad<Map<String, dynamic>>(
           future: _learning,
-          onRetry: () => setState(() {
-            final pending = _pending;
-            _learning =
-                pending == null ? _load() : _complete(pending.$1, pending.$2);
-          }),
+          onRetry: () => _change(_pending ?? _load),
           builder: (data) {
             final enrollment = data['enrollment'] as Map<String, dynamic>;
             final lessons = data['lessons'] as List<dynamic>;
             final complete =
                 lessons.where((item) => item['completed'] == true).length;
             final code = enrollment['certificateCode'] as String?;
+            final quiz = data['quiz'] as Map<String, dynamic>?;
+            final total = lessons.length + (quiz != null ? 1 : 0);
+            final done = complete + (quiz != null && code != null ? 1 : 0);
             return ListView(
               padding: const EdgeInsets.all(16),
               children: [
@@ -302,10 +331,10 @@ class _LearningState extends State<_LearningScreen> {
                 if (lessons.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   LinearProgressIndicator(
-                      value: complete / lessons.length,
+                      value: done / total,
                       semanticsLabel: educationLabel(context, 'Прогресс курса',
                           'Курс барысы', 'Course progress')),
-                  Text('$complete / ${lessons.length}'),
+                  Text('$done / $total'),
                 ],
                 for (final lesson in lessons)
                   if (lesson['content'] == null)
@@ -323,12 +352,10 @@ class _LearningState extends State<_LearningScreen> {
                         Text(lesson['content'] as String),
                         if (lesson['completed'] != true)
                           FilledButton(
-                            onPressed: () => setState(() {
-                              final module = lesson['modulePosition'] as int;
-                              final position = lesson['lessonPosition'] as int;
-                              _pending = (module, position);
-                              _learning = _complete(module, position);
-                            }),
+                            onPressed: () => _change(() => _complete(
+                                  lesson['modulePosition'] as int,
+                                  lesson['lessonPosition'] as int,
+                                )),
                             child: Text(educationLabel(
                                 context,
                                 'Завершить урок',
@@ -337,6 +364,32 @@ class _LearningState extends State<_LearningScreen> {
                           ),
                       ],
                     ),
+                if (quiz != null && code == null && complete == lessons.length)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(quiz['question'] as String,
+                              style: Theme.of(context).textTheme.titleMedium),
+                          Text(educationLabel(
+                              context,
+                              'Попыток осталось: ${quiz['remainingAttempts']}',
+                              'Қалған әрекеттер: ${quiz['remainingAttempts']}',
+                              'Attempts left: ${quiz['remainingAttempts']}')),
+                          for (final (index, option)
+                              in (quiz['choices'] as List<dynamic>).indexed)
+                            OutlinedButton(
+                              onPressed: quiz['remainingAttempts'] == 0
+                                  ? null
+                                  : () => _answer(index),
+                              child: Text(option as String),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
                 if (code != null)
                   ListTile(
                     title: Text(educationLabel(
