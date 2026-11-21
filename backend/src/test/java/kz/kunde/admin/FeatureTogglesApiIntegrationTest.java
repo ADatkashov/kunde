@@ -145,7 +145,7 @@ class FeatureTogglesApiIntegrationTest {
         assertThat(toggles.enabled(FeatureToggles.Feature.AUTO)).isTrue();
 
         send("GET", "/api/v1/admin/features", admin, null).andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(5))
+                .andExpect(jsonPath("$.length()").value(6))
                 .andExpect(jsonPath("$[?(@.feature=='LEISURE')].effective").value(true))
                 .andExpect(jsonPath("$[?(@.feature=='HEALTH')].effective").value(true))
                 .andExpect(jsonPath("$[?(@.feature=='AUTO')].effective").value(true))

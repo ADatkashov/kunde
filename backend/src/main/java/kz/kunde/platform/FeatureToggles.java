@@ -9,6 +9,7 @@ import java.util.UUID;
 import kz.kunde.auto.AutoProperties;
 import kz.kunde.delivery.DeliveryProperties;
 import kz.kunde.leisure.LeisureFlags;
+import kz.kunde.groceries.GroceriesSettings;
 import kz.kunde.health.HealthSettings;
 import kz.kunde.rides.RidesFlags;
 import org.springframework.http.HttpStatus;
@@ -17,13 +18,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Runtime feature switches for Auto, Rides, Delivery and Leisure. The environment decides what is <em>allowed</em> (it also carries
+ * Runtime feature switches for Auto, Rides, Delivery, Leisure, Health and Groceries. The environment decides what is <em>allowed</em> (it also carries
  * the production guards); an administrator can only switch an allowed feature off or on again. A feature without a stored
  * switch follows the environment. Reads are cached for a few seconds, a write refreshes the cache at once.
  */
 @Service
 public class FeatureToggles {
-    public enum Feature { AUTO, RIDES, DELIVERY, LEISURE, HEALTH }
+    public enum Feature { AUTO, RIDES, DELIVERY, LEISURE, HEALTH, GROCERIES }
 
     public record Toggle(boolean enabled, long version, String reason, UUID updatedBy, OffsetDateTime updatedAt) {}
 
@@ -38,17 +39,20 @@ public class FeatureToggles {
     private final DeliveryProperties delivery;
     private final LeisureFlags leisure;
     private final HealthSettings health;
+    private final GroceriesSettings groceries;
     private final Clock clock;
     private volatile Map<Feature, Toggle> cache;
     private volatile long loadedAt;
 
-    public FeatureToggles(JdbcTemplate db, AutoProperties auto, RidesFlags rides, DeliveryProperties delivery, LeisureFlags leisure, HealthSettings health) {
+    public FeatureToggles(JdbcTemplate db, AutoProperties auto, RidesFlags rides, DeliveryProperties delivery, LeisureFlags leisure, HealthSettings health,
+            GroceriesSettings groceries) {
         this.db = db;
         this.auto = auto;
         this.rides = rides;
         this.delivery = delivery;
         this.leisure = leisure;
         this.health = health;
+        this.groceries = groceries;
         this.clock = Clock.systemUTC();
     }
 
@@ -59,6 +63,7 @@ public class FeatureToggles {
             case DELIVERY -> delivery.enabled();
             case LEISURE -> leisure.allowedByEnvironment();
             case HEALTH -> health.enabled();
+            case GROCERIES -> groceries.allowedByEnvironment();
         };
     }
 

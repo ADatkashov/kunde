@@ -44,7 +44,8 @@
           }
          ]
         }
-       ]
+       ],
+       "category": "dairy"
       },
       {
        "name": "Кефир 0,9 л",
@@ -53,7 +54,8 @@
        "emoji": "🥛",
        "tone": "blue",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "dairy"
       },
       {
        "name": "Сыр Гауда 200 г",
@@ -63,7 +65,8 @@
        "tone": "amber",
        "available": true,
        "groups": [],
-       "stock": 4
+       "stock": 4,
+       "category": "dairy"
       },
       {
        "name": "Яйца С1 (10 шт)",
@@ -73,7 +76,8 @@
        "tone": "amber",
        "available": true,
        "groups": [],
-       "stock": 6
+       "stock": 6,
+       "category": "dairy"
       },
       {
        "name": "Сливочное масло 180 г",
@@ -82,7 +86,8 @@
        "emoji": "🧈",
        "tone": "amber",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "dairy"
       }
      ]
     },
@@ -98,7 +103,8 @@
        "available": true,
        "groups": [],
        "unit": "KG",
-       "legacyName": "Яблоки, 1 кг"
+       "legacyName": "Яблоки, 1 кг",
+       "category": "fruit_veg"
       },
       {
        "name": "Бананы",
@@ -109,7 +115,8 @@
        "available": true,
        "groups": [],
        "unit": "KG",
-       "legacyName": "Бананы, 1 кг"
+       "legacyName": "Бананы, 1 кг",
+       "category": "fruit_veg"
       },
       {
        "name": "Картофель",
@@ -120,7 +127,8 @@
        "available": true,
        "groups": [],
        "unit": "KG",
-       "legacyName": "Картофель, 1 кг"
+       "legacyName": "Картофель, 1 кг",
+       "category": "fruit_veg"
       },
       {
        "name": "Помидоры",
@@ -131,7 +139,8 @@
        "available": true,
        "groups": [],
        "unit": "KG",
-       "legacyName": "Помидоры, 1 кг"
+       "legacyName": "Помидоры, 1 кг",
+       "category": "fruit_veg"
       },
       {
        "name": "Огурцы",
@@ -142,7 +151,8 @@
        "available": true,
        "groups": [],
        "unit": "KG",
-       "legacyName": "Огурцы, 1 кг"
+       "legacyName": "Огурцы, 1 кг",
+       "category": "fruit_veg"
       }
      ]
     },
@@ -156,7 +166,8 @@
        "emoji": "🍚",
        "tone": "amber",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "pantry"
       },
       {
        "name": "Гречка 800 г",
@@ -165,7 +176,8 @@
        "emoji": "🌾",
        "tone": "amber",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "pantry"
       },
       {
        "name": "Макароны 400 г",
@@ -174,7 +186,8 @@
        "emoji": "🍝",
        "tone": "amber",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "pantry"
       },
       {
        "name": "Сахар 1 кг",
@@ -183,7 +196,8 @@
        "emoji": "🧂",
        "tone": "blue",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "pantry"
       },
       {
        "name": "Масло подсолнечное 1 л",
@@ -192,7 +206,8 @@
        "emoji": "🫒",
        "tone": "amber",
        "available": false,
-       "groups": []
+       "groups": [],
+       "category": "pantry"
       }
      ]
     },
@@ -206,7 +221,8 @@
        "emoji": "🍞",
        "tone": "amber",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "bakery"
       },
       {
        "name": "Лепёшка",
@@ -215,7 +231,8 @@
        "emoji": "🫓",
        "tone": "amber",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "bakery"
       }
      ]
     },
@@ -229,7 +246,8 @@
        "emoji": "💧",
        "tone": "blue",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "drinks"
       },
       {
        "name": "Сок яблочный 1 л",
@@ -238,7 +256,8 @@
        "emoji": "🧃",
        "tone": "amber",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "drinks"
       },
       {
        "name": "Чай чёрный 100 г",
@@ -247,7 +266,8 @@
        "emoji": "🍵",
        "tone": "green",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "drinks"
       }
      ]
     }
@@ -277,7 +297,8 @@
        "emoji": "🥔",
        "tone": "amber",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "sweets"
       },
       {
        "name": "Шоколад молочный 90 г",
@@ -286,7 +307,8 @@
        "emoji": "🍫",
        "tone": "amber",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "sweets"
       },
       {
        "name": "Печенье овсяное 300 г",
@@ -295,7 +317,8 @@
        "emoji": "🍪",
        "tone": "amber",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "sweets"
       },
       {
        "name": "Орешки солёные 100 г",
@@ -304,7 +327,8 @@
        "emoji": "🥜",
        "tone": "amber",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "sweets"
       }
      ]
     },
@@ -318,7 +342,8 @@
        "emoji": "🥤",
        "tone": "red",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "drinks"
       },
       {
        "name": "Энергетик 0,45 л",
@@ -327,7 +352,8 @@
        "emoji": "🥫",
        "tone": "blue",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "drinks"
       },
       {
        "name": "Холодный чай 0,5 л",
@@ -336,7 +362,8 @@
        "emoji": "🧋",
        "tone": "amber",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "drinks"
       }
      ]
     },
@@ -350,7 +377,8 @@
        "emoji": "🥪",
        "tone": "amber",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "ready_meals"
       },
       {
        "name": "Салат Цезарь",
@@ -359,7 +387,8 @@
        "emoji": "🥗",
        "tone": "green",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "ready_meals"
       }
      ]
     }
@@ -391,7 +420,8 @@
        "available": true,
        "groups": [],
        "unit": "KG",
-       "legacyName": "Курица охлаждённая, 1 кг"
+       "legacyName": "Курица охлаждённая, 1 кг",
+       "category": "meat"
       },
       {
        "name": "Говядина вырезка",
@@ -403,7 +433,8 @@
        "groups": [],
        "unit": "KG",
        "stock": 3000,
-       "legacyName": "Говядина вырезка, 1 кг"
+       "legacyName": "Говядина вырезка, 1 кг",
+       "category": "meat"
       },
       {
        "name": "Фарш говяжий, 500 г",
@@ -412,7 +443,8 @@
        "emoji": "🍖",
        "tone": "red",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "meat"
       }
      ]
     },
@@ -428,7 +460,8 @@
        "available": true,
        "groups": [],
        "unit": "KG",
-       "legacyName": "Морковь, 1 кг"
+       "legacyName": "Морковь, 1 кг",
+       "category": "fruit_veg"
       },
       {
        "name": "Лук репчатый",
@@ -439,7 +472,8 @@
        "available": true,
        "groups": [],
        "unit": "KG",
-       "legacyName": "Лук репчатый, 1 кг"
+       "legacyName": "Лук репчатый, 1 кг",
+       "category": "fruit_veg"
       },
       {
        "name": "Зелень (укроп, петрушка)",
@@ -448,7 +482,8 @@
        "emoji": "🌿",
        "tone": "green",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "fruit_veg"
       },
       {
        "name": "Тыква",
@@ -459,7 +494,8 @@
        "available": true,
        "groups": [],
        "unit": "KG",
-       "legacyName": "Тыква, 1 кг"
+       "legacyName": "Тыква, 1 кг",
+       "category": "fruit_veg"
       }
      ]
     },
@@ -473,7 +509,8 @@
        "emoji": "🥣",
        "tone": "blue",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "dairy"
       },
       {
        "name": "Сметана 20%, 400 г",
@@ -482,7 +519,8 @@
        "emoji": "🥛",
        "tone": "blue",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "dairy"
       },
       {
        "name": "Мёд 500 г",
@@ -492,7 +530,8 @@
        "tone": "amber",
        "available": true,
        "groups": [],
-       "stock": 2
+       "stock": 2,
+       "category": "dairy"
       }
      ]
     }
@@ -522,7 +561,8 @@
        "emoji": "🧼",
        "tone": "green",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "household"
       },
       {
        "name": "Порошок стиральный 3 кг",
@@ -531,7 +571,8 @@
        "emoji": "🧺",
        "tone": "blue",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "household"
       },
       {
        "name": "Губки для посуды (5 шт)",
@@ -540,7 +581,8 @@
        "emoji": "🧽",
        "tone": "amber",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "household"
       }
      ]
     },
@@ -554,7 +596,8 @@
        "emoji": "🧻",
        "tone": "blue",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "household"
       },
       {
        "name": "Бумажные полотенца (2 рулона)",
@@ -563,7 +606,8 @@
        "emoji": "🧻",
        "tone": "blue",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "household"
       },
       {
        "name": "Салфетки (100 шт)",
@@ -572,7 +616,8 @@
        "emoji": "🗒️",
        "tone": "blue",
        "available": true,
-       "groups": []
+       "groups": [],
+       "category": "household"
       }
      ]
     }
