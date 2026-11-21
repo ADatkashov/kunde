@@ -115,7 +115,16 @@ class _HealthHomeScreenState extends State<HealthHomeScreen> {
       ),
     ];
     return Scaffold(
-      appBar: AppBar(title: Text(s.catHealth)),
+      appBar: AppBar(
+        title: Text(s.catHealth),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.tune),
+            onPressed: _showFilters,
+            tooltip: s.healthText('Фильтры', 'Сүзгілер', 'Filters'),
+          ),
+        ],
+      ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
@@ -238,15 +247,6 @@ class _HealthHomeScreenState extends State<HealthHomeScreen> {
                       },
                     ),
                 ],
-              ),
-              const SizedBox(height: 12),
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.tune),
-                  onPressed: _showFilters,
-                  label: Text(s.healthText('Фильтры', 'Сүзгілер', 'Filters')),
-                ),
               ),
               const SizedBox(height: 24),
               Text(
