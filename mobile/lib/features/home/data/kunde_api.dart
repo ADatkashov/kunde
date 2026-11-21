@@ -114,5 +114,32 @@ class KundeApi {
     return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
   }
 
+  Future<List<dynamic>> educationCohorts(String course) async =>
+      await educationRequest('courses/$course/cohorts') as List<dynamic>;
+
+  Future<dynamic> educationRequest(
+    String path, {
+    String? token,
+    String method = 'GET',
+    Map<String, dynamic>? body,
+    String? key,
+  }) async {
+    final request = http.Request(method, _baseUri.resolve('education/$path'));
+    if (token != null) request.headers['Authorization'] = 'Bearer $token';
+    if (key != null) request.headers['Idempotency-Key'] = key;
+    if (body != null) {
+      request.headers['Content-Type'] = 'application/json';
+      request.body = jsonEncode(body);
+    }
+    final response = await _client
+        .send(request)
+        .then(http.Response.fromStream)
+        .timeout(timeout);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw const KundeApiException(KundeApiFailure.unavailable);
+    }
+    return jsonDecode(utf8.decode(response.bodyBytes));
+  }
+
   void close() => _client.close();
 }

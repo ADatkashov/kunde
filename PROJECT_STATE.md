@@ -2,8 +2,8 @@
 
 ## KUNDE Events & Tickets / Leisure — разделение продуктов (2026-11-21, ветка `ccr-086450c7-ir0f4p`)
 
-- Аудит: движок билетов (места, удержание, QR, проверка) уже есть в Leisure 1.0; второй движок не создавался. Flyway V48: поле `product` у категорий (EVENTS/LEISURE), флаг `EVENTS`, публичный каталог `/api/v1/events`, раздельная фильтрация каталогов, блокировка продаж по флагу продукта. [Матрица и ограничения](docs/product/events.md).
-- Flutter (Consumer плитка «События» на общих экранах, Admin/Partner с фильтром по продукту, Executor-контролёр `GATE`, V49, грант V50) добавлен в PR #196. Локально: Consumer analyze чисто, 290 тестов; Partner 118; backend `Events*,Leisure*` зелёные. **Не сделано:** Android-скриншоты и нативные E2E на эмуляторе (ждут CI), DEV deploy, APK. Подробности: [events](docs/product/events.md).
+- Аудит: движок билетов (места, удержание, QR, проверка) уже есть в Leisure 1.0; второй движок не создавался. Flyway V51: поле `product` у категорий (EVENTS/LEISURE), флаг `EVENTS`, публичный каталог `/api/v1/events`, раздельная фильтрация каталогов, блокировка продаж по флагу продукта. [Матрица и ограничения](docs/product/events.md).
+- Flutter (Consumer плитка «События» на общих экранах, Admin/Partner с фильтром по продукту, Executor-контролёр `GATE`, V52, грант V53) добавлен в PR #196. Локально: Consumer analyze чисто, 290 тестов; Partner 118; backend `Events*,Leisure*` зелёные. **Не сделано:** Android-скриншоты и нативные E2E на эмуляторе (ждут CI), DEV deploy, APK. Подробности: [events](docs/product/events.md).
 
 
 
@@ -13,7 +13,7 @@
 - Проверено локально: `mvn verify` 376 тестов, Flutter analyze чисто и 328 тестов. **Не сделано / NOT VERIFIED:** Partner/Executor/Admin-экраны Groceries, лояльность, push, фото, DEV-деплой V44, Android E2E, APK. Матрица: [groceries](docs/product/groceries.md).
 ## KUNDE Education & Courses 1.0 — каталог
 
-- В ветке `feat/education-catalog`: PostgreSQL V44, серверный флаг, API каталога и программы, плитка и каталог Consumer, переключатель Admin. Запись, оплата и обучение остаются открытыми. [Матрица и контракт](docs/product/education.md).
+- В `main` через [#193](https://github.com/ADatkashov/kunde/pull/193): PostgreSQL V44, серверный флаг, API каталога и программы, плитка и каталог Consumer, переключатель Admin. V48 добавляет запись в синтетические потоки, TEST_CARD, «Мои курсы», текстовый курс и код подтверждения завершения. Задания, посещаемость и панели остаются открытыми. [Матрица и контракт](docs/product/education.md).
 
 
 ## KUNDE Food Ordering 2.0 — DEV slice (2026-11-21, ветка `ccr-0b95f693-1hsj46`)

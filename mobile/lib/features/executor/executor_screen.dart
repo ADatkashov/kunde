@@ -1,3 +1,4 @@
+import '../education/education_operations_screen.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -49,6 +50,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
   bool _autoEnabled = false;
   bool _leisureAvailable = false;
   bool _gateAvailable = false;
+  bool _educationEnabled = false;
   bool _autoResume = false;
 
   @override
@@ -119,6 +121,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
           _autoResume = resume;
           _leisureAvailable = leisure;
           _gateAvailable = capabilities['eventsEnabled'] == true;
+          _educationEnabled = capabilities['educationEnabled'] == true;
         });
       }
     } catch (_) {
@@ -353,6 +356,15 @@ class _ExecutorScreenState extends State<ExecutorScreen>
               onPressed: () =>
                   Navigator.of(context).push<void>(MaterialPageRoute(
                 builder: (_) => GateScanScreen(auth: widget.auth),
+              )),
+            ),
+          if (_educationEnabled)
+            IconButton(
+              icon: const Icon(Icons.school_outlined),
+              tooltip: s.t('Мои занятия', 'Сабақтарым', 'My classes'),
+              onPressed: () =>
+                  Navigator.of(context).push<void>(MaterialPageRoute(
+                builder: (_) => EducationOperationsScreen(auth: widget.auth),
               )),
             ),
           if (_leisureAvailable)

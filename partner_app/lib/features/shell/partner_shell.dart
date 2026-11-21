@@ -1,3 +1,4 @@
+import '../education/partner_education_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -135,6 +136,23 @@ class _PartnerShellState extends State<PartnerShell>
                               ),
                             ),
                           ),
+                        ),
+                      if (flags?['educationEnabled'] == true)
+                        IconButton(
+                          tooltip: switch (locale) {
+                            'ru' => 'Управление курсами',
+                            'kk' => 'Курстарды басқару',
+                            _ => 'Manage courses',
+                          },
+                          icon: const Icon(Icons.school_outlined),
+                          onPressed: () => Navigator.of(context)
+                              .push<void>(MaterialPageRoute(
+                            builder: (_) => PartnerEducationScreen(
+                              ops: _store.ops,
+                              canManage:
+                                  widget.controller.partner?.canManage ?? false,
+                            ),
+                          )),
                         ),
                       if (flags?['eventsEnabled'] == true)
                         IconButton(
