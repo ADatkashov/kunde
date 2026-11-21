@@ -144,8 +144,12 @@ class FeatureTogglesApiIntegrationTest {
         send("PUT", "/api/v1/admin/features/AUTO", otherAdmin, "{\"enabled\":false,\"reason\":\"no grant\"}").andExpect(status().isForbidden());
         assertThat(toggles.enabled(FeatureToggles.Feature.AUTO)).isTrue();
 
+        send("PUT", "/api/v1/admin/features/HOME_SERVICES", admin, "{\"enabled\":true,\"reason\":\"pilot remains closed\"}")
+                .andExpect(status().isConflict());
         send("GET", "/api/v1/admin/features", admin, null).andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(8))
+                .andExpect(jsonPath("$.length()").value(9))
+                .andExpect(jsonPath("$[?(@.feature=='HOME_SERVICES')].allowedByEnvironment").value(false))
+                .andExpect(jsonPath("$[?(@.feature=='HOME_SERVICES')].effective").value(false))
                 .andExpect(jsonPath("$[?(@.feature=='LEISURE')].effective").value(true))
                 .andExpect(jsonPath("$[?(@.feature=='HEALTH')].effective").value(true))
                 .andExpect(jsonPath("$[?(@.feature=='EDUCATION')].effective").value(true))
