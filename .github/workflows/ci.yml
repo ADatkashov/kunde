@@ -30,6 +30,23 @@ jobs:
           for p in pathlib.Path('scripts/ci').glob('*.py'):
               ast.parse(p.read_text())
           PY
+      - name: Flyway version uniqueness on the merge tree
+        run: |
+          python3 - <<'PY'
+          import pathlib, re
+          from collections import defaultdict
+
+          versions = defaultdict(list)
+          for path in pathlib.Path('backend/src/main/resources/db/migration').glob('V*__*.sql'):
+              version = path.name.split('__', 1)[0][1:]
+              parts = [int(part) for part in re.split(r'[._]', version)]
+              while len(parts) > 1 and parts[-1] == 0:
+                  parts.pop()
+              versions[tuple(parts)].append(path.name)
+          duplicates = [', '.join(sorted(names)) for names in versions.values() if len(names) > 1]
+          if duplicates:
+              raise SystemExit('Duplicate Flyway versions: ' + '; '.join(sorted(duplicates)))
+          PY
       - name: CI gate regression tests
         run: python3 -m unittest discover -s scripts/ci -p 'test_*.py' -v
       - name: Backlog files parse and canonical tasks are consistent

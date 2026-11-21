@@ -31,6 +31,8 @@ def main():
             status, data = error.code, error.read()
         if status not in expected:
             raise RuntimeError(f"{method} {path.split('?')[0]}: HTTP {status}, expected {expected}")
+        if path.endswith(".pdf"):
+            return data
         return json.loads(data) if data else None
 
     assert call("GET", "capabilities")["educationEnabled"] is True
@@ -60,10 +62,13 @@ def main():
     if result.get("quiz") and not result["enrollment"]["certificateCode"]:
         choice = result["quiz"]["choices"].index("Перебирает значения")
         result = call("POST", path + "/quiz-attempts", {"requestId": str(uuid.uuid4()), "choice": choice}, token)
+    assert result.get("quiz"), "The synthetic Python course is missing its quiz"
     assert result["enrollment"]["status"] == "COMPLETED"
     code = result["enrollment"]["certificateCode"]
+    assert call("GET", path + "/certificate.pdf", token=token).startswith(b"%PDF-")
+    call("GET", path + "/certificate.pdf", expected=(401,))
     assert call("GET", f"education/certificates/{code}")["title"] == python_course["title"]
-    print("SMOKE OK: synthetic cohort, TEST_CARD, private learning and completion verification")
+    print("SMOKE OK: synthetic cohort, TEST_CARD, ordered lessons, quiz, private PDF and public completion verification")
 
 
 if __name__ == "__main__":
