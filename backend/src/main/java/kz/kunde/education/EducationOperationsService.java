@@ -87,6 +87,13 @@ public class EducationOperationsService {
                     """).param("id", id).param("title", input.title().strip()).param("duration", input.durationMinutes())
                     .param("content", input.recordedText().strip()).update();
         }
+        if (input.assignmentPrompt() != null && !input.assignmentPrompt().isBlank()) {
+            if (input.format() != EducationCatalogController.Format.ONLINE_RECORDED) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "ASSIGNMENT_REQUIRES_RECORDED_FORMAT", "Choose recorded training");
+            }
+            db.sql("insert into marketplace.education_assignments(course_id,prompt) values (:id,:prompt)")
+                    .param("id", id).param("prompt", input.assignmentPrompt().strip()).update();
+        }
         event(id, actor, "DRAFT_CREATED", null);
         return course(id);
     }
@@ -112,6 +119,10 @@ public class EducationOperationsService {
                 ? !recorded || input.startsAt() != null || input.endsAt() != null
                 : !input.startsAt().isAfter(OffsetDateTime.now()) || !input.endsAt().isAfter(input.startsAt())) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_SCHEDULE", "Choose a valid future schedule");
+        }
+        if (input.instructorId() == null && db.sql("select exists(select 1 from marketplace.education_assignments where course_id=:id)")
+                .param("id", id).query(Boolean.class).single()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "INSTRUCTOR_REQUIRED", "Choose an instructor to review assignments");
         }
         UUID session = UUID.randomUUID();
         int inserted = db.sql("""
@@ -154,7 +165,7 @@ public class EducationOperationsService {
         return db.sql(SESSIONS + """
                 join marketplace.partners p on p.id=c.partner_id and p.verification_status='APPROVED'
                 join marketplace.partner_staff s on s.partner_id=p.id and s.user_id=:actor and s.status='ACTIVE'
-                where h.instructor_id=:actor and h.starts_at is not null and c.status='PUBLISHED'
+                where h.instructor_id=:actor and c.status='PUBLISHED'
                 order by h.starts_at desc,h.id limit 100
                 """).param("actor", actor).query(Session.class).list();
     }
@@ -171,7 +182,7 @@ public class EducationOperationsService {
         partners.requireProcessing(actor, owner);
         var learner = db.sql("""
                 update transactions.education_enrollments set attendance=:status
-                where id=:id and cohort_id=:session returning id,attendance
+                where id=:id and cohort_id=:session returning id,attendance,null as response,null as assignment_status,null as feedback
                 """).param("id", enrollment).param("session", session).param("status", status.name())
                 .query(Learner.class).optional().orElseThrow(EducationOperationsService::notFound);
         UUID course = db.sql("select course_id from marketplace.education_cohorts where id=:session")
@@ -186,10 +197,15 @@ public class EducationOperationsService {
                 join marketplace.education_courses c on c.id=h.course_id and c.status='PUBLISHED'
                 join marketplace.partners p on p.id=c.partner_id and p.verification_status='APPROVED'
                 join marketplace.partner_staff s on s.partner_id=p.id and s.user_id=:actor and s.status='ACTIVE'
-                where h.id=:session and h.instructor_id=:actor and h.starts_at is not null
+                where h.id=:session and h.instructor_id=:actor
                 """).param("actor", actor).param("session", session).query(UUID.class).optional()
                 .orElseThrow(EducationOperationsService::notFound);
-        return db.sql("select id,attendance from transactions.education_enrollments where cohort_id=:session order by created_at,id")
+        return db.sql("""
+                select e.id,e.attendance,s.response,s.status as assignment_status,s.feedback
+                from transactions.education_enrollments e
+                left join transactions.education_assignment_submissions s on s.enrollment_id=e.id
+                where e.cohort_id=:session order by e.created_at,e.id
+                """)
                 .param("session", session).query(Learner.class).list();
     }
 
@@ -239,13 +255,13 @@ public class EducationOperationsService {
     public enum Attendance { PRESENT, ABSENT }
     public record Course(UUID id, UUID partnerId, String title, String description, String status, String organization, String format) {}
     public record Instructor(UUID id, String name) {}
-    public record Learner(UUID id, String attendance) {}
+    public record Learner(UUID id, String attendance, String response, String assignmentStatus, String feedback) {}
     public record Session(UUID id, UUID courseId, String title, String format, OffsetDateTime startsAt,
             OffsetDateTime endsAt, int capacity, UUID instructorId) {}
     public record Draft(@NotBlank @Size(max=180) String title, @NotBlank @Size(max=5000) String description,
             @NotBlank @Size(max=48) String category, @NotBlank @Size(max=100) String city,
             @NotBlank @Size(max=8) String language, @NotNull EducationCatalogController.Format format,
-            @NotNull @Min(0) Long priceMinor, @NotNull @Min(1) @Max(100000) Integer durationMinutes, @Size(max=12000) String recordedText) {}
+            @NotNull @Min(0) Long priceMinor, @NotNull @Min(1) @Max(100000) Integer durationMinutes, @Size(max=12000) String recordedText, @Size(max=1500) String assignmentPrompt) {}
     public record CohortInput(@NotNull EducationCatalogController.Format format, OffsetDateTime startsAt,
             OffsetDateTime endsAt, @NotNull @Min(1) @Max(1000) Integer capacity, UUID instructorId) {}
 }

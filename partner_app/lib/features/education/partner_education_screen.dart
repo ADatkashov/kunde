@@ -217,11 +217,21 @@ class _CourseFormState extends State<_CourseForm> {
                   ],
                   onChanged: (value) => setState(() => _format = value!),
                 ),
-                if (_format == 'ONLINE_RECORDED')
+                if (_format == 'ONLINE_RECORDED') ...[
                   _field(
                       'recordedText',
                       _t(context, 'Текст урока', 'Сабақ мәтіні', 'Lesson text'),
                       12000),
+                  _field(
+                      'assignmentPrompt',
+                      _t(
+                          context,
+                          'Текст задания (необязательно)',
+                          'Тапсырма мәтіні (міндетті емес)',
+                          'Assignment prompt (optional)'),
+                      1500,
+                      optional: true),
+                ],
               ],
             ),
           ),
@@ -246,7 +256,8 @@ class _CourseFormState extends State<_CourseForm> {
         ],
       );
 
-  Widget _field(String key, String label, int max, {bool number = false}) =>
+  Widget _field(String key, String label, int max,
+          {bool number = false, bool optional = false}) =>
       TextFormField(
         decoration: InputDecoration(labelText: label, counterText: ''),
         keyboardType: number ? TextInputType.number : TextInputType.text,
@@ -255,7 +266,7 @@ class _CourseFormState extends State<_CourseForm> {
         validator: (value) {
           final input = value?.trim() ?? '';
           final parsed = int.tryParse(input);
-          if (input.isEmpty ||
+          if (!optional && input.isEmpty ||
               number &&
                   (parsed == null || parsed < (key == 'priceMinor' ? 0 : 1))) {
             return _t(context, 'Проверьте значение', 'Мәнді тексеріңіз',
@@ -342,24 +353,24 @@ class _CohortFormState extends State<_CohortForm> {
                   child: Text(_display(
                       _end, _t(context, 'Окончание', 'Аяқталуы', 'End'))),
                 ),
-                FutureBuilder<List<Map<String, dynamic>>>(
-                  future: _teachers,
-                  builder: (context, snap) => DropdownButtonFormField<String>(
-                    isExpanded: true,
-                    decoration: InputDecoration(
-                        labelText: _t(
-                            context, 'Преподаватель', 'Оқытушы', 'Instructor')),
-                    items: [
-                      for (final item
-                          in snap.data ?? const <Map<String, dynamic>>[])
-                        DropdownMenuItem(
-                            value: item['id'] as String,
-                            child: Text(item['name'] as String))
-                    ],
-                    onChanged: (value) => setState(() => _instructor = value),
-                  ),
-                ),
               ],
+              FutureBuilder<List<Map<String, dynamic>>>(
+                future: _teachers,
+                builder: (context, snap) => DropdownButtonFormField<String>(
+                  isExpanded: true,
+                  decoration: InputDecoration(
+                      labelText: _t(
+                          context, 'Преподаватель', 'Оқытушы', 'Instructor')),
+                  items: [
+                    for (final item
+                        in snap.data ?? const <Map<String, dynamic>>[])
+                      DropdownMenuItem(
+                          value: item['id'] as String,
+                          child: Text(item['name'] as String))
+                  ],
+                  onChanged: (value) => setState(() => _instructor = value),
+                ),
+              ),
             ],
           ),
         ),

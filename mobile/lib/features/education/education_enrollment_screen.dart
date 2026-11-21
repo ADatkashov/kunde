@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../home/data/kunde_api.dart';
 import '../identity/auth_repository.dart';
 import 'education_labels.dart';
+import 'education_text_dialog.dart';
 
 class EducationEnrollmentScreen extends StatefulWidget {
   const EducationEnrollmentScreen({
@@ -303,6 +304,24 @@ class _LearningState extends State<_LearningScreen> {
         ) as Map<String, dynamic>);
   }
 
+  Future<void> _submitAssignment() async {
+    final response = await showDialog<String>(
+      context: context,
+      builder: (context) => EducationTextDialog(
+        title: educationLabel(context, 'Ответ на задание', 'Тапсырмаға жауап',
+            'Assignment response'),
+        maxLength: 5000,
+      ),
+    );
+    if (!mounted || response == null) return;
+    _change(() async => await widget.api.educationRequest(
+          'enrollments/${widget.id}/assignment',
+          method: 'PUT',
+          token: await widget.auth.accessToken(),
+          body: {'response': response},
+        ) as Map<String, dynamic>);
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
@@ -318,8 +337,16 @@ class _LearningState extends State<_LearningScreen> {
                 lessons.where((item) => item['completed'] == true).length;
             final code = enrollment['certificateCode'] as String?;
             final quiz = data['quiz'] as Map<String, dynamic>?;
-            final total = lessons.length + (quiz != null ? 1 : 0);
-            final done = complete + (quiz != null && code != null ? 1 : 0);
+            final assignment = data['assignment'] as Map<String, dynamic>?;
+            final quizPassed = quiz?['passed'] == true || code != null;
+            final approved =
+                assignment?['status'] == 'APPROVED' || code != null;
+            final total = lessons.length +
+                (quiz == null ? 0 : 1) +
+                (assignment == null ? 0 : 1);
+            final done = complete +
+                (quiz != null && quizPassed ? 1 : 0) +
+                (assignment != null && approved ? 1 : 0);
             return ListView(
               padding: const EdgeInsets.all(16),
               children: [
@@ -364,7 +391,7 @@ class _LearningState extends State<_LearningScreen> {
                           ),
                       ],
                     ),
-                if (quiz != null && code == null && complete == lessons.length)
+                if (quiz != null && !quizPassed && complete == lessons.length)
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -385,6 +412,38 @@ class _LearningState extends State<_LearningScreen> {
                                   ? null
                                   : () => _answer(index),
                               child: Text(option as String),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                if (assignment != null && complete == lessons.length)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(assignment['prompt'] as String,
+                              style: Theme.of(context).textTheme.titleMedium),
+                          if (assignment['response'] case final String response)
+                            Text(response),
+                          if (assignment['feedback'] case final String feedback)
+                            Text(feedback),
+                          if (approved)
+                            Text(educationLabel(context, 'Задание принято',
+                                'Тапсырма қабылданды', 'Assignment approved'))
+                          else if (assignment['status'] == 'SUBMITTED')
+                            Text(educationLabel(context, 'На проверке',
+                                'Тексеруде', 'Under review'))
+                          else
+                            FilledButton(
+                              onPressed: _submitAssignment,
+                              child: Text(educationLabel(
+                                  context,
+                                  'Отправить ответ',
+                                  'Жауап жіберу',
+                                  'Submit response')),
                             ),
                         ],
                       ),
@@ -438,6 +497,48 @@ class _EducationLoad<T> extends StatelessWidget {
                 'Не удалось загрузить. Повторить',
                 'Жүктеу сәтсіз. Қайталау',
                 'Could not load. Retry')),
+          ));
+        },
+      );
+}
+
+/// Existing enrollments remain reachable from Profile while intake is paused.
+class ExistingEducationCoursesTile extends StatefulWidget {
+  const ExistingEducationCoursesTile(
+      {required this.api, required this.auth, super.key});
+  final KundeApi api;
+  final AuthRepository auth;
+
+  @override
+  State<ExistingEducationCoursesTile> createState() =>
+      _ExistingEducationCoursesTileState();
+}
+
+class _ExistingEducationCoursesTileState
+    extends State<ExistingEducationCoursesTile> {
+  late final Future<bool> _hasCourses = _check();
+
+  Future<bool> _check() async {
+    final courses = await widget.auth
+        .authorizedJson('GET', 'education/enrollments?limit=1') as List;
+    return courses.isNotEmpty;
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<bool>(
+        future: _hasCourses,
+        builder: (context, snapshot) {
+          if (snapshot.data != true) return const SizedBox.shrink();
+          return Card(
+              child: ListTile(
+            leading: const Icon(Icons.school_outlined),
+            title: Text(educationLabel(
+                context, 'Мои курсы', 'Курстарым', 'My courses')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push<void>(MaterialPageRoute(
+              builder: (_) =>
+                  EducationMyCourses(api: widget.api, auth: widget.auth),
+            )),
           ));
         },
       );

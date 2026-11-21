@@ -28,10 +28,12 @@ public class EducationOperationsController {
     private static final String EXECUTOR = "/executor/education";
     private final EducationOperationsService operations;
     private final ConsumerIdentityService identity;
+    private final EducationEnrollmentService enrollments;
 
-    public EducationOperationsController(EducationOperationsService operations, ConsumerIdentityService identity) {
+    public EducationOperationsController(EducationOperationsService operations, ConsumerIdentityService identity, EducationEnrollmentService enrollments) {
         this.operations = operations;
         this.identity = identity;
+        this.enrollments = enrollments;
     }
 
     @PreAuthorize("@partnerAccessPolicy.allowed(authentication)")
@@ -95,6 +97,15 @@ public class EducationOperationsController {
             @PathVariable UUID enrollment, @Valid @RequestBody AttendanceInput input) {
         return ok(operations.attendance(identity.get(actor).id(), session, enrollment, input.status()));
     }
+
+    @PreAuthorize("@consumerAccessPolicy.allowed(authentication)")
+    @PutMapping(EXECUTOR + "/sessions/{session}/roster/{enrollment}/assignment")
+    public ResponseEntity<EducationEnrollmentService.Assignment> review(@AuthenticationPrincipal Jwt actor, @PathVariable UUID session,
+            @PathVariable UUID enrollment, @Valid @RequestBody Review input) {
+        return ok(enrollments.reviewAssignment(identity.get(actor).id(), session, enrollment, input.approved(), input.feedback().strip()));
+    }
+
+    public record Review(@NotNull Boolean approved, @NotBlank @Size(max=1000) String feedback) {}
 
     private static UUID user(Jwt actor) {
         return PartnerAccessPolicy.userId(actor).orElseThrow(

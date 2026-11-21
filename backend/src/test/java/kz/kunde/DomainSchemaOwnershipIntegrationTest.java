@@ -137,7 +137,8 @@ class DomainSchemaOwnershipIntegrationTest {
             "transactions.education_lesson_progress -> marketplace.education_course_lessons",
             "marketplace.education_cohorts -> identity.users",
             "marketplace.education_course_events -> identity.users",
-            "transactions.education_quiz_attempts -> marketplace.education_course_quizzes");
+            "transactions.education_quiz_attempts -> marketplace.education_course_quizzes",
+            "transactions.education_assignment_submissions -> marketplace.education_assignments");
 
     @Autowired JdbcTemplate jdbc;
     @Autowired PlatformTransactionManager transactionManager;

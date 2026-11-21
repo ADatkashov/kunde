@@ -7,6 +7,7 @@ import '../leisure/leisure_services.dart';
 import '../booking/booking_services.dart';
 import '../booking/presentation/orders_hub.dart';
 import '../food/food_services.dart';
+import '../education/education_enrollment_screen.dart';
 import '../food/presentation/orders_tab.dart';
 import '../home/data/kunde_api.dart';
 import '../home/presentation/home_screen.dart';
@@ -587,6 +588,8 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                   child: Text(s.reload),
                 ),
                 const SizedBox(height: 24),
+                ExistingEducationCoursesTile(
+                    api: widget.api, auth: widget.auth),
                 ConsentPanel(auth: widget.auth),
                 const SizedBox(height: 24),
                 SupportPanel(auth: widget.auth),

@@ -4,6 +4,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.Pattern;
 import java.util.List;
 import java.util.UUID;
@@ -68,6 +70,14 @@ public class EducationEnrollmentController {
     }
 
     public record QuizAnswer(@NotNull UUID requestId, @NotNull @Min(0) @Max(5) Integer choice) {}
+
+    @PutMapping("/{id}/assignment")
+    ResponseEntity<Learning> submitAssignment(@AuthenticationPrincipal Jwt user, @PathVariable UUID id,
+            @Valid @RequestBody AssignmentResponse input) {
+        return ok(service.submitAssignment(identity.get(user).id(), id, input.response().strip()));
+    }
+
+    public record AssignmentResponse(@NotBlank @Size(max=5000) String response) {}
 
     private static <T> ResponseEntity<T> ok(T data) {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(data);
