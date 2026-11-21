@@ -15,11 +15,13 @@ public class EducationEnrollmentService {
     private static final String HISTORY = """
             select e.id, e.cohort_id, e.course_id, c.title, h.format, h.starts_at, h.ends_at,
                 e.amount_minor, case when e.completed_at is null then 'CONFIRMED' else 'COMPLETED' end as status,
-                p.status as payment_status, e.completed_at, e.certificate_code
+                p.status as payment_status, e.completed_at, e.certificate_code,
+                case when x.code is null then null when x.revoked_at is null then 'VALID' else 'REVOKED' end as certificate_status
             from transactions.education_enrollments e
             join transactions.education_payment_events p on p.enrollment_id=e.id
             join marketplace.education_courses c on c.id=e.course_id
             join marketplace.education_cohorts h on h.id=e.cohort_id
+            left join transactions.education_certificates x on x.enrollment_id=e.id
             where e.user_id=:user
             """;
 
@@ -254,17 +256,6 @@ public class EducationEnrollmentService {
                         rs.getInt("remaining"), rs.getBoolean("passed"))).optional().orElse(null);
     }
 
-    public Certificate certificate(UUID code) {
-        return db.sql("""
-                select c.title, p.display_name as organization, e.completed_at
-                from transactions.education_enrollments e
-                join marketplace.education_courses c on c.id=e.course_id
-                join marketplace.partners p on p.id=c.partner_id
-                where e.certificate_code=:code
-                """).param("code", code).query(Certificate.class).optional()
-                .orElseThrow(EducationEnrollmentService::notFound);
-    }
-
     private Enrollment owned(UUID user, UUID id) {
         return db.sql(HISTORY + " and e.id=:id").param("user", user).param("id", id)
                 .query(Enrollment.class).optional().orElseThrow(EducationEnrollmentService::notFound);
@@ -310,11 +301,10 @@ public class EducationEnrollmentService {
     private record Group(UUID courseId, int capacity, long priceMinor, OffsetDateTime startsAt) {}
     public record Cohort(UUID id, String format, OffsetDateTime startsAt, OffsetDateTime endsAt, long priceMinor, int remaining) {}
     public record Enrollment(UUID id, UUID cohortId, UUID courseId, String title, String format, OffsetDateTime startsAt,
-            OffsetDateTime endsAt, long amountMinor, String status, String paymentStatus, OffsetDateTime completedAt, UUID certificateCode) {}
+            OffsetDateTime endsAt, long amountMinor, String status, String paymentStatus, OffsetDateTime completedAt, UUID certificateCode, String certificateStatus) {}
     public record Lesson(int modulePosition, int lessonPosition, String title, String content, boolean completed) {}
     public record Learning(Enrollment enrollment, List<Lesson> lessons, Quiz quiz, Assignment assignment) {}
     public record Assignment(String prompt, String response, String status, String feedback) {}
     public record Quiz(String question, List<String> choices, int remainingAttempts, boolean passed) {}
-    public record Certificate(String title, String organization, OffsetDateTime completedAt) {}
     public record Placed(Enrollment enrollment, boolean created) {}
 }

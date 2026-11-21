@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../home/data/kunde_api.dart';
 import '../identity/auth_repository.dart';
@@ -257,6 +258,7 @@ class _LearningScreen extends StatefulWidget {
 class _LearningState extends State<_LearningScreen> {
   late Future<Map<String, dynamic>> _learning = _load();
   Future<Map<String, dynamic>> Function()? _pending;
+  bool _sharing = false;
 
   Future<Map<String, dynamic>> _load() async =>
       await widget.api.educationRequest(
@@ -304,6 +306,33 @@ class _LearningState extends State<_LearningScreen> {
         ) as Map<String, dynamic>);
   }
 
+  Future<void> _shareCertificate() async {
+    setState(() => _sharing = true);
+    try {
+      final bytes = await widget.api
+          .educationCertificatePdf(widget.id, await widget.auth.accessToken());
+      if (!mounted) return;
+      final renderBox = context.findRenderObject() as RenderBox?;
+      await SharePlus.instance.share(ShareParams(
+        files: [XFile.fromData(bytes, mimeType: 'application/pdf')],
+        fileNameOverrides: const ['KUNDE-certificate.pdf'],
+        sharePositionOrigin: renderBox == null
+            ? null
+            : renderBox.localToGlobal(Offset.zero) & renderBox.size,
+      ));
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+          educationLabel(
+              context, 'PDF недоступен', 'PDF қолжетімсіз', 'PDF unavailable'),
+        )));
+      }
+    } finally {
+      if (mounted) setState(() => _sharing = false);
+    }
+  }
+
   Future<void> _submitAssignment() async {
     final response = await showDialog<String>(
       context: context,
@@ -336,6 +365,7 @@ class _LearningState extends State<_LearningScreen> {
             final complete =
                 lessons.where((item) => item['completed'] == true).length;
             final code = enrollment['certificateCode'] as String?;
+            final revoked = enrollment['certificateStatus'] == 'REVOKED';
             final quiz = data['quiz'] as Map<String, dynamic>?;
             final assignment = data['assignment'] as Map<String, dynamic>?;
             final quizPassed = quiz?['passed'] == true || code != null;
@@ -464,6 +494,19 @@ class _LearningState extends State<_LearningScreen> {
                       onPressed: () =>
                           Clipboard.setData(ClipboardData(text: code)),
                     ),
+                  ),
+                if (code != null && revoked)
+                  Text(educationLabel(context, 'Подтверждение отозвано',
+                      'Растама қайтарылды', 'Certificate revoked')),
+                if (code != null && !revoked)
+                  OutlinedButton.icon(
+                    onPressed: _sharing ? null : _shareCertificate,
+                    icon: const Icon(Icons.picture_as_pdf_outlined),
+                    label: Text(educationLabel(
+                        context,
+                        'Сохранить или отправить PDF',
+                        'PDF сақтау немесе жіберу',
+                        'Save or share PDF')),
                   ),
               ],
             );

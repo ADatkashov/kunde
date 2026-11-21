@@ -58,6 +58,38 @@ class _EducationOperationsState extends State<EducationOperationsScreen> {
         {'approved': approved, 'feedback': feedback});
   }
 
+  Future<void> _revokeCertificate() async {
+    final code = await showDialog<String>(
+      context: context,
+      builder: (context) => EducationTextDialog(
+        title: educationLabel(
+            context, 'Код сертификата', 'Сертификат коды', 'Certificate code'),
+        maxLength: 36,
+      ),
+    );
+    if (!mounted || code == null) return;
+    if (!RegExp(r'^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$')
+        .hasMatch(code)) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+        educationLabel(
+            context, 'Проверьте код', 'Кодты тексеріңіз', 'Check the code'),
+      )));
+      return;
+    }
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (context) => EducationTextDialog(
+        title: educationLabel(context, 'Причина отзыва сертификата',
+            'Сертификатты қайтару себебі', 'Reason for certificate revocation'),
+        maxLength: 200,
+      ),
+    );
+    if (!mounted || reason == null) return;
+    await _save('PUT', 'admin/education/certificates/$code/revocation',
+        {'reason': reason});
+  }
+
   Future<void> _save(
       String method, String path, Map<String, dynamic> body) async {
     setState(() => _busy = true);
@@ -89,6 +121,13 @@ class _EducationOperationsState extends State<EducationOperationsScreen> {
                   : educationLabel(
                       context, 'Посещаемость', 'Қатысу', 'Attendance')),
           actions: [
+            if (widget.admin)
+              IconButton(
+                tooltip: educationLabel(context, 'Отозвать сертификат',
+                    'Сертификатты қайтару', 'Revoke certificate'),
+                icon: const Icon(Icons.remove_moderator_outlined),
+                onPressed: _busy ? null : _revokeCertificate,
+              ),
             if (_session != null)
               IconButton(
                 tooltip: educationLabel(
