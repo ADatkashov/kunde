@@ -364,7 +364,12 @@ void main() {
       VenueScreen(
           services: services, venue: BookingVenue.fromJson(_healthVenue)),
     );
-    await tester.tap(find.byTooltip('В избранное').first);
+    final addOrganization = find.descendant(
+      of: find.byType(AppBar),
+      matching: find.widgetWithIcon(IconButton, Icons.favorite_border),
+    );
+    expect(tester.widget<IconButton>(addOrganization).onPressed, isNotNull);
+    await tester.tap(addOrganization);
     await tester.pumpAndSettle();
     expect(backend.healthOrganizationSaved, isTrue);
     expect(find.byTooltip('Убрать из избранного'), findsOneWidget);

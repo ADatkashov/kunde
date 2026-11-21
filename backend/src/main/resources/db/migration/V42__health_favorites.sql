@@ -1,8 +1,9 @@
 CREATE TABLE transactions.health_favorites (
-    user_id uuid NOT NULL REFERENCES identity.users(id) ON DELETE CASCADE,
-    venue_id uuid REFERENCES marketplace.booking_venues(id) ON DELETE CASCADE,
-    specialist_id uuid REFERENCES marketplace.booking_masters(id) ON DELETE CASCADE,
-    service_id uuid REFERENCES marketplace.booking_services(id) ON DELETE CASCADE,
+    id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id uuid NOT NULL REFERENCES identity.users(id),
+    venue_id uuid REFERENCES marketplace.booking_venues(id),
+    specialist_id uuid REFERENCES marketplace.booking_masters(id),
+    service_id uuid REFERENCES marketplace.booking_services(id),
     created_at timestamptz NOT NULL DEFAULT now(),
     CHECK (num_nonnulls(venue_id, specialist_id, service_id) = 1),
     UNIQUE NULLS NOT DISTINCT (user_id, venue_id, specialist_id, service_id)
