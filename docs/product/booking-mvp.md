@@ -41,3 +41,9 @@ User-facing categories are life needs, not technical modules: Food, Groceries, R
 - **DEV data:** one synthetic company «KUNDE Уборка (демо)», types «Поддерживающая / Генеральная / После ремонта» (demo prices in tenge: call-out + per m², 20–150 m²), three synthetic crews. Demo prices are not real offers; no payment; free cancellation until the start.
 - **Localization:** RU/KK/EN for category names, barbershop and cleaning flows, statuses, errors, history and cancellation (`booking_strings.dart`); the fixed demo catalog names are translated client-side, any other server text is shown as sent. Venue descriptions/bios stay as sent by the server (Russian).
 - **Not included:** other Beauty/Home services (hair salon, manicure, plumber, electrician, repairs, assembly), reschedule, partner-side crew handling, real payments.
+
+## Переключатель пилота «Дом и быт»
+
+`HOME_SERVICES_ENABLED` по умолчанию выключен. Для запуска пилота требуются явное окружение `local`, `dev` или `test` и `BOOKING_ENABLED=true`. При разрешении окружением действующий Admin API переключателей управляет `HOME_SERVICES` с грантом `ADMIN_GRANTS` и аудитом. `GET /api/v1/capabilities` сообщает эффективное состояние в `homeServicesEnabled`.
+
+При выключении сервер отклоняет запросы каталога уборки, карточки и слотов, а также создание новых заявок. История, отмена существующей заявки владельцем и получение результата идемпотентного повтора остаются доступны. Каталог и запись в барбершоп используют прежний флаг `BOOKING_ENABLED`. Синтетическое наполнение справочника управляется отдельно через `BOOKING_SEED_DEMO`.

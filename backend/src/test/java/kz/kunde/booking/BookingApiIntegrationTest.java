@@ -41,6 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
         "app.environment=test",
         "app.identity.consumer-enabled=true",
         "app.booking.enabled=true",
+        "app.home-services.enabled=true",
         "app.auth.phone.enabled=true",
         "app.auth.phone.secret=synthetic-test-secret-synthetic-test-secret",
         "app.auth.phone.dev-otp.enabled=true",
@@ -54,6 +55,7 @@ class BookingApiIntegrationTest {
 
     @Autowired MockMvc http;
     @Autowired JdbcTemplate db;
+    @Autowired kz.kunde.platform.FeatureToggles toggles;
 
     @BeforeEach
     void seed() throws Exception {
@@ -387,6 +389,40 @@ class BookingApiIntegrationTest {
     private String cleaningBook(String service, String master, String startsAt, String extra) {
         return "{\"venueId\":\"" + venueId("home-clean-demo") + "\",\"serviceId\":\"" + serviceId("home-clean-demo", service)
                 + "\",\"masterId\":\"" + masterId("home-clean-demo", master) + "\",\"startsAt\":\"" + startsAt + "\"" + extra + "}";
+    }
+
+    @Test
+    void disabledHomeServicesBlocksCatalogSlotsAndNewBookingsButKeepsExistingBookings() throws Exception {
+        String venue = venueId("home-clean-demo");
+        String service = "Генеральная уборка";
+        String token = login("+77000000301");
+        var slot = slots("home-clean-demo", service, null, tomorrow()).getFirst();
+        String request = book("home-clean-demo", service, (String) slot.get("masterName"),
+                (String) slot.get("startsAt"), null).replace("}", ",\"addressText\":\"Алматы, ул. Тестовая 1\",\"areaSqm\":60}");
+        String created = body(send("POST", "/api/v1/booking/bookings", token, request, "clean-gate-000000001")
+                .andExpect(status().isCreated()));
+        String id = JsonPath.read(created, "$.id");
+        UUID admin = db.queryForObject("""
+                select b.user_id from transactions.bookings b where b.id = ?::uuid
+                """, UUID.class, id);
+        try {
+            toggles.set(admin, kz.kunde.platform.FeatureToggles.Feature.HOME_SERVICES, false, "Disable test pilot", null);
+            send("GET", "/api/v1/capabilities", null, null, null)
+                    .andExpect(jsonPath("$.homeServicesEnabled").value(false))
+                    .andExpect(jsonPath("$.bookingEnabled").value(true));
+            send("GET", "/api/v1/booking/venues?category=CLEANING", null, null, null).andExpect(status().isNotFound());
+            send("GET", "/api/v1/booking/venues/" + venue, null, null, null).andExpect(status().isNotFound());
+            send("GET", "/api/v1/booking/slots?venueId=" + venue + "&serviceId="
+                    + serviceId("home-clean-demo", service) + "&date=" + tomorrow(), null, null, null)
+                    .andExpect(status().isNotFound());
+            send("POST", "/api/v1/booking/bookings", token, request, "clean-gate-000000002")
+                    .andExpect(status().isNotFound());
+            send("GET", "/api/v1/booking/venues?category=BARBER", null, null, null).andExpect(status().isOk());
+            send("GET", "/api/v1/booking/bookings/" + id, token, null, null).andExpect(status().isOk());
+            send("POST", "/api/v1/booking/bookings/" + id + "/cancel", token, null, null).andExpect(status().isOk());
+        } finally {
+            toggles.invalidate();
+        }
     }
 
     @Test

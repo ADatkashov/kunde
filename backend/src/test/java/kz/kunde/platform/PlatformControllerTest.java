@@ -18,6 +18,7 @@ class PlatformControllerTest {
         assertThat(capabilities.oidcIssuerConfigured()).isFalse();
         assertThat(capabilities.aiEnabled()).isFalse();
         assertThat(capabilities.autoEnabled()).isFalse();
+        assertThat(capabilities.homeServicesEnabled()).isFalse();
     }
 
     @Test

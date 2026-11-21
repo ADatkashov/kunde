@@ -50,6 +50,12 @@ public class BookingSlots {
         return toggles.enabled(FeatureToggles.Feature.HEALTH);
     }
 
+    void requireHomeServices() {
+        if (!toggles.enabled(FeatureToggles.Feature.HOME_SERVICES)) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "HOME_SERVICES_DISABLED", "Home Services is unavailable");
+        }
+    }
+
     void requireHealthCatalog() {
         if (!healthEnabled()) {
             throw new ApiException(HttpStatus.NOT_FOUND, "HEALTH_DISABLED", "Health catalog is unavailable");
@@ -64,11 +70,15 @@ public class BookingSlots {
     public record Venue(UUID id, String category, String name, String address, ZoneId zone, int bufferMinutes) {}
 
     public Venue venue(UUID venueId) {
-        return db.query("select id, category, name, address_text, timezone, buffer_minutes from marketplace.booking_venues where id = ? and is_open and (category <> 'HEALTH' or (is_synthetic and health_published))",
+        Venue venue = db.query("select id, category, name, address_text, timezone, buffer_minutes from marketplace.booking_venues where id = ? and is_open and (category <> 'HEALTH' or (is_synthetic and health_published))",
                 (rs, row) -> new Venue(rs.getObject(1, UUID.class), rs.getString(2), rs.getString(3), rs.getString(4),
                         ZoneId.of(rs.getString(5)), rs.getInt(6)),
                 venueId).stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "VENUE_NOT_FOUND",
                 "Venue is not available"));
+        if ("CLEANING".equals(venue.category())) {
+            requireHomeServices();
+        }
+        return venue;
     }
 
     public Service service(UUID venueId, UUID serviceId) {

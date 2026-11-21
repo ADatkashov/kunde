@@ -21,6 +21,7 @@ public final class TestToggles {
                 new kz.kunde.health.HealthSettings(new org.springframework.mock.env.MockEnvironment()),
                 new kz.kunde.education.EducationSettings(new org.springframework.mock.env.MockEnvironment()),
                 new kz.kunde.groceries.GroceriesSettings(new org.springframework.mock.env.MockEnvironment()),
-                new kz.kunde.events.EventsSettings(new org.springframework.mock.env.MockEnvironment()));
+                new kz.kunde.events.EventsSettings(new org.springframework.mock.env.MockEnvironment()),
+                new kz.kunde.booking.HomeServicesSettings(new org.springframework.mock.env.MockEnvironment()));
     }
 }

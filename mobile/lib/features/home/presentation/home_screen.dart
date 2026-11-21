@@ -189,6 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
     bool bookingEnabled,
     bool ridesEnabled,
     bool deliveryEnabled, {
+    bool homeServicesEnabled = false,
     bool autoEnabled = false,
     bool leisureEnabled = false,
     bool eventsEnabled = false,
@@ -231,7 +232,7 @@ class _HomeScreenState extends State<HomeScreen> {
           icon: Icons.home_rounded,
           label: s.catHome,
           color: const Color(0xFF176B52),
-          enabled: bookingEnabled && widget.booking != null,
+          enabled: homeServicesEnabled && widget.booking != null,
         ),
         ServiceCategory(
           icon: Icons.content_cut_rounded,
@@ -303,9 +304,7 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (_) => BeautyCategoryScreen(services: widget.booking!),
         ),
       );
-    } else if (c.label == s.catHome &&
-        bookingEnabled &&
-        widget.booking != null) {
+    } else if (c.label == s.catHome && c.enabled && widget.booking != null) {
       Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => HomeServicesCategoryScreen(services: widget.booking!),
@@ -439,6 +438,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   autoEnabled: snapshot?.autoEnabled ?? false,
                   leisureEnabled: snapshot?.leisureEnabled ?? false,
                   eventsEnabled: snapshot?.eventsEnabled ?? false,
+                  homeServicesEnabled: snapshot?.homeServicesEnabled ?? false,
                   healthEnabled: snapshot?.healthEnabled ?? false,
                   educationEnabled: snapshot?.educationEnabled ?? false,
                   groceriesEnabled: snapshot?.groceriesEnabled ?? false,
@@ -645,21 +645,23 @@ class _HomeScreenState extends State<HomeScreen> {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: ServicePhotoCard(
-                              label: s.catHome,
-                              asset: 'assets/photos/home-services.jpg',
-                              onTap: () => _onCategory(
-                                categories.firstWhere(
-                                  (c) => c.label == s.catHome,
+                          if (snapshot?.homeServicesEnabled == true) ...[
+                            Expanded(
+                              child: ServicePhotoCard(
+                                label: s.catHome,
+                                asset: 'assets/photos/home-services.jpg',
+                                onTap: () => _onCategory(
+                                  categories.firstWhere(
+                                    (c) => c.label == s.catHome,
+                                  ),
+                                  categories,
+                                  marketplace,
+                                  true,
                                 ),
-                                categories,
-                                marketplace,
-                                true,
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
+                            const SizedBox(width: 8),
+                          ],
                           Expanded(
                             child: ServicePhotoCard(
                               label: s.catBeauty,

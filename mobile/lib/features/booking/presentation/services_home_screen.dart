@@ -9,9 +9,14 @@ import 'category_screens.dart';
 /// «Все сервисы»: the common catalog of KUNDE services grouped by user-facing category (not a business category).
 /// Barbershops live under «Красота», cleaning under «Дом и быт»; both use the same booking mechanism inside.
 class ServicesHomeScreen extends StatelessWidget {
-  const ServicesHomeScreen({required this.services, super.key});
+  const ServicesHomeScreen({
+    required this.services,
+    this.homeServicesEnabled = false,
+    super.key,
+  });
 
   final BookingServices services;
+  final bool homeServicesEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -28,10 +33,12 @@ class ServicesHomeScreen extends StatelessWidget {
             Text(s.catBeauty, style: theme.textTheme.titleLarge),
             const SizedBox(height: 8),
             BarbershopsEntry(services: services),
-            const SizedBox(height: 20),
-            Text(s.catHome, style: theme.textTheme.titleLarge),
-            const SizedBox(height: 8),
-            CleaningEntry(services: services),
+            if (homeServicesEnabled) ...[
+              const SizedBox(height: 20),
+              Text(s.catHome, style: theme.textTheme.titleLarge),
+              const SizedBox(height: 8),
+              CleaningEntry(services: services),
+            ],
             const SizedBox(height: 20),
             Text(s.bkDemoNote,
                 style: theme.textTheme.bodySmall

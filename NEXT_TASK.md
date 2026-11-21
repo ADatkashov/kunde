@@ -1,5 +1,9 @@
 # Следующие проверки
 
+## KUNDE Home Services 1.0
+
+Добавить локализуемый справочник и модерируемые предложения с привязкой к существующим `booking_services`. Критерии первого среза: каталог возвращает только опубликованные предложения, выдача постраничная, Partner видит данные только своей организации, смена состояния требует гранта и записывается в аудит. Проверки текущего флага: `cd backend && mvn -Dtest=HomeServicesSettingsTest,PlatformControllerTest,BookingApiIntegrationTest test` и `cd mobile && flutter test test/features/booking/booking_flow_test.dart`.
+
 ## KUNDE Events & Tickets
 
 1. Дождаться зелёных обязательных проверок PR #196 (включая `Leisure Android E2E`), снять Android-скриншоты Events/Leisure (Android visual CI), перевести PR из Draft и слить. Глобальный поиск «концерт» → Events, «боулинг» → Leisure ещё не сделан.

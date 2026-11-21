@@ -65,6 +65,9 @@ public class BookingCatalogController {
         if (!"BARBER".equals(category) && !"CLEANING".equals(category)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "CATEGORY_INVALID", "category must be BARBER or CLEANING");
         }
+        if ("CLEANING".equals(category)) {
+            slots.requireHomeServices();
+        }
         List<Venue> list = jdbc.query(VENUE_SELECT + " where v.category = ? order by v.is_open desc, v.sort_order, v.name",
                 BookingCatalogController::mapVenue, category);
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(list);
@@ -151,6 +154,9 @@ public class BookingCatalogController {
                 .stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "VENUE_NOT_FOUND",
                         "Venue is not available"));
         if ("HEALTH".equals(venue.category())) { slots.requireHealthCatalog(); }
+        if ("CLEANING".equals(venue.category())) {
+            slots.requireHomeServices();
+        }
         List<ServiceItem> services = jdbc.query("""
                 select id, name, description, duration_minutes, price_minor, available, price_per_sqm_minor,
                     min_area_sqm, max_area_sqm, exists(select 1 from marketplace.health_categories c
