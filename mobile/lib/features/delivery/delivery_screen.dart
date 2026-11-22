@@ -9,6 +9,7 @@ import '../identity/support_panel.dart';
 import '../rides/ride_api.dart';
 import 'delivery_api.dart';
 import 'delivery_map_picker.dart';
+import 'delivery_route_preview.dart';
 import 'delivery_strings.dart';
 
 class DeliveryScreen extends StatefulWidget {
@@ -355,6 +356,20 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (quote.synthetic) Text(s.testRoute),
+                      if (widget.mapsEnabled && quote.route != null)
+                        TextButton.icon(
+                          onPressed: _busy
+                              ? null
+                              : () => Navigator.of(context).push<void>(
+                                    MaterialPageRoute(
+                                      builder: (_) => DeliveryRoutePreview(
+                                          route: quote.route!),
+                                    ),
+                                  ),
+                          icon: const Icon(Icons.route_outlined),
+                          label: Text(s.t('Маршрут на карте', 'Картадағы бағыт',
+                              'View route on map')),
+                        ),
                       Text('${quote.amount} ₸',
                           style: Theme.of(context).textTheme.titleLarge),
                       Text(s.t(
