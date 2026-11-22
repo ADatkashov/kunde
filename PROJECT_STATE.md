@@ -79,7 +79,9 @@
 ## KUNDE Delivery 1.0
 
 - Персональные и корпоративные отправления используют текущую платформу. Consumer оформляет и отслеживает отправление. Executor принимает оффер и подтверждает вручение. Partner работает с отправлениями своей организации. Admin проверяет курьеров, аудит, возвраты и жалобы.
-- **Functional DEV/TEST Ready** остаётся открытым до завершения Android E2E и подписанных DEV-сборок. **External Integration Pending** обозначает дорожные маршруты, платежи и проверки документов. **Production Launch Blocked** сохраняет публичный приём выключенным. [API, флаги и порядок проверки](docs/product/delivery.md).
+- В `main` вошли лимиты отправлений и параметры сохранённой котировки, форма Consumer, создание реального отправления Partner за флагом Maps и журнал статусов. [#224](https://github.com/ADatkashov/kunde/pull/224) · [#225](https://github.com/ADatkashov/kunde/pull/225) · [#230](https://github.com/ADatkashov/kunde/pull/230) · [#227](https://github.com/ADatkashov/kunde/pull/227).
+- Android Consumer → Executor прошёл с тестовым маршрутом. Отдельный HTTP-прогон изолированного Spring Boot и PostgreSQL c реальным Maps Routing подтвердил котировку, назначение, вручение, оценку, владение отправлением Partner и видимость в Admin. Четыре подписанных DEV APK собраны из промежуточного SHA `eb5f1f0`. [Проверки и архивы APK](docs/product/delivery.md#dev-проверки-и-сборки).
+- Для полной DEV-приёмки нужны интегрированные нативные сценарии четырёх ролей с картой и платёжный провайдер. Публичный приём выключен. [Актуальный аудит](docs/product/delivery-1.0-audit.md).
 
 ## Rides & Transport 1.3
 

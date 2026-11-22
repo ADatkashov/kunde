@@ -79,3 +79,19 @@ Backend повторяет подбор для отправлений в сос�
 ### Admin в браузере DEV
 
 `bash scripts/admin-web/build.sh` собирает существующий Flutter Admin. `node scripts/admin-web/server.mjs` обслуживает сборку и передаёт только запросы входа, профиля, возможностей и Admin Rides/Delivery в существующий KUNDE DEV API. Админские разрешения проверяет backend. Для разделов Delivery требуется заранее выданный `DELIVERY_OPERATIONS`. Сессия браузера хранится в памяти вкладки. После перезагрузки страницы потребуется вход.
+
+
+## DEV-проверки и сборки
+
+- [Delivery Android E2E](https://github.com/ADatkashov/kunde/actions/runs/45065942400) прошёл для Consumer и Executor с локальными Spring Boot и PostgreSQL, тестовым маршрутом и одноразовым кодом.
+- На отдельной локальной базе тот же backend обращался к реальному DEV KUNDE Maps. Valhalla вернула маршрут 2 508 м за 207 с. По HTTP проверены котировка, отказ для маршрута вне покрытия, идемпотентное создание, назначение, контроль доступа к координатам, вручение, оценка, корпоративное отправление с отменой и видимость в роли Admin. Использованы синтетические аккаунты. Платёжная операция в этих проверках отсутствовала.
+- [iOS без подписи](https://github.com/ADatkashov/kunde/actions/runs/45066700276) успешно собрал общий Flutter-проект на `ca882e0`.
+
+Четыре подписанных APK ниже собраны из промежуточной ревизии `eb5f1f09220b031837f2ae7b128787c4e82f2801`. Проверки подписи и package ID в GitHub Actions прошли. Сборки содержат изменение формы Consumer. Более поздние изменения Partner и журнала статусов в них отсутствуют.
+
+| Приложение | Архив APK |
+| --- | --- |
+| Consumer | [KUNDE-dev-release](https://github.com/ADatkashov/kunde/actions/runs/45066001478/artifacts/14771378723) |
+| Partner | [KUNDE-Partner-dev-release](https://github.com/ADatkashov/kunde/actions/runs/45066002105/artifacts/14771044264) |
+| Executor | [KUNDE-executor-dev-release](https://github.com/ADatkashov/kunde/actions/runs/45066001898/artifacts/14771358851) |
+| Admin | [KUNDE-admin-dev-release](https://github.com/ADatkashov/kunde/actions/runs/45066001332/artifacts/14771756491) |
