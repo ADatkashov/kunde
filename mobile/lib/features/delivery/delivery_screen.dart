@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:kunde_design/kunde_design.dart';
 
 import '../identity/auth_repository.dart';
 import '../identity/support_panel.dart';
@@ -260,6 +261,40 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: KundePalette.heroGradient,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        s.t(
+                          'Отправить посылку',
+                          'Сәлемдеме жіберу',
+                          'Send a parcel',
+                        ),
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineSmall
+                            ?.copyWith(color: Colors.white),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Image.asset(
+                      'assets/illustrations/delivery.png',
+                      width: 64,
+                      height: 64,
+                      excludeFromSemantics: true,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
             Card(
                 child: Column(children: [
               ListTile(
@@ -332,9 +367,9 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                       Text('${quote.amount} ₸',
                           style: Theme.of(context).textTheme.titleLarge),
                       Text(s.t(
-                          '${quote.distance} м · ${quote.duration ~/ 60} мин',
-                          '${quote.distance} м · ${quote.duration ~/ 60} мин',
-                          '${quote.distance} m · ${quote.duration ~/ 60} min')),
+                          '${quote.distance} м · ${(quote.duration / 60).ceil()} мин',
+                          '${quote.distance} м · ${(quote.duration / 60).ceil()} мин',
+                          '${quote.distance} m · ${(quote.duration / 60).ceil()} min')),
                       Text(s.t(
                           'Тестовая доставка без оплаты.',
                           'Сынақ жеткізілімі төлемсіз.',
@@ -380,8 +415,13 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
     if (index != 7 && value.isEmpty) return s.required;
     if (index < 4) {
       final number = int.tryParse(value);
-      if (number == null || number < 1 || number > (index == 0 ? 50000 : 200)) {
-        return s.t('Проверьте число', 'Санды тексеріңіз', 'Check the number');
+      final weightLimit = _type == 'DOCUMENTS' ? 2000 : 30000;
+      if (number == null || number < 1 || number > (index == 0 ? weightLimit : 200)) {
+        return index == 0
+            ? s.t('Укажите вес от 1 до $weightLimit г',
+                'Салмақты 1–$weightLimit г аралығында көрсетіңіз',
+                'Enter a weight between 1 and $weightLimit g')
+            : s.t('Проверьте число', 'Санды тексеріңіз', 'Check the number');
       }
     }
     if (index == 5 && !RegExp(r'^\+[1-9][0-9]{7,14}$').hasMatch(value)) {
@@ -632,6 +672,12 @@ class _DetailsState extends State<_Details> {
                   '${point.$1.toStringAsFixed(5)}, ${point.$2.toStringAsFixed(5)}'),
             ),
           Text('${_order.amount} ₸'),
+          if ((_order.distanceMeters, _order.durationSeconds)
+              case (final distance?, final duration?))
+            Text(s.t(
+                'Маршрут: $distance м · около ${(duration / 60).ceil()} мин',
+                'Бағыт: $distance м · шамамен ${(duration / 60).ceil()} мин',
+                'Route: $distance m · about ${(duration / 60).ceil()} min')),
           if (_order.parcel case final parcel?)
             ListTile(
               title: Text(s.parcel(_order.parcelType ?? 'OTHER_ALLOWED_GOODS')),
