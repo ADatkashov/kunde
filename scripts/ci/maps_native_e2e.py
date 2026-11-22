@@ -122,12 +122,26 @@ def start_backend_with_maps(routing_url=MAPS_ROUTING):
     raise RuntimeError("Backend with the Maps provider did not start")
 
 
+def dump_ui(name):
+    """Keep the visible UI tree and a screenshot when a step fails, so a CI failure can be diagnosed."""
+    try:
+        android.adb("shell", "uiautomator", "dump", "/sdcard/kunde-visual.xml")
+        (REPORT / f"{name}.xml").write_bytes(android.adb("exec-out", "cat", "/sdcard/kunde-visual.xml"))
+        android.screenshot(name)
+    except (subprocess.SubprocessError, OSError):
+        pass
+
+
 def choose_on_map(label, query, name):
     """Open the map picker for a field, search the real index, choose the result, confirm."""
     android.tap(*label, clickable=True)
     android.find("Confirm", "Подтвердить", "Растау", timeout=60)  # the picker (with its native map) is on screen
-    android.tap(*label, clickable=True)  # the search row inside the picker
-    android.find(node_class="android.widget.EditText")
+    try:
+        android.tap(*label, clickable=True, timeout=20)  # the search row inside the picker
+        android.find(node_class="android.widget.EditText", timeout=20)
+    except RuntimeError:
+        dump_ui("picker-search-row-failed")
+        raise
     android.tap(node_class="android.widget.EditText")
     android.adb("shell", "input", "text", query.replace(" ", "%s"))
     android.tap(name, clickable=True, timeout=90)
