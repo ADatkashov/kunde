@@ -152,6 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (_) => DeliveryScreen(
         api: widget.delivery!,
         synthetic: snapshot.deliverySyntheticRouting,
+        mapsEnabled: snapshot.mapsEnabled,
         intakeEnabled: snapshot.deliveryEnabled,
       ),
     ));

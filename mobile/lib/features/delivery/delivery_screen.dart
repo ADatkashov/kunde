@@ -8,6 +8,7 @@ import '../identity/auth_repository.dart';
 import '../identity/support_panel.dart';
 import '../rides/ride_api.dart';
 import 'delivery_api.dart';
+import 'delivery_map_picker.dart';
 import 'delivery_strings.dart';
 
 class DeliveryScreen extends StatefulWidget {
@@ -15,12 +16,14 @@ class DeliveryScreen extends StatefulWidget {
       {required this.api,
       required this.synthetic,
       this.intakeEnabled = true,
+      this.mapsEnabled = false,
       this.draft,
       super.key});
 
   final DeliveryApi api;
   final bool synthetic;
   final bool intakeEnabled;
+  final bool mapsEnabled;
   final DeliveryOrder? draft;
 
   @override
@@ -122,6 +125,27 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                   children: [
                     Text(pickup ? s.pickup : s.destination,
                         style: Theme.of(context).textTheme.titleLarge),
+                    if (widget.mapsEnabled && !widget.synthetic)
+                      ListTile(
+                        leading: const Icon(Icons.map_outlined),
+                        title: Text(s.t(
+                            'Выбрать на KUNDE Maps',
+                            'KUNDE Maps картасынан таңдау',
+                            'Choose on KUNDE Maps')),
+                        onTap: () async {
+                          final selected = await Navigator.of(context).push(
+                            MaterialPageRoute<RideAddress>(
+                              builder: (_) => DeliveryMapPicker(
+                                initial: pickup ? _pickup : _destination,
+                                isPickup: pickup,
+                              ),
+                            ),
+                          );
+                          if (context.mounted && selected != null) {
+                            Navigator.of(context).pop(selected);
+                          }
+                        },
+                      ),
                     for (final item in available)
                       ListTile(
                           title: Text(item.label),
@@ -203,6 +227,7 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
               builder: (_) => _Details(
                   api: widget.api,
                   initial: order,
+                  mapsEnabled: widget.mapsEnabled,
                   syntheticRouting: widget.synthetic)));
     } on IdentityApiError catch (error) {
       if (!mounted) return;
@@ -251,6 +276,7 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                   MaterialPageRoute(
                       builder: (_) => _History(
                           api: widget.api,
+                          mapsEnabled: widget.mapsEnabled,
                           syntheticRouting: widget.synthetic))),
         ),
       ]),
@@ -396,10 +422,12 @@ class _History extends StatefulWidget {
   const _History(
       {required this.api,
       this.allowDispatch = true,
+      this.mapsEnabled = false,
       this.syntheticRouting = false});
   final DeliveryApi api;
   final bool allowDispatch;
   final bool syntheticRouting;
+  final bool mapsEnabled;
 
   @override
   State<_History> createState() => _HistoryState();
@@ -452,6 +480,7 @@ class _HistoryState extends State<_History> {
                               api: widget.api,
                               initial: order,
                               allowDispatch: widget.allowDispatch,
+                              mapsEnabled: widget.mapsEnabled,
                               syntheticRouting: widget.syntheticRouting)));
                   if (mounted) _reloadHistory();
                 },
@@ -468,11 +497,13 @@ class _Details extends StatefulWidget {
       {required this.api,
       required this.initial,
       this.allowDispatch = true,
+      this.mapsEnabled = false,
       this.syntheticRouting = false});
   final DeliveryApi api;
   final DeliveryOrder initial;
   final bool allowDispatch;
   final bool syntheticRouting;
+  final bool mapsEnabled;
 
   @override
   State<_Details> createState() => _DetailsState();
@@ -664,6 +695,7 @@ class _DetailsState extends State<_Details> {
                           builder: (_) => DeliveryScreen(
                               api: widget.api,
                               synthetic: widget.syntheticRouting,
+                              mapsEnabled: widget.mapsEnabled,
                               draft: _order))),
               child: Text(s.t('Повторить отправление', 'Жөнелтілімді қайталау',
                   'Repeat shipment')),

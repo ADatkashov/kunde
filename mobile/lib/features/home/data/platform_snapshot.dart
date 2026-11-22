@@ -9,6 +9,7 @@ class PlatformSnapshot {
     this.ridesEnabled = false,
     this.deliveryEnabled = false,
     this.deliverySyntheticRouting = false,
+    this.mapsEnabled = false,
     this.autoEnabled = false,
     this.leisureEnabled = false,
     this.eventsEnabled = false,
@@ -28,6 +29,7 @@ class PlatformSnapshot {
   final bool ridesEnabled;
   final bool deliveryEnabled;
   final bool deliverySyntheticRouting;
+  final bool mapsEnabled;
 
   /// KUNDE Auto DEV pilot; absent on older servers.
   final bool autoEnabled;
@@ -62,6 +64,7 @@ class PlatformSnapshot {
       ridesEnabled: json['ridesEnabled'] == true,
       deliveryEnabled: json['deliveryEnabled'] == true,
       deliverySyntheticRouting: json['deliverySyntheticRouting'] == true,
+      mapsEnabled: json['mapsEnabled'] == true,
       autoEnabled: json['autoEnabled'] == true,
       leisureEnabled: json['leisureEnabled'] == true,
       eventsEnabled: json['eventsEnabled'] == true,

@@ -85,6 +85,32 @@ void main() {
     });
   }
 
+  testWidgets('Maps picker entry respects service and fixture capabilities',
+      (tester) async {
+    for (final (maps, synthetic) in [
+      (true, false),
+      (false, false),
+      (true, true)
+    ]) {
+      await tester.pumpWidget(MaterialApp(
+        key: ValueKey((maps, synthetic)),
+        locale: const Locale('en'),
+        supportedLocales: KundeLocalizations.supportedLocales,
+        localizationsDelegates: KundeLocalizations.localizationsDelegates,
+        home: DeliveryScreen(
+          api: DeliveryApi(_Session()),
+          synthetic: synthetic,
+          mapsEnabled: maps,
+        ),
+      ));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Pickup'));
+      await tester.pumpAndSettle();
+      expect(find.text('Choose on KUNDE Maps'),
+          maps && !synthetic ? findsOneWidget : findsNothing);
+    }
+  });
+
   testWidgets('synthetic pickup is labeled and gated', (tester) async {
     for (final enabled in [false, true]) {
       await tester.pumpWidget(MaterialApp(
