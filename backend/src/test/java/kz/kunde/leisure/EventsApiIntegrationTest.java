@@ -210,4 +210,33 @@ class EventsApiIntegrationTest {
         t.send("GET", path, ownerB, null, null).andExpect(status().is4xxClientError());
         t.send("GET", path + "?product=NOPE", ownerA, null, null).andExpect(status().isBadRequest());
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void complaintsFollowTheProductOfTheirOrder() throws Exception {
+        String alice = t.login("+77000000541");
+        UUID film = t.event("Демо-фильм");
+        UUID session = t.firstSession(film);
+        UUID std = t.ticketType(film, "Стандарт");
+        String hold = t.body(t.send("POST", "/api/v1/leisure/sessions/" + session + "/holds", alice,
+                "{\"lines\":[{\"ticketTypeId\":\"" + std + "\",\"seatIds\":[\"" + t.seat(session, "B", 2) + "\"]}]}", null).andExpect(status().isCreated()));
+        String order = t.body(t.send("POST", "/api/v1/leisure/orders", alice, "{\"holdId\":\"" + JsonPath.read(hold, "$.id") + "\",\"paymentMethod\":\"TEST_CARD\",\"ageConfirmed\":true}",
+                "complaint-test-key-00001").andExpect(status().is2xxSuccessful()));
+        UUID venue = db.queryForObject("select venue_id from marketplace.leisure_events where id = ?", UUID.class, film);
+        String complaint = t.body(t.send("POST", "/api/v1/leisure/complaints", alice,
+                "{\"venueId\":\"" + venue + "\",\"orderId\":\"" + JsonPath.read(order, "$.id") + "\",\"body\":\"Проблема со входом (синтетика)\"}", null).andExpect(status().isCreated()));
+        String id = JsonPath.read(complaint, "$.id");
+        String eventsLogin = t.loginBody("+77000000542");
+        db.update("INSERT INTO identity.admin_grants (user_id, permission, reason) VALUES (?, 'EVENTS_OPERATIONS', 'synthetic DEV admin')", LeisureTestSupport.subject(eventsLogin));
+        String events = t.refreshed(eventsLogin);
+        String leisureLogin = t.loginBody("+77000000003");
+        db.update("INSERT INTO identity.admin_grants (user_id, permission, reason) VALUES (?, 'LEISURE_OPERATIONS', 'synthetic DEV admin')", LeisureTestSupport.subject(leisureLogin));
+        String leisure = t.refreshed(leisureLogin);
+        String base = "/api/v1/admin/leisure/complaints";
+        assertThat((List<String>) JsonPath.read(t.body(t.send("GET", base + "?product=EVENTS", events, null, null).andExpect(status().isOk())), "$[*].id")).contains(id);
+        assertThat((List<String>) JsonPath.read(t.body(t.send("GET", base + "?product=LEISURE", leisure, null, null).andExpect(status().isOk())), "$[*].id")).doesNotContain(id);
+        t.send("GET", base + "?product=EVENTS", leisure, null, null).andExpect(status().isForbidden());
+        t.send("POST", base + "/" + id + "/resolve", leisure, "{\"resolution\":\"не мой продукт\"}", null).andExpect(status().isForbidden());
+        t.send("POST", base + "/" + id + "/resolve", events, "{\"resolution\":\"Проверено, вход исправлен\"}", null).andExpect(status().isNoContent());
+    }
 }
