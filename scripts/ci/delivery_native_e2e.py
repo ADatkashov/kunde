@@ -70,6 +70,7 @@ def seed_courier():
 
 def create_delivery(*, capture_quote=True):
     tap("Доставка", "Delivery", "Жеткізу")
+    tap("Отправить посылку", "Send a parcel", "Сәлемдеме жіберу", clickable=True)
     tap(*PICKUP)
     tap("[DEV/TEST] Отправитель", "[DEV/TEST] Pickup", "[DEV/TEST] Жіберуші")
     tap(*DESTINATION)
@@ -116,8 +117,9 @@ def recover_history():
 
 
 def cancel_second_delivery():
-    android.adb("shell", "input", "keyevent", "4")
-    android.adb("shell", "input", "keyevent", "4")
+    android.adb("shell", "am", "force-stop", fixture.CONSUMER)
+    fixture.launch(fixture.CONSUMER)
+    android.find("Алматы", "Almaty", timeout=60)
     create_delivery(capture_quote=False)
     android.find("Ищем курьера", "Finding a courier", "Курьер ізделуде")
     cancel = ("Отменить доставку", "Cancel delivery", "Жеткізуден бас тарту")
