@@ -37,8 +37,11 @@ def tap(*labels, **options):
 def focused_field(identifier):
     deadline = time.monotonic() + 15
     while time.monotonic() < deadline:
-        android.adb("shell", "uiautomator", "dump", "/sdcard/kunde-visual.xml")
-        root = ET.fromstring(android.adb("exec-out", "cat", "/sdcard/kunde-visual.xml"))
+        try:
+            android.adb("shell", "uiautomator", "dump", "/sdcard/kunde-visual.xml")
+            root = ET.fromstring(android.adb("exec-out", "cat", "/sdcard/kunde-visual.xml"))
+        except (subprocess.SubprocessError, ET.ParseError):
+            continue
         for node in root.iter("node"):
             if node.get("resource-id", "").rsplit("/", 1)[-1] == identifier:
                 for editor in node.iter("node"):
@@ -53,8 +56,8 @@ def enter(identifier, value):
     android.adb("shell", "input", "text", value)
     actual = focused_field(identifier)
     if actual != value:
-        android.adb("shell", "input", "keyevent", "KEYCODE_MOVE_END")
-        android.adb("shell", "input", "keyevent", *(["KEYCODE_DEL"] * len(actual)))
+        android.adb("shell", "input", "keyevent", "KEYCODE_MOVE_END",
+                    *(["KEYCODE_DEL"] * len(actual)))
         android.adb("shell", "input", "text", value)
         if focused_field(identifier) != value:
             raise RuntimeError(f"Text entry did not populate {identifier}")
