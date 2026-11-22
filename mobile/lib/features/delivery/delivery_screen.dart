@@ -420,7 +420,8 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
       final limit = index == 0 ? weightLimit : 200;
       if (number == null || number < 1 || number > limit) {
         return index == 0
-            ? s.t('Укажите вес от 1 до $weightLimit г',
+            ? s.t(
+                'Укажите вес от 1 до $weightLimit г',
                 'Салмақты 1–$weightLimit г аралығында көрсетіңіз',
                 'Enter a weight between 1 and $weightLimit g')
             : s.t('Проверьте число', 'Санды тексеріңіз', 'Check the number');
