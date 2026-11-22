@@ -95,6 +95,14 @@ class DeliveryApiIntegrationTest {
         }
         http.perform(get(PATH).with(customer("owner")))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1));
+        String timeline = PATH + "/" + id + "/timeline";
+        http.perform(get(timeline).with(customer("other"))).andExpect(status().isNotFound());
+        http.perform(get(timeline).with(customer("owner"))).andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$[0].status").value("CREATED"))
+                .andExpect(jsonPath("$[0].occurredAt").exists())
+                .andExpect(jsonPath("$[0].actorId").doesNotExist())
+                .andExpect(jsonPath("$[1].status").value("CANCELLED_BY_CUSTOMER"));
         assertThat(db.queryForList("select status from transactions.delivery_events where delivery_id = ? order by id",
                 String.class, UUID.fromString(id))).containsExactly("CREATED", "CANCELLED_BY_CUSTOMER");
     }
@@ -313,6 +321,11 @@ class DeliveryApiIntegrationTest {
         http.perform(get(path + "/" + id).with(partner(outsider))).andExpect(status().isNotFound());
         http.perform(get(otherPath + "/" + id).with(partner(owner))).andExpect(status().isNotFound());
         http.perform(get(path + "/" + id).with(partner(coworker))).andExpect(status().isOk());
+        http.perform(get(path + "/" + id + "/timeline").with(partner(coworker)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].status").value("CREATED"));
+        http.perform(get(otherPath + "/" + id + "/timeline").with(partner(outsider)))
+                .andExpect(status().isNotFound());
+
         UUID employee = db.queryForObject("insert into identity.users default values returning id", UUID.class);
         db.update("insert into identity.external_bindings (issuer, subject, user_id) values (?, ?, ?)",
                 "https://identity.example.test", "delivery-scoped-reader", employee);
