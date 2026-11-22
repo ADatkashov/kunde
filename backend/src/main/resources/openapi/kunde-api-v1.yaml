@@ -42,6 +42,7 @@ paths:
                   marketplaceEnabled: { type: boolean, example: false }
                   oidcIssuerConfigured: { type: boolean, example: false }
                   aiEnabled: { type: boolean, example: false }
+                  homeServicesEnabled: { type: boolean, example: false, description: Effective switch for the Home Services pilot. }
                   deliveryEnabled: { type: boolean, example: false }
                   deliverySyntheticRouting: { type: boolean, example: false }
                   deliveryExecutorEnabled: { type: boolean, example: false }
@@ -1140,10 +1141,88 @@ paths:
       responses:
         '200':
           description: Items of the past order that can still be ordered, plus names of skipped items.
+  /admin/home-services/categories:
+    get:
+      operationId: listAdminHomeServiceCategories
+      description: Lists active and inactive categories. Requires HOME_SERVICES_CATALOG.
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 10000, default: 0 } }
+      responses:
+        '200':
+          description: Categories with localized names, icon, activity, display order and version.
+        '401':
+          description: Authentication required.
+        '403':
+          description: Missing admin scope or active grant.
+  /admin/home-services/categories/{code}:
+    put:
+      operationId: saveAdminHomeServiceCategory
+      description: Creates or updates a category with an audit entry. Requires HOME_SERVICES_CATALOG.
+      parameters:
+        - { name: code, in: path, required: true, schema: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,31}$' } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nameRu, nameKk, nameEn, icon, active, sortOrder, expectedVersion, reason]
+              properties:
+                nameRu: { type: string, minLength: 1, maxLength: 120 }
+                nameKk: { type: string, minLength: 1, maxLength: 120 }
+                nameEn: { type: string, minLength: 1, maxLength: 120 }
+                icon: { type: string, pattern: '^[a-z][a-z0-9_]{1,39}$' }
+                active: { type: boolean }
+                sortOrder: { type: integer, minimum: 0 }
+                expectedVersion: { type: integer, format: int64, minimum: 0, description: Use zero to create. }
+                reason: { type: string, minLength: 3, maxLength: 200 }
+      responses:
+        '200':
+          description: Updated category with incremented version.
+        '201':
+          description: Category created with version 1.
+        '400':
+          description: Invalid category input.
+        '401':
+          description: Authentication required.
+        '403':
+          description: Missing admin scope or active grant.
+        '409':
+          description: VERSION_CONFLICT. Refresh the category list before editing.
+  /home-services/categories:
+    get:
+      operationId: listHomeServiceCategories
+      description: Active service categories in display order. Categories do not imply local supply or availability.
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 10000, default: 0 } }
+      responses:
+        '200':
+          description: Localized categories with code, nameRu, nameKk, nameEn and icon.
+        '400':
+          description: Invalid pagination.
+        '404':
+          description: HOME_SERVICES_DISABLED.
+  /home-services/definitions:
+    get:
+      operationId: listHomeServiceDefinitions
+      description: Active service definitions. A definition does not represent a purchasable offer.
+      parameters:
+        - { name: category, in: query, schema: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,31}$' } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 10000, default: 0 } }
+      responses:
+        '200':
+          description: Localized definitions with code, categoryCode, nameRu, nameKk and nameEn.
+        '400':
+          description: Invalid category code syntax or pagination.
+        '404':
+          description: HOME_SERVICES_DISABLED.
   /booking/venues:
     get:
       operationId: listBookingVenues
-      description: Barbershop booking DEV pilot (only when app.booking.enabled; absent otherwise). Synthetic venues.
+      description: Booking DEV pilot with synthetic venues. CLEANING requires an enabled Home Services pilot.
       parameters:
         - { name: category, in: query, schema: { type: string, enum: [BARBER, CLEANING], default: BARBER } }
       responses:
@@ -1152,6 +1231,8 @@ paths:
           content:
             application/json:
               schema: { type: array, items: { type: object } }
+        '404':
+          description: HOME_SERVICES_DISABLED for the cleaning catalog.
   /booking/venues/{venueId}:
     get:
       operationId: getBookingVenue
@@ -1159,7 +1240,7 @@ paths:
         - { name: venueId, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         '404':
-          description: VENUE_NOT_FOUND.
+          description: VENUE_NOT_FOUND or HOME_SERVICES_DISABLED.
         '200':
           description: Venue with services (duration, KZT price) and masters (with the service ids they perform).
   /booking/slots:
@@ -1177,7 +1258,7 @@ paths:
         '400':
           description: BOOKING_DATE_INVALID.
         '404':
-          description: VENUE_NOT_FOUND, SERVICE_NOT_FOUND or MASTER_NOT_FOUND.
+          description: VENUE_NOT_FOUND, SERVICE_NOT_FOUND, MASTER_NOT_FOUND or HOME_SERVICES_DISABLED.
   /booking/bookings:
     get:
       operationId: listBookings
@@ -1193,6 +1274,8 @@ paths:
           description: Booking confirmed (confirmation DEV_MOCK).
         '200':
           description: Idempotent replay.
+        '404':
+          description: HOME_SERVICES_DISABLED for a new cleaning booking.
         '409':
           description: SLOT_UNAVAILABLE, SLOT_TAKEN (database exclusion on overlapping time of one master), BOOKING_OVERLAPS_YOURS, TOO_MANY_UPCOMING_BOOKINGS or IDEMPOTENCY_KEY_REUSED.
   /booking/bookings/{id}:

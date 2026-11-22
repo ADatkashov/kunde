@@ -144,8 +144,12 @@ class FeatureTogglesApiIntegrationTest {
         send("PUT", "/api/v1/admin/features/AUTO", otherAdmin, "{\"enabled\":false,\"reason\":\"no grant\"}").andExpect(status().isForbidden());
         assertThat(toggles.enabled(FeatureToggles.Feature.AUTO)).isTrue();
 
+        send("PUT", "/api/v1/admin/features/HOME_SERVICES", admin, "{\"enabled\":true,\"reason\":\"pilot remains closed\"}")
+                .andExpect(status().isConflict());
         send("GET", "/api/v1/admin/features", admin, null).andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(8))
+                .andExpect(jsonPath("$.length()").value(9))
+                .andExpect(jsonPath("$[?(@.feature=='HOME_SERVICES')].allowedByEnvironment").value(false))
+                .andExpect(jsonPath("$[?(@.feature=='HOME_SERVICES')].effective").value(false))
                 .andExpect(jsonPath("$[?(@.feature=='LEISURE')].effective").value(true))
                 .andExpect(jsonPath("$[?(@.feature=='HEALTH')].effective").value(true))
                 .andExpect(jsonPath("$[?(@.feature=='EDUCATION')].effective").value(true))
@@ -154,6 +158,41 @@ class FeatureTogglesApiIntegrationTest {
                 .andExpect(jsonPath("$[?(@.feature=='RIDES')].allowedByEnvironment").value(false))
                 .andExpect(jsonPath("$[?(@.feature=='RIDES')].effective").value(false))
                 .andExpect(jsonPath("$[?(@.feature=='DELIVERY')].effective").value(false));
+    }
+
+    @Test
+    void homeServicesCategoryChangesRequireDedicatedGrantAndAreVersionedAndAudited() throws Exception {
+        String path = "/api/v1/admin/home-services/categories";
+        String resource = path + "/TEST_HOME";
+        String create = """
+                {"nameRu":"Тест","nameKk":"Сынақ","nameEn":"Test","icon":"handyman",
+                 "active":true,"sortOrder":100,"expectedVersion":0,"reason":"Test catalog change"}
+                """;
+        String operator = adminWith(loginBody("+77000000804"), "HOME_SERVICES_CATALOG");
+
+        send("GET", path, null, null).andExpect(status().isUnauthorized());
+        send("GET", path, admin, null).andExpect(status().isForbidden());
+        send("PUT", resource, otherAdmin, create).andExpect(status().isForbidden());
+
+        send("PUT", resource, operator, create).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.version").value(1));
+        send("PUT", resource, operator, create).andExpect(status().isConflict());
+        String update = create.replace("\"expectedVersion\":0", "\"expectedVersion\":1")
+                .replace("\"active\":true", "\"active\":false");
+        send("PUT", resource, operator, update).andExpect(status().isOk())
+                .andExpect(jsonPath("$.version").value(2)).andExpect(jsonPath("$.active").value(false));
+        send("PUT", resource, operator, update).andExpect(status().isConflict());
+        send("GET", path + "?offset=8&limit=1", operator, null).andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].code").value("TEST_HOME"))
+                .andExpect(jsonPath("$[0].active").value(false));
+
+        assertThat(db.queryForList("""
+                select version from marketplace.home_service_category_events where category_code = 'TEST_HOME' order by version
+                """, Long.class)).containsExactly(1L, 2L);
+        assertThat(db.queryForObject("""
+                select previous_state ->> 'active' from marketplace.home_service_category_events
+                where category_code = 'TEST_HOME' and version = 2
+                """, String.class)).isEqualTo("true");
     }
 
     @Test

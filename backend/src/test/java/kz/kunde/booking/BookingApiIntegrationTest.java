@@ -41,6 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
         "app.environment=test",
         "app.identity.consumer-enabled=true",
         "app.booking.enabled=true",
+        "app.home-services.enabled=true",
         "app.auth.phone.enabled=true",
         "app.auth.phone.secret=synthetic-test-secret-synthetic-test-secret",
         "app.auth.phone.dev-otp.enabled=true",
@@ -54,6 +55,7 @@ class BookingApiIntegrationTest {
 
     @Autowired MockMvc http;
     @Autowired JdbcTemplate db;
+    @Autowired kz.kunde.platform.FeatureToggles toggles;
 
     @BeforeEach
     void seed() throws Exception {
@@ -387,6 +389,66 @@ class BookingApiIntegrationTest {
     private String cleaningBook(String service, String master, String startsAt, String extra) {
         return "{\"venueId\":\"" + venueId("home-clean-demo") + "\",\"serviceId\":\"" + serviceId("home-clean-demo", service)
                 + "\",\"masterId\":\"" + masterId("home-clean-demo", master) + "\",\"startsAt\":\"" + startsAt + "\"" + extra + "}";
+    }
+
+    @Test
+    void homeServiceTaxonomyIsLocalizedOrderedAndExcludesDisabledCategories() throws Exception {
+        send("GET", "/api/v1/home-services/categories?limit=2&offset=1", null, null, null)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].code").value("PLUMBING"))
+                .andExpect(jsonPath("$[0].nameRu").value("Сантехника"))
+                .andExpect(jsonPath("$[0].nameKk").value("Сантехника"))
+                .andExpect(jsonPath("$[0].nameEn").value("Plumbing"))
+                .andExpect(jsonPath("$[1].code").value("ELECTRICAL"));
+        send("GET", "/api/v1/home-services/definitions?category=ELECTRICAL", null, null, null)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(8))
+                .andExpect(jsonPath("$[0].categoryCode").value("ELECTRICAL"));
+        send("GET", "/api/v1/home-services/definitions?limit=50&offset=50", null, null, null)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(5));
+        send("GET", "/api/v1/home-services/definitions?limit=51", null, null, null)
+                .andExpect(status().isBadRequest());
+
+        db.update("update marketplace.home_service_categories set active = false where code = 'ELECTRICAL'");
+        send("GET", "/api/v1/home-services/definitions?category=ELECTRICAL", null, null, null)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void disabledHomeServicesBlocksCatalogSlotsAndNewBookingsButKeepsExistingBookings() throws Exception {
+        String venue = venueId("home-clean-demo");
+        String service = "Генеральная уборка";
+        String token = login("+77000000301");
+        var slot = slots("home-clean-demo", service, null, tomorrow()).getFirst();
+        String request = book("home-clean-demo", service, (String) slot.get("masterName"),
+                (String) slot.get("startsAt"), null).replace("}", ",\"addressText\":\"Алматы, ул. Тестовая 1\",\"areaSqm\":60}");
+        String created = body(send("POST", "/api/v1/booking/bookings", token, request, "clean-gate-000000001")
+                .andExpect(status().isCreated()));
+        String id = JsonPath.read(created, "$.id");
+        UUID admin = db.queryForObject("""
+                select b.user_id from transactions.bookings b where b.id = ?::uuid
+                """, UUID.class, id);
+        try {
+            toggles.set(admin, kz.kunde.platform.FeatureToggles.Feature.HOME_SERVICES, false, "Disable test pilot", null);
+            send("GET", "/api/v1/capabilities", null, null, null)
+                    .andExpect(jsonPath("$.homeServicesEnabled").value(false))
+                    .andExpect(jsonPath("$.bookingEnabled").value(true));
+            send("GET", "/api/v1/home-services/categories", null, null, null).andExpect(status().isNotFound());
+            send("GET", "/api/v1/home-services/definitions", null, null, null).andExpect(status().isNotFound());
+            send("GET", "/api/v1/booking/venues?category=CLEANING", null, null, null).andExpect(status().isNotFound());
+            send("GET", "/api/v1/booking/venues/" + venue, null, null, null).andExpect(status().isNotFound());
+            send("GET", "/api/v1/booking/slots?venueId=" + venue + "&serviceId="
+                    + serviceId("home-clean-demo", service) + "&date=" + tomorrow(), null, null, null)
+                    .andExpect(status().isNotFound());
+            send("POST", "/api/v1/booking/bookings", token, request, "clean-gate-000000002")
+                    .andExpect(status().isNotFound());
+            send("GET", "/api/v1/booking/venues?category=BARBER", null, null, null).andExpect(status().isOk());
+            send("GET", "/api/v1/booking/bookings/" + id, token, null, null).andExpect(status().isOk());
+            send("POST", "/api/v1/booking/bookings/" + id + "/cancel", token, null, null).andExpect(status().isOk());
+        } finally {
+            toggles.invalidate();
+        }
     }
 
     @Test

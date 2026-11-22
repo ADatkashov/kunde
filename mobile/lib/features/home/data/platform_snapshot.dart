@@ -5,6 +5,7 @@ class PlatformSnapshot {
     required this.oidcIssuerConfigured,
     required this.aiEnabled,
     this.bookingEnabled = false,
+    this.homeServicesEnabled = false,
     this.ridesEnabled = false,
     this.deliveryEnabled = false,
     this.deliverySyntheticRouting = false,
@@ -23,6 +24,7 @@ class PlatformSnapshot {
 
   /// Service booking (barbershops) DEV pilot; absent on older servers.
   final bool bookingEnabled;
+  final bool homeServicesEnabled;
   final bool ridesEnabled;
   final bool deliveryEnabled;
   final bool deliverySyntheticRouting;
@@ -56,6 +58,7 @@ class PlatformSnapshot {
       oidcIssuerConfigured: issuer,
       aiEnabled: ai,
       bookingEnabled: json['bookingEnabled'] == true,
+      homeServicesEnabled: json['homeServicesEnabled'] == true,
       ridesEnabled: json['ridesEnabled'] == true,
       deliveryEnabled: json['deliveryEnabled'] == true,
       deliverySyntheticRouting: json['deliverySyntheticRouting'] == true,

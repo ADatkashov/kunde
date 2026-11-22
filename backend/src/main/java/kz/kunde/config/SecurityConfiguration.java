@@ -135,7 +135,8 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/food/restaurants",
                                 "/api/v1/food/restaurants/*", "/api/v1/food/restaurants/*/reviews", "/api/v1/food/promotions", "/api/v1/food/categories", "/api/v1/food/search", "/api/v1/groceries/categories", "/api/v1/groceries/brands", "/api/v1/groceries/products", "/api/v1/groceries/products/*", "/api/v1/groceries/products/*/reviews", "/api/v1/food/dishes/*/alternatives", "/api/v1/booking/venues",
-                                "/api/v1/booking/venues/*", "/api/v1/booking/slots", "/api/v1/booking/health/venues", "/api/v1/auto/categories", "/api/v1/auto/venues",
+                                "/api/v1/booking/venues/*", "/api/v1/booking/slots", "/api/v1/booking/health/venues",
+                                "/api/v1/home-services/categories", "/api/v1/home-services/definitions", "/api/v1/auto/categories", "/api/v1/auto/venues",
                                 "/api/v1/auto/venues/*", "/api/v1/auto/slots",
                                 "/api/v1/education/courses", "/api/v1/education/courses/*",
                                 "/api/v1/education/courses/*/cohorts", "/api/v1/education/certificates/*",
@@ -175,7 +176,8 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/food/restaurants",
                                 "/api/v1/food/restaurants/*", "/api/v1/food/restaurants/*/reviews", "/api/v1/food/promotions", "/api/v1/food/categories", "/api/v1/food/search", "/api/v1/groceries/categories", "/api/v1/groceries/brands", "/api/v1/groceries/products", "/api/v1/groceries/products/*", "/api/v1/groceries/products/*/reviews", "/api/v1/food/dishes/*/alternatives", "/api/v1/booking/venues",
-                                "/api/v1/booking/venues/*", "/api/v1/booking/slots", "/api/v1/booking/health/venues", "/api/v1/auto/categories", "/api/v1/auto/venues",
+                                "/api/v1/booking/venues/*", "/api/v1/booking/slots", "/api/v1/booking/health/venues",
+                                "/api/v1/home-services/categories", "/api/v1/home-services/definitions", "/api/v1/auto/categories", "/api/v1/auto/venues",
                                 "/api/v1/auto/venues/*", "/api/v1/auto/slots",
                                 "/api/v1/education/courses", "/api/v1/education/courses/*",
                                 "/api/v1/education/courses/*/cohorts", "/api/v1/education/certificates/*",
