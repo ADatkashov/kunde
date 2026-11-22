@@ -15,6 +15,7 @@ class PlatformSnapshot {
     this.healthEnabled = false,
     this.educationEnabled = false,
     this.groceriesEnabled = false,
+    this.mapsEnabled = false,
   });
 
   final String releaseStage;
@@ -40,6 +41,9 @@ class PlatformSnapshot {
   /// KUNDE Leisure; on by default in DEV/TEST, decided by the server; absent on older servers.
   final bool leisureEnabled;
   final bool eventsEnabled;
+
+  /// KUNDE Maps Platform is the server's routing provider; map screens also need the product flag. Absent on older servers.
+  final bool mapsEnabled;
 
   factory PlatformSnapshot.fromJson(Map<String, dynamic> json) {
     final stage = json['releaseStage'];
@@ -67,6 +71,7 @@ class PlatformSnapshot {
       eventsEnabled: json['eventsEnabled'] == true,
       healthEnabled: json['healthEnabled'] == true,
       educationEnabled: json['educationEnabled'] == true,
+      mapsEnabled: json['mapsEnabled'] == true,
       groceriesEnabled: json.containsKey('groceriesEnabled')
           ? json['groceriesEnabled'] == true
           : marketplace,
