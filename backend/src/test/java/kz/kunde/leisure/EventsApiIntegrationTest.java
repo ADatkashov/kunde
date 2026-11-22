@@ -182,4 +182,32 @@ class EventsApiIntegrationTest {
         t.send("GET", base + "/summary?product=EVENTS", leisure, null, null).andExpect(status().isForbidden());
         t.send("POST", base + "/events/" + film + "/decision", leisure, "{\"decision\":\"UNBLOCK\"}", null).andExpect(status().isForbidden());
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void organiserSalesReportShowsOwnEventsOnly() throws Exception {
+        UUID partnerA = db.queryForObject("select partner_id from marketplace.leisure_venues where slug = 'demo-leisure-cinema'", UUID.class);
+        String ownerA = t.login("+77000000002");
+        String ownerB = t.login("+77000000003");
+        String alice = t.login("+77000000541");
+        UUID film = t.event("Демо-фильм");
+        UUID session = t.firstSession(film);
+        UUID std = t.ticketType(film, "Стандарт");
+        String hold = t.body(t.send("POST", "/api/v1/leisure/sessions/" + session + "/holds", alice,
+                "{\"lines\":[{\"ticketTypeId\":\"" + std + "\",\"seatIds\":[\"" + t.seat(session, "C", 4) + "\",\"" + t.seat(session, "C", 5) + "\"]}]}", null).andExpect(status().isCreated()));
+        t.send("POST", "/api/v1/leisure/orders", alice, "{\"holdId\":\"" + JsonPath.read(hold, "$.id") + "\",\"paymentMethod\":\"TEST_CARD\",\"ageConfirmed\":true}",
+                "report-test-key-000000001").andExpect(status().is2xxSuccessful());
+        String path = "/api/v1/partner/partners/" + partnerA + "/leisure/reports/sales";
+        String report = t.body(t.send("GET", path + "?product=EVENTS&days=30", ownerA, null, null).andExpect(status().isOk()));
+        assertThat((List<String>) JsonPath.read(report, "$[*].product")).isNotEmpty().containsOnly("EVENTS");
+        int i = ((List<String>) JsonPath.read(report, "$[*].eventId")).indexOf(film.toString());
+        assertThat(i).isGreaterThanOrEqualTo(0);
+        assertThat(((Number) JsonPath.read(report, "$[" + i + "].tickets")).longValue()).isEqualTo(2L);
+        assertThat(((Number) JsonPath.read(report, "$[" + i + "].revenueMinor")).longValue()).isEqualTo(400000L);
+        assertThat(((Number) JsonPath.read(report, "$[" + i + "].upcomingSold")).longValue()).isGreaterThanOrEqualTo(2L);
+        assertThat((List<?>) JsonPath.read(t.body(t.send("GET", path + "?product=LEISURE", ownerA, null, null).andExpect(status().isOk())), "$[?(@.eventId=='" + film + "')]")).isEmpty();
+        // another organiser cannot read this organiser's report
+        t.send("GET", path, ownerB, null, null).andExpect(status().is4xxClientError());
+        t.send("GET", path + "?product=NOPE", ownerA, null, null).andExpect(status().isBadRequest());
+    }
 }

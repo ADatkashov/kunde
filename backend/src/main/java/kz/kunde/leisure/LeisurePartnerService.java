@@ -66,6 +66,10 @@ public class LeisurePartnerService {
 
     public record AuditRow(long id, String action, String target, String detail, String actor, OffsetDateTime at) {}
 
+    /** One line of the sales report: what an event sold in the window, what was refunded, and how full its upcoming sessions are. */
+    public record SalesLine(String eventId, String title, String category, String product, int upcomingSessions, int upcomingCapacity, int upcomingSold,
+            long tickets, long revenueMinor, long refundedMinor, long admittedGuests) {}
+
     public record Stats(int days, long orders, long tickets, long bookedMinor, long admittedGuests, long upcomingSessions) {}
 
     private final JdbcTemplate db;
@@ -659,6 +663,35 @@ public class LeisurePartnerService {
                 + "join marketplace.leisure_categories c on c.code = e.category_code "
                 + "where v.partner_id = ? and s.status = 'SCHEDULED' and s.starts_at > now() and (?::text is null or c.product = ?::text)", Long.class, partner, pr, pr);
         return new Stats(d, r[0], r[2], r[1], r[3], upcoming);
+    }
+
+    /**
+     * Sales report per event of this organiser (OWNER/MANAGER only): confirmed orders created in the window, tickets, money taken and refunded
+     * (the DEV/TEST ledger), guests admitted at the gate, and the fill of the event's upcoming sessions. Only this partner's events are visible.
+     */
+    @Transactional(readOnly = true)
+    public List<SalesLine> salesReport(UUID actor, UUID partner, int days, String product) {
+        partners.requireProcessing(actor, partner, MANAGE);
+        String pr = product(product);
+        int d = Math.max(1, Math.min(days, 90));
+        return db.query("""
+                select e.id, e.title, e.category_code, c.product,
+                  (select count(*) from marketplace.leisure_sessions s where s.event_id = e.id and s.status = 'SCHEDULED' and s.starts_at > now()),
+                  (select coalesce(sum(s.capacity), 0) from marketplace.leisure_sessions s where s.event_id = e.id and s.status = 'SCHEDULED' and s.starts_at > now()),
+                  (select count(*) from transactions.leisure_tickets t join marketplace.leisure_sessions s on s.id = t.session_id
+                     where s.event_id = e.id and s.status = 'SCHEDULED' and s.starts_at > now() and t.status in ('PENDING', 'VALID', 'USED')),
+                  (select count(*) from transactions.leisure_tickets t join transactions.leisure_orders o on o.id = t.order_id
+                     where o.event_id = e.id and o.status = 'CONFIRMED' and t.status in ('VALID', 'USED') and o.created_at > now() - (? * interval '1 day')),
+                  (select coalesce(sum(o.total_minor), 0) from transactions.leisure_orders o
+                     where o.event_id = e.id and o.status = 'CONFIRMED' and o.created_at > now() - (? * interval '1 day')),
+                  (select coalesce(sum(p.refunded_minor), 0) from transactions.leisure_payments p join transactions.leisure_orders o on o.id = p.order_id
+                     where o.event_id = e.id and o.created_at > now() - (? * interval '1 day')),
+                  (select coalesce(sum(t.admits), 0) from transactions.leisure_tickets t join marketplace.leisure_sessions s on s.id = t.session_id
+                     where s.event_id = e.id and t.status = 'USED' and t.used_at > now() - (? * interval '1 day'))
+                from marketplace.leisure_events e join marketplace.leisure_venues v on v.id = e.venue_id join marketplace.leisure_categories c on c.code = e.category_code
+                where v.partner_id = ? and e.status in ('PUBLISHED', 'ARCHIVED') and (?::text is null or c.product = ?::text)
+                order by 9 desc, e.title limit 100""", (rs, n) -> new SalesLine(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getInt(5), rs.getInt(6),
+                rs.getInt(7), rs.getLong(8), rs.getLong(9), rs.getLong(10), rs.getLong(11)), d, d, d, d, partner, pr, pr);
     }
 
     @Transactional(readOnly = true)
