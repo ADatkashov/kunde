@@ -1,0 +1,11 @@
+{
+  "status": "PASSED",
+  "phase": "completed",
+  "completed": [
+    "partner_apk_picking_and_handover",
+    "executor_delivery_api",
+    "admin_control_center_api"
+  ],
+  "data": "synthetic",
+  "paymentEnabled": false
+}
