@@ -34,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
         "app.delivery.dispatch-enabled=true",
         "app.delivery.partner-enabled=true",
         "DELIVERY_HANDOFF_KEY=synthetic-handoff-fixture-only-000000000",
+        "app.delivery.max-weight-grams=50000",
         "app.delivery.base-kzt=400",
         "app.delivery.per-km-kzt=200",
         "app.delivery.per-kg-kzt=100"
@@ -82,6 +83,12 @@ class DeliveryApiIntegrationTest {
                 .andExpect(status().isConflict());
         http.perform(get(PATH + "/" + id).with(customer("other"))).andExpect(status().isNotFound());
 
+        http.perform(get(PATH + "/" + id).with(customer("owner")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tariffVersion").value((String) JsonPath.read(quoted, "$.tariffVersion")))
+                .andExpect(jsonPath("$.distanceMeters").value((Integer) JsonPath.read(quoted, "$.distanceMeters")))
+                .andExpect(jsonPath("$.durationSeconds").value((Integer) JsonPath.read(quoted, "$.durationSeconds")));
+
         for (int retry = 0; retry < 2; retry++) {
             http.perform(post(PATH + "/" + id + "/cancel").with(customer("owner")))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("CANCELLED_BY_CUSTOMER"));
@@ -101,9 +108,30 @@ class DeliveryApiIntegrationTest {
     }
 
     @Test
+    void enforcesDocumentWeightLimitEvenWhenEnvironmentAllowsHeavierParcels() throws Exception {
+        http.perform(post(PATH + "/quotes").with(customer("owner"))
+                        .contentType(MediaType.APPLICATION_JSON).content(QUOTE.replace(":500", ":2000")))
+                .andExpect(status().isCreated());
+        http.perform(post(PATH + "/quotes").with(customer("owner"))
+                        .contentType(MediaType.APPLICATION_JSON).content(QUOTE.replace(":500", ":2001")))
+                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("DELIVERY_LIMIT_EXCEEDED"));
+    }
+
+    @Test
+    void enforcesThirtyKilogramCeilingForParcels() throws Exception {
+        String parcel = QUOTE.replace("DOCUMENTS", "MEDIUM_PARCEL");
+        http.perform(post(PATH + "/quotes").with(customer("owner"))
+                        .contentType(MediaType.APPLICATION_JSON).content(parcel.replace(":500", ":30000")))
+                .andExpect(status().isCreated());
+        http.perform(post(PATH + "/quotes").with(customer("owner"))
+                        .contentType(MediaType.APPLICATION_JSON).content(parcel.replace(":500", ":30001")))
+                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("DELIVERY_LIMIT_EXCEEDED"));
+    }
+
+    @Test
     void rejectsOversizeAndUnknownSyntheticRoute() throws Exception {
         http.perform(post(PATH + "/quotes").with(customer("owner"))
-                        .contentType(MediaType.APPLICATION_JSON).content(QUOTE.replace("500", "5100")))
+                        .contentType(MediaType.APPLICATION_JSON).content(QUOTE.replace(":30,", ":51,")))
                 .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("DELIVERY_LIMIT_EXCEEDED"));
         http.perform(post(PATH + "/quotes").with(customer("owner"))
                         .contentType(MediaType.APPLICATION_JSON).content(QUOTE.replace("43.25", "42.25")))
