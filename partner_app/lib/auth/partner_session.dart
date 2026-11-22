@@ -57,7 +57,8 @@ class PartnerSession {
   Future<String?>? _refreshing;
 
   // The isolated Android CI fixture uses an ADB reverse tunnel to loopback.
-  bool get _localFixture => kDebugMode &&
+  bool get _localFixture =>
+      kDebugMode &&
       const bool.fromEnvironment('PARTNER_LOCAL_FIXTURE') &&
       apiBase.scheme == 'http' &&
       apiBase.host == 'localhost' &&

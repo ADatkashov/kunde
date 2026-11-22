@@ -10,6 +10,18 @@ extension LeisureS on S {
 
   String get lzTitle => _l('Досуг', 'Демалыс', 'Leisure');
   String get evTitle => _l('События', 'Іс-шаралар', 'Events');
+  String get lzSalesReport =>
+      _l('Продажи по событиям', 'Іс-шаралар бойынша сатылым', 'Sales by event');
+  String get lzNoSales => _l('За период продаж нет', 'Бұл кезеңде сатылым жоқ',
+      'No sales in this period');
+  String lzReportLine(int tickets, String revenue, String refunded) => _l(
+      'Билетов: $tickets · $revenue · возвраты: $refunded',
+      'Билет: $tickets · $revenue · қайтарым: $refunded',
+      'Tickets: $tickets · $revenue · refunded: $refunded');
+  String lzFill(int sold, int capacity) => _l(
+      'Ближайшие сеансы: занято $sold из $capacity',
+      'Жақын сеанстар: $sold / $capacity бос емес',
+      'Upcoming sessions: $sold of $capacity taken');
   String get lzOverview => _l('Обзор', 'Шолу', 'Overview');
   String get lzEvents => _l('Мероприятия', 'Іс-шаралар', 'Events');
   String get lzBookings => _l('Бронирования', 'Брондаулар', 'Bookings');

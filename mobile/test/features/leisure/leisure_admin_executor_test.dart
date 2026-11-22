@@ -229,6 +229,12 @@ void main() {
     await tester.tap(find.text('Брони'));
     await tester.pumpAndSettle();
     expect(b.queries.any((q) => q.contains('product=EVENTS')), isTrue);
+    await tester.tap(find.text('Жалобы'));
+    await tester.pumpAndSettle();
+    expect(
+        b.queries.any((q) =>
+            q.contains('includeResolved') && q.contains('product=EVENTS')),
+        isTrue);
     expect(b.queries.where((q) => q.contains('product=LEISURE')), isEmpty);
   });
 

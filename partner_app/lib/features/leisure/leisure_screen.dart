@@ -90,16 +90,21 @@ class _OverviewState extends State<_Overview> {
   late Future<Map<String, dynamic>> _stats = widget.ops.stats(_days);
   late Future<List<Map<String, dynamic>>> _upcoming =
       widget.ops.orders('upcoming');
+  Future<List<Map<String, dynamic>>>? _report;
 
   void _reload() => setState(() {
         _stats = widget.ops.stats(_days);
         _upcoming = widget.ops.orders('upcoming');
+        _report = null; // rebuilt below for managers only
       });
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
     final theme = Theme.of(context);
+    // the report is for OWNER/MANAGER only (the server refuses staff); never keep it after the role changed
+    final report =
+        widget.canManage ? (_report ??= widget.ops.salesReport(_days)) : null;
     return RefreshIndicator(
       onRefresh: () async {
         _reload();
@@ -168,6 +173,43 @@ class _OverviewState extends State<_Overview> {
             ]);
           },
         ),
+        if (report != null) ...[
+          Text(s.lzSalesReport,
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w800)),
+          const SizedBox(height: Gap.sm),
+          FutureBuilder<List<Map<String, dynamic>>>(
+            future: report,
+            builder: (context, snap) {
+              if (snap.connectionState != ConnectionState.done) {
+                return const SkeletonBox(height: 90, radius: 16);
+              }
+              if (snap.hasError) {
+                return ErrorView(error: snap.error!, onRetry: _reload);
+              }
+              final rows = snap.data!
+                  .where((r) =>
+                      (r['tickets'] as num) > 0 ||
+                      (r['upcomingCapacity'] as num) > 0)
+                  .toList();
+              if (rows.isEmpty) return Text(s.lzNoSales);
+              return Column(children: [
+                for (final r in rows)
+                  Card(
+                    child: ListTile(
+                      title: Text('${r['title']}'),
+                      subtitle: Text(
+                        '${s.lzReportLine((r['tickets'] as num).toInt(), formatMoney((r['revenueMinor'] as num).toInt()), formatMoney((r['refundedMinor'] as num).toInt()))}\n'
+                        '${s.lzFill((r['upcomingSold'] as num).toInt(), (r['upcomingCapacity'] as num).toInt())}',
+                      ),
+                      isThreeLine: true,
+                    ),
+                  ),
+              ]);
+            },
+          ),
+          const SizedBox(height: Gap.lg),
+        ],
         const SizedBox(height: Gap.lg),
         Row(children: [
           if (widget.canManage)

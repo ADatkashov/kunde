@@ -65,7 +65,7 @@ class _LeisureAdminScreenState extends State<LeisureAdminScreen>
             _Overview(auth: widget.auth, product: widget.product),
             _Moderation(auth: widget.auth, product: widget.product),
             _Bookings(auth: widget.auth, product: widget.product),
-            _Complaints(auth: widget.auth),
+            _Complaints(auth: widget.auth, product: widget.product),
             _Categories(auth: widget.auth, product: widget.product),
             _Audit(auth: widget.auth),
           ]),
@@ -793,9 +793,10 @@ class _BookingsState extends State<_Bookings> {
 }
 
 class _Complaints extends StatefulWidget {
-  const _Complaints({required this.auth});
+  const _Complaints({required this.auth, this.product});
 
   final AuthRepository auth;
+  final String? product;
 
   @override
   State<_Complaints> createState() => _ComplaintsState();
@@ -806,7 +807,7 @@ class _ComplaintsState extends State<_Complaints> {
   late Future<List<Map<String, dynamic>>> _rows = _load();
 
   Future<List<Map<String, dynamic>>> _load() =>
-      _list(widget.auth, 'complaints?includeResolved=$_all');
+      _list(widget.auth, 'complaints?includeResolved=$_all', widget.product);
 
   void _reload() => setState(() {
         _rows = _load();

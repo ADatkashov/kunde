@@ -310,18 +310,27 @@ public class AdminLeisureController {
     }
 
     @GetMapping("/complaints")
-    ResponseEntity<List<ComplaintRow>> complaints(@AuthenticationPrincipal Jwt principal, @RequestParam(defaultValue = "false") boolean includeResolved) {
-        admin(principal);
+    ResponseEntity<List<ComplaintRow>> complaints(@AuthenticationPrincipal Jwt principal, @RequestParam(defaultValue = "false") boolean includeResolved,
+            @RequestParam(required = false) String product) {
+        String pr = product(product);
+        adminFor(principal, pr);
+        // a complaint belongs to the product of its order; one without an order concerns the venue only and is shown in both control centers
         return ok(db.query("""
                 select c.id, v.name, c.order_id, c.body, c.status, c.resolution, c.created_at from transactions.leisure_complaints c join marketplace.leisure_venues v on v.id = c.venue_id
-                where (? or c.status = 'OPEN') order by c.created_at desc limit 100""", (rs, n) -> new ComplaintRow(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
-                rs.getString(5), rs.getString(6), kz.kunde.leisure.LeisureTime.local(rs, 7)), includeResolved));
+                left join transactions.leisure_orders o on o.id = c.order_id left join marketplace.leisure_events e on e.id = o.event_id
+                left join marketplace.leisure_categories k on k.code = e.category_code
+                where (? or c.status = 'OPEN') and (?::text is null or c.order_id is null or k.product = ?::text) order by c.created_at desc limit 100""",
+                (rs, n) -> new ComplaintRow(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6),
+                        kz.kunde.leisure.LeisureTime.local(rs, 7)), includeResolved, pr, pr));
     }
 
     @Transactional
     @PostMapping("/complaints/{id}/resolve")
     ResponseEntity<Void> resolve(@AuthenticationPrincipal Jwt principal, @PathVariable UUID id, @Valid @RequestBody ResolveBody body) {
-        UUID admin = admin(principal);
+        String owner = productOf("select k.product from transactions.leisure_complaints c join transactions.leisure_orders o on o.id = c.order_id "
+                + "join marketplace.leisure_events e on e.id = o.event_id join marketplace.leisure_categories k on k.code = e.category_code where c.id = ?", id);
+        boolean attributed = !db.query("select 1 from transactions.leisure_complaints where id = ? and order_id is not null", (rs, n) -> 1, id).isEmpty();
+        UUID admin = attributed ? adminFor(principal, owner) : admin(principal); // an order decides the product, a venue-only complaint is shared
         if (db.update("update transactions.leisure_complaints set status = 'RESOLVED', resolution = ?, resolved_by = ?, resolved_at = now() where id = ? and status = 'OPEN'", body.resolution(), admin, id) == 0) {
             throw new ApiException(HttpStatus.NOT_FOUND, "COMPLAINT_NOT_FOUND", "Open complaint not found");
         }
@@ -332,7 +341,8 @@ public class AdminLeisureController {
     @Transactional
     @PostMapping("/reviews/{id}/hide")
     ResponseEntity<Void> hideReview(@AuthenticationPrincipal Jwt principal, @PathVariable UUID id, @Valid @RequestBody ReasonBody body) {
-        UUID admin = admin(principal);
+        UUID admin = adminFor(principal, productOf("select k.product from transactions.leisure_reviews r join marketplace.leisure_events e on e.id = r.event_id "
+                + "join marketplace.leisure_categories k on k.code = e.category_code where r.id = ?", id));
         if (db.update("update transactions.leisure_reviews set status = 'HIDDEN' where id = ? and status = 'PUBLISHED'", id) == 0) {
             throw new ApiException(HttpStatus.NOT_FOUND, "REVIEW_NOT_FOUND", "Published review not found");
         }

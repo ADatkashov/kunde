@@ -56,6 +56,23 @@ class _Backend {
         'upcomingSessions': 9
       });
     }
+    if (path == '/reports/sales') {
+      return _json([
+        {
+          'eventId': 'e1',
+          'title': 'Демо-фильм «Ночной экспресс» (синтетика)',
+          'category': 'CINEMA',
+          'product': 'EVENTS',
+          'upcomingSessions': 4,
+          'upcomingCapacity': 240,
+          'upcomingSold': 12,
+          'tickets': 9,
+          'revenueMinor': 1800000,
+          'refundedMinor': 200000,
+          'admittedGuests': 3
+        }
+      ]);
+    }
     if (path == '/orders') {
       final scope = r.url.queryParameters['scope'];
       if (scope == 'requests') {
@@ -122,6 +139,29 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Create event'), findsNothing);
     expect(find.text('Scan QR'), findsOneWidget);
+  });
+
+  testWidgets('a manager sees the sales report of own events, staff does not',
+      (tester) async {
+    tester.view.physicalSize = const Size(1080, 3200);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    final b = _Backend();
+    await tester.pumpWidget(_app(PartnerLeisureScreen(
+        ops: _ops(b, product: 'EVENTS'), canManage: true)));
+    await tester.pumpAndSettle();
+    expect(find.text('Продажи по событиям'), findsOneWidget);
+    expect(find.textContaining('Демо-фильм'), findsOneWidget);
+    expect(find.textContaining('Билетов: 9'), findsOneWidget);
+    expect(find.textContaining('занято 12 из 240'), findsOneWidget);
+    expect(b.calls.any((c) => c.endsWith('/reports/sales')), isTrue);
+    expect(b.queries.any((q) => q.contains('product=EVENTS')), isTrue);
+    final staff = _Backend();
+    await tester.pumpWidget(_app(PartnerLeisureScreen(
+        ops: _ops(staff, product: 'EVENTS'), canManage: false)));
+    await tester.pumpAndSettle();
+    expect(find.text('Продажи по событиям'), findsNothing);
+    expect(staff.calls.any((c) => c.endsWith('/reports/sales')), isFalse);
   });
 
   testWidgets('the Events section is its own product: title and server filter',

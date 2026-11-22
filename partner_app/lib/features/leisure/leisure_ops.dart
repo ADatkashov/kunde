@@ -26,6 +26,10 @@ class LeisureOps {
 
   Future<Map<String, dynamic>> stats(int days) =>
       api.getMap(_q('$_root/stats?days=$days'));
+
+  /// Sales per event of this organiser (OWNER/MANAGER only, server-enforced).
+  Future<List<Map<String, dynamic>>> salesReport(int days) =>
+      api.getList(_q('$_root/reports/sales?days=$days'));
   Future<List<Map<String, dynamic>>> venues() => api.getList('$_root/venues');
   Future<Map<String, dynamic>> createVenue(Map<String, dynamic> body) =>
       api.postMap('$_root/venues', body);

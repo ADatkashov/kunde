@@ -171,6 +171,12 @@ public class LeisurePartnerController {
         return ok(service.stats(user(p), partnerId, days, product));
     }
 
+    @GetMapping("/reports/sales")
+    ResponseEntity<List<LeisurePartnerService.SalesLine>> salesReport(@AuthenticationPrincipal Jwt p, @PathVariable UUID partnerId,
+            @RequestParam(defaultValue = "30") @Min(1) @Max(90) int days, @RequestParam(required = false) String product) {
+        return ok(service.salesReport(user(p), partnerId, days, product));
+    }
+
     @GetMapping("/history")
     ResponseEntity<List<AuditRow>> history(@AuthenticationPrincipal Jwt p, @PathVariable UUID partnerId, @RequestParam(defaultValue = "50") @Min(1) @Max(100) int limit,
             @RequestParam(defaultValue = "0") @Min(0) @Max(10000) int offset) {

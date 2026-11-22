@@ -182,4 +182,61 @@ class EventsApiIntegrationTest {
         t.send("GET", base + "/summary?product=EVENTS", leisure, null, null).andExpect(status().isForbidden());
         t.send("POST", base + "/events/" + film + "/decision", leisure, "{\"decision\":\"UNBLOCK\"}", null).andExpect(status().isForbidden());
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void organiserSalesReportShowsOwnEventsOnly() throws Exception {
+        UUID partnerA = db.queryForObject("select partner_id from marketplace.leisure_venues where slug = 'demo-leisure-cinema'", UUID.class);
+        String ownerA = t.login("+77000000002");
+        String ownerB = t.login("+77000000003");
+        String alice = t.login("+77000000541");
+        UUID film = t.event("Демо-фильм");
+        UUID session = t.firstSession(film);
+        UUID std = t.ticketType(film, "Стандарт");
+        String hold = t.body(t.send("POST", "/api/v1/leisure/sessions/" + session + "/holds", alice,
+                "{\"lines\":[{\"ticketTypeId\":\"" + std + "\",\"seatIds\":[\"" + t.seat(session, "C", 4) + "\",\"" + t.seat(session, "C", 5) + "\"]}]}", null).andExpect(status().isCreated()));
+        t.send("POST", "/api/v1/leisure/orders", alice, "{\"holdId\":\"" + JsonPath.read(hold, "$.id") + "\",\"paymentMethod\":\"TEST_CARD\",\"ageConfirmed\":true}",
+                "report-test-key-000000001").andExpect(status().is2xxSuccessful());
+        String path = "/api/v1/partner/partners/" + partnerA + "/leisure/reports/sales";
+        String report = t.body(t.send("GET", path + "?product=EVENTS&days=30", ownerA, null, null).andExpect(status().isOk()));
+        assertThat((List<String>) JsonPath.read(report, "$[*].product")).isNotEmpty().containsOnly("EVENTS");
+        int i = ((List<String>) JsonPath.read(report, "$[*].eventId")).indexOf(film.toString());
+        assertThat(i).isGreaterThanOrEqualTo(0);
+        assertThat(((Number) JsonPath.read(report, "$[" + i + "].tickets")).longValue()).isEqualTo(2L);
+        assertThat(((Number) JsonPath.read(report, "$[" + i + "].revenueMinor")).longValue()).isEqualTo(400000L);
+        assertThat(((Number) JsonPath.read(report, "$[" + i + "].upcomingSold")).longValue()).isGreaterThanOrEqualTo(2L);
+        assertThat((List<?>) JsonPath.read(t.body(t.send("GET", path + "?product=LEISURE", ownerA, null, null).andExpect(status().isOk())), "$[?(@.eventId=='" + film + "')]")).isEmpty();
+        // another organiser cannot read this organiser's report
+        t.send("GET", path, ownerB, null, null).andExpect(status().is4xxClientError());
+        t.send("GET", path + "?product=NOPE", ownerA, null, null).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void complaintsFollowTheProductOfTheirOrder() throws Exception {
+        String alice = t.login("+77000000541");
+        UUID film = t.event("Демо-фильм");
+        UUID session = t.firstSession(film);
+        UUID std = t.ticketType(film, "Стандарт");
+        String hold = t.body(t.send("POST", "/api/v1/leisure/sessions/" + session + "/holds", alice,
+                "{\"lines\":[{\"ticketTypeId\":\"" + std + "\",\"seatIds\":[\"" + t.seat(session, "B", 2) + "\"]}]}", null).andExpect(status().isCreated()));
+        String order = t.body(t.send("POST", "/api/v1/leisure/orders", alice, "{\"holdId\":\"" + JsonPath.read(hold, "$.id") + "\",\"paymentMethod\":\"TEST_CARD\",\"ageConfirmed\":true}",
+                "complaint-test-key-00001").andExpect(status().is2xxSuccessful()));
+        UUID venue = db.queryForObject("select venue_id from marketplace.leisure_events where id = ?", UUID.class, film);
+        String complaint = t.body(t.send("POST", "/api/v1/leisure/complaints", alice,
+                "{\"venueId\":\"" + venue + "\",\"orderId\":\"" + JsonPath.read(order, "$.id") + "\",\"body\":\"Проблема со входом (синтетика)\"}", null).andExpect(status().isCreated()));
+        String id = JsonPath.read(complaint, "$.id");
+        String eventsLogin = t.loginBody("+77000000542");
+        db.update("INSERT INTO identity.admin_grants (user_id, permission, reason) VALUES (?, 'EVENTS_OPERATIONS', 'synthetic DEV admin')", LeisureTestSupport.subject(eventsLogin));
+        String events = t.refreshed(eventsLogin);
+        String leisureLogin = t.loginBody("+77000000003");
+        db.update("INSERT INTO identity.admin_grants (user_id, permission, reason) VALUES (?, 'LEISURE_OPERATIONS', 'synthetic DEV admin')", LeisureTestSupport.subject(leisureLogin));
+        String leisure = t.refreshed(leisureLogin);
+        String base = "/api/v1/admin/leisure/complaints";
+        assertThat((List<String>) JsonPath.read(t.body(t.send("GET", base + "?product=EVENTS", events, null, null).andExpect(status().isOk())), "$[*].id")).contains(id);
+        assertThat((List<String>) JsonPath.read(t.body(t.send("GET", base + "?product=LEISURE", leisure, null, null).andExpect(status().isOk())), "$[*].id")).doesNotContain(id);
+        t.send("GET", base + "?product=EVENTS", leisure, null, null).andExpect(status().isForbidden());
+        t.send("POST", base + "/" + id + "/resolve", leisure, "{\"resolution\":\"не мой продукт\"}", null).andExpect(status().isForbidden());
+        t.send("POST", base + "/" + id + "/resolve", events, "{\"resolution\":\"Проверено, вход исправлен\"}", null).andExpect(status().isNoContent());
+    }
 }
