@@ -85,6 +85,28 @@ void main() {
     });
   }
 
+  testWidgets('delivery header fits a narrow screen at 200% text size',
+      (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(320, 640);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(MaterialApp(
+      locale: const Locale('en'),
+      theme: ThemeData.dark(),
+      supportedLocales: KundeLocalizations.supportedLocales,
+      localizationsDelegates: KundeLocalizations.localizationsDelegates,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(2)),
+        child: child!,
+      ),
+      home: DeliveryScreen(api: DeliveryApi(_Session()), synthetic: false),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('Send a parcel'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('synthetic pickup is labeled and gated', (tester) async {
     for (final enabled in [false, true]) {
       await tester.pumpWidget(MaterialApp(
