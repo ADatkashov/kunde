@@ -19,6 +19,14 @@ class PlatformControllerTest {
         assertThat(capabilities.aiEnabled()).isFalse();
         assertThat(capabilities.autoEnabled()).isFalse();
         assertThat(capabilities.homeServicesEnabled()).isFalse();
+        assertThat(capabilities.mapsEnabled()).isFalse();
+    }
+
+    @Test
+    void reportsMapsOnlyWhenTheMapsProviderIsConfigured() {
+        var toggles = TestToggles.of(new RidesFlags(false, false, false, false, false, false));
+        assertThat(new PlatformController("", "", false, false, toggles, true).capabilities().mapsEnabled()).isTrue();
+        assertThat(new PlatformController("", "", false, false, toggles, false).capabilities().mapsEnabled()).isFalse();
     }
 
     @Test
