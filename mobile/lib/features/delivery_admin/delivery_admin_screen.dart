@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../delivery/delivery_strings.dart';
 import '../identity/auth_repository.dart';
 import '../rides/ride_strings.dart';
 
@@ -22,6 +23,29 @@ class DeliveryAdminScreen extends StatefulWidget {
 
 class _DeliveryAdminScreenState extends State<DeliveryAdminScreen> {
   static const _root = 'admin/deliveries';
+  static const _shipmentStatuses = [
+    'CREATED',
+    'SEARCHING_COURIER',
+    'COURIER_ASSIGNED',
+    'COURIER_ARRIVING',
+    'COURIER_ARRIVED',
+    'PICKED_UP',
+    'IN_TRANSIT',
+    'DELIVERED',
+    'COMPLETED',
+    'CANCELLED_BY_CUSTOMER',
+    'CANCELLED_BY_COURIER',
+    'CANCELLED_BY_SYSTEM',
+    'NO_COURIER_AVAILABLE',
+    'PICKUP_FAILED',
+    'DELIVERY_FAILED',
+    'RETURN_REQUESTED',
+    'RETURNING',
+    'RETURNED_TO_SENDER',
+    'DISPUTED',
+  ];
+  String _shipmentStatus = '';
+  int _shipmentDays = 0;
   late Future<List<Map<String, dynamic>>> _rows = _load();
   bool _busy = false;
   bool _failed = false;
@@ -29,12 +53,32 @@ class _DeliveryAdminScreenState extends State<DeliveryAdminScreen> {
   Future<List<Map<String, dynamic>>> _load() async {
     final path = switch (widget.area) {
       DeliveryAdminArea.couriers => '$_root/couriers?includeReviewed=true',
-      DeliveryAdminArea.shipments => _root,
+      DeliveryAdminArea.shipments => _shipmentPath(),
       DeliveryAdminArea.complaints => '$_root/complaints',
     };
     return (await widget.auth.authorizedJson('GET', path) as List)
         .cast<Map<String, dynamic>>();
   }
+
+  String _shipmentPath() {
+    if (_shipmentStatus.isEmpty && _shipmentDays == 0) return _root;
+    final to = DateTime.now().toUtc();
+    return Uri(
+      path: _root,
+      queryParameters: {
+        if (_shipmentStatus.isNotEmpty) 'status': _shipmentStatus,
+        if (_shipmentDays > 0) ...{
+          'from': to.subtract(Duration(days: _shipmentDays)).toIso8601String(),
+          'to': to.toIso8601String(),
+        },
+      },
+    ).toString();
+  }
+
+  String _periodLabel(int days, RideStrings s) => days == 0
+      ? s.t('Все даты', 'Барлық күндер', 'All dates')
+      : s.t('Последние ${days * 24} ч', 'Соңғы ${days * 24} сағ',
+          'Last ${days * 24} hours');
 
   void _reload() {
     setState(() {
@@ -70,7 +114,38 @@ class _DeliveryAdminScreenState extends State<DeliveryAdminScreen> {
     };
     return Scaffold(
       appBar: AppBar(title: Text(title), actions: [
-        if (widget.area == DeliveryAdminArea.shipments)
+        if (widget.area == DeliveryAdminArea.shipments) ...[
+          PopupMenuButton<String>(
+            tooltip: s.t('Фильтр статуса', 'Күй сүзгісі', 'Filter by status'),
+            icon: const Icon(Icons.filter_list),
+            initialValue: _shipmentStatus,
+            onSelected: (status) {
+              _shipmentStatus = status;
+              _reload();
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: '',
+                child:
+                    Text(s.t('Все статусы', 'Барлық күйлер', 'All statuses')),
+              ),
+              for (final status in _shipmentStatuses)
+                PopupMenuItem(value: status, child: Text(_status(status, s))),
+            ],
+          ),
+          PopupMenuButton<int>(
+            tooltip: s.t('Фильтр по дате', 'Күн сүзгісі', 'Filter by date'),
+            icon: const Icon(Icons.date_range_outlined),
+            initialValue: _shipmentDays,
+            onSelected: (days) {
+              _shipmentDays = days;
+              _reload();
+            },
+            itemBuilder: (context) => [
+              for (final days in [0, 1, 7, 30])
+                PopupMenuItem(value: days, child: Text(_periodLabel(days, s))),
+            ],
+          ),
           IconButton(
             tooltip: s.t('Сводка', 'Жиынтық', 'Summary'),
             icon: const Icon(Icons.bar_chart_outlined),
@@ -93,6 +168,7 @@ class _DeliveryAdminScreenState extends State<DeliveryAdminScreen> {
               ),
             ),
           ),
+        ],
         IconButton(
           tooltip: s.retry,
           icon: const Icon(Icons.refresh),
@@ -110,6 +186,17 @@ class _DeliveryAdminScreenState extends State<DeliveryAdminScreen> {
             return Center(child: Text(s.error));
           }
           return ListView(padding: const EdgeInsets.all(16), children: [
+            if (widget.area == DeliveryAdminArea.shipments &&
+                (_shipmentStatus.isNotEmpty || _shipmentDays > 0))
+              Wrap(
+                spacing: 8,
+                children: [
+                  if (_shipmentStatus.isNotEmpty)
+                    Chip(label: Text(_status(_shipmentStatus, s))),
+                  if (_shipmentDays > 0)
+                    Chip(label: Text(_periodLabel(_shipmentDays, s))),
+                ],
+              ),
             if (_busy) const LinearProgressIndicator(),
             if (_failed) Semantics(liveRegion: true, child: Text(s.error)),
             if (snapshot.data!.isEmpty)
@@ -263,7 +350,7 @@ class _DeliveryAdminScreenState extends State<DeliveryAdminScreen> {
         'RETURNED_TO_SENDER' => s.t('Возвращено', 'Қайтарылды', 'Returned'),
         'OPEN' => s.t('Открыта', 'Ашық', 'Open'),
         'RESOLVED' => s.t('Закрыта', 'Жабық', 'Resolved'),
-        _ => state,
+        _ => DeliveryStrings(context).status(state),
       };
 }
 

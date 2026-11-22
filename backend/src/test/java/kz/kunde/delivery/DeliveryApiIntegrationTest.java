@@ -345,6 +345,17 @@ class DeliveryApiIntegrationTest {
         http.perform(get(adminPath + "/" + id + "/audit").with(scopedAdmin)).andExpect(status().isOk());
         var createdAt = db.queryForObject("select created_at from transactions.deliveries where id = ?",
                 OffsetDateTime.class, UUID.fromString(id));
+        var filtered = get(adminPath).param("status", "CREATED")
+                .param("from", createdAt.toString()).param("to", createdAt.plusDays(1).toString());
+        http.perform(filtered.with(scopedAdmin)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1)).andExpect(jsonPath("$[0].id").value(id));
+        http.perform(get(adminPath).param("status", "COMPLETED").with(scopedAdmin))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+        http.perform(get(adminPath).param("to", createdAt.toString()).with(scopedAdmin))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+        http.perform(get(adminPath).param("from", createdAt.toString())
+                        .param("to", createdAt.toString()).with(scopedAdmin))
+                .andExpect(status().isBadRequest());
         var report = get(adminPath + "/summary").param("from", createdAt.toString())
                 .param("to", createdAt.plusDays(1).toString());
         http.perform(report.with(scopedAdmin)).andExpect(status().isOk())
@@ -359,6 +370,8 @@ class DeliveryApiIntegrationTest {
                 .andExpect(status().isBadRequest());
         http.perform(post(adminPath + "/" + id + "/return").with(scopedAdmin)).andExpect(status().isForbidden());
         db.update("update identity.admin_role_assignments set organization_id = ? where id = ?", second, assignment);
+        http.perform(filtered.with(scopedAdmin)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
         http.perform(report.with(scopedAdmin)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(0)).andExpect(jsonPath("$.byStatus").isEmpty());
         http.perform(get(adminPath).with(scopedAdmin)).andExpect(status().isOk())
