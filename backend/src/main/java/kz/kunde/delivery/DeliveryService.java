@@ -160,6 +160,20 @@ public class DeliveryService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "DELIVERY_NOT_FOUND", "Delivery was not found"));
     }
 
+    public List<TimelineEvent> timeline(UUID user, UUID partner, UUID id) {
+        var events = db.query("""
+                select e.status, e.occurred_at
+                from transactions.deliveries d
+                join transactions.delivery_events e on e.delivery_id = d.id
+                """ + scope(partner) + " and d.id = ? order by e.id",
+                (rs, row) -> new TimelineEvent(DeliveryState.valueOf(rs.getString("status")),
+                        rs.getObject("occurred_at", OffsetDateTime.class)), partner == null ? user : partner, id);
+        if (events.isEmpty()) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "DELIVERY_NOT_FOUND", "Delivery was not found");
+        }
+        return events;
+    }
+
     @Transactional
     public Order cancel(UUID user, UUID partner, UUID id) {
         int changed = db.update("""
@@ -254,6 +268,8 @@ public class DeliveryService {
     public record AssignedCourier(String name, String vehicle) {}
 
     public record Creation(Order order, boolean created) {}
+
+    public record TimelineEvent(DeliveryState status, OffsetDateTime occurredAt) {}
 
     public record ShipmentTotal(DeliveryState status, long shipmentCount, BigDecimal quotedTotalKzt) {}
 }

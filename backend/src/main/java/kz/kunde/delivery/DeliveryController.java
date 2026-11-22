@@ -71,6 +71,12 @@ public class DeliveryController {
         return response(HttpStatus.OK, service.get(identity.get(principal).id(), null, id));
     }
 
+    @GetMapping("/{id}/timeline")
+    public ResponseEntity<List<DeliveryService.TimelineEvent>> timeline(@AuthenticationPrincipal Jwt principal,
+            @PathVariable UUID id) {
+        return response(HttpStatus.OK, service.timeline(identity.get(principal).id(), null, id));
+    }
+
     @PostMapping("/{id}/cancel")
     public ResponseEntity<DeliveryService.Order> cancel(@AuthenticationPrincipal Jwt principal, @PathVariable("id") UUID id) {
         return response(HttpStatus.OK, service.cancel(identity.get(principal).id(), null, id));

@@ -9,6 +9,7 @@ import '../identity/support_panel.dart';
 import '../rides/ride_api.dart';
 import 'delivery_api.dart';
 import 'delivery_strings.dart';
+import 'delivery_timeline.dart';
 
 class DeliveryScreen extends StatefulWidget {
   const DeliveryScreen(
@@ -632,6 +633,7 @@ class _DetailsState extends State<_Details> {
                   '${point.$1.toStringAsFixed(5)}, ${point.$2.toStringAsFixed(5)}'),
             ),
           Text('${_order.amount} ₸'),
+          DeliveryTimeline(api: widget.api, order: _order),
           if (_order.parcel case final parcel?)
             ListTile(
               title: Text(s.parcel(_order.parcelType ?? 'OTHER_ALLOWED_GOODS')),

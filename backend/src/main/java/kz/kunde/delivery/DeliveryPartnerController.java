@@ -73,6 +73,12 @@ public class DeliveryPartnerController {
         return noStore(HttpStatus.OK, deliveries.totals(partnerId));
     }
 
+    @GetMapping("/{id}/timeline")
+    public ResponseEntity<List<DeliveryService.TimelineEvent>> timeline(@AuthenticationPrincipal Jwt principal,
+            @PathVariable UUID partnerId, @PathVariable UUID id) {
+        return noStore(HttpStatus.OK, deliveries.timeline(actor(principal, partnerId), partnerId, id));
+    }
+
     @PostMapping("/{id}/cancel")
     public ResponseEntity<DeliveryService.Order> cancel(@AuthenticationPrincipal Jwt principal,
             @PathVariable UUID partnerId, @PathVariable UUID id) {

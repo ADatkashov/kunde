@@ -66,6 +66,18 @@ class DeliveryApi {
     ];
   }
 
+  Future<List<DeliveryEvent>> timeline(String id) async {
+    final data = await auth.authorizedJson('GET', 'deliveries/$id/timeline')
+        as List<dynamic>;
+    return [
+      for (final Map<String, dynamic> item in data)
+        DeliveryEvent(
+          item['status'] as String,
+          DateTime.parse(item['occurredAt'] as String),
+        ),
+    ];
+  }
+
   Future<DeliveryOrder> detail(String id) => _order('GET', 'deliveries/$id');
   Future<DeliveryOrder> dispatch(String id) =>
       _order('POST', 'deliveries/$id/dispatch');
@@ -178,4 +190,11 @@ class DeliveryOrder {
       searching ||
       const {'COURIER_ASSIGNED', 'COURIER_ARRIVING', 'COURIER_ARRIVED'}
           .contains(status);
+}
+
+class DeliveryEvent {
+  const DeliveryEvent(this.status, this.occurredAt);
+
+  final String status;
+  final DateTime occurredAt;
 }

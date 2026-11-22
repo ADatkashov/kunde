@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
 import 'package:kunde_mobile/features/delivery/delivery_api.dart';
 import 'package:kunde_mobile/features/delivery/delivery_screen.dart';
+import 'package:kunde_mobile/features/delivery/delivery_timeline.dart';
 import 'package:kunde_mobile/features/identity/auth_repository.dart';
 
 class _Session implements AuthRepository {
@@ -33,7 +34,54 @@ class _HistorySession extends _Session {
   }
 }
 
+class _TimelineSession extends _Session {
+  @override
+  Future<dynamic> authorizedJson(
+    String method,
+    String path, {
+    Map<String, dynamic>? body,
+    Set<int> expected = const {200},
+    Map<String, String>? headers,
+  }) async {
+    expect((method, path), ('GET', 'deliveries/order-1/timeline'));
+    return [
+      {'status': 'CREATED', 'occurredAt': '2026-11-22T10:00:00Z'},
+      {'status': 'IN_TRANSIT', 'occurredAt': '2026-11-22T10:15:00Z'},
+    ];
+  }
+}
+
 void main() {
+  testWidgets('expands the recorded shipment progress in order',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      locale: const Locale('en'),
+      supportedLocales: KundeLocalizations.supportedLocales,
+      localizationsDelegates: KundeLocalizations.localizationsDelegates,
+      home: Scaffold(
+        body: DeliveryTimeline(
+          api: DeliveryApi(_TimelineSession()),
+          order: DeliveryOrder.fromJson({
+            'id': 'order-1',
+            'status': 'IN_TRANSIT',
+            'pickupAddress': 'Pickup',
+            'destinationAddress': 'Destination',
+            'amountKzt': 100,
+          }),
+        ),
+      ),
+    ));
+    expect(find.text('In transit'), findsNothing);
+    await tester.tap(find.text('Delivery progress'));
+    await tester.pumpAndSettle();
+    expect(find.text('Created'), findsOneWidget);
+    expect(find.text('In transit'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Created')).dy,
+      lessThan(tester.getTopLeft(find.text('In transit')).dy),
+    );
+  });
+
   testWidgets('retries failed shipment history after reconnecting',
       (tester) async {
     final session = _HistorySession(failFirst: true);
