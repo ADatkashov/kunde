@@ -392,11 +392,11 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/kunde_maps_sdk"
-      ref: "59e8ff44cd55672732ad91e6ba33fd79d91d1f66"
-      resolved-ref: "59e8ff44cd55672732ad91e6ba33fd79d91d1f66"
+      ref: "4c24f94f512cf79630eb2859086f0ebb5ae4cfed"
+      resolved-ref: "4c24f94f512cf79630eb2859086f0ebb5ae4cfed"
       url: "https://github.com/ADatkashov/kunde-maps.git"
     source: git
-    version: "0.1.0"
+    version: "0.2.0"
   leak_tracker:
     dependency: transitive
     description:

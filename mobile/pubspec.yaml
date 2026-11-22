@@ -5,13 +5,14 @@ version: 0.1.0+1
 environment:
   sdk: '>=3.4.0 <4.0.0'
 dependencies:
-  kunde_maps_sdk:
-    git:
-      url: https://github.com/ADatkashov/kunde-maps.git
-      ref: 59e8ff44cd55672732ad91e6ba33fd79d91d1f66
-      path: packages/kunde_maps_sdk
   kunde_design:
     path: ../packages/kunde_design
+  kunde_maps_sdk:
+    # KUNDE Maps SDK 0.2.0, pinned to the immutable release commit of kunde-maps (release tags cannot be created from CI-less agent sessions).
+    git:
+      url: https://github.com/ADatkashov/kunde-maps.git
+      path: packages/kunde_maps_sdk
+      ref: 4c24f94f512cf79630eb2859086f0ebb5ae4cfed
   flutter:
     sdk: flutter
   flutter_localizations:

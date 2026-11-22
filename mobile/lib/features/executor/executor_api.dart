@@ -1,3 +1,5 @@
+import 'package:kunde_maps_sdk/kunde_maps_sdk.dart';
+
 import '../identity/auth_repository.dart';
 
 class ExecutorApi {
@@ -90,12 +92,36 @@ class ExecutorTrip {
       : id = json['id'] as String,
         status = json['status'] as String,
         createdAt = DateTime.parse(json['createdAt'] as String),
-        synthetic = json['synthetic'] == true;
+        synthetic = json['synthetic'] == true,
+        pickup = _point(json['pickup']),
+        destination = _point(json['destination']);
 
   final String id;
   final String status;
   final DateTime createdAt;
   final bool synthetic;
+
+  /// Route endpoints, sent by the server to the assigned driver while the trip is active only.
+  final GeoPoint? pickup;
+  final GeoPoint? destination;
+
+  static GeoPoint? _point(Object? value) {
+    if (value is! Map<String, dynamic>) return null;
+    try {
+      return GeoPoint.parse(value['latitude'], value['longitude']);
+    } on FormatException {
+      return null;
+    }
+  }
+
+  /// Where the driver should be guided now: to the passenger until the ride
+  /// starts, then to the destination. At the pickup point there is nothing to
+  /// navigate.
+  GeoPoint? get navigationTarget => switch (status) {
+        'DRIVER_ASSIGNED' || 'DRIVER_ARRIVING' => pickup,
+        'IN_PROGRESS' => destination,
+        _ => null,
+      };
 
   String? get nextStep => switch (status) {
         'DRIVER_ASSIGNED' => 'DEPART',

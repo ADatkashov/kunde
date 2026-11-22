@@ -6,20 +6,28 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../identity/auth_repository.dart';
+import '../maps/kunde_maps.dart';
 import '../rides/ride_strings.dart';
 import 'auto_work_screen.dart';
 import 'gate_scan_screen.dart';
 import 'leisure_work_screen.dart';
 import 'delivery_work_screen.dart';
 import 'food_work_screen.dart';
+import 'driver_navigation_screen.dart';
 import 'executor_api.dart';
 
 class ExecutorScreen extends StatefulWidget {
   const ExecutorScreen(
-      {required this.auth, this.checkDeliveryMode = false, super.key});
+      {required this.auth,
+      this.checkDeliveryMode = false,
+      this.mapsFactory = KundeMaps.forContext,
+      super.key});
 
   final AuthRepository auth;
   final bool checkDeliveryMode;
+
+  /// Creates the Maps SDK facade when the server enables it; tests replace it.
+  final KundeMaps Function(BuildContext context) mapsFactory;
 
   @override
   State<ExecutorScreen> createState() => _ExecutorScreenState();
@@ -54,6 +62,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
   bool _gateAvailable = false;
   bool _educationEnabled = false;
   bool _autoResume = false;
+  bool _mapsAvailable = false;
 
   @override
   void initState() {
@@ -84,6 +93,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
         _deliveryResume = shipments.any((row) =>
             row is Map<String, dynamic> && row['pickupAddress'] != null);
         _deliverySynthetic = capabilities['deliverySyntheticRouting'] == true;
+        _mapsAvailable = capabilities['mapsEnabled'] == true;
       });
     } catch (_) {
       if (mounted && _deliveryEnabled) setState(() => _deliveryEnabled = false);
@@ -187,6 +197,26 @@ class _ExecutorScreenState extends State<ExecutorScreen>
       if (mounted) setState(() => _failure = 'UNKNOWN');
     } finally {
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _navigate(ExecutorTrip trip) async {
+    final target = trip.navigationTarget;
+    if (target == null || !_mapsAvailable) return;
+    final s = RideStrings(context);
+    final maps = widget.mapsFactory(context);
+    try {
+      await Navigator.of(context).push<void>(MaterialPageRoute(
+        builder: (_) => DriverNavigationScreen(
+          maps: maps,
+          target: target,
+          title: trip.status == 'IN_PROGRESS'
+              ? s.t('К пункту назначения', 'Межелі орынға', 'To destination')
+              : s.t('К пассажиру', 'Жолаушыға', 'To passenger'),
+        ),
+      ));
+    } finally {
+      maps.close();
     }
   }
 
@@ -370,6 +400,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
                   auth: widget.auth,
                   synthetic: _deliverySynthetic,
                   intakeEnabled: _deliveryEnabled,
+                  mapsFactory: _mapsAvailable ? widget.mapsFactory : null,
                 ),
               )),
             ),
@@ -567,12 +598,24 @@ class _ExecutorScreenState extends State<ExecutorScreen>
                   title: Text(trip.synthetic
                       ? '${s.synthetic} · ${s.status(trip.status)}'
                       : s.status(trip.status)),
-                  subtitle: FilledButton(
-                    onPressed: _busy
-                        ? null
-                        : () =>
-                            _load(() => _api.advance(trip.id, trip.nextStep!)),
-                    child: Text(_actionName(s, trip.nextStep!)),
+                  subtitle: Wrap(
+                    spacing: 8,
+                    children: [
+                      FilledButton(
+                        onPressed: _busy
+                            ? null
+                            : () => _load(
+                                () => _api.advance(trip.id, trip.nextStep!)),
+                        child: Text(_actionName(s, trip.nextStep!)),
+                      ),
+                      if (_mapsAvailable && trip.navigationTarget != null)
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.navigation_outlined),
+                          onPressed: _busy ? null : () => _navigate(trip),
+                          label:
+                              Text(s.t('Навигатор', 'Навигатор', 'Navigate')),
+                        ),
+                    ],
                   ),
                 ),
               ),
