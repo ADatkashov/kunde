@@ -149,6 +149,12 @@ class RideQuoteApiIntegrationTest {
         http.perform(get(location).with(customer("stranger"))).andExpect(status().isNotFound());
         http.perform(get(location).with(passengerJwt))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.point.latitude").value(43.24));
+        // While the trip is active the assigned driver gets the route endpoints to navigate.
+        http.perform(get(base + "/trips").with(driverJwt))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].status").value("DRIVER_ASSIGNED"))
+                .andExpect(jsonPath("$[0].pickup.latitude").value(43.24)).andExpect(jsonPath("$[0].pickup.longitude").value(76.92))
+                .andExpect(jsonPath("$[0].destination.latitude").value(43.25))
+                .andExpect(jsonPath("$[0].destination.longitude").value(76.94));
 
         for (String step : new String[] {"DEPART", "ARRIVE", "START", "COMPLETE"}) {
             http.perform(post(base + "/trips/" + rideId + "/progress").with(driverJwt)
@@ -161,7 +167,8 @@ class RideQuoteApiIntegrationTest {
         http.perform(get("/api/v1/rides/" + rideId).with(passengerJwt))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.driver").doesNotExist());
         http.perform(get(base + "/trips").with(driverJwt))
-                .andExpect(status().isOk()).andExpect(jsonPath("$[0].status").value("COMPLETED"));
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].status").value("COMPLETED"))
+                .andExpect(jsonPath("$[0].pickup").doesNotExist()).andExpect(jsonPath("$[0].destination").doesNotExist());
     }
 
     @Test

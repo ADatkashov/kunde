@@ -185,14 +185,28 @@ public class RideDispatchService {
         return location.stream().findFirst().orElseThrow(() -> missing("RIDE_NOT_FOUND"));
     }
 
+    /**
+     * The assigned driver's trips. Pickup and destination coordinates are included only while the trip is active (the driver needs them to
+     * navigate) and are withheld from finished or cancelled trips, so history keeps no location of the passenger.
+     */
     public List<DriverTrip> history(UUID driver) {
         return db.query("""
-                select r.id, r.status, q.ride_class, r.created_at, q.synthetic
+                select r.id, r.status, q.ride_class, r.created_at, q.synthetic,
+                       q.pickup_latitude, q.pickup_longitude, q.destination_latitude, q.destination_longitude
                 from transactions.rides r join transactions.ride_fare_quotes q on q.id = r.quote_id
                 where r.driver_id = ? order by r.created_at desc, r.id desc limit 50
-                """, (rs, row) -> new DriverTrip(rs.getObject(1, UUID.class), RideState.valueOf(rs.getString(2)),
-                        RideClass.valueOf(rs.getString(3)), rs.getObject(4, OffsetDateTime.class), rs.getBoolean(5)), driver);
+                """, (rs, row) -> {
+                    var status = RideState.valueOf(rs.getString(2));
+                    var active = ACTIVE_FOR_DRIVER.contains(status);
+                    return new DriverTrip(rs.getObject(1, UUID.class), status, RideClass.valueOf(rs.getString(3)),
+                            rs.getObject(4, OffsetDateTime.class), rs.getBoolean(5),
+                            active ? new Point(rs.getDouble(6), rs.getDouble(7)) : null,
+                            active ? new Point(rs.getDouble(8), rs.getDouble(9)) : null);
+                }, driver);
     }
+
+    private static final java.util.Set<RideState> ACTIVE_FOR_DRIVER = java.util.EnumSet.of(RideState.DRIVER_ASSIGNED,
+            RideState.DRIVER_ARRIVING, RideState.DRIVER_ARRIVED, RideState.IN_PROGRESS);
 
     private static final String ELIGIBLE_FLEET = """
             and (d.fleet_partner_id is null or (? and exists (
@@ -237,6 +251,7 @@ public class RideDispatchService {
 
     private record Trip(UUID id, UUID customerId, UUID driverId, RideState status, RideClass rideClass, Point pickup) {}
     public record DriverLocation(Point point, OffsetDateTime observedAt) {}
-    public record DriverTrip(UUID id, RideState status, RideClass rideClass, OffsetDateTime createdAt, boolean synthetic) {}
+    public record DriverTrip(UUID id, RideState status, RideClass rideClass, OffsetDateTime createdAt, boolean synthetic,
+            Point pickup, Point destination) {}
     public record Offer(UUID id, UUID rideId, String state, OffsetDateTime expiresAt, boolean synthetic) {}
 }
