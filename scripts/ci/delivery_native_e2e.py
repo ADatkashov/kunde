@@ -88,7 +88,10 @@ def create_delivery(*, capture_quote=True):
         "The shipment contains no prohibited or dangerous items",
         "Жөнелтілімде тыйым салынған немесе қауіпті заттар жоқ")
     tap("Рассчитать стоимость", "Get a quote", "Бағасын есептеу")
-    reveal("DEV/TEST · тестовый маршрут", "DEV/TEST · synthetic route", "DEV/TEST · сынақ бағыты")
+    # The quote is inserted above the submit button. On a scrolled form the
+    # quote label can appear above the current viewport after layout.
+    reveal("DEV/TEST · тестовый маршрут", "DEV/TEST · synthetic route", "DEV/TEST · сынақ бағыты",
+           direction="up")
     if capture_quote:
         android.screenshot("consumer-quote")
     tap("Подтвердить доставку", "Confirm delivery", "Жеткізуді растау")
@@ -229,7 +232,7 @@ def main():
         fixture.write_report("PASSED", "complete")
     except Exception:
         fixture.write_report("FAILED", phase)
-        if phase in ("network_recovery_and_cancellation", "disabled_intake"):
+        if phase in ("consumer_quote_and_create", "network_recovery_and_cancellation", "disabled_intake"):
             try:
                 android.screenshot(f"failed-{phase}")
             except (RuntimeError, subprocess.SubprocessError):
