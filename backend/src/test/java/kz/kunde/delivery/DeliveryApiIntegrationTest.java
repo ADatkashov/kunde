@@ -34,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
         "app.delivery.dispatch-enabled=true",
         "app.delivery.partner-enabled=true",
         "DELIVERY_HANDOFF_KEY=synthetic-handoff-fixture-only-000000000",
+        "app.delivery.max-weight-grams=50000",
         "app.delivery.base-kzt=400",
         "app.delivery.per-km-kzt=200",
         "app.delivery.per-kg-kzt=100"
@@ -82,20 +83,55 @@ class DeliveryApiIntegrationTest {
                 .andExpect(status().isConflict());
         http.perform(get(PATH + "/" + id).with(customer("other"))).andExpect(status().isNotFound());
 
+        http.perform(get(PATH + "/" + id).with(customer("owner")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tariffVersion").value((String) JsonPath.read(quoted, "$.tariffVersion")))
+                .andExpect(jsonPath("$.distanceMeters").value((Integer) JsonPath.read(quoted, "$.distanceMeters")))
+                .andExpect(jsonPath("$.durationSeconds").value((Integer) JsonPath.read(quoted, "$.durationSeconds")));
+
         for (int retry = 0; retry < 2; retry++) {
             http.perform(post(PATH + "/" + id + "/cancel").with(customer("owner")))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("CANCELLED_BY_CUSTOMER"));
         }
         http.perform(get(PATH).with(customer("owner")))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1));
+        String timeline = PATH + "/" + id + "/timeline";
+        http.perform(get(timeline).with(customer("other"))).andExpect(status().isNotFound());
+        http.perform(get(timeline).with(customer("owner"))).andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$[0].status").value("CREATED"))
+                .andExpect(jsonPath("$[0].occurredAt").exists())
+                .andExpect(jsonPath("$[0].actorId").doesNotExist())
+                .andExpect(jsonPath("$[1].status").value("CANCELLED_BY_CUSTOMER"));
         assertThat(db.queryForList("select status from transactions.delivery_events where delivery_id = ? order by id",
                 String.class, UUID.fromString(id))).containsExactly("CREATED", "CANCELLED_BY_CUSTOMER");
     }
 
     @Test
+    void enforcesDocumentWeightLimitEvenWhenEnvironmentAllowsHeavierParcels() throws Exception {
+        http.perform(post(PATH + "/quotes").with(customer("owner"))
+                        .contentType(MediaType.APPLICATION_JSON).content(QUOTE.replace(":500", ":2000")))
+                .andExpect(status().isCreated());
+        http.perform(post(PATH + "/quotes").with(customer("owner"))
+                        .contentType(MediaType.APPLICATION_JSON).content(QUOTE.replace(":500", ":2001")))
+                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("DELIVERY_LIMIT_EXCEEDED"));
+    }
+
+    @Test
+    void enforcesThirtyKilogramCeilingForParcels() throws Exception {
+        String parcel = QUOTE.replace("DOCUMENTS", "MEDIUM_PARCEL");
+        http.perform(post(PATH + "/quotes").with(customer("owner"))
+                        .contentType(MediaType.APPLICATION_JSON).content(parcel.replace(":500", ":30000")))
+                .andExpect(status().isCreated());
+        http.perform(post(PATH + "/quotes").with(customer("owner"))
+                        .contentType(MediaType.APPLICATION_JSON).content(parcel.replace(":500", ":30001")))
+                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("DELIVERY_LIMIT_EXCEEDED"));
+    }
+
+    @Test
     void rejectsOversizeAndUnknownSyntheticRoute() throws Exception {
         http.perform(post(PATH + "/quotes").with(customer("owner"))
-                        .contentType(MediaType.APPLICATION_JSON).content(QUOTE.replace("500", "5100")))
+                        .contentType(MediaType.APPLICATION_JSON).content(QUOTE.replace(":30,", ":51,")))
                 .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("DELIVERY_LIMIT_EXCEEDED"));
         http.perform(post(PATH + "/quotes").with(customer("owner"))
                         .contentType(MediaType.APPLICATION_JSON).content(QUOTE.replace("43.25", "42.25")))
@@ -285,6 +321,11 @@ class DeliveryApiIntegrationTest {
         http.perform(get(path + "/" + id).with(partner(outsider))).andExpect(status().isNotFound());
         http.perform(get(otherPath + "/" + id).with(partner(owner))).andExpect(status().isNotFound());
         http.perform(get(path + "/" + id).with(partner(coworker))).andExpect(status().isOk());
+        http.perform(get(path + "/" + id + "/timeline").with(partner(coworker)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].status").value("CREATED"));
+        http.perform(get(otherPath + "/" + id + "/timeline").with(partner(outsider)))
+                .andExpect(status().isNotFound());
+
         UUID employee = db.queryForObject("insert into identity.users default values returning id", UUID.class);
         db.update("insert into identity.external_bindings (issuer, subject, user_id) values (?, ?, ?)",
                 "https://identity.example.test", "delivery-scoped-reader", employee);
@@ -304,6 +345,17 @@ class DeliveryApiIntegrationTest {
         http.perform(get(adminPath + "/" + id + "/audit").with(scopedAdmin)).andExpect(status().isOk());
         var createdAt = db.queryForObject("select created_at from transactions.deliveries where id = ?",
                 OffsetDateTime.class, UUID.fromString(id));
+        var filtered = get(adminPath).param("status", "CREATED")
+                .param("from", createdAt.toString()).param("to", createdAt.plusDays(1).toString());
+        http.perform(filtered.with(scopedAdmin)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1)).andExpect(jsonPath("$[0].id").value(id));
+        http.perform(get(adminPath).param("status", "COMPLETED").with(scopedAdmin))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+        http.perform(get(adminPath).param("to", createdAt.toString()).with(scopedAdmin))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+        http.perform(get(adminPath).param("from", createdAt.toString())
+                        .param("to", createdAt.toString()).with(scopedAdmin))
+                .andExpect(status().isBadRequest());
         var report = get(adminPath + "/summary").param("from", createdAt.toString())
                 .param("to", createdAt.plusDays(1).toString());
         http.perform(report.with(scopedAdmin)).andExpect(status().isOk())
@@ -318,6 +370,8 @@ class DeliveryApiIntegrationTest {
                 .andExpect(status().isBadRequest());
         http.perform(post(adminPath + "/" + id + "/return").with(scopedAdmin)).andExpect(status().isForbidden());
         db.update("update identity.admin_role_assignments set organization_id = ? where id = ?", second, assignment);
+        http.perform(filtered.with(scopedAdmin)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
         http.perform(report.with(scopedAdmin)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(0)).andExpect(jsonPath("$.byStatus").isEmpty());
         http.perform(get(adminPath).with(scopedAdmin)).andExpect(status().isOk())

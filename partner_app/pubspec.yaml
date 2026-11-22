@@ -5,6 +5,11 @@ version: 0.2.0+2
 environment:
   sdk: '>=3.4.0 <4.0.0'
 dependencies:
+  kunde_maps_sdk:
+    git:
+      url: https://github.com/ADatkashov/kunde-maps.git
+      ref: 4c24f94f512cf79630eb2859086f0ebb5ae4cfed
+      path: packages/kunde_maps_sdk
   kunde_design:
     path: ../packages/kunde_design
   flutter:

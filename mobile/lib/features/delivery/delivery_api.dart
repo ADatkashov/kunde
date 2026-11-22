@@ -66,6 +66,18 @@ class DeliveryApi {
     ];
   }
 
+  Future<List<DeliveryEvent>> timeline(String id) async {
+    final data = await auth.authorizedJson('GET', 'deliveries/$id/timeline')
+        as List<dynamic>;
+    return [
+      for (final Map<String, dynamic> item in data)
+        DeliveryEvent(
+          item['status'] as String,
+          DateTime.parse(item['occurredAt'] as String),
+        ),
+    ];
+  }
+
   Future<DeliveryOrder> detail(String id) => _order('GET', 'deliveries/$id');
   Future<DeliveryOrder> dispatch(String id) =>
       _order('POST', 'deliveries/$id/dispatch');
@@ -129,6 +141,8 @@ class DeliveryOrder {
         courier =
             (data['courier'] as Map<String, dynamic>?)?['name'] as String?,
         stars = data['stars'] as int?,
+        distanceMeters = data['distanceMeters'] as int?,
+        durationSeconds = data['durationSeconds'] as int?,
         parcel = data['parcel'] as Map<String, dynamic>?,
         pickupPoint = data['pickupPoint'] as Map<String, dynamic>?,
         destinationPoint = data['destinationPoint'] as Map<String, dynamic>?,
@@ -146,6 +160,8 @@ class DeliveryOrder {
   final bool synthetic;
   final String? courier;
   final int? stars;
+  final int? distanceMeters;
+  final int? durationSeconds;
   final Map<String, dynamic>? parcel;
   final Map<String, dynamic>? pickupPoint;
   final Map<String, dynamic>? destinationPoint;
@@ -178,4 +194,11 @@ class DeliveryOrder {
       searching ||
       const {'COURIER_ASSIGNED', 'COURIER_ARRIVING', 'COURIER_ARRIVED'}
           .contains(status);
+}
+
+class DeliveryEvent {
+  const DeliveryEvent(this.status, this.occurredAt);
+
+  final String status;
+  final DateTime occurredAt;
 }

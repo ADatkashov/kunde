@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:kunde_design/kunde_design.dart';
 
 import '../identity/auth_repository.dart';
 import '../identity/support_panel.dart';
@@ -11,6 +12,7 @@ import '../rides/ride_api.dart';
 import '../rides/ride_map_panels.dart';
 import 'delivery_api.dart';
 import 'delivery_strings.dart';
+import 'delivery_timeline.dart';
 
 class DeliveryScreen extends StatefulWidget {
   const DeliveryScreen(
@@ -257,6 +259,7 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
     final s = DeliveryStrings(context);
     final quote = _quote;
     final locked = _busy || quote != null;
+    final minutes = quote == null ? 0 : (quote.duration / 60).ceil();
     final labels = [
       s.t('Вес, г', 'Салмақ, г', 'Weight, g'),
       s.t('Длина, см', 'Ұзындығы, см', 'Length, cm'),
@@ -289,6 +292,40 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: KundePalette.heroGradient,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        s.t(
+                          'Отправить посылку',
+                          'Сәлемдеме жіберу',
+                          'Send a parcel',
+                        ),
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineSmall
+                            ?.copyWith(color: Colors.white),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Image.asset(
+                      'assets/illustrations/delivery.png',
+                      width: 64,
+                      height: 64,
+                      excludeFromSemantics: true,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
             Card(
                 child: Column(children: [
               ListTile(
@@ -366,9 +403,9 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                       Text('${quote.amount} ₸',
                           style: Theme.of(context).textTheme.titleLarge),
                       Text(s.t(
-                          '${quote.distance} м · ${quote.duration ~/ 60} мин',
-                          '${quote.distance} м · ${quote.duration ~/ 60} мин',
-                          '${quote.distance} m · ${quote.duration ~/ 60} min')),
+                          '${quote.distance} м · $minutes мин',
+                          '${quote.distance} м · $minutes мин',
+                          '${quote.distance} m · $minutes min')),
                       Text(s.t(
                           'Тестовая доставка без оплаты.',
                           'Сынақ жеткізілімі төлемсіз.',
@@ -414,8 +451,15 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
     if (index != 7 && value.isEmpty) return s.required;
     if (index < 4) {
       final number = int.tryParse(value);
-      if (number == null || number < 1 || number > (index == 0 ? 50000 : 200)) {
-        return s.t('Проверьте число', 'Санды тексеріңіз', 'Check the number');
+      final weightLimit = _type == 'DOCUMENTS' ? 2000 : 30000;
+      final limit = index == 0 ? weightLimit : 200;
+      if (number == null || number < 1 || number > limit) {
+        return index == 0
+            ? s.t(
+                'Укажите вес от 1 до $weightLimit г',
+                'Салмақты 1–$weightLimit г аралығында көрсетіңіз',
+                'Enter a weight between 1 and $weightLimit g')
+            : s.t('Проверьте число', 'Санды тексеріңіз', 'Check the number');
       }
     }
     if (index == 5 && !RegExp(r'^\+[1-9][0-9]{7,14}$').hasMatch(value)) {
@@ -641,6 +685,9 @@ class _DetailsState extends State<_Details> {
   Widget build(BuildContext context) {
     final s = DeliveryStrings(context);
     final code = _code?.$2.isAfter(DateTime.now()) == true ? _code : null;
+    final distance = _order.distanceMeters;
+    final duration = _order.durationSeconds;
+    final minutes = duration == null ? null : (duration / 60).ceil();
     return Scaffold(
       appBar: AppBar(title: Text(s.title)),
       body: SafeArea(
@@ -677,6 +724,12 @@ class _DetailsState extends State<_Details> {
                   '${point.$1.toStringAsFixed(5)}, ${point.$2.toStringAsFixed(5)}'),
             ),
           Text('${_order.amount} ₸'),
+          DeliveryTimeline(api: widget.api, order: _order),
+          if (distance != null && minutes != null)
+            Text(s.t(
+                'Маршрут: $distance м · около $minutes мин',
+                'Бағыт: $distance м · шамамен $minutes мин',
+                'Route: $distance m · about $minutes min')),
           if (_order.parcel case final parcel?)
             ListTile(
               title: Text(s.parcel(_order.parcelType ?? 'OTHER_ALLOWED_GOODS')),

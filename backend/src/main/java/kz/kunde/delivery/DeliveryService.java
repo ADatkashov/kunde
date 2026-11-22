@@ -29,6 +29,7 @@ public class DeliveryService {
     private static final String ORDERS = """
             select d.*, q.parcel_type, q.amount_kzt, q.synthetic_route, q.weight_grams, q.length_cm,
                    q.width_cm, q.height_cm, q.pickup_latitude, q.pickup_longitude,
+                   q.tariff_version, q.distance_meters, q.duration_seconds,
                    q.destination_latitude, q.destination_longitude, c.display_name as courier_name, c.vehicle, rating.stars
             from transactions.deliveries d
             join transactions.delivery_quotes q on q.id = d.quote_id
@@ -49,7 +50,8 @@ public class DeliveryService {
 
     public Quote quote(UUID user, UUID partner, QuoteRequest request) {
         requireIntake(partner);
-        if (request.weightGrams() > settings.maxWeightGrams()
+        int typeLimitGrams = request.parcelType() == DeliveryController.ParcelType.DOCUMENTS ? 2000 : 30000;
+        if (request.weightGrams() > Math.min(settings.maxWeightGrams(), typeLimitGrams)
                 || Math.max(request.lengthCm(), Math.max(request.widthCm(), request.heightCm())) > settings.maxSideCm()) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "DELIVERY_LIMIT_EXCEEDED",
                     "Parcel exceeds the configured weight or dimensions");
@@ -160,6 +162,20 @@ public class DeliveryService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "DELIVERY_NOT_FOUND", "Delivery was not found"));
     }
 
+    public List<TimelineEvent> timeline(UUID user, UUID partner, UUID id) {
+        var events = db.query("""
+                select e.status, e.occurred_at
+                from transactions.deliveries d
+                join transactions.delivery_events e on e.delivery_id = d.id
+                """ + scope(partner) + " and d.id = ? order by e.id",
+                (rs, row) -> new TimelineEvent(DeliveryState.valueOf(rs.getString("status")),
+                        rs.getObject("occurred_at", OffsetDateTime.class)), partner == null ? user : partner, id);
+        if (events.isEmpty()) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "DELIVERY_NOT_FOUND", "Delivery was not found");
+        }
+        return events;
+    }
+
     @Transactional
     public Order cancel(UUID user, UUID partner, UUID id) {
         int changed = db.update("""
@@ -225,7 +241,8 @@ public class DeliveryService {
                         rs.getInt("height_cm")),
                 new Coordinates(rs.getBigDecimal("pickup_latitude"), rs.getBigDecimal("pickup_longitude")),
                 new Coordinates(rs.getBigDecimal("destination_latitude"), rs.getBigDecimal("destination_longitude")),
-                rs.getObject("stars", Integer.class));
+                rs.getObject("stars", Integer.class), rs.getString("tariff_version"),
+                rs.getInt("distance_meters"), rs.getInt("duration_seconds"));
     }
 
     private void requireIntake(UUID partner) {
@@ -247,13 +264,16 @@ public class DeliveryService {
             String destinationAddress, String recipientName, String recipientPhone, String description,
             String courierNote, BigDecimal amountKzt, String currency, boolean syntheticRoute,
             OffsetDateTime createdAt, AssignedCourier courier, ParcelDetails parcel,
-            Coordinates pickupPoint, Coordinates destinationPoint, Integer stars) {}
+            Coordinates pickupPoint, Coordinates destinationPoint, Integer stars, String tariffVersion,
+            int distanceMeters, int durationSeconds) {}
 
     public record ParcelDetails(int weightGrams, int lengthCm, int widthCm, int heightCm) {}
 
     public record AssignedCourier(String name, String vehicle) {}
 
     public record Creation(Order order, boolean created) {}
+
+    public record TimelineEvent(DeliveryState status, OffsetDateTime occurredAt) {}
 
     public record ShipmentTotal(DeliveryState status, long shipmentCount, BigDecimal quotedTotalKzt) {}
 }

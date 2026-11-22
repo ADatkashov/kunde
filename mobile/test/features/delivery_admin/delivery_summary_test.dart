@@ -6,6 +6,7 @@ import 'package:kunde_mobile/features/identity/auth_repository.dart';
 
 class _Session implements AuthRepository {
   final periods = <Duration>[];
+  final shipmentQueries = <Map<String, String>>[];
 
   @override
   Future<dynamic> authorizedJson(
@@ -17,7 +18,10 @@ class _Session implements AuthRepository {
   }) async {
     expect(method, 'GET');
     final uri = Uri.parse(path);
-    if (uri.path == 'admin/deliveries') return <Map<String, dynamic>>[];
+    if (uri.path == 'admin/deliveries') {
+      shipmentQueries.add(uri.queryParameters);
+      return <Map<String, dynamic>>[];
+    }
     expect(uri.path, 'admin/deliveries/summary');
     final from = DateTime.parse(uri.queryParameters['from']!);
     final to = DateTime.parse(uri.queryParameters['to']!);
@@ -35,6 +39,36 @@ class _Session implements AuthRepository {
 }
 
 void main() {
+  testWidgets('shipment list sends status and date filters together',
+      (tester) async {
+    final session = _Session();
+    await tester.pumpWidget(MaterialApp(
+      locale: const Locale('en'),
+      supportedLocales: KundeLocalizations.supportedLocales,
+      localizationsDelegates: KundeLocalizations.localizationsDelegates,
+      home:
+          DeliveryAdminScreen(auth: session, area: DeliveryAdminArea.shipments),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Filter by status'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Created'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Filter by date'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Last 24 hours'));
+    await tester.pumpAndSettle();
+
+    expect(session.shipmentQueries.first, isEmpty);
+    expect(session.shipmentQueries[1], {'status': 'CREATED'});
+    final filtered = session.shipmentQueries.last;
+    expect(filtered['status'], 'CREATED');
+    expect(
+        DateTime.parse(filtered['to']!)
+            .difference(DateTime.parse(filtered['from']!)),
+        const Duration(days: 1));
+  });
+
   testWidgets('Delivery summary requests server totals for the selected period',
       (tester) async {
     final session = _Session();

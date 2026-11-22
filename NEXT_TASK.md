@@ -1,5 +1,9 @@
 # Следующие проверки
 
+## KUNDE Delivery 1.0
+
+Провести нативную DEV-приёмку Consumer → Executor → Partner/Admin на общей ревизии после интеграции KUNDE Maps. Критерии включают выбор адресов на карте, дорожную котировку, назначение, GPS, вручение и видимость по ролям. Сценарий оплаты проверяется после подключения утверждённого провайдера. [Аудит, очередь интеграции и ограничения](docs/product/delivery-1.0-audit.md).
+
 ## KUNDE Home Services 1.0
 
 Связать [справочник V60](docs/product/home-services.md) с модерируемыми предложениями на существующих `booking_services`. Критерии: каталог возвращает только опубликованные предложения, выдача постраничная, Partner видит данные только своей организации, смена состояния требует гранта и записывается в аудит. Проверки текущего флага: `cd backend && mvn -Dtest=HomeServicesSettingsTest,PlatformControllerTest,BookingApiIntegrationTest test` и `cd mobile && flutter test test/features/booking/booking_flow_test.dart`.

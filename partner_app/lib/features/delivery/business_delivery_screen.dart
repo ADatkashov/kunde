@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:kunde_maps_sdk/kunde_maps_sdk.dart';
 
 import '../../data/partner_api.dart';
 import '../../data/partner_operations.dart';
@@ -10,11 +12,13 @@ class BusinessDeliveryScreen extends StatefulWidget {
   const BusinessDeliveryScreen({
     required this.ops,
     required this.synthetic,
+    this.mapsEnabled = false,
     super.key,
   });
 
   final PartnerOperations ops;
   final bool synthetic;
+  final bool mapsEnabled;
 
   @override
   State<BusinessDeliveryScreen> createState() => _BusinessDeliveryScreenState();
@@ -64,21 +68,25 @@ class _BusinessDeliveryScreenState extends State<BusinessDeliveryScreen> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16),
                 children: [
-                  if (widget.synthetic)
+                  if (widget.synthetic || widget.mapsEnabled)
                     FilledButton.icon(
                       icon: const Icon(Icons.add),
                       label: Text(
-                        s.t(
-                          'Новое тестовое отправление',
-                          'Жаңа сынақ жөнелтілімі',
-                          'New test shipment',
-                        ),
+                        widget.synthetic
+                            ? s.t(
+                                'Новое тестовое отправление',
+                                'Жаңа сынақ жөнелтілімі',
+                                'New test shipment',
+                              )
+                            : s.t('Создать отправление', 'Жөнелтілім жасау',
+                                'Create shipment'),
                       ),
                       onPressed: () async {
                         await Navigator.push<void>(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => _ShipmentForm(ops: widget.ops),
+                            builder: (_) => _ShipmentForm(
+                                ops: widget.ops, synthetic: widget.synthetic),
                           ),
                         );
                         if (mounted) _refresh();
@@ -152,9 +160,10 @@ typedef _ShipmentData = ({
 });
 
 class _ShipmentForm extends StatefulWidget {
-  const _ShipmentForm({required this.ops});
+  const _ShipmentForm({required this.ops, required this.synthetic});
 
   final PartnerOperations ops;
+  final bool synthetic;
 
   @override
   State<_ShipmentForm> createState() => _ShipmentFormState();
@@ -165,6 +174,10 @@ class _ShipmentFormState extends State<_ShipmentForm> {
   final _name = TextEditingController();
   final _phone = TextEditingController();
   final _description = TextEditingController();
+  final _pickupAddress = TextEditingController();
+  final _destinationAddress = TextEditingController();
+  GeoPoint? _pickup;
+  GeoPoint? _destination;
   final _measurement = List.generate(4, (_) => TextEditingController());
   String _type = 'DOCUMENTS';
   bool _allowed = false;
@@ -175,28 +188,84 @@ class _ShipmentFormState extends State<_ShipmentForm> {
 
   @override
   void dispose() {
-    for (final controller in [_name, _phone, _description, ..._measurement]) {
+    for (final controller in [
+      _name,
+      _phone,
+      _description,
+      _pickupAddress,
+      _destinationAddress,
+      ..._measurement
+    ]) {
       controller.dispose();
     }
     super.dispose();
   }
 
+  Future<void> _chooseAddress(int index, String title, _Copy s) async {
+    final client = http.Client();
+    try {
+      final config = MapsConfig.fromEnvironment(language: s.language);
+      final selected = await Navigator.of(context).push<PickedLocation>(
+        MaterialPageRoute(
+          builder: (context) => Scaffold(
+            appBar: AppBar(title: Text(title)),
+            body: LocationPicker(
+              initial: index == 0 ? _pickup : _destination,
+              config: config,
+              search: PlaceSearch(MapsClient(config, client)),
+              dark: Theme.of(context).brightness == Brightness.dark,
+              onPicked: (point) => Navigator.of(context).pop(point),
+            ),
+          ),
+        ),
+      );
+      if (!mounted || selected == null) return;
+      setState(() {
+        final label = selected.label(s.language) ?? '';
+        if (index == 0) {
+          _pickup = selected.point;
+          _pickupAddress.text = label;
+        } else {
+          _destination = selected.point;
+          _destinationAddress.text = label;
+        }
+      });
+    } finally {
+      client.close();
+    }
+  }
+
+  bool get _canQuote =>
+      widget.synthetic ||
+      (_pickup != null &&
+          _destination != null &&
+          [_pickupAddress, _destinationAddress].every((controller) {
+            final address = controller.text.trim();
+            return address.isNotEmpty && address.length <= 240;
+          }));
+
   Future<void> _submit() async {
-    if (_busy || !_allowed || !_form.currentState!.validate()) return;
+    if (_busy || !_allowed || !_canQuote || !_form.currentState!.validate()) {
+      return;
+    }
     setState(() {
       _busy = true;
       _error = false;
     });
     try {
-      const pickup = {'latitude': 43.24, 'longitude': 76.92};
-      const destination = {'latitude': 43.25, 'longitude': 76.94};
+      final pickup = widget.synthetic ? const GeoPoint(43.24, 76.92) : _pickup!;
+      final destination =
+          widget.synthetic ? const GeoPoint(43.25, 76.94) : _destination!;
       final quote = _quote;
       if (quote == null) {
         final measures =
             _measurement.map((field) => int.parse(field.text.trim())).toList();
         final result = await widget.ops.shipmentQuote({
-          'pickup': pickup,
-          'destination': destination,
+          'pickup': {'latitude': pickup.lat, 'longitude': pickup.lon},
+          'destination': {
+            'latitude': destination.lat,
+            'longitude': destination.lon
+          },
           'parcelType': _type,
           'weightGrams': measures[0],
           'lengthCm': measures[1],
@@ -213,8 +282,11 @@ class _ShipmentFormState extends State<_ShipmentForm> {
         final s = _Copy(context);
         final order = await widget.ops.createShipment({
           'quoteId': quote['id'],
-          'pickupAddress': s.pickup,
-          'destinationAddress': s.destination,
+          'pickupAddress':
+              widget.synthetic ? s.pickup : _pickupAddress.text.trim(),
+          'destinationAddress': widget.synthetic
+              ? s.destination
+              : _destinationAddress.text.trim(),
           'recipientName': _name.text.trim(),
           'recipientPhone': _phone.text.trim(),
           'description': _description.text.trim(),
@@ -279,14 +351,62 @@ class _ShipmentFormState extends State<_ShipmentForm> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              ListTile(
-                leading: const Icon(Icons.radio_button_checked),
-                title: Text(s.pickup),
-              ),
-              ListTile(
-                leading: const Icon(Icons.location_on_outlined),
-                title: Text(s.destination),
-              ),
+              for (final (index, title, icon, address, point) in [
+                (
+                  0,
+                  widget.synthetic
+                      ? s.pickup
+                      : s.t('Откуда забрать', 'Алып кету мекенжайы', 'Pickup'),
+                  Icons.radio_button_checked,
+                  _pickupAddress,
+                  _pickup,
+                ),
+                (
+                  1,
+                  widget.synthetic
+                      ? s.destination
+                      : s.t(
+                          'Куда доставить', 'Жеткізу мекенжайы', 'Destination'),
+                  Icons.location_on_outlined,
+                  _destinationAddress,
+                  _destination,
+                ),
+              ]) ...[
+                ListTile(
+                  leading: Icon(icon),
+                  title: Text(title),
+                  subtitle: widget.synthetic
+                      ? null
+                      : Text(
+                          point == null
+                              ? s.t(
+                                  'Выбрать на KUNDE Maps',
+                                  'KUNDE Maps картасынан таңдау',
+                                  'Choose on KUNDE Maps')
+                              : s.t('Точка выбрана', 'Нүкте таңдалды',
+                                  'Point selected'),
+                        ),
+                  onTap: enabled && !widget.synthetic
+                      ? () => _chooseAddress(index, title, s)
+                      : null,
+                ),
+                if (point != null)
+                  TextFormField(
+                    controller: address,
+                    enabled: enabled,
+                    maxLength: 240,
+                    onChanged: (_) => setState(() {}),
+                    decoration: InputDecoration(
+                      labelText: s.t('Улица и номер дома',
+                          'Көше және үй нөмірі', 'Street and house number'),
+                    ),
+                    validator: (value) => value == null ||
+                            value.trim().isEmpty ||
+                            value.trim().length > 240
+                        ? s.required
+                        : null,
+                  ),
+              ],
               DropdownButtonFormField<String>(
                 initialValue: _type,
                 isExpanded: true,
@@ -312,7 +432,10 @@ class _ShipmentFormState extends State<_ShipmentForm> {
                       final number = int.tryParse(value?.trim() ?? '');
                       return number == null ||
                               number < 1 ||
-                              number > (index == 0 ? 50000 : 200)
+                              number >
+                                  (index == 0
+                                      ? (_type == 'DOCUMENTS' ? 2000 : 30000)
+                                      : 200)
                           ? s.required
                           : null;
                     },
@@ -381,16 +504,22 @@ class _ShipmentFormState extends State<_ShipmentForm> {
                 ListTile(
                   title: Text('${quote['amountKzt']} ₸'),
                   subtitle: Text(
-                    s.t(
-                      'DEV/TEST · тестовый маршрут без оплаты',
-                      'DEV/TEST · төлемсіз сынақ бағыты',
-                      'DEV/TEST · synthetic route without payment',
-                    ),
+                    quote['syntheticRoute'] == true
+                        ? s.t(
+                            'DEV/TEST · тестовый маршрут без оплаты',
+                            'DEV/TEST · төлемсіз сынақ бағыты',
+                            'DEV/TEST · synthetic route without payment',
+                          )
+                        : s.t(
+                            'DEV/TEST · доставка без оплаты',
+                            'DEV/TEST · төлемсіз жеткізу',
+                            'DEV/TEST · shipment without payment',
+                          ),
                   ),
                 ),
               if (_error) Semantics(liveRegion: true, child: Text(s.error)),
               FilledButton(
-                onPressed: _busy || !_allowed ? null : _submit,
+                onPressed: _busy || !_allowed || !_canQuote ? null : _submit,
                 child: Text(
                   quote == null
                       ? s.t(

@@ -39,17 +39,25 @@ public class DeliveryOperations {
         this.db = db;
     }
 
-    public List<Shipment> shipments(UUID actor) {
+    public List<Shipment> shipments(UUID actor, DeliveryState status, OffsetDateTime from, OffsetDateTime to) {
         requireDeliveryAccess(actor);
+        if (from != null && to != null && !from.isBefore(to)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_DELIVERY_PERIOD",
+                    "Delivery reporting start must precede the end");
+        }
         return db.query("""
                 select d.id, d.status, d.courier_id, d.partner_id, d.created_at, q.synthetic_route
                 from transactions.deliveries d join transactions.delivery_quotes q on q.id = d.quote_id
                 where %s
+                  and d.status = coalesce(cast(? as transactions.delivery_state), d.status)
+                  and d.created_at >= coalesce(cast(? as timestamptz), '-infinity')
+                  and d.created_at < coalesce(cast(? as timestamptz), 'infinity')
                 order by (d.status in %s or d.status = 'SEARCHING_COURIER') desc, d.created_at desc, d.id desc limit 100
                 """.formatted(VISIBLE_DELIVERY, DeliveryDispatch.ACTIVE_DELIVERY_STATES), (rs, row) -> new Shipment(
                 rs.getObject("id", UUID.class), DeliveryState.valueOf(rs.getString("status")),
                 rs.getObject("courier_id", UUID.class), rs.getObject("partner_id", UUID.class),
-                rs.getObject("created_at", OffsetDateTime.class), rs.getBoolean("synthetic_route")), actor);
+                rs.getObject("created_at", OffsetDateTime.class), rs.getBoolean("synthetic_route")),
+                actor, status == null ? null : status.name(), from, to);
     }
 
     public ShipmentSummary summary(UUID actor, OffsetDateTime from, OffsetDateTime to) {
