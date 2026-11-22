@@ -67,8 +67,11 @@ public class DeliveryAdminController {
     }
 
     @GetMapping
-    public ResponseEntity<List<DeliveryOperations.Shipment>> shipments(@AuthenticationPrincipal Jwt principal) {
-        return noStore(operations.shipments(identity.get(principal).id()));
+    public ResponseEntity<List<DeliveryOperations.Shipment>> shipments(@AuthenticationPrincipal Jwt principal,
+            @RequestParam(required = false) DeliveryState status,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to) {
+        return noStore(operations.shipments(identity.get(principal).id(), status, from, to));
     }
 
     @GetMapping("/summary")
