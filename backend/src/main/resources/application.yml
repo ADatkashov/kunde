@@ -88,6 +88,15 @@ app:
   partner-ops:
     seed-demo: ${PARTNER_OPS_SEED_DEMO:false}
     response-timeout-seconds: ${PARTNER_RESPONSE_TIMEOUT_SECONDS:300}
+  # KUNDE Maps Platform (kunde-maps repository) as the road-routing provider for Rides and Delivery. Off by default: with it off, quotes fail
+  # closed (503) exactly as before. Enabling needs both HTTPS URLs; MAPS_API_KEY is optional and secret (never logged).
+  maps:
+    enabled: ${MAPS_ENABLED:false}
+    routing-url: ${MAPS_ROUTING_URL:}
+    search-url: ${MAPS_SEARCH_URL:}
+    api-key: ${MAPS_API_KEY:}
+    timeout-seconds: ${MAPS_TIMEOUT_SECONDS:15}
+    max-response-bytes: ${MAPS_MAX_RESPONSE_BYTES:524288}
   rides:
     enabled: ${RIDES_ENABLED:false}
     consumer-enabled: ${RIDES_CONSUMER_ENABLED:false}

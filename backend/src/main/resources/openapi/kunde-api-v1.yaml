@@ -43,6 +43,7 @@ paths:
                   oidcIssuerConfigured: { type: boolean, example: false }
                   aiEnabled: { type: boolean, example: false }
                   homeServicesEnabled: { type: boolean, example: false, description: Effective switch for the Home Services pilot. }
+                  mapsEnabled: { type: boolean, example: false, description: KUNDE Maps Platform is the configured routing provider (MAPS_ENABLED); map screens also require the product flag, for example ridesEnabled. }
                   deliveryEnabled: { type: boolean, example: false }
                   deliverySyntheticRouting: { type: boolean, example: false }
                   deliveryExecutorEnabled: { type: boolean, example: false }
