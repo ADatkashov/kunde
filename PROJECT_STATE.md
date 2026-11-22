@@ -1,5 +1,11 @@
 # KUNDE project state
 
+## KUNDE Maps Platform — интеграция (2026-11-22, ветка `ccr-f8e4fcef-esjxcm`)
+
+- Аудит `main`: Rides и Delivery уже зависят от интерфейса `RideRouting`, но реализован только `SyntheticRideRouting`; в Flutter-приложениях карт нет. [ADR-020](docs/architecture/adr/ADR-020-kunde-maps-platform-integration.md) (PROPOSED) и [ADR 0007 в kunde-maps](https://github.com/ADatkashov/kunde-maps/blob/main/docs/architecture/decisions/0007-kunde-maps-sdk-and-ecosystem-integration.md).
+- Backend: `KundeMapsRideRouting` подключает Maps Search/Routing к Rides и Delivery за флагом `MAPS_ENABLED` (по умолчанию выключен, только внутренние среды). Цена по-прежнему считается тарифом Rides, не Maps. Проверено: контрактные тесты на ответах реального DEV Maps, live-тест против DEV (`KUNDE_MAPS_LIVE=true`), интеграционный тест квоты через весь стек Rides.
+- **Не сделано:** клиентские экраны (Taxi, Executor, Consumer адреса), reverse-геокодер, трафик, production-включение.
+
 ## KUNDE Home Services 1.0
 
 - Исходный `main` `6349b13` содержит пилот уборки на Booking Engine (V19). В рабочей ветке V59 добавляет независимый переключатель `HOME_SERVICES_ENABLED`, выключенный по умолчанию. Контракт и границы пилота описаны в [Booking MVP](docs/product/booking-mvp.md#переключатель-пилота-дом-и-быт).
