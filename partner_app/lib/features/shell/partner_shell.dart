@@ -131,6 +131,7 @@ class _PartnerShellState extends State<PartnerShell>
                             MaterialPageRoute(
                               builder: (_) => BusinessDeliveryScreen(
                                 ops: _store.ops,
+                                mapsEnabled: flags?['mapsEnabled'] == true,
                                 synthetic:
                                     flags?['deliverySyntheticRouting'] == true,
                               ),
