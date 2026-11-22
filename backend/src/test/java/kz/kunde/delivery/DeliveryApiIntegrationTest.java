@@ -171,6 +171,12 @@ class DeliveryApiIntegrationTest {
         http.perform(get(trackingPath).with(customer("delivery-location-stranger")))
                 .andExpect(status().isNotFound());
 
+        // While the delivery is active the assigned courier gets the route endpoints to navigate.
+        http.perform(get(executor).with(courier)).andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].pickup.latitude").value(43.24)).andExpect(jsonPath("$[0].pickup.longitude").value(76.92))
+                .andExpect(jsonPath("$[0].destination.latitude").value(43.25))
+                .andExpect(jsonPath("$[0].destination.longitude").value(76.94));
+
         String progress = executor + "/" + id + "/progress";
         for (String action : new String[] {"DEPART", "ARRIVE", "PICK_UP", "TRANSIT"}) {
             http.perform(post(progress).with(courier).contentType(MediaType.APPLICATION_JSON)
@@ -203,6 +209,10 @@ class DeliveryApiIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("COMPLETED"));
         http.perform(get(PATH + "/" + id).with(owner)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("COMPLETED"));
+        // A finished delivery keeps no address or coordinates in the courier's history.
+        http.perform(get(executor).with(courier)).andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].status").value("COMPLETED")).andExpect(jsonPath("$[0].pickupAddress").doesNotExist())
+                .andExpect(jsonPath("$[0].pickup").doesNotExist()).andExpect(jsonPath("$[0].destination").doesNotExist());
 
         String rating = PATH + "/" + id + "/rating";
         for (int attempt = 0; attempt < 2; attempt++) {

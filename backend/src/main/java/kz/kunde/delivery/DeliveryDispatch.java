@@ -159,20 +159,35 @@ public class DeliveryDispatch {
         db.update("update transactions.delivery_offers set state = 'ACCEPTED' where id = ?", offerId);
     }
 
+    /**
+     * The courier's shipments. Addresses, the courier note and the pickup/destination coordinates (for navigation) are included only while the
+     * delivery is active; finished and cancelled deliveries keep none of them in the courier's history.
+     */
     public List<CourierShipment> shipments(UUID courier) {
         return db.query("""
                 select d.id, d.status, d.created_at, q.parcel_type, q.synthetic_route,
                        case when d.status in %s then d.pickup_address end as pickup_address,
                        case when d.status in %s then d.destination_address end as destination_address,
-                       case when d.status in %s then d.courier_note end as courier_note
+                       case when d.status in %s then d.courier_note end as courier_note,
+                       case when d.status in %s then q.pickup_latitude end as pickup_latitude,
+                       case when d.status in %s then q.pickup_longitude end as pickup_longitude,
+                       case when d.status in %s then q.destination_latitude end as destination_latitude,
+                       case when d.status in %s then q.destination_longitude end as destination_longitude
                 from transactions.deliveries d join transactions.delivery_quotes q on q.id = d.quote_id
                 where d.courier_id = ?
                 order by d.created_at desc, d.id desc limit 100
-                """.formatted(ACTIVE_DELIVERY_STATES, ACTIVE_DELIVERY_STATES, ACTIVE_DELIVERY_STATES),
+                """.formatted(ACTIVE_DELIVERY_STATES, ACTIVE_DELIVERY_STATES, ACTIVE_DELIVERY_STATES, ACTIVE_DELIVERY_STATES,
+                        ACTIVE_DELIVERY_STATES, ACTIVE_DELIVERY_STATES, ACTIVE_DELIVERY_STATES),
                 (rs, row) -> new CourierShipment(rs.getObject("id", UUID.class),
                         DeliveryState.valueOf(rs.getString("status")), rs.getString("parcel_type"),
                         rs.getString("pickup_address"), rs.getString("destination_address"), rs.getString("courier_note"),
-                        rs.getBoolean("synthetic_route"), rs.getObject("created_at", OffsetDateTime.class)), courier);
+                        rs.getBoolean("synthetic_route"), rs.getObject("created_at", OffsetDateTime.class),
+                        point(rs.getBigDecimal("pickup_latitude"), rs.getBigDecimal("pickup_longitude")),
+                        point(rs.getBigDecimal("destination_latitude"), rs.getBigDecimal("destination_longitude"))), courier);
+    }
+
+    private static Point point(java.math.BigDecimal latitude, java.math.BigDecimal longitude) {
+        return latitude == null || longitude == null ? null : new Point(latitude.doubleValue(), longitude.doubleValue());
     }
 
     @Transactional
@@ -344,7 +359,8 @@ public class DeliveryDispatch {
     public record Offer(UUID id, UUID deliveryId, OffsetDateTime expiresAt, String parcelType, int weightGrams,
             int lengthCm, int widthCm, int heightCm, int distanceMeters, boolean syntheticRoute) {}
     public record CourierShipment(UUID id, DeliveryState status, String parcelType, String pickupAddress,
-            String destinationAddress, String courierNote, boolean syntheticRoute, OffsetDateTime createdAt) {}
+            String destinationAddress, String courierNote, boolean syntheticRoute, OffsetDateTime createdAt, Point pickup,
+            Point destination) {}
     public record HandoffCode(String code, OffsetDateTime expiresAt, boolean devManualRelay) {
         @Override
         public String toString() {
