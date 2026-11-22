@@ -103,7 +103,8 @@ call("GET", "/api/v1/leisure/orders/" + order["id"], None, other, expect=404)
 # ---- gate: an assigned controller scans, anyone else is refused without detail
 owner_a_token = login(owner_a)
 pid = next(p["id"] for p in call("GET", "/api/v1/partner/partners", None, owner_a_token) if p["verificationStatus"] == "APPROVED")
-denied = call("POST", "/api/v1/executor/leisure/checkins", {"code": qr}, other)
+# the customer is never assigned as a controller: refused without any detail of the ticket (the controller may already be assigned by an earlier run)
+denied = call("POST", "/api/v1/executor/leisure/checkins", {"code": qr}, token)
 assert denied["result"] == "ACCESS_DENIED" and denied.get("eventTitle") is None, denied
 assignment = call("POST", f"/api/v1/partner/partners/{pid}/leisure/sessions/{session_id}/assignments", {"phone": owner_b, "role": "GATE"}, owner_a_token, expect=[200, 201, 409])
 if assignment and assignment.get("id"):
@@ -123,6 +124,10 @@ bad = call("POST", "/api/v1/executor/leisure/checkins", {"code": "KT1." + str(uu
 assert bad["result"] in ("INVALID", "ACCESS_DENIED"), bad
 stats = call("GET", f"/api/v1/partner/partners/{pid}/leisure/stats?days=7&product=EVENTS", None, owner_a_token)
 assert stats["orders"] >= 1
+report = call("GET", f"/api/v1/partner/partners/{pid}/leisure/reports/sales?days=7&product=EVENTS", None, owner_a_token)
+line = next((r for r in report if r["eventId"] == card["id"]), None)
+assert line and line["product"] == "EVENTS" and line["tickets"] >= 2 and line["revenueMinor"] >= 2 * std["priceMinor"], line
+call("GET", f"/api/v1/partner/partners/{pid}/leisure/reports/sales?days=7", None, other, expect=[403, 404])  # another organiser must not read this report
 
 if not keep and scan["result"] != "ADMITTED":
     cancelled = call("POST", f"/api/v1/leisure/orders/{order['id']}/cancel", None, token)

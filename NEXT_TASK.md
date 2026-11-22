@@ -7,7 +7,7 @@
 ## KUNDE Events & Tickets
 
 1. Нативные Android E2E Partner/Admin/Executor для Events (создание события и сеансов, модерация с `EVENTS_OPERATIONS`, скан GATE внутри окна входа), стабилизация эмулятора CI (шаги потери сети и выключенного флага сейчас `UNVERIFIED`).
-2. Partner: управление схемой зала и места, отчёты продаж Events; Admin: жалобы/промо отдельно по продукту. Затем установка четырёх APK на устройство, TalkBack, RU/KK/EN, сравнение скриншотов с референсами и синхронизация Linear. Команды: `python3 scripts/dev/events_smoke.py https://kunde-backend-ty81.onrender.com`, `python3 scripts/dev/leisure_smoke.py …`; `cd backend && mvn test -Dtest='Events*,Leisure*'`. [Матрица](docs/product/events.md).
+2. Partner: редактор схемы зала (сейчас схема задаётся при создании сеансов); Admin: промо отдельно по продукту. Затем установка четырёх APK на устройство, TalkBack, RU/KK/EN, сравнение скриншотов с референсами и синхронизация Linear. Команды: `python3 scripts/dev/events_smoke.py https://kunde-backend-ty81.onrender.com`, `python3 scripts/dev/leisure_smoke.py …`; `cd backend && mvn test -Dtest='Events*,Leisure*'`. [Матрица](docs/product/events.md).
 
 ## KUNDE Groceries 1.0
 
