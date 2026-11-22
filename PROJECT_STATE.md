@@ -8,12 +8,12 @@
 - В ветке редактора Admin Flutter подключён к API V61: список, создание, редактирование и отключение категории. Многоролевая приёмка открыта.
 - Приёмка Home Services 1.0 открыта. Пилот хранит записи и цены по площади, а подтверждение в нём синтетическое. Коммерческий каталог, роли, оплата, многоролевой E2E и подписанные APK с изменениями ожидают реализации или проверки.
 
-## KUNDE Events & Tickets / Leisure — разделение продуктов (2026-11-21, ветка `ccr-086450c7-ir0f4p`)
+## KUNDE Events & Tickets / Leisure — разделение продуктов (2026-11-21/22)
 
-- Аудит: движок билетов (места, удержание, QR, проверка) уже есть в Leisure 1.0; второй движок не создавался. Flyway V56: поле `product` у категорий (EVENTS/LEISURE), флаг `EVENTS`, публичный каталог `/api/v1/events`, раздельная фильтрация каталогов, блокировка продаж по флагу продукта. [Матрица и ограничения](docs/product/events.md).
-- Flutter (Consumer плитка «События» на общих экранах, Admin/Partner с фильтром по продукту, Executor-контролёр `GATE`, V57, грант V58) добавлен в PR #196. Локально: Consumer analyze чисто, 290 тестов; Partner 118; backend `Events*,Leisure*` зелёные. **Не сделано:** Android-скриншоты и нативные E2E на эмуляторе (ждут CI), DEV deploy, APK. Подробности: [events](docs/product/events.md).
-
-
+- **В `main`:** PR [#196](https://github.com/ADatkashov/kunde/pull/196) (`a5745ad`; обязательные Backend/Flutter/Partner Flutter/Security/config и Android visual зелёные, Leisure Android E2E — `PASSED`). Один движок билетов; Events и Leisure — два продукта с раздельными каталогами (`/api/v1/events`, `/api/v1/leisure`), флагами `EVENTS_ENABLED`/`LEISURE_ENABLED`, правами `EVENTS_OPERATIONS`/`LEISURE_OPERATIONS`, глобальным поиском `/api/v1/search/route`, контролёром `GATE` (Flyway V56–V58). Подробности и ограничения: [events](docs/product/events.md).
+- **DEV:** `kunde-backend-ty81` развёрнут из `a5745ad` (deploy `dep-dc0utq7f3r2c73b1fcj0`), Flyway применил V56, V57, V58 (схема v58), `eventsEnabled: true`, `leisureEnabled: true`; `scripts/dev/events_smoke.py` и `scripts/dev/leisure_smoke.py` → `SMOKE OK`. PROD не менялся.
+- **Подписанные DEV Release APK** из `6349b13` (DEV URL, workflow проверяет подпись, package ID, не debuggable): Consumer `com.example.kunde_mobile` ([run](https://github.com/ADatkashov/kunde/actions/runs/44940631508)), Executor `com.kunde.executor` ([run](https://github.com/ADatkashov/kunde/actions/runs/44940637924)), Admin `com.kunde.admin` ([run](https://github.com/ADatkashov/kunde/actions/runs/44940643845)), Partner `com.kunde.kunde_partner` ([run](https://github.com/ADatkashov/kunde/actions/runs/44940650284)).
+- **Не подтверждено:** шаги «потеря сети» и «флаг выключен» в приложении на эмуляторе (потеря устройства CI, `UNVERIFIED`), нативные E2E Partner/Admin/Executor для Events, TalkBack и установка APK на устройство, ADMITTED/DUPLICATE на DEV (нет сеанса в окне входа; покрыто интеграционными тестами и E2E), CRUD схемы зала и отчёты Events в Partner, сравнение скриншотов с референсом, Linear.
 
 ## KUNDE Groceries 1.0 — DEV/TEST срез (2026-11-21, ветка `ccr-7604baac-80k1na`)
 

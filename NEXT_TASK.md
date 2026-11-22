@@ -6,9 +6,8 @@
 
 ## KUNDE Events & Tickets
 
-1. Дождаться зелёных обязательных проверок PR #196 (включая `Leisure Android E2E`), снять Android-скриншоты Events/Leisure (Android visual CI), перевести PR из Draft и слить. Глобальный поиск «концерт» → Events, «боулинг» → Leisure ещё не сделан.
-2. DEV: после merge развернуть `main`, проверить V56–V58, `eventsEnabled: true`, купить место через `TEST_CARD`, проверить QR. Команды: `cd backend && mvn test -Dtest='Events*,Leisure*'`. [Матрица](docs/product/events.md).
-
+1. Нативные Android E2E Partner/Admin/Executor для Events (создание события и сеансов, модерация с `EVENTS_OPERATIONS`, скан GATE внутри окна входа), стабилизация эмулятора CI (шаги потери сети и выключенного флага сейчас `UNVERIFIED`).
+2. Partner: управление схемой зала и места, отчёты продаж Events; Admin: жалобы/промо отдельно по продукту. Затем установка четырёх APK на устройство, TalkBack, RU/KK/EN, сравнение скриншотов с референсами и синхронизация Linear. Команды: `python3 scripts/dev/events_smoke.py https://kunde-backend-ty81.onrender.com`, `python3 scripts/dev/leisure_smoke.py …`; `cd backend && mvn test -Dtest='Events*,Leisure*'`. [Матрица](docs/product/events.md).
 
 ## KUNDE Groceries 1.0
 
