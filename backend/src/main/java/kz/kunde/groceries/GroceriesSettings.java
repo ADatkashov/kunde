@@ -1,5 +1,7 @@
 package kz.kunde.groceries;
 
+import kz.kunde.platform.FeatureGate;
+import kz.kunde.platform.FeatureToggles;
 import java.util.Set;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
@@ -12,7 +14,12 @@ import org.springframework.stereotype.Component;
  * it outside local/dev/test aborts startup (same rule as Food).
  */
 @Component
-public class GroceriesSettings {
+public class GroceriesSettings implements FeatureGate {
+    @Override
+    public FeatureToggles.Feature feature() {
+        return FeatureToggles.Feature.GROCERIES;
+    }
+
     private static final Set<String> NON_PRODUCTION = Set.of("dev", "local", "test");
     private final boolean allowed;
 
@@ -29,6 +36,8 @@ public class GroceriesSettings {
         }
         this.allowed = (requested == null ? internal : requested) && food;
     }
+
+    @Override
 
     public boolean allowedByEnvironment() { return allowed; }
 }

@@ -1,12 +1,24 @@
 package kz.kunde.health;
 
+import kz.kunde.platform.FeatureGate;
+import kz.kunde.platform.FeatureToggles;
 import java.util.Set;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.stereotype.Component;
 
 @Component
-public class HealthSettings {
+public class HealthSettings implements FeatureGate {
+    @Override
+    public FeatureToggles.Feature feature() {
+        return FeatureToggles.Feature.HEALTH;
+    }
+
+    @Override
+    public boolean allowedByEnvironment() {
+        return enabled();
+    }
+
     private final boolean enabled;
     private final boolean seedDemo;
 

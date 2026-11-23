@@ -1,5 +1,7 @@
 package kz.kunde.delivery;
 
+import kz.kunde.platform.FeatureGate;
+import kz.kunde.platform.FeatureToggles;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -19,7 +21,17 @@ public record DeliveryProperties(boolean enabled, boolean consumerEnabled, boole
         @NotNull @DecimalMin("0") BigDecimal baseKzt,
         @NotNull @DecimalMin("0") BigDecimal perKmKzt,
         @NotNull @DecimalMin("0") BigDecimal perKgKzt,
-        @NotNull @DecimalMin("0") BigDecimal minimumKzt) {
+        @NotNull @DecimalMin("0") BigDecimal minimumKzt) implements FeatureGate {
+    @Override
+    public FeatureToggles.Feature feature() {
+        return FeatureToggles.Feature.DELIVERY;
+    }
+
+    @Override
+    public boolean allowedByEnvironment() {
+        return enabled();
+    }
+
 
     /** A copy with the master switch replaced (used by the runtime feature switches). */
     public DeliveryProperties withEnabled(boolean master) {

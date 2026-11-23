@@ -1,5 +1,7 @@
 package kz.kunde.events;
 
+import kz.kunde.platform.FeatureGate;
+import kz.kunde.platform.FeatureToggles;
 import java.util.Set;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
@@ -10,7 +12,12 @@ import org.springframework.stereotype.Component;
  * offered: on by default in local/dev/test, never in production, and an explicit {@code EVENTS_ENABLED=true} outside those is refused.
  */
 @Component
-public class EventsSettings {
+public class EventsSettings implements FeatureGate {
+    @Override
+    public FeatureToggles.Feature feature() {
+        return FeatureToggles.Feature.EVENTS;
+    }
+
     private final boolean allowed;
 
     public EventsSettings(Environment environment) {
@@ -22,6 +29,8 @@ public class EventsSettings {
         }
         this.allowed = internal && (explicit == null || explicit);
     }
+
+    @Override
 
     public boolean allowedByEnvironment() { return allowed; }
 }

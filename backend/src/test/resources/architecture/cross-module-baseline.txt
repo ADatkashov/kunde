@@ -58,15 +58,7 @@ IMPORT maps/KundeMapsRideRouting.java -> rides.RideMatching
 IMPORT maps/KundeMapsRideRouting.java -> rides.RideRouting
 IMPORT maps/MapsConfiguration.java -> rides.RideRouting
 IMPORT partner/PartnerOpsDemoSeeder.java -> auth.PhoneAuthProperties
-IMPORT platform/FeatureToggles.java -> auto.AutoProperties
-IMPORT platform/FeatureToggles.java -> booking.BeautySettings
-IMPORT platform/FeatureToggles.java -> booking.HomeServicesSettings
 IMPORT platform/FeatureToggles.java -> delivery.DeliveryProperties
-IMPORT platform/FeatureToggles.java -> education.EducationSettings
-IMPORT platform/FeatureToggles.java -> events.EventsSettings
-IMPORT platform/FeatureToggles.java -> groceries.GroceriesSettings
-IMPORT platform/FeatureToggles.java -> health.HealthSettings
-IMPORT platform/FeatureToggles.java -> leisure.LeisureFlags
 IMPORT platform/FeatureToggles.java -> rides.RidesFlags
 IMPORT rides/RideAdminController.java -> admin.AdminGrants
 IMPORT rides/RideDispatchService.java -> delivery.DeliveryDispatch

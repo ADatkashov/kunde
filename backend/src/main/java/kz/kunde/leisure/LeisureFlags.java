@@ -1,5 +1,7 @@
 package kz.kunde.leisure;
 
+import kz.kunde.platform.FeatureGate;
+import kz.kunde.platform.FeatureToggles;
 import java.util.Set;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
@@ -7,7 +9,12 @@ import org.springframework.stereotype.Component;
 
 /** Environment ceiling of Leisure: the value an administrator can only switch off (and back on) at runtime. */
 @Component
-public class LeisureFlags {
+public class LeisureFlags implements FeatureGate {
+    @Override
+    public FeatureToggles.Feature feature() {
+        return FeatureToggles.Feature.LEISURE;
+    }
+
     private static final Set<String> NON_PRODUCTION = Set.of("dev", "local", "test");
     private final boolean allowed;
     private final boolean testPayments;
@@ -29,6 +36,7 @@ public class LeisureFlags {
     }
 
     /** Whether the environment allows Leisure at all (before the administrator switch). */
+    @Override
     public boolean allowedByEnvironment() { return allowed; }
 
     /** Test payments (TEST_CARD) exist only outside production. */

@@ -11,6 +11,10 @@
 - Добавлено (только expand): миграция V67 (пустой реестр `serviceability.cities`, nullable неизменяемый `city_id` на 7 корнях агрегатов, без backfill), `platform.placement` (`ShardKey/ShardResolver`, `SingleShardResolver` всегда `default`, локаторы агрегатов по ID), реестр `placement-registry.txt` + быстрый `PlacementRegistryTest`, интеграционный `CityPlacementIntegrationTest`. API и поведение не менялись, локаторы пока не подключены к эндпоинтам.
 - **Не сделано:** список городов и backfill (нужно решение владельца), решение по платежам, мягкие ссылки вместо FK на users/partners, реплики/пулы/HPA, физические shards.
 
+## Microservice readiness V1 — FeatureGate (2026-11-23)
+
+- `platform` больше не импортирует настройки 8 из 10 доменов: каждый домен реализует `platform.FeatureGate`, `FeatureToggles` собирает их списком и не стартует без gate на каждый продукт. Baseline импортов уменьшен на 8 (остались `RidesFlags`, `DeliveryProperties`). API и JSON не менялись. `mvn clean verify` на PostgreSQL 16: 492 теста, 0 ошибок.
+
 ## Microservice readiness audit (2026-11-23, ветка `ccr-040ab629-xks3w5`)
 
 - Аудит фактического кода: модульный монолит, плоские пакеты, одна БД; связи между модулями — импорты и SQL к чужим таблицам (36 пар по импортам/114 SQL-ссылок в baseline), событий/outbox нет. Maps уже отдельный сервис. Отчёт, матрица готовности, порядок выделения и откат: [microservice-readiness](docs/architecture/microservice-readiness.md).

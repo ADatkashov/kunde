@@ -1,5 +1,7 @@
 package kz.kunde.booking;
 
+import kz.kunde.platform.FeatureGate;
+import kz.kunde.platform.FeatureToggles;
 import java.util.Set;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
@@ -7,7 +9,12 @@ import org.springframework.stereotype.Component;
 
 /** Explicit environment opt-in for the Home Services Booking pilot. */
 @Component
-public class HomeServicesSettings {
+public class HomeServicesSettings implements FeatureGate {
+    @Override
+    public FeatureToggles.Feature feature() {
+        return FeatureToggles.Feature.HOME_SERVICES;
+    }
+
     private final boolean allowed;
 
     public HomeServicesSettings(Environment environment) {
@@ -19,6 +26,8 @@ public class HomeServicesSettings {
         }
         this.allowed = requested && environment.getProperty("app.booking.enabled", Boolean.class, false);
     }
+
+    @Override
 
     public boolean allowedByEnvironment() {
         return allowed;
