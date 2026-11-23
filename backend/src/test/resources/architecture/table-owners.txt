@@ -8,6 +8,7 @@ identity.otp_=auth
 identity.refresh_=auth
 identity.phone_identities=auth
 identity.feature_toggle=platform
+platform.=platform
 identity.users=identity
 identity.external_bindings=identity
 identity.account_events=identity

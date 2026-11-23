@@ -124,7 +124,7 @@ class ArchitectureBoundariesTest {
 
     private static Set<String> sqlCoupling() {
         Set<String> tables = migratedTables();
-        Pattern ref = Pattern.compile("\\b((?:identity|profile|marketplace|transactions|payments|support|serviceability)\\.\\w+)\\b");
+        Pattern ref = Pattern.compile("\\b((?:identity|profile|marketplace|transactions|payments|support|serviceability|platform)\\.\\w+)\\b");
         Set<String> edges = new TreeSet<>();
         for (Path file : javaFiles()) {
             String module = moduleOf(file);
