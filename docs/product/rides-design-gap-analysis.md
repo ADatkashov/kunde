@@ -1,6 +1,6 @@
 # Rides & Transport 1.0 — gap analysis against the reference design (2026-11-22)
 
-Source: the 10-screen reference image requested by the owner. Audit is of `main` code, not documentation. Status: **PLAN — most items below are not yet built.**
+Source: the 10-screen reference image requested by the owner. Audit is of `main` code, not documentation. Status: **PLAN — most items below are not yet built.** Update 2026-11-23: step 2 (Consumer restyle) is partly done on existing APIs: category hub (only city rides is available, others show «Скоро»), tariff cards (server price on the quoted class only), full-screen searching state driven by the real status, driver card, completed screen. Still open: Minivan class, ETA per class, driver rating/contact, share link, promo and payment.
 
 | Reference screen / feature | In code today | Gap | Needs |
 | --- | --- | --- | --- |
