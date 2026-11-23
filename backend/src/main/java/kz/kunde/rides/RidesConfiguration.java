@@ -1,5 +1,7 @@
 package kz.kunde.rides;
 
+import kz.kunde.platform.geo.SyntheticRouting;
+import kz.kunde.platform.geo.RoutingProvider;
 import java.util.Set;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -34,7 +36,7 @@ public class RidesConfiguration {
 
     @Bean
     @ConditionalOnProperty(name = "app.rides.synthetic-routing-enabled", havingValue = "true")
-    RideRouting syntheticRideRouting() {
-        return new SyntheticRideRouting();
+    RoutingProvider syntheticRideRouting() {
+        return new SyntheticRouting();
     }
 }

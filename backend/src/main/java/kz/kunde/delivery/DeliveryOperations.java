@@ -1,5 +1,6 @@
 package kz.kunde.delivery;
 
+import kz.kunde.platform.dispatch.ActiveWork;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -53,7 +54,7 @@ public class DeliveryOperations {
                   and d.created_at >= coalesce(cast(? as timestamptz), '-infinity')
                   and d.created_at < coalesce(cast(? as timestamptz), 'infinity')
                 order by (d.status in %s or d.status = 'SEARCHING_COURIER') desc, d.created_at desc, d.id desc limit 100
-                """.formatted(VISIBLE_DELIVERY, DeliveryDispatch.ACTIVE_DELIVERY_STATES), (rs, row) -> new Shipment(
+                """.formatted(VISIBLE_DELIVERY, ActiveWork.ACTIVE_DELIVERY_STATES), (rs, row) -> new Shipment(
                 rs.getObject("id", UUID.class), DeliveryState.valueOf(rs.getString("status")),
                 rs.getObject("courier_id", UUID.class), rs.getObject("partner_id", UUID.class),
                 rs.getObject("created_at", OffsetDateTime.class), rs.getBoolean("synthetic_route")),

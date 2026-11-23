@@ -1,12 +1,11 @@
-package kz.kunde.rides;
+package kz.kunde.platform.geo;
 
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import kz.kunde.platform.geo.Point;
 
 /** Deterministic route fixture for internal environments. */
-public final class SyntheticRideRouting implements RideRouting {
+public final class SyntheticRouting implements RoutingProvider {
     private static final Point PICKUP = new Point(43.24, 76.92);
     private static final Point DESTINATION = new Point(43.25, 76.94);
     private static final Place START = new Place("[TEST] Synthetic pickup", PICKUP);

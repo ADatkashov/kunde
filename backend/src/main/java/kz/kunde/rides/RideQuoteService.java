@@ -1,5 +1,6 @@
 package kz.kunde.rides;
 
+import kz.kunde.platform.geo.RoutingProvider;
 import kz.kunde.platform.FeatureToggles;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -17,10 +18,10 @@ public class RideQuoteService {
     private final JdbcTemplate db;
     private final FeatureToggles toggles;
     private final RidePricingProperties pricing;
-    private final ObjectProvider<RideRouting> routing;
+    private final ObjectProvider<RoutingProvider> routing;
 
     public RideQuoteService(JdbcTemplate db, FeatureToggles toggles, RidePricingProperties pricing,
-            ObjectProvider<RideRouting> routing) {
+            ObjectProvider<RoutingProvider> routing) {
         this.db = db;
         this.toggles = toggles;
         this.pricing = pricing;
@@ -39,12 +40,12 @@ public class RideQuoteService {
         if (provider == null) {
             throw routingUnavailable();
         }
-        RideRouting.Route route;
+        RoutingProvider.Route route;
         try {
             route = provider.route(pickup.point(), destination.point()).orElseThrow(() ->
                     new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "RIDE_ROUTE_NOT_FOUND",
                             "No road route was found for these points"));
-        } catch (RideRouting.Unavailable failure) {
+        } catch (RoutingProvider.Unavailable failure) {
             throw routingUnavailable();
         }
 

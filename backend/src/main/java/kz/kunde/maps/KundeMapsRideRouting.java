@@ -17,10 +17,10 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import kz.kunde.platform.geo.Point;
-import kz.kunde.rides.RideRouting;
+import kz.kunde.platform.geo.RoutingProvider;
 
 /**
- * {@link RideRouting} over the KUNDE Maps Platform (Search and Routing APIs of the kunde-maps repository). It owns no routing engine and no
+ * {@link RoutingProvider} over the KUNDE Maps Platform (Search and Routing APIs of the kunde-maps repository). It owns no routing engine and no
  * map data: it only speaks the documented HTTP contracts.
  *
  * <ul>
@@ -32,9 +32,9 @@ import kz.kunde.rides.RideRouting;
  * </ul>
  *
  * Coordinates and queries are never logged and never put into exception messages. A provider failure (timeout, quota, 5xx, malformed
- * answer) is {@link RideRouting.Unavailable}; "no match" answers (no road, out of coverage, too close) are empty results.
+ * answer) is {@link RoutingProvider.Unavailable}; "no match" answers (no road, out of coverage, too close) are empty results.
  */
-public final class KundeMapsRideRouting implements RideRouting {
+public final class KundeMapsRideRouting implements RoutingProvider {
     static final int REVERSE_RADIUS_METERS = 60;
     private static final int MAX_PLACES = 10;
     private static final int MAX_ROUTE_POINTS = 20_000;

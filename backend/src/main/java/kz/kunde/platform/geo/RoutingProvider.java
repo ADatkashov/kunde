@@ -1,14 +1,13 @@
-package kz.kunde.rides;
+package kz.kunde.platform.geo;
 
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import kz.kunde.platform.geo.Point;
 
 /** Maps provider boundary. Coordinates are WGS 84 and duration and distance come from a road route.
  * Implementations report provider outages with {@link Unavailable}. Empty results denote no match.
  */
-public interface RideRouting {
+public interface RoutingProvider {
     List<Place> geocode(String query, Locale locale);
 
     Optional<Place> reverseGeocode(Point point, Locale locale);

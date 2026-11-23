@@ -7,6 +7,7 @@ import java.util.Comparator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import kz.kunde.platform.geo.Geo;
 import kz.kunde.platform.geo.Point;
 
 public final class RideMatching {
@@ -32,20 +33,10 @@ public final class RideMatching {
                         && !excludedDrivers.contains(candidate.driverId())
                         && candidate.location() != null && candidate.observedAt() != null
                         && !candidate.observedAt().isBefore(oldest) && !candidate.observedAt().isAfter(now))
-                .map(candidate -> new RankedCandidate(candidate, distanceMeters(pickup, candidate.location())))
+                .map(candidate -> new RankedCandidate(candidate, Geo.distanceMeters(pickup, candidate.location())))
                 .filter(candidate -> candidate.distanceMeters() <= maxDistanceMeters)
                 .min(Comparator.comparingDouble(RankedCandidate::distanceMeters)
                         .thenComparing(candidate -> candidate.candidate().driverId()))
                 .map(RankedCandidate::candidate);
-    }
-
-    // Geographic proximity is used only to rank drivers. Road distance belongs to a routing provider.
-    public static double distanceMeters(Point from, Point to) {
-        double latitude = Math.toRadians(to.latitude() - from.latitude());
-        double longitude = Math.toRadians(to.longitude() - from.longitude());
-        double haversine = Math.pow(Math.sin(latitude / 2), 2)
-                + Math.cos(Math.toRadians(from.latitude())) * Math.cos(Math.toRadians(to.latitude()))
-                * Math.pow(Math.sin(longitude / 2), 2);
-        return 2 * 6_371_000 * Math.asin(Math.sqrt(Math.min(1, haversine)));
     }
 }
