@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../beauty/beauty_strings.dart';
+import '../../beauty/presentation/beauty_home_screen.dart';
 import '../booking_services.dart';
 import 'booking_strings.dart';
 import 'cleaning_flow_screen.dart';
@@ -22,6 +24,25 @@ class BarbershopsEntry extends StatelessWidget {
       subtitle: s.bkBarbersSub,
       onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
           builder: (_) => VenueListScreen(services: services))),
+    );
+  }
+}
+
+/// «Красота и уход»: opens the Beauty & Care product (salons, masters, booking).
+class BeautyCareEntry extends StatelessWidget {
+  const BeautyCareEntry({required this.services, super.key});
+
+  final BookingServices services;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = bkL10n(context);
+    return ServiceEntryCard(
+      emoji: '💜',
+      tone: 'purple',
+      title: s.bHomeTitle,
+      subtitle: s.bHomeSubtitle,
+      onTap: () => Navigator.of(context).push(beautyShellRouteFor(services)),
     );
   }
 }

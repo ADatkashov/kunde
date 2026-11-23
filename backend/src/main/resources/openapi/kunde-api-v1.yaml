@@ -43,6 +43,7 @@ paths:
                   oidcIssuerConfigured: { type: boolean, example: false }
                   aiEnabled: { type: boolean, example: false }
                   homeServicesEnabled: { type: boolean, example: false, description: Effective switch for the Home Services pilot. }
+                  beautyEnabled: { type: boolean, example: false, description: Effective switch for Beauty and Care (BEAUTY_ENABLED). }
                   mapsEnabled: { type: boolean, example: false, description: KUNDE Maps Platform is the configured routing provider (MAPS_ENABLED); map screens also require the product flag, for example ridesEnabled. }
                   deliveryEnabled: { type: boolean, example: false }
                   deliverySyntheticRouting: { type: boolean, example: false }
@@ -1247,6 +1248,103 @@ paths:
           description: Invalid category code syntax or pagination.
         '404':
           description: HOME_SERVICES_DISABLED.
+  /beauty/categories:
+    get:
+      operationId: listBeautyCategories
+      description: Active Beauty and Care categories in display order (featured ones form the home grid). Hidden while BEAUTY_ENABLED is off.
+      parameters:
+        - { name: featured, in: query, schema: { type: boolean } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 10000, default: 0 } }
+      responses:
+        '200':
+          description: Localized categories with code, nameRu, nameKk, nameEn, icon and featured.
+        '400':
+          description: Invalid pagination.
+        '404':
+          description: BEAUTY_DISABLED.
+  /beauty/salons:
+    get:
+      operationId: listBeautySalons
+      description: Beauty salons with server-side filtering, sorting and pagination (X-Total-Count). Rating and review count are calculated from published reviews. Hidden while BEAUTY_ENABLED is off.
+      parameters:
+        - { name: filter, in: query, schema: { type: string, enum: [ALL, NEARBY, RATING, PROMO], default: ALL } }
+        - { name: category, in: query, schema: { type: string, pattern: '^[A-Z][A-Z0-9_]{1,31}$' } }
+        - { name: q, in: query, schema: { type: string, maxLength: 80 } }
+        - { name: minPriceMinor, in: query, schema: { type: integer, format: int64, minimum: 0 } }
+        - { name: maxPriceMinor, in: query, schema: { type: integer, format: int64, minimum: 0 } }
+        - { name: lat, in: query, schema: { type: number, minimum: -90, maximum: 90 } }
+        - { name: lng, in: query, schema: { type: number, minimum: -180, maximum: 180 } }
+        - { name: maxDistanceMeters, in: query, schema: { type: integer, minimum: 100, maximum: 100000 } }
+        - { name: verifiedOnly, in: query, schema: { type: boolean, default: false } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 10000, default: 0 } }
+      responses:
+        '200':
+          description: Salons with rating, reviewCount, fromPriceMinor, discountPercent and distanceMeters (when lat and lng are given).
+        '400':
+          description: Invalid filter, pagination or location.
+        '404':
+          description: BEAUTY_DISABLED.
+  /beauty/salons/{id}:
+    get:
+      operationId: getBeautySalon
+      description: Salon details with services, masters, reviews, gallery and cancellation policy.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Salon detail.
+        '404':
+          description: SALON_NOT_FOUND or BEAUTY_DISABLED.
+  /beauty/services/{id}:
+    get:
+      operationId: getBeautyService
+      description: Service card with tags, what is included, preparation, cancellation terms, salon and qualified masters with the nearest free time.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Service detail.
+        '404':
+          description: SERVICE_NOT_FOUND or BEAUTY_DISABLED.
+  /beauty/promotions:
+    get:
+      operationId: listBeautyPromotions
+      description: Active promotions and the maximum percent (the banner is shown only from real promotions).
+      responses:
+        '200':
+          description: maxPercent (null when none) and items.
+        '404':
+          description: BEAUTY_DISABLED.
+  /beauty/favorites:
+    get:
+      operationId: listBeautyFavorites
+      description: Ids of the caller's favorite salons.
+      responses:
+        '200':
+          description: Salon ids, newest first.
+        '404':
+          description: BEAUTY_DISABLED.
+  /beauty/favorites/{venueId}:
+    put:
+      operationId: addBeautyFavorite
+      description: Adds a salon to favorites (idempotent).
+      parameters:
+        - { name: venueId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204':
+          description: Added.
+        '404':
+          description: SALON_NOT_FOUND or BEAUTY_DISABLED.
+    delete:
+      operationId: removeBeautyFavorite
+      description: Removes a salon from favorites (idempotent).
+      parameters:
+        - { name: venueId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204':
+          description: Removed.
   /booking/venues:
     get:
       operationId: listBookingVenues

@@ -70,6 +70,8 @@ resource "render_web_service" "this" {
     var.booking_enabled ? {
       BOOKING_ENABLED   = { value = "true" }
       BOOKING_SEED_DEMO = { value = "true" }
+      BEAUTY_ENABLED    = { value = "true" }
+      BEAUTY_SEED_DEMO  = { value = "true" }
     } : {},
     var.auto_enabled ? {
       AUTO_ENABLED   = { value = "true" }

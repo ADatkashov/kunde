@@ -228,6 +228,7 @@ class _SearchTabState extends State<SearchTab> {
             state.data?.bookingEnabled == true &&
             widget.booking != null;
         final homeServicesEnabled = state.data?.homeServicesEnabled == true;
+        final beautyEnabled = state.data?.beautyEnabled == true;
         final food = widget.food;
         return Center(
           child: ConstrainedBox(
@@ -326,6 +327,7 @@ class _SearchTabState extends State<SearchTab> {
                                     builder: (_) => ServicesHomeScreen(
                                       services: widget.booking!,
                                       homeServicesEnabled: homeServicesEnabled,
+                                      beautyEnabled: beautyEnabled,
                                     ),
                                   ),
                                 )

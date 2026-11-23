@@ -8,7 +8,7 @@ Venue → service → master → free slot → confirmation. Bookings are stored
 
 ## Gates
 
-`BOOKING_ENABLED` is off by default; `BookingGuard` aborts startup unless `KUNDE_ENVIRONMENT` is dev/local/test and consumer identity is on. `BOOKING_SEED_DEMO` loads 4 invented barbershops (9 masters, 6 services, weekly schedules incl. breaks and days off; idempotent by slug; no users or bookings). `GET /capabilities` reports `bookingEnabled`; the app shows «Услуги» only when it is true.
+`BOOKING_ENABLED` is off by default; barbershops (`BARBER`) additionally need `BEAUTY_ENABLED` (owner decision 2026-11-23, see [Beauty & Care](beauty-care.md)); when it is off the barbershop catalog, slots and new bookings answer `404 BEAUTY_DISABLED` while history and cancellation stay available; `BookingGuard` aborts startup unless `KUNDE_ENVIRONMENT` is dev/local/test and consumer identity is on. `BOOKING_SEED_DEMO` loads 4 invented barbershops (9 masters, 6 services, weekly schedules incl. breaks and days off; idempotent by slug; no users or bookings). `GET /capabilities` reports `bookingEnabled`; the app shows «Услуги» only when it is true.
 
 ## Data (Flyway V18)
 

@@ -3,6 +3,7 @@
 # IMPORT <module>/<File> -> <targetModule>.<Type>   compile-time dependency on another business module
 # SQL <module>/<File> -> <schema.table> (owner <m>)  query against a table owned by another module
 IMPORT admin/AdminAutoController.java -> partner.PartnerAccessPolicy
+IMPORT admin/AdminBeautyController.java -> partner.PartnerAccessPolicy
 IMPORT admin/AdminCapabilitiesController.java -> delivery.DeliveryOperations
 IMPORT admin/AdminCapabilitiesController.java -> partner.PartnerAccessPolicy
 IMPORT admin/AdminEmployeeController.java -> partner.PartnerAccessPolicy
@@ -21,6 +22,8 @@ IMPORT admin/AdminPartnerController.java -> partner.PartnerVerification
 IMPORT auto/AutoCatalogController.java -> booking.BookingSlots
 IMPORT auto/AutoDemoSeeder.java -> booking.BookingDemoSeeder
 IMPORT auto/AutoService.java -> booking.BookingSlots
+IMPORT booking/BeautyPartnerController.java -> partner.PartnerAccessPolicy
+IMPORT booking/BeautyPartnerController.java -> partner.PartnerService
 IMPORT booking/BookingPartnerController.java -> partner.PartnerAccessPolicy
 IMPORT booking/BookingPartnerService.java -> partner.PartnerService
 IMPORT delivery/DeliveryAdminController.java -> admin.AdminGrants
@@ -56,6 +59,7 @@ IMPORT maps/KundeMapsRideRouting.java -> rides.RideRouting
 IMPORT maps/MapsConfiguration.java -> rides.RideRouting
 IMPORT partner/PartnerOpsDemoSeeder.java -> auth.PhoneAuthProperties
 IMPORT platform/FeatureToggles.java -> auto.AutoProperties
+IMPORT platform/FeatureToggles.java -> booking.BeautySettings
 IMPORT platform/FeatureToggles.java -> booking.HomeServicesSettings
 IMPORT platform/FeatureToggles.java -> delivery.DeliveryProperties
 IMPORT platform/FeatureToggles.java -> education.EducationSettings
@@ -76,6 +80,11 @@ SQL admin/AdminAutoController.java -> marketplace.booking_venues (owner booking)
 SQL admin/AdminAutoController.java -> transactions.auto_jobs (owner auto)
 SQL admin/AdminAutoController.java -> transactions.auto_specialists (owner auto)
 SQL admin/AdminAutoController.java -> transactions.bookings (owner booking)
+SQL admin/AdminBeautyController.java -> marketplace.beauty_salon_profiles (owner booking)
+SQL admin/AdminBeautyController.java -> marketplace.beauty_service_profiles (owner booking)
+SQL admin/AdminBeautyController.java -> marketplace.booking_venues (owner booking)
+SQL admin/AdminBeautyController.java -> profile.consumer_profiles (owner identity)
+SQL admin/AdminBeautyController.java -> transactions.bookings (owner booking)
 SQL admin/AdminEmployeeController.java -> identity.users (owner identity)
 SQL admin/AdminEmployeeController.java -> profile.consumer_profiles (owner identity)
 SQL admin/AdminFoodController.java -> marketplace.food_audit (owner food)
@@ -123,6 +132,7 @@ SQL auto/AutoService.java -> marketplace.booking_services (owner booking)
 SQL auto/AutoService.java -> marketplace.booking_venues (owner booking)
 SQL auto/AutoService.java -> transactions.booking_events (owner booking)
 SQL auto/AutoService.java -> transactions.bookings (owner booking)
+SQL booking/BeautyExecutorController.java -> profile.consumer_profiles (owner identity)
 SQL booking/BookingCatalogController.java -> marketplace.health_categories (owner health)
 SQL booking/BookingPartnerService.java -> marketplace.auto_service_categories (owner auto)
 SQL booking/BookingPartnerService.java -> marketplace.health_categories (owner health)

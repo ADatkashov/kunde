@@ -1,5 +1,9 @@
 # Следующие проверки
 
+## KUNDE Beauty & Care 1.0
+
+Consumer, Partner-обзор, Executor и Admin-аналитика готовы ([beauty-care.md](docs/product/beauty-care.md)). Дальше: Partner CRUD услуг/акций/расписания и модерация отзывов, Admin модерация и жалобы, перенос записи, hold и онлайн-оплата (провайдер), уведомления, нативные Android E2E, DEV-деплой и Release APK. Команды: `cd backend && mvn test -Dtest='Beauty*,Booking*'`; `cd mobile && flutter test test/features/beauty test/features/booking`.
+
 ## KUNDE Delivery 1.0
 
 Провести нативную DEV-приёмку Consumer → Executor → Partner/Admin на общей ревизии после интеграции KUNDE Maps. Критерии включают выбор адресов на карте, дорожную котировку, назначение, GPS, вручение и видимость по ролям. Сценарий оплаты проверяется после подключения утверждённого провайдера. [Аудит, очередь интеграции и ограничения](docs/product/delivery-1.0-audit.md).

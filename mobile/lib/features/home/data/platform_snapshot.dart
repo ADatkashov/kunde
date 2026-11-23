@@ -6,6 +6,7 @@ class PlatformSnapshot {
     required this.aiEnabled,
     this.bookingEnabled = false,
     this.homeServicesEnabled = false,
+    this.beautyEnabled = false,
     this.ridesEnabled = false,
     this.deliveryEnabled = false,
     this.deliverySyntheticRouting = false,
@@ -26,6 +27,9 @@ class PlatformSnapshot {
   /// Service booking (barbershops) DEV pilot; absent on older servers.
   final bool bookingEnabled;
   final bool homeServicesEnabled;
+
+  /// Beauty & Care (BEAUTY_ENABLED); off by default; absent on older servers.
+  final bool beautyEnabled;
   final bool ridesEnabled;
   final bool deliveryEnabled;
   final bool deliverySyntheticRouting;
@@ -63,6 +67,7 @@ class PlatformSnapshot {
       aiEnabled: ai,
       bookingEnabled: json['bookingEnabled'] == true,
       homeServicesEnabled: json['homeServicesEnabled'] == true,
+      beautyEnabled: json['beautyEnabled'] == true,
       ridesEnabled: json['ridesEnabled'] == true,
       deliveryEnabled: json['deliveryEnabled'] == true,
       deliverySyntheticRouting: json['deliverySyntheticRouting'] == true,

@@ -260,6 +260,10 @@ extension BookingStrings on KundeLocalizations {
             'Площадь вне допустимого диапазона для этой услуги.',
             'Ауданы бұл қызмет үшін рұқсат етілген аралықтан тыс.',
             'The area is outside the allowed range for this service.'),
+        BookingFailure.priceChanged => _t(
+            'Цена изменилась. Проверьте сумму и подтвердите снова.',
+            'Баға өзгерді. Соманы тексеріп, қайта растаңыз.',
+            'The price has changed. Check the amount and confirm again.'),
         BookingFailure.other => _t(
             'Не удалось выполнить действие. Попробуйте позже.',
             'Әрекетті орындау мүмкін болмады. Кейінірек көріңіз.',

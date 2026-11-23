@@ -1,0 +1,1190 @@
+{
+ "venues": [
+  {
+   "slug": "beauty-luna",
+   "category": "BARBER",
+   "name": "LUNA Beauty Studio",
+   "description": "Салон красоты: окрашивание, стрижки, маникюр и уход (демо).",
+   "address": "Алматы, ул. Сатпаева, 90",
+   "emoji": "💜",
+   "tone": "purple",
+   "open": true,
+   "beauty": {
+    "categories": [
+     "SALONS",
+     "HAIR",
+     "MANICURE",
+     "COSMETOLOGY"
+    ],
+    "lat": 43.2389,
+    "lng": 76.9286,
+    "verified": true,
+    "phone": "+77000000900",
+    "cancellation": "Бесплатная отмена до начала процедуры. Перенос возможен не позднее чем за 2 часа."
+   },
+   "services": [
+    {
+     "name": "Окрашивание волос",
+     "description": "Профессиональное окрашивание премиум-материалами с уходом и восстановлением.",
+     "duration": 180,
+     "price": 2500000,
+     "beauty": {
+      "category": "HAIR",
+      "tags": [
+       "Волосы",
+       "Премиум",
+       "Популярно"
+      ],
+      "includes": [
+       "Консультация колориста",
+       "Окрашивание",
+       "Уход и восстановление",
+       "Укладка"
+      ],
+      "preparation": "Не мойте голову за день до процедуры.",
+      "priceFrom": true
+     }
+    },
+    {
+     "name": "Женская стрижка",
+     "description": "Стрижка с мытьём и укладкой.",
+     "duration": 60,
+     "price": 900000,
+     "beauty": {
+      "category": "HAIR",
+      "tags": [
+       "Волосы"
+      ],
+      "includes": [
+       "Мытьё",
+       "Стрижка",
+       "Укладка"
+      ],
+      "preparation": "",
+      "priceFrom": false
+     }
+    },
+    {
+     "name": "Маникюр классический",
+     "description": "Классический маникюр с покрытием.",
+     "duration": 75,
+     "price": 600000,
+     "beauty": {
+      "category": "MANICURE",
+      "tags": [
+       "Маникюр"
+      ],
+      "includes": [
+       "Обработка",
+       "Покрытие гель-лаком"
+      ],
+      "preparation": "",
+      "priceFrom": false
+     }
+    },
+    {
+     "name": "Уход за лицом",
+     "description": "Чистка и увлажняющий уход.",
+     "duration": 60,
+     "price": 1200000,
+     "beauty": {
+      "category": "COSMETOLOGY",
+      "tags": [
+       "Уход"
+      ],
+      "includes": [
+       "Чистка",
+       "Маска",
+       "Крем"
+      ],
+      "preparation": "Приходите без макияжа.",
+      "priceFrom": false
+     }
+    }
+   ],
+   "masters": [
+    {
+     "name": "Алия С.",
+     "bio": "Колорист, 8 лет опыта.",
+     "emoji": "💇",
+     "tone": "purple",
+     "specialty": "Колорист",
+     "experience": 8,
+     "services": [
+      "Окрашивание волос",
+      "Женская стрижка"
+     ],
+     "hours": [
+      {
+       "day": 1,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 2,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 3,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 4,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 5,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 6,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      }
+     ],
+     "inviteCode": "DEMO-ALIYA"
+    },
+    {
+     "name": "Мадина Б.",
+     "bio": "Мастер маникюра.",
+     "emoji": "💇",
+     "tone": "purple",
+     "specialty": "Маникюр",
+     "experience": 5,
+     "services": [
+      "Маникюр классический"
+     ],
+     "hours": [
+      {
+       "day": 1,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 2,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 3,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 4,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 5,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 6,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      }
+     ],
+     "inviteCode": "DEMO-MADINA"
+    },
+    {
+     "name": "Айгерим Т.",
+     "bio": "Косметолог.",
+     "emoji": "💇",
+     "tone": "purple",
+     "specialty": "Косметолог",
+     "experience": 6,
+     "services": [
+      "Уход за лицом"
+     ],
+     "hours": [
+      {
+       "day": 1,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 2,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 3,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 4,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 5,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      }
+     ],
+     "inviteCode": "DEMO-AIGERIM"
+    }
+   ],
+   "reviews": [
+    {
+     "rating": 5,
+     "comment": "Отличный цвет, всё аккуратно.",
+     "service": "Окрашивание волос",
+     "master": "Алия С.",
+     "author": "Клиент (демо)"
+    },
+    {
+     "rating": 5,
+     "comment": "Быстро и красиво.",
+     "service": "Маникюр классический",
+     "master": "Мадина Б.",
+     "author": "Клиент (демо)"
+    },
+    {
+     "rating": 5,
+     "comment": "Рекомендую колориста.",
+     "service": "Окрашивание волос",
+     "master": "Алия С.",
+     "author": "Клиент (демо)"
+    },
+    {
+     "rating": 4,
+     "comment": "Хороший салон, чуть подождала.",
+     "service": "Женская стрижка",
+     "master": "Алия С.",
+     "author": "Клиент (демо)"
+    },
+    {
+     "rating": 5,
+     "comment": "Уход за лицом понравился.",
+     "service": "Уход за лицом",
+     "master": "Айгерим Т.",
+     "author": "Клиент (демо)"
+    }
+   ],
+   "promotions": [
+    {
+     "title": "Скидка на окрашивание (демо)",
+     "percent": 30,
+     "days": 30
+    }
+   ]
+  },
+  {
+   "slug": "beauty-scala",
+   "category": "BARBER",
+   "name": "Scala Salon",
+   "description": "Стрижки и окрашивание (демо).",
+   "address": "Алматы, пр. Абая, 150",
+   "emoji": "✂️",
+   "tone": "purple",
+   "open": true,
+   "beauty": {
+    "categories": [
+     "SALONS",
+     "HAIR"
+    ],
+    "lat": 43.2399,
+    "lng": 76.9051,
+    "verified": true,
+    "phone": "+77000000901",
+    "cancellation": "Бесплатная отмена до начала процедуры. Перенос возможен не позднее чем за 2 часа."
+   },
+   "services": [
+    {
+     "name": "Стрижка женская",
+     "description": "Стрижка и укладка.",
+     "duration": 60,
+     "price": 700000,
+     "beauty": {
+      "category": "HAIR",
+      "tags": [
+       "Волосы",
+       "Стрижка"
+      ],
+      "includes": [
+       "Мытьё",
+       "Стрижка",
+       "Укладка"
+      ],
+      "preparation": "",
+      "priceFrom": true
+     }
+    },
+    {
+     "name": "Окрашивание",
+     "description": "Окрашивание в один тон.",
+     "duration": 150,
+     "price": 1800000,
+     "beauty": {
+      "category": "HAIR",
+      "tags": [
+       "Волосы",
+       "Окрашивание"
+      ],
+      "includes": [
+       "Окрашивание",
+       "Уход"
+      ],
+      "preparation": "",
+      "priceFrom": true
+     }
+    }
+   ],
+   "masters": [
+    {
+     "name": "Дана К.",
+     "bio": "Стилист.",
+     "emoji": "💇",
+     "tone": "purple",
+     "specialty": "Стилист",
+     "experience": 7,
+     "services": [
+      "Стрижка женская",
+      "Окрашивание"
+     ],
+     "hours": [
+      {
+       "day": 1,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 2,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 3,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 4,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 5,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 6,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      }
+     ],
+     "inviteCode": "DEMO-DANA"
+    },
+    {
+     "name": "Жанна Р.",
+     "bio": "Колорист.",
+     "emoji": "💇",
+     "tone": "purple",
+     "specialty": "Колорист",
+     "experience": 9,
+     "services": [
+      "Окрашивание"
+     ],
+     "hours": [
+      {
+       "day": 2,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 3,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 4,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 5,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 6,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      }
+     ],
+     "inviteCode": "DEMO-ZHANNA"
+    }
+   ],
+   "reviews": [
+    {
+     "rating": 5,
+     "comment": "Отличная стрижка.",
+     "service": "Стрижка женская",
+     "master": "Дана К.",
+     "author": "Клиент (демо)"
+    },
+    {
+     "rating": 5,
+     "comment": "Цвет как хотела.",
+     "service": "Окрашивание",
+     "master": "Жанна Р.",
+     "author": "Клиент (демо)"
+    },
+    {
+     "rating": 4,
+     "comment": "Всё хорошо.",
+     "service": "Стрижка женская",
+     "master": "Дана К.",
+     "author": "Клиент (демо)"
+    },
+    {
+     "rating": 5,
+     "comment": "Буду приходить ещё.",
+     "service": "Окрашивание",
+     "master": "Жанна Р.",
+     "author": "Клиент (демо)"
+    }
+   ],
+   "promotions": []
+  },
+  {
+   "slug": "beauty-aura",
+   "category": "BARBER",
+   "name": "Aura Beauty",
+   "description": "Косметология и массаж (демо).",
+   "address": "Алматы, мкр Самал-2, 33",
+   "emoji": "🌸",
+   "tone": "purple",
+   "open": true,
+   "beauty": {
+    "categories": [
+     "SALONS",
+     "COSMETOLOGY",
+     "MASSAGE"
+    ],
+    "lat": 43.2342,
+    "lng": 76.956,
+    "verified": true,
+    "phone": "+77000000902",
+    "cancellation": "Бесплатная отмена до начала процедуры. Перенос возможен не позднее чем за 2 часа."
+   },
+   "services": [
+    {
+     "name": "Чистка лица",
+     "description": "Ультразвуковая чистка.",
+     "duration": 75,
+     "price": 1000000,
+     "beauty": {
+      "category": "COSMETOLOGY",
+      "tags": [
+       "Косметология"
+      ],
+      "includes": [
+       "Чистка",
+       "Маска"
+      ],
+      "preparation": "",
+      "priceFrom": true
+     }
+    },
+    {
+     "name": "Классический массаж",
+     "description": "Массаж спины и шеи.",
+     "duration": 60,
+     "price": 1200000,
+     "beauty": {
+      "category": "MASSAGE",
+      "tags": [
+       "Массаж"
+      ],
+      "includes": [
+       "Массаж 60 минут"
+      ],
+      "preparation": "Не ешьте за 1,5 часа до процедуры.",
+      "priceFrom": false
+     }
+    }
+   ],
+   "masters": [
+    {
+     "name": "Салтанат Е.",
+     "bio": "Косметолог.",
+     "emoji": "💇",
+     "tone": "purple",
+     "specialty": "Косметолог",
+     "experience": 10,
+     "services": [
+      "Чистка лица"
+     ],
+     "hours": [
+      {
+       "day": 1,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 2,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 3,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 4,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 5,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 6,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      }
+     ],
+     "inviteCode": "DEMO-SALTANAT"
+    },
+    {
+     "name": "Рустем А.",
+     "bio": "Массажист.",
+     "emoji": "💇",
+     "tone": "purple",
+     "specialty": "Массажист",
+     "experience": 12,
+     "services": [
+      "Классический массаж"
+     ],
+     "hours": [
+      {
+       "day": 1,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 2,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 3,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 4,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 5,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 6,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      }
+     ],
+     "inviteCode": "DEMO-RUSTEM"
+    }
+   ],
+   "reviews": [
+    {
+     "rating": 5,
+     "comment": "Кожа отдыхает.",
+     "service": "Чистка лица",
+     "master": "Салтанат Е.",
+     "author": "Клиент (демо)"
+    },
+    {
+     "rating": 5,
+     "comment": "Профессиональный массаж.",
+     "service": "Классический массаж",
+     "master": "Рустем А.",
+     "author": "Клиент (демо)"
+    },
+    {
+     "rating": 5,
+     "comment": "Спасибо!",
+     "service": "Чистка лица",
+     "master": "Салтанат Е.",
+     "author": "Клиент (демо)"
+    },
+    {
+     "rating": 4,
+     "comment": "Хорошо, но дорого.",
+     "service": "Классический массаж",
+     "master": "Рустем А.",
+     "author": "Клиент (демо)"
+    }
+   ],
+   "promotions": [
+    {
+     "title": "Скидка на массаж (демо)",
+     "percent": 15,
+     "days": 30
+    }
+   ]
+  },
+  {
+   "slug": "beauty-barber-house",
+   "category": "BARBER",
+   "name": "Barber House",
+   "description": "Мужские стрижки и борода (демо).",
+   "address": "Алматы, ул. Достык, 12",
+   "emoji": "💈",
+   "tone": "purple",
+   "open": true,
+   "beauty": {
+    "categories": [
+     "BARBERSHOPS"
+    ],
+    "lat": 43.241,
+    "lng": 76.957,
+    "verified": true,
+    "phone": "+77000000903",
+    "cancellation": "Бесплатная отмена до начала процедуры. Перенос возможен не позднее чем за 2 часа."
+   },
+   "services": [
+    {
+     "name": "Мужская стрижка",
+     "description": "Стрижка и стайлинг.",
+     "duration": 45,
+     "price": 400000,
+     "beauty": {
+      "category": "BARBERSHOPS",
+      "tags": [
+       "Мужские стрижки"
+      ],
+      "includes": [
+       "Стрижка",
+       "Стайлинг"
+      ],
+      "preparation": "",
+      "priceFrom": true
+     }
+    },
+    {
+     "name": "Оформление бороды",
+     "description": "Моделирование и уход.",
+     "duration": 30,
+     "price": 300000,
+     "beauty": {
+      "category": "BARBERSHOPS",
+      "tags": [
+       "Борода"
+      ],
+      "includes": [
+       "Моделирование",
+       "Горячее полотенце"
+      ],
+      "preparation": "",
+      "priceFrom": false
+     }
+    }
+   ],
+   "masters": [
+    {
+     "name": "Тимур Н.",
+     "bio": "Барбер.",
+     "emoji": "💇",
+     "tone": "purple",
+     "specialty": "Барбер",
+     "experience": 6,
+     "services": [
+      "Мужская стрижка",
+      "Оформление бороды"
+     ],
+     "hours": [
+      {
+       "day": 1,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "14:00",
+       "breakTo": "15:00"
+      },
+      {
+       "day": 2,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "14:00",
+       "breakTo": "15:00"
+      },
+      {
+       "day": 3,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "14:00",
+       "breakTo": "15:00"
+      },
+      {
+       "day": 4,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "14:00",
+       "breakTo": "15:00"
+      },
+      {
+       "day": 5,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "14:00",
+       "breakTo": "15:00"
+      },
+      {
+       "day": 6,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "14:00",
+       "breakTo": "15:00"
+      },
+      {
+       "day": 7,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "14:00",
+       "breakTo": "15:00"
+      }
+     ],
+     "inviteCode": "DEMO-TIMUR"
+    },
+    {
+     "name": "Адиль Ж.",
+     "bio": "Барбер.",
+     "emoji": "💇",
+     "tone": "purple",
+     "specialty": "Барбер",
+     "experience": 4,
+     "services": [
+      "Мужская стрижка"
+     ],
+     "hours": [
+      {
+       "day": 1,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "14:00",
+       "breakTo": "15:00"
+      },
+      {
+       "day": 2,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "14:00",
+       "breakTo": "15:00"
+      },
+      {
+       "day": 3,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "14:00",
+       "breakTo": "15:00"
+      },
+      {
+       "day": 4,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "14:00",
+       "breakTo": "15:00"
+      },
+      {
+       "day": 5,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "14:00",
+       "breakTo": "15:00"
+      },
+      {
+       "day": 6,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "14:00",
+       "breakTo": "15:00"
+      }
+     ],
+     "inviteCode": "DEMO-ADIL"
+    }
+   ],
+   "reviews": [
+    {
+     "rating": 5,
+     "comment": "Стрижка на высшем уровне.",
+     "service": "Мужская стрижка",
+     "master": "Тимур Н.",
+     "author": "Клиент (демо)"
+    },
+    {
+     "rating": 4,
+     "comment": "Хороший барбершоп.",
+     "service": "Мужская стрижка",
+     "master": "Адиль Ж.",
+     "author": "Клиент (демо)"
+    },
+    {
+     "rating": 5,
+     "comment": "Борода идеальна.",
+     "service": "Оформление бороды",
+     "master": "Тимур Н.",
+     "author": "Клиент (демо)"
+    }
+   ],
+   "promotions": []
+  },
+  {
+   "slug": "beauty-lotus-spa",
+   "category": "BARBER",
+   "name": "Lotus SPA",
+   "description": "СПА и велнес (демо).",
+   "address": "Алматы, ул. Тимирязева, 42",
+   "emoji": "🧖",
+   "tone": "purple",
+   "open": true,
+   "beauty": {
+    "categories": [
+     "SPA",
+     "MASSAGE",
+     "WELLNESS"
+    ],
+    "lat": 43.2215,
+    "lng": 76.9172,
+    "verified": false,
+    "phone": "+77000000904",
+    "cancellation": "Бесплатная отмена до начала процедуры. Перенос возможен не позднее чем за 2 часа."
+   },
+   "services": [
+    {
+     "name": "СПА-программа",
+     "description": "Пилинг, обёртывание и массаж.",
+     "duration": 120,
+     "price": 2800000,
+     "beauty": {
+      "category": "SPA",
+      "tags": [
+       "СПА",
+       "Релакс"
+      ],
+      "includes": [
+       "Пилинг",
+       "Обёртывание",
+       "Массаж"
+      ],
+      "preparation": "Возьмите купальный костюм.",
+      "priceFrom": true
+     }
+    }
+   ],
+   "masters": [
+    {
+     "name": "Асем Т.",
+     "bio": "СПА-терапевт.",
+     "emoji": "💇",
+     "tone": "purple",
+     "specialty": "СПА-терапевт",
+     "experience": 7,
+     "services": [
+      "СПА-программа"
+     ],
+     "hours": [
+      {
+       "day": 1,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 2,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 3,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 4,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 5,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 6,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      }
+     ],
+     "inviteCode": "DEMO-ASEM"
+    }
+   ],
+   "reviews": [
+    {
+     "rating": 5,
+     "comment": "Идеальный отдых.",
+     "service": "СПА-программа",
+     "master": "Асем Т.",
+     "author": "Клиент (демо)"
+    },
+    {
+     "rating": 5,
+     "comment": "Всё понравилось.",
+     "service": "СПА-программа",
+     "master": "Асем Т.",
+     "author": "Клиент (демо)"
+    }
+   ],
+   "promotions": []
+  },
+  {
+   "slug": "beauty-brow-nova",
+   "category": "BARBER",
+   "name": "Brow Studio Nova",
+   "description": "Брови и ресницы (демо).",
+   "address": "Алматы, ул. Наурызбай батыра, 20",
+   "emoji": "👁️",
+   "tone": "purple",
+   "open": true,
+   "beauty": {
+    "categories": [
+     "BROWS_LASHES",
+     "MAKEUP"
+    ],
+    "lat": 43.2548,
+    "lng": 76.942,
+    "verified": true,
+    "phone": "+77000000905",
+    "cancellation": "Бесплатная отмена до начала процедуры. Перенос возможен не позднее чем за 2 часа."
+   },
+   "services": [
+    {
+     "name": "Ламинирование бровей",
+     "description": "Форма и окрашивание.",
+     "duration": 60,
+     "price": 800000,
+     "beauty": {
+      "category": "BROWS_LASHES",
+      "tags": [
+       "Брови"
+      ],
+      "includes": [
+       "Коррекция",
+       "Ламинирование"
+      ],
+      "preparation": "",
+      "priceFrom": false
+     }
+    },
+    {
+     "name": "Наращивание ресниц",
+     "description": "Классическое наращивание.",
+     "duration": 120,
+     "price": 1200000,
+     "beauty": {
+      "category": "BROWS_LASHES",
+      "tags": [
+       "Ресницы"
+      ],
+      "includes": [
+       "Наращивание"
+      ],
+      "preparation": "Приходите без макияжа глаз.",
+      "priceFrom": true
+     }
+    }
+   ],
+   "masters": [
+    {
+     "name": "Камила Д.",
+     "bio": "Бровист.",
+     "emoji": "💇",
+     "tone": "purple",
+     "specialty": "Бровист",
+     "experience": 5,
+     "services": [
+      "Ламинирование бровей",
+      "Наращивание ресниц"
+     ],
+     "hours": [
+      {
+       "day": 1,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 2,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 3,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 4,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 5,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      },
+      {
+       "day": 6,
+       "from": "10:00",
+       "to": "19:00",
+       "breakFrom": "13:00",
+       "breakTo": "14:00"
+      }
+     ],
+     "inviteCode": "DEMO-KAMILA"
+    }
+   ],
+   "reviews": [
+    {
+     "rating": 5,
+     "comment": "Брови идеальные.",
+     "service": "Ламинирование бровей",
+     "master": "Камила Д.",
+     "author": "Клиент (демо)"
+    },
+    {
+     "rating": 4,
+     "comment": "Хорошо.",
+     "service": "Наращивание ресниц",
+     "master": "Камила Д.",
+     "author": "Клиент (демо)"
+    },
+    {
+     "rating": 5,
+     "comment": "Рекомендую.",
+     "service": "Ламинирование бровей",
+     "master": "Камила Д.",
+     "author": "Клиент (демо)"
+    }
+   ],
+   "promotions": []
+  }
+ ]
+}

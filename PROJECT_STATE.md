@@ -1,5 +1,10 @@
 # KUNDE project state
 
+## KUNDE Beauty & Care 1.0 (2026-11-23, ветка `ccr-247e6e41-upaipi`)
+
+- Аудит `main` и план по фазам: [beauty-care.md](docs/product/beauty-care.md). Beauty строится на существующем Booking Engine (барбершопы `BARBER`, защита от двойной записи через `EXCLUDE`).
+- Phase 1 (часть 1): флаг `BEAUTY_ENABLED` (по умолчанию выкл., только local/dev/test; закрывает и барбершопы Booking Engine — решение владельца 2026-11-23), V63 (переключатель + `beauty_categories`), `GET /api/v1/beauty/categories`, `beautyEnabled` в capabilities. Локальный PostgreSQL 16: 76 тестов Beauty/Booking/Auto/Partner/Health/Toggles прошли. Consumer: салоны, каталог с серверными фильтрами, карточка услуги, выбор мастера и времени, оформление и подтверждение, акции и избранное, номер записи (V64/V65, RU/KK/EN; backend 94 теста, Flutter 419). Partner-обзор, Executor мастера (по коду приглашения) и Admin-аналитика (V66, грант `BEAUTY_OPERATIONS`). **Не сделано:** hold и онлайн-оплата, перенос, CRUD партнёра, модерация, E2E, DEV-деплой, APK.
+
 ## Microservice readiness audit (2026-11-23, ветка `ccr-040ab629-xks3w5`)
 
 - Аудит фактического кода: модульный монолит, плоские пакеты, одна БД; связи между модулями — импорты и SQL к чужим таблицам (36 пар по импортам/114 SQL-ссылок в baseline), событий/outbox нет. Maps уже отдельный сервис. Отчёт, матрица готовности, порядок выделения и откат: [microservice-readiness](docs/architecture/microservice-readiness.md).

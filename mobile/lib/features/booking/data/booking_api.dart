@@ -17,6 +17,7 @@ enum BookingFailure {
   notFound,
   addressRequired,
   areaInvalid,
+  priceChanged,
   other
 }
 
@@ -41,6 +42,8 @@ class BookingException implements Exception {
         BookingFailure.addressRequired => 'Укажите адрес, где нужна услуга.',
         BookingFailure.areaInvalid =>
           'Площадь вне допустимого диапазона для этой услуги.',
+        BookingFailure.priceChanged =>
+          'Цена изменилась. Проверьте сумму и подтвердите снова.',
         BookingFailure.other =>
           'Не удалось выполнить действие. Попробуйте позже.',
       };
@@ -92,6 +95,7 @@ class BookingApi {
         'BOOKING_NOT_CANCELLABLE' => BookingFailure.notCancellable,
         'ADDRESS_REQUIRED' => BookingFailure.addressRequired,
         'AREA_INVALID' || 'AREA_NOT_APPLICABLE' => BookingFailure.areaInvalid,
+        'BOOKING_PRICE_CHANGED' => BookingFailure.priceChanged,
         'BOOKING_NOT_FOUND' ||
         'VENUE_NOT_FOUND' ||
         'SERVICE_NOT_FOUND' ||
@@ -114,6 +118,14 @@ class BookingApi {
     }
     return response;
   }
+
+  /// Guarded public GET for sibling clients (Beauty) that share this transport and its error mapping.
+  Future<http.Response> publicResponse(String path,
+          [Map<String, String>? query]) =>
+      _guard(() => _getPublic(path, query));
+
+  /// Runs [call] with the same error mapping as every booking request.
+  Future<T> guarded<T>(Future<T> Function() call) => _guard(call);
 
   Future<dynamic> _public(String path, [Map<String, String>? query]) =>
       _guard(() async {

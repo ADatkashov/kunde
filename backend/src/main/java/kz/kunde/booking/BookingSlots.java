@@ -56,6 +56,12 @@ public class BookingSlots {
         }
     }
 
+    void requireBeauty() {
+        if (!toggles.enabled(FeatureToggles.Feature.BEAUTY)) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "BEAUTY_DISABLED", "Beauty is unavailable");
+        }
+    }
+
     void requireHealthCatalog() {
         if (!healthEnabled()) {
             throw new ApiException(HttpStatus.NOT_FOUND, "HEALTH_DISABLED", "Health catalog is unavailable");
@@ -77,6 +83,9 @@ public class BookingSlots {
                 "Venue is not available"));
         if ("CLEANING".equals(venue.category())) {
             requireHomeServices();
+        }
+        if ("BARBER".equals(venue.category())) {
+            requireBeauty();
         }
         return venue;
     }
@@ -109,7 +118,7 @@ public class BookingSlots {
         List<MasterRef> masters = db.query("""
                 select m.id, m.name from marketplace.booking_masters m
                 join marketplace.booking_master_services ms on ms.master_id = m.id and ms.service_id = ?
-                where m.venue_id = ? and m.active and (?::uuid is null or m.id = ?::uuid)
+                where m.venue_id = ? and m.active and m.online and (?::uuid is null or m.id = ?::uuid)
                 order by m.sort_order, m.name
                 """, (rs, row) -> new MasterRef(rs.getObject(1, UUID.class), rs.getString(2)),
                 serviceId, venueId, masterId, masterId);

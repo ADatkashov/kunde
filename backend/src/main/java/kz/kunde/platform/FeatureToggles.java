@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import kz.kunde.auto.AutoProperties;
+import kz.kunde.booking.BeautySettings;
 import kz.kunde.booking.HomeServicesSettings;
 import kz.kunde.delivery.DeliveryProperties;
 import kz.kunde.education.EducationSettings;
@@ -27,7 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class FeatureToggles {
-    public enum Feature { AUTO, RIDES, DELIVERY, LEISURE, HEALTH, EDUCATION, GROCERIES, EVENTS, HOME_SERVICES }
+    public enum Feature { AUTO, RIDES, DELIVERY, LEISURE, HEALTH, EDUCATION, GROCERIES, EVENTS, HOME_SERVICES, BEAUTY }
 
     public record Toggle(boolean enabled, long version, String reason, UUID updatedBy, OffsetDateTime updatedAt) {}
 
@@ -46,12 +47,13 @@ public class FeatureToggles {
     private final EventsSettings events;
     private final GroceriesSettings groceries;
     private final HomeServicesSettings homeServices;
+    private final BeautySettings beauty;
     private final Clock clock;
     private volatile Map<Feature, Toggle> cache;
     private volatile long loadedAt;
 
     public FeatureToggles(JdbcTemplate db, AutoProperties auto, RidesFlags rides, DeliveryProperties delivery, LeisureFlags leisure, HealthSettings health, EducationSettings education,
-            GroceriesSettings groceries, EventsSettings events, HomeServicesSettings homeServices) {
+            GroceriesSettings groceries, EventsSettings events, HomeServicesSettings homeServices, BeautySettings beauty) {
         this.db = db;
         this.auto = auto;
         this.rides = rides;
@@ -62,6 +64,7 @@ public class FeatureToggles {
         this.groceries = groceries;
         this.events = events;
         this.homeServices = homeServices;
+        this.beauty = beauty;
         this.clock = Clock.systemUTC();
     }
 
@@ -75,6 +78,7 @@ public class FeatureToggles {
             case EDUCATION -> education.allowedByEnvironment();
             case EVENTS -> events.allowedByEnvironment();
             case HOME_SERVICES -> homeServices.allowedByEnvironment();
+            case BEAUTY -> beauty.allowedByEnvironment();
             case GROCERIES -> groceries.allowedByEnvironment();
         };
     }

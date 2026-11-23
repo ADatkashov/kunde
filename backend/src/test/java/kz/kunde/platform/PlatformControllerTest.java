@@ -19,6 +19,7 @@ class PlatformControllerTest {
         assertThat(capabilities.aiEnabled()).isFalse();
         assertThat(capabilities.autoEnabled()).isFalse();
         assertThat(capabilities.homeServicesEnabled()).isFalse();
+        assertThat(capabilities.beautyEnabled()).isFalse();
         assertThat(capabilities.mapsEnabled()).isFalse();
     }
 

@@ -45,6 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
         "app.environment=test",
         "app.identity.consumer-enabled=true",
         "app.booking.enabled=true",
+        "app.beauty.enabled=true",
         "app.auto.enabled=true",
         "app.auth.phone.enabled=true",
         "app.auth.phone.secret=synthetic-test-secret-synthetic-test-secret",

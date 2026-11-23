@@ -12,11 +12,13 @@ class ServicesHomeScreen extends StatelessWidget {
   const ServicesHomeScreen({
     required this.services,
     this.homeServicesEnabled = false,
+    this.beautyEnabled = false,
     super.key,
   });
 
   final BookingServices services;
   final bool homeServicesEnabled;
+  final bool beautyEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -30,11 +32,13 @@ class ServicesHomeScreen extends StatelessWidget {
           child: ListView(padding: const EdgeInsets.all(16), children: [
             Text(s.bkAllServicesIntro, style: theme.textTheme.bodyMedium),
             const SizedBox(height: 16),
-            Text(s.catBeauty, style: theme.textTheme.titleLarge),
-            const SizedBox(height: 8),
-            BarbershopsEntry(services: services),
+            if (beautyEnabled) ...[
+              Text(s.catBeauty, style: theme.textTheme.titleLarge),
+              const SizedBox(height: 8),
+              BeautyCareEntry(services: services),
+            ],
             if (homeServicesEnabled) ...[
-              const SizedBox(height: 20),
+              if (beautyEnabled) const SizedBox(height: 20),
               Text(s.catHome, style: theme.textTheme.titleLarge),
               const SizedBox(height: 8),
               CleaningEntry(services: services),

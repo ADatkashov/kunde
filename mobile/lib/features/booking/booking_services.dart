@@ -1,3 +1,4 @@
+import '../beauty/data/beauty_api.dart';
 import '../identity/auth_repository.dart';
 import 'data/booking_api.dart';
 
@@ -7,4 +8,7 @@ class BookingServices {
 
   final BookingApi api;
   final AuthRepository auth;
+
+  /// Beauty & Care discovery on the same transport (salons, service cards, promotions, favorites).
+  late final BeautyApi beauty = BeautyApi(api);
 }

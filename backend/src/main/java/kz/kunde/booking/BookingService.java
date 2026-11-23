@@ -39,7 +39,8 @@ public class BookingService {
             int durationMinutes, String masterId, String masterName, OffsetDateTime startsAt, OffsetDateTime endsAt,
             long priceMinor, String currency, String status, String confirmation, String comment, boolean cancellable,
             OffsetDateTime createdAt, OffsetDateTime cancelledAt, String category, String addressText, Integer areaSqm,
-            String cancelledBy, String cancelReason, String paymentMethod, String paymentStatus, String serviceId, boolean reschedulable) {}
+            String cancelledBy, String cancelReason, String paymentMethod, String paymentStatus, String serviceId, boolean reschedulable,
+            String bookingNumber, Integer discountPercent, Long originalPriceMinor) {}
 
     public record Booked(BookingView booking, boolean created) {}
 
@@ -121,7 +122,17 @@ public class BookingService {
         }
         // The price is always computed here; the app only previews it.
         long price = service.priceMinor() + service.pricePerSqmMinor() * (area == null ? 0 : area);
-        if (health && request.expectedPriceMinor() != price) {
+        // A Beauty promotion (the venue's or platform-wide) active right now is applied to the list price.
+        Integer discount = "BARBER".equals(venue.category()) ? db.queryForObject("""
+                select max(percent) from marketplace.beauty_promotions
+                where active and now() >= starts_at and now() < ends_at and (venue_id = ? or venue_id is null)
+                """, Integer.class, venue.id()) : null;
+        long listPrice = price;
+        if (discount != null) {
+            price = listPrice - Math.round(listPrice * discount / 100.0);
+        }
+        if ((health || (request.expectedPriceMinor() != null && "BARBER".equals(venue.category())))
+                && !java.util.Objects.equals(request.expectedPriceMinor(), price)) {
             throw new ApiException(HttpStatus.CONFLICT, "BOOKING_PRICE_CHANGED", "Reload the service and review the current price");
         }
         // Only a start time the slot list offers for this master can be booked (hours, break, grid, lead time, horizon).
@@ -147,20 +158,21 @@ public class BookingService {
         }
         // Shared lock: a partner changing this master's schedule (FOR UPDATE) cannot interleave with this booking.
         String master = db.queryForObject("select name from marketplace.booking_masters where id = ? for share", String.class, request.masterId());
-        boolean partnerManaged = db.queryForObject("select partner_id is not null from marketplace.booking_venues where id = ?",
-                Boolean.class, venue.id());
+        // Beauty salons confirm instantly (the customer sees «Запись подтверждена»); other partner venues answer requests.
+        boolean partnerManaged = db.queryForObject("select v.partner_id is not null and not exists (select 1 from marketplace.beauty_salon_profiles p where p.venue_id = v.id) "
+                + "from marketplace.booking_venues v where v.id = ?", Boolean.class, venue.id());
         String comment = request.comment() == null || request.comment().isBlank() ? null : request.comment().strip();
         try {
             UUID id = db.queryForObject("""
                     insert into transactions.bookings (user_id, venue_id, service_id, master_id, venue_name, venue_address,
                         service_name, master_name, duration_minutes, starts_at, ends_at, price_minor, comment, idempotency_key,
-                        category, address_text, area_sqm, status, confirmation, health_initial_starts_at)
-                    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning id
+                        category, address_text, area_sqm, status, confirmation, health_initial_starts_at, discount_percent, original_price_minor)
+                    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning id
                     """, UUID.class, user, venue.id(), service.id(), request.masterId(), venue.name(), venue.address(),
                     service.name(), master, service.durationMinutes(), Timestamp.from(start), Timestamp.from(end),
                     price, comment, idempotencyKey, venue.category(), address, area,
                     partnerManaged ? "PENDING" : "CONFIRMED", partnerManaged ? "PARTNER" : "DEV_MOCK",
-                    health ? Timestamp.from(start) : null);
+                    health ? Timestamp.from(start) : null, discount, discount == null ? null : listPrice);
             event(id, partnerManaged ? "PENDING" : "CONFIRMED", partnerManaged ? "CUSTOMER" : "SYSTEM", user, null);
             if (health) { payments.open(user, id, null, paymentMethod, price); }
             return new Booked(view(user, id), true);
@@ -317,7 +329,7 @@ public class BookingService {
                 select id, venue_id, venue_name, venue_address, service_name, duration_minutes, master_id, master_name,
                        starts_at, ends_at, price_minor, currency, status, confirmation, comment,
                        (status in ('PENDING', 'CONFIRMED') and starts_at > now()) as cancellable, created_at, cancelled_at, category, address_text, area_sqm,
-                       cancelled_by, cancel_reason, service_id,
+                       cancelled_by, cancel_reason, service_id, booking_number, discount_percent, original_price_minor,
                        (category = 'HEALTH' and status in ('PENDING', 'CONFIRMED') and
                            starts_at > now() + interval '2 hours' and reschedule_count < 2) as reschedulable,
                        (select method from transactions.auto_payments where booking_id = bookings.id and bookings.category = 'HEALTH') as payment_method,
@@ -333,7 +345,8 @@ public class BookingService {
                 rs.getObject("created_at", OffsetDateTime.class), rs.getObject("cancelled_at", OffsetDateTime.class),
                 rs.getString("category"), rs.getString("address_text"), rs.getObject("area_sqm", Integer.class),
                 rs.getString("cancelled_by"), rs.getString("cancel_reason"), rs.getString("payment_method"), rs.getString("payment_status"), rs.getString("service_id"),
-                rs.getBoolean("reschedulable") && slots.healthEnabled()),
+                rs.getBoolean("reschedulable") && slots.healthEnabled(), rs.getString("booking_number"),
+                rs.getObject("discount_percent", Integer.class), rs.getObject("original_price_minor", Long.class)),
                 user, id, id, healthOnly, limit, offset);
     }
 }

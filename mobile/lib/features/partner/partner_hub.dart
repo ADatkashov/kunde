@@ -1,3 +1,4 @@
+import '../beauty/presentation/beauty_partner_entry.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -150,6 +151,9 @@ class PartnerHubPage extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: Text(partner['displayName'] as String),
+          actions: [
+            BeautyPartnerEntry(auth: auth, partnerId: partner['id'] as String),
+          ],
           bottom: TabBar(tabs: [
             Tab(text: _t(context, 'Заказы', 'Тапсырыстар', 'Orders')),
             Tab(text: _t(context, 'Записи', 'Жазылулар', 'Bookings')),
