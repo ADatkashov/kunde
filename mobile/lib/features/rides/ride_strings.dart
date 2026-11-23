@@ -75,6 +75,23 @@ class RideStrings {
       );
   String get completedTitle =>
       t('Поездка завершена!', 'Сапар аяқталды!', 'Ride complete!');
+  String get rateHint => t(
+        'Оставьте отзыв...',
+        'Пікір қалдырыңыз...',
+        'Leave a review...',
+      );
+  String get thanksRated => t(
+        'Спасибо за оценку',
+        'Бағаңызға рахмет',
+        'Thanks for your rating',
+      );
+  String get rateError => t(
+        'Не удалось сохранить оценку. Попробуйте ещё раз.',
+        'Бағаны сақтау мүмкін болмады. Қайталап көріңіз.',
+        'Could not save your rating. Try again.',
+      );
+  String stars(int n) =>
+      t('Оценка: $n из 5', 'Баға: 5-тен $n', 'Rating: $n of 5');
   String get tripDate => t('Дата', 'Күні', 'Date');
 
   String hubTitle(String key) => switch (key) {

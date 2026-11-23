@@ -625,6 +625,8 @@ class _RideDetailsState extends State<_RideDetails> {
           child: RideCompletedView(
             trip: _trip,
             onDone: () => Navigator.of(context).maybePop(),
+            onRate: (stars, comment) =>
+                widget.api.rate(_trip.id, stars, comment),
           ),
         ),
       );

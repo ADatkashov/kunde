@@ -11,7 +11,7 @@ import java.util.UUID;
 public final class RideMatching {
     private RideMatching() {}
 
-    public enum RideClass { ECONOMY, COMFORT, BUSINESS }
+    public enum RideClass { ECONOMY, COMFORT, BUSINESS, MINIVAN }
 
     public record Point(double latitude, double longitude) {
         public Point {

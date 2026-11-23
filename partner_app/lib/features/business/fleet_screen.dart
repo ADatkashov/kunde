@@ -199,6 +199,15 @@ class _FleetScreenState extends State<FleetScreen>
         ),
       ],
     );
+    yield const SizedBox(height: 8);
+    yield _Kpi(
+      label: s.taxiFareTotal,
+      value: _kzt(stats?['completedFareKzt'] as num? ?? 0),
+    );
+    yield Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Text(s.taxiFareNote, style: Theme.of(context).textTheme.bodySmall),
+    );
     yield const SizedBox(height: 12);
     yield _MenuTile(
       icon: Icons.directions_car_outlined,
@@ -231,8 +240,11 @@ class _FleetScreenState extends State<FleetScreen>
     for (final trip in trips) {
       yield ListTile(
         title: Text(s.fleetStatus(trip['status'] as String)),
+        trailing: Text(_kzt(trip['fareKzt'] as num? ?? 0)),
         subtitle: Text([
           if (trip['synthetic'] == true) s.fleetTest,
+          if (s.taxiClass(trip['rideClass'] as String?).isNotEmpty)
+            s.taxiClass(trip['rideClass'] as String?),
           MaterialLocalizations.of(context).formatShortDate(
               DateTime.parse(trip['createdAt'] as String).toLocal()),
         ].join(' · ')),
@@ -276,6 +288,8 @@ class _FleetScreenState extends State<FleetScreen>
             s.fleetAvailability(driver['online'] == true),
             if (driver['vehicle'] != null) driver['vehicle'] as String,
             if (driver['plate'] != null) driver['plate'] as String,
+            if (driver['rating'] != null)
+              '★ ${(driver['rating'] as num).toStringAsFixed(1)} (${driver['ratings']})',
           ].join(' · ')),
           trailing: widget.canManage
               ? IconButton(
@@ -333,6 +347,14 @@ class _FleetScreenState extends State<FleetScreen>
       await _load(() => widget.ops.assignFleetDriver(driver, false));
     }
   }
+}
+
+String _kzt(num value) {
+  final grouped = value
+      .round()
+      .toString()
+      .replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => '\u00A0');
+  return '$grouped KZT';
 }
 
 class _Kpi extends StatelessWidget {

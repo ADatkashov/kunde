@@ -23,6 +23,8 @@ Map<String, dynamic> _fleet() => {
           'plate': '774 AYA 02',
           'rideClass': 'COMFORT',
           'vehicleStatus': 'APPROVED',
+          'rating': 4.8,
+          'ratings': 12,
         },
         {
           'id': 'd2',
@@ -45,6 +47,8 @@ Map<String, dynamic> _fleet() => {
           'driverId': 'd1',
           'createdAt': '2026-11-23T05:00:00Z',
           'synthetic': false,
+          'rideClass': 'COMFORT',
+          'fareKzt': 1250,
         },
         {
           'id': 't2',
@@ -61,7 +65,7 @@ Map<String, dynamic> _fleet() => {
           'synthetic': false,
         },
       ],
-      'stats': {'completed': 2, 'active': 1},
+      'stats': {'completed': 2, 'active': 1, 'completedFareKzt': 154800},
     };
 
 Widget _app() {
@@ -94,6 +98,9 @@ Widget _app() {
 void main() {
   testWidgets('service tab shows real KPIs, menu and coming-soon items',
       (tester) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(_app());
     await tester.pumpAndSettle();
 
@@ -107,12 +114,16 @@ void main() {
     expect(find.text('Tariffs and zones'), findsOneWidget);
     expect(find.text('Analytics'), findsOneWidget);
     expect(find.text('Soon'), findsNWidgets(2));
-    // No revenue is shown: the backend does not provide it.
-    expect(find.textContaining('KZT'), findsNothing);
-    expect(find.textContaining('₸'), findsNothing);
+    // The fare total is the server's tariff sum, and the page says so.
+    expect(find.text('154\u00A0800 KZT'), findsOneWidget);
+    expect(find.textContaining('payment is not connected'), findsOneWidget);
+    expect(find.text('1\u00A0250 KZT'), findsOneWidget);
   });
 
   testWidgets('menu opens the fleet and drivers tabs', (tester) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(_app());
     await tester.pumpAndSettle();
 
@@ -124,6 +135,7 @@ void main() {
     await tester.tap(find.widgetWithText(Tab, 'Drivers'));
     await tester.pumpAndSettle();
     expect(find.text('Erlan K.'), findsOneWidget);
+    expect(find.textContaining('★ 4.8 (12)'), findsOneWidget);
     expect(find.text('Danir S.'), findsOneWidget);
     expect(find.text('Attach driver'), findsOneWidget);
   });

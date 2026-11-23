@@ -631,6 +631,33 @@ paths:
         '404': { description: Ride not found for caller }
         '409': { description: Ride can no longer be cancelled }
         '429': { $ref: '#/components/responses/RateLimited' }
+  /rides/{rideId}/rating:
+    parameters:
+      - $ref: '#/components/parameters/RideId'
+    post:
+      operationId: rateMyRide
+      description: Rates the driver of a completed ride once. An identical repeat returns 200; a different rating is rejected.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [stars]
+              properties:
+                stars: { type: integer, minimum: 1, maximum: 5 }
+                comment: { type: [string, 'null'], maxLength: 500 }
+      responses:
+        '200': { description: The same rating was already stored }
+        '201': { description: Rating stored }
+        '400': { description: Rating out of range }
+        '401': { description: Authentication required }
+        '403': { description: Consumer access denied }
+        '404': { description: Ride not found for caller }
+        '409': { description: Ride is not rateable, or already has a different rating }
+        '429': { $ref: '#/components/responses/RateLimited' }
   /rides/{rideId}/dispatch:
     parameters:
       - name: rideId
@@ -822,7 +849,7 @@ paths:
               type: object
               required: [rideClass, pickup, destination]
               properties:
-                rideClass: { type: string, enum: [ECONOMY, COMFORT, BUSINESS] }
+                rideClass: { type: string, enum: [ECONOMY, COMFORT, BUSINESS, MINIVAN] }
                 pickup: { $ref: '#/components/schemas/RidePoint' }
                 destination: { $ref: '#/components/schemas/RidePoint' }
       responses:
@@ -1382,7 +1409,7 @@ components:
       required: [id, rideClass, tariffVersion, estimateKzt, currency, distanceMeters, durationSeconds, expiresAt]
       properties:
         id: { type: string, format: uuid }
-        rideClass: { type: string, enum: [ECONOMY, COMFORT, BUSINESS] }
+        rideClass: { type: string, enum: [ECONOMY, COMFORT, BUSINESS, MINIVAN] }
         tariffVersion: { type: string }
         estimateKzt: { type: number, minimum: 0 }
         currency: { const: KZT }
@@ -1400,11 +1427,19 @@ components:
           type: string
           enum: [REQUESTED, SEARCHING_DRIVER, DRIVER_ASSIGNED, DRIVER_ARRIVING, DRIVER_ARRIVED, IN_PROGRESS,
                  COMPLETED, CANCELLED_BY_CUSTOMER, CANCELLED_BY_DRIVER, CANCELLED_BY_SYSTEM, NO_DRIVER_AVAILABLE, FAILED]
-        rideClass: { type: string, enum: [ECONOMY, COMFORT, BUSINESS] }
+        rideClass: { type: string, enum: [ECONOMY, COMFORT, BUSINESS, MINIVAN] }
         tariffVersion: { type: string }
         estimateKzt: { type: number, minimum: 0 }
         currency: { const: KZT }
         synthetic: { type: boolean, description: Internal synthetic routing fixture }
+        rating:
+          type: [object, 'null']
+          description: The caller's own rating of this completed ride, if given.
+          required: [stars, createdAt]
+          properties:
+            stars: { type: integer, minimum: 1, maximum: 5 }
+            comment: { type: [string, 'null'], maxLength: 500 }
+            createdAt: { type: string, format: date-time }
         driver:
           type: [object, 'null']
           description: Assigned driver visible only to the owner of an active trip.
@@ -1413,6 +1448,8 @@ components:
             name: { type: string }
             vehicle: { type: [string, 'null'] }
             plate: { type: [string, 'null'] }
+            rating: { type: [number, 'null'], minimum: 1, maximum: 5, description: Average driver rating to one decimal; null until the driver has a rating. }
+            ratings: { type: integer, minimum: 0, description: Number of ratings behind the average. }
         distanceMeters: { type: integer, minimum: 1 }
         durationSeconds: { type: integer, minimum: 1 }
         createdAt: { type: string, format: date-time }

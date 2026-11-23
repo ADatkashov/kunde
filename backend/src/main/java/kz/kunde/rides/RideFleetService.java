@@ -39,23 +39,28 @@ public class RideFleetService {
         requirePartner(actor, partner);
         String current = status(partner, false);
         var drivers = db.query("""
-                select d.user_id, d.display_name, d.status, d.online, v.description, v.plate, v.ride_class, v.status
+                select d.user_id, d.display_name, d.status, d.online, v.description, v.plate, v.ride_class, v.status,
+                    (select round(avg(x.stars), 1) from transactions.ride_ratings x where x.driver_id = d.user_id),
+                    (select count(*) from transactions.ride_ratings x where x.driver_id = d.user_id)
                 from transactions.ride_drivers d left join transactions.ride_vehicles v on v.driver_id = d.user_id
                 where d.fleet_partner_id = ? order by d.display_name, d.user_id limit 100
                 """, (rs, row) -> new Driver(rs.getObject(1, UUID.class), rs.getString(2), rs.getString(3),
-                        rs.getBoolean(4), rs.getString(5), rs.getString(6), rs.getString(7), rs.getString(8)), partner);
+                        rs.getBoolean(4), rs.getString(5), rs.getString(6), rs.getString(7), rs.getString(8),
+                        rs.getLong(10) == 0 ? null : rs.getBigDecimal(9), rs.getLong(10)), partner);
         var trips = db.query("""
-                select r.id, r.status, r.driver_id, r.created_at, q.synthetic
+                select r.id, r.status, r.driver_id, r.created_at, q.synthetic, q.ride_class, q.estimate_kzt
                 from transactions.rides r join transactions.ride_fare_quotes q on q.id = r.quote_id
                 where r.fleet_partner_id = ? order by r.created_at desc, r.id desc limit 100
                 """, (rs, row) -> new Trip(rs.getObject(1, UUID.class), RideState.valueOf(rs.getString(2)),
-                        rs.getObject(3, UUID.class), rs.getObject(4, OffsetDateTime.class), rs.getBoolean(5)), partner);
+                        rs.getObject(3, UUID.class), rs.getObject(4, OffsetDateTime.class), rs.getBoolean(5),
+                        RideMatching.RideClass.valueOf(rs.getString(6)), rs.getBigDecimal(7)), partner);
         var stats = db.queryForObject("""
                 select count(*) filter (where status = 'COMPLETED'),
-                    count(*) filter (where status in ('DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','IN_PROGRESS'))
+                    count(*) filter (where status in ('DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','IN_PROGRESS')),
+                    coalesce(sum(q.estimate_kzt) filter (where status = 'COMPLETED'), 0)
                 from transactions.rides r join transactions.ride_fare_quotes q on q.id = r.quote_id
                 where r.fleet_partner_id = ? and not q.synthetic
-                """, (rs, row) -> new Stats(rs.getLong(1), rs.getLong(2)), partner);
+                """, (rs, row) -> new Stats(rs.getLong(1), rs.getLong(2), rs.getBigDecimal(3)), partner);
         var role = partners.activeRole(partner, actor).orElseThrow(RideFleetService::missing);
         List<Candidate> candidates = role == Role.OPERATOR ? List.of() : db.query("""
                 select d.user_id, d.display_name from transactions.ride_drivers d
@@ -172,10 +177,12 @@ public class RideFleetService {
 
     public record Fleet(UUID partnerId, String status, List<Driver> drivers, List<Candidate> candidates, List<Trip> trips, Stats stats) {}
     public record Driver(UUID id, String name, String status, boolean online, String vehicle,
-            String plate, String rideClass, String vehicleStatus) {}
+            String plate, String rideClass, String vehicleStatus, java.math.BigDecimal rating, long ratings) {}
     public record Candidate(UUID id, String name) {}
-    public record Trip(UUID id, RideState status, UUID driverId, OffsetDateTime createdAt, boolean synthetic) {}
-    public record Stats(long completed, long active) {}
+    public record Trip(UUID id, RideState status, UUID driverId, OffsetDateTime createdAt, boolean synthetic,
+            RideMatching.RideClass rideClass, java.math.BigDecimal fareKzt) {}
+    /** completedFareKzt sums quoted tariff fares of completed, non-synthetic rides; no payment is captured. */
+    public record Stats(long completed, long active, java.math.BigDecimal completedFareKzt) {}
     public record FleetReview(UUID id, String status, String name) {}
     public record FleetEvent(long id, UUID actorId, UUID driverId, String action, OffsetDateTime occurredAt) {}
 }

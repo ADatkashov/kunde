@@ -209,6 +209,12 @@ class S {
       _t('Поездки сегодня', 'Бүгінгі сапарлар', 'Trips today');
   String get taxiCompleted => _t('Завершено', 'Аяқталды', 'Completed');
   String get taxiActive => _t('Активные', 'Белсенді', 'Active');
+  String get taxiFareTotal =>
+      _t('Сумма по тарифу', 'Тариф бойынша сома', 'Fare total');
+  String get taxiFareNote => _t(
+      'Сумма тарифов завершённых нетестовых поездок; оплата ещё не подключена.',
+      'Аяқталған сынақ емес сапарлар тарифтерінің сомасы; төлем әлі қосылмаған.',
+      'Tariff fares of completed non-test trips; payment is not connected yet.');
   String get taxiMenuFleet =>
       _t('Управление автопарком', 'Автопарқты басқару', 'Fleet management');
   String get taxiMenuDrivers => _t(

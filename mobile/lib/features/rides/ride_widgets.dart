@@ -318,6 +318,11 @@ class RideDriverCard extends StatelessWidget {
                   ),
                   if (driver.vehicleSummary case final summary?)
                     Text(summary, style: theme.textTheme.bodyMedium),
+                  if (driver.rating case final rating?)
+                    Text(
+                      '★ ${rating.toStringAsFixed(1)} (${driver.ratings})',
+                      style: theme.textTheme.labelLarge,
+                    ),
                   if (status != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 6),
@@ -341,18 +346,63 @@ class RideDriverCard extends StatelessWidget {
 }
 
 /// The "ride complete" state. The fare is the server's estimate for the trip;
-/// payment and rating are not claimed until their backends exist.
-class RideCompletedView extends StatelessWidget {
-  const RideCompletedView(
-      {required this.trip, required this.onDone, super.key});
+/// payment is not claimed until its backend exists. The customer can rate the
+/// driver once: [onRate] stores the rating, and a rating already on the server
+/// is shown read-only.
+class RideCompletedView extends StatefulWidget {
+  const RideCompletedView({
+    required this.trip,
+    required this.onDone,
+    this.onRate,
+    super.key,
+  });
 
   final RideTrip trip;
   final VoidCallback onDone;
+  final Future<void> Function(int stars, String? comment)? onRate;
+
+  @override
+  State<RideCompletedView> createState() => _RideCompletedViewState();
+}
+
+class _RideCompletedViewState extends State<RideCompletedView> {
+  final _comment = TextEditingController();
+  int _stars = 0;
+  bool _saving = false;
+  bool _failed = false;
+
+  @override
+  void dispose() {
+    _comment.dispose();
+    super.dispose();
+  }
+
+  Future<void> _done() async {
+    final rate = widget.onRate;
+    if (_stars == 0 || rate == null) {
+      widget.onDone();
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _failed = false;
+    });
+    try {
+      await rate(_stars, _comment.text);
+      if (mounted) widget.onDone();
+    } catch (_) {
+      if (mounted) setState(() => _failed = true);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final s = RideStrings(context);
     final theme = Theme.of(context);
+    final trip = widget.trip;
+    final rated = trip.myRating;
     final date = MaterialLocalizations.of(context)
         .formatMediumDate(trip.createdAt.toLocal());
     return ListView(
@@ -408,8 +458,69 @@ class RideCompletedView extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 24),
-        FilledButton(onPressed: onDone, child: Text(s.done)),
+        const SizedBox(height: 20),
+        if (rated != null) ...[
+          _Stars(value: rated, onChanged: null),
+          const SizedBox(height: 4),
+          Text(
+            s.thanksRated,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium,
+          ),
+        ] else if (widget.onRate != null) ...[
+          _Stars(
+            value: _stars,
+            onChanged: _saving ? null : (n) => setState(() => _stars = n),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _comment,
+            enabled: !_saving,
+            maxLength: 500,
+            maxLines: 2,
+            decoration: InputDecoration(hintText: s.rateHint),
+          ),
+          if (_failed)
+            Semantics(
+              liveRegion: true,
+              child: Text(
+                s.rateError,
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+            ),
+        ],
+        const SizedBox(height: 16),
+        if (_saving) const LinearProgressIndicator(),
+        FilledButton(
+          onPressed: _saving ? null : _done,
+          child: Text(s.done),
+        ),
+      ],
+    );
+  }
+}
+
+class _Stars extends StatelessWidget {
+  const _Stars({required this.value, required this.onChanged});
+  final int value;
+  final ValueChanged<int>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = RideStrings(context);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        for (var n = 1; n <= 5; n++)
+          IconButton(
+            tooltip: s.stars(n),
+            isSelected: n <= value,
+            onPressed: onChanged == null ? null : () => onChanged!(n),
+            iconSize: 36,
+            icon: const Icon(Icons.star_border_rounded),
+            selectedIcon:
+                const Icon(Icons.star_rounded, color: Color(0xFFF2A900)),
+          ),
       ],
     );
   }

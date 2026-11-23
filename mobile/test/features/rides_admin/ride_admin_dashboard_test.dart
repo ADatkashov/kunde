@@ -4,9 +4,60 @@ import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
 import 'package:kunde_mobile/features/identity/auth_repository.dart';
 import 'package:kunde_mobile/features/rides_admin/ride_admin_dashboard.dart';
 
+Map<String, dynamic> _summary({
+  int total = 4,
+  int active = 1,
+  int completed = 2,
+  int cancelled = 1,
+  num fare = 2400,
+  num? average = 1200,
+}) =>
+    {
+      'total': total,
+      'active': active,
+      'completed': completed,
+      'cancelled': cancelled,
+      'synthetic': 0,
+      'completedFareKzt': fare,
+      'averageFareKzt': average,
+      'currency': 'KZT',
+      'byClass': [
+        {'rideClass': 'ECONOMY', 'rides': 3},
+        {'rideClass': 'MINIVAN', 'rides': 1},
+      ],
+      'perDay': [
+        for (var day = 17; day <= 23; day++)
+          {
+            'day': '2026-11-$day',
+            'rides': day == 23 ? 2 : 0,
+          },
+      ],
+    };
+
+Map<String, dynamic> _trip(
+  String id,
+  String status,
+  String createdAt, {
+  String? driver,
+  String rideClass = 'ECONOMY',
+  num fare = 1200,
+}) =>
+    {
+      'id': id,
+      'status': status,
+      'driverId': driver,
+      'fleetId': null,
+      'createdAt': createdAt,
+      'synthetic': false,
+      'rideClass': rideClass,
+      'fareKzt': fare,
+    };
+
 class _Auth implements AuthRepository {
-  _Auth(this.rows);
-  final List<Map<String, dynamic>> rows;
+  _Auth(this.summary, this.trips);
+  final Map<String, dynamic> summary;
+  final List<Map<String, dynamic>> trips;
+  final calls = <String>[];
 
   @override
   Future<dynamic> authorizedJson(
@@ -16,87 +67,91 @@ class _Auth implements AuthRepository {
     Set<int> expected = const {200},
     Map<String, String>? headers,
   }) async {
-    expect((method, path), ('GET', 'admin/rides/trips'));
-    return rows;
+    calls.add('$method $path');
+    return switch ((method, path)) {
+      ('GET', 'admin/rides/summary') => summary,
+      ('GET', 'admin/rides/trips') => trips,
+      _ => throw StateError('Unexpected $method $path'),
+    };
   }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-Map<String, dynamic> _trip(String id, String status, String createdAt,
-        {String? driver}) =>
-    {
-      'id': id,
-      'status': status,
-      'driverId': driver,
-      'fleetId': null,
-      'createdAt': createdAt,
-      'synthetic': false,
-    };
-
-Widget _app(AuthRepository auth) => MaterialApp(
-      locale: const Locale('en'),
+Widget _app(AuthRepository auth, {String language = 'en'}) => MaterialApp(
+      locale: Locale(language),
       supportedLocales: KundeLocalizations.supportedLocales,
       localizationsDelegates: KundeLocalizations.localizationsDelegates,
-      home: RideAdminDashboard(
-        auth: auth,
-        now: () => DateTime(2026, 11, 23, 12),
-      ),
+      home: RideAdminDashboard(auth: auth),
     );
 
 void main() {
-  test('stats count real statuses and bucket the last seven days', () {
-    final stats = RideAdminStats.from([
-      _trip('a', 'COMPLETED',
-          DateTime(2026, 11, 23, 9).toUtc().toIso8601String()),
-      _trip('b', 'IN_PROGRESS',
-          DateTime(2026, 11, 23, 10).toUtc().toIso8601String()),
-      _trip('c', 'CANCELLED_BY_CUSTOMER',
-          DateTime(2026, 11, 22, 10).toUtc().toIso8601String()),
-      _trip('d', 'NO_DRIVER_AVAILABLE',
-          DateTime(2026, 11, 10, 10).toUtc().toIso8601String()),
-    ], DateTime(2026, 11, 23, 12));
+  test('stats come from the server summary and keep the newest rows', () {
+    final stats = RideAdminStats.fromJson(_summary(), [
+      _trip('a', 'COMPLETED', '2026-11-22T09:00:00Z'),
+      _trip('b', 'IN_PROGRESS', '2026-11-23T09:00:00Z'),
+    ]);
     expect(stats.total, 4);
-    expect(stats.completed, 1);
-    expect(stats.active, 1);
-    expect(stats.cancelled, 1);
-    expect(stats.other, 1);
-    // Oldest to newest: only 22 and 23 November fall inside the window.
-    expect(stats.perDay, [0, 0, 0, 0, 0, 1, 2]);
+    expect(stats.completedFare, 2400);
+    expect(stats.averageFare, 1200);
+    expect(stats.byClass, {'ECONOMY': 3, 'MINIVAN': 1});
+    expect(stats.perDay, [0, 0, 0, 0, 0, 0, 2]);
+    expect(stats.days.last, DateTime(2026, 11, 23));
+    expect(stats.other, 0);
     expect(stats.recent.first['id'], 'b');
   });
 
-  testWidgets('dashboard shows real counts and no invented money',
+  testWidgets('dashboard shows server fare totals, classes and recent fares',
       (tester) async {
-    tester.view.physicalSize = const Size(900, 2000);
+    tester.view.physicalSize = const Size(1000, 2400);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(_app(_Auth([
+    final auth = _Auth(_summary(), [
       _trip('11111111-aaaa', 'COMPLETED', '2026-11-23T05:00:00Z',
-          driver: '22222222-bbbb'),
+          driver: '22222222-bbbb', rideClass: 'MINIVAN', fare: 1250),
       _trip('33333333-cccc', 'CANCELLED_BY_SYSTEM', '2026-11-22T05:00:00Z'),
-    ])));
+    ]);
+    await tester.pumpWidget(_app(auth));
     await tester.pumpAndSettle();
 
+    expect(auth.calls, ['GET admin/rides/summary', 'GET admin/rides/trips']);
     expect(find.text('Total rides'), findsOneWidget);
-    expect(find.text('2'), findsOneWidget); // total
+    expect(find.text('4'), findsOneWidget);
+    expect(find.text('2 400 KZT'), findsOneWidget);
+    expect(find.text('1 200 KZT'), findsNWidgets(2)); // average + a row
+    expect(find.text('1 250 KZT'), findsOneWidget);
+    expect(find.text('Ride classes'), findsOneWidget);
+    expect(find.text('Economy'), findsWidgets);
+    expect(find.text('75%'), findsOneWidget); // economy share of 4 rides
     expect(find.text('KND-111111'), findsOneWidget);
     expect(find.text('KND-222222'), findsOneWidget);
-    expect(find.text('50%'), findsNWidgets(2));
-    expect(find.textContaining('KZT'), findsNothing);
-    expect(find.textContaining('₸'), findsNothing);
+    // Totals are tariff fares, and the page says payment is not connected.
+    expect(find.textContaining('payment is not connected'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('an empty list shows zero shares and the empty table message',
+  testWidgets('with no completed ride the average is a dash, not zero',
       (tester) async {
-    tester.view.physicalSize = const Size(900, 2000);
+    tester.view.physicalSize = const Size(1000, 2400);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(_app(_Auth(const [])));
+    await tester.pumpWidget(_app(_Auth(
+      _summary(
+          total: 0,
+          active: 0,
+          completed: 0,
+          cancelled: 0,
+          fare: 0,
+          average: null)
+        ..['byClass'] = <Map<String, dynamic>>[],
+      const [],
+    )));
     await tester.pumpAndSettle();
+
+    expect(find.text('Average ride'), findsOneWidget);
+    expect(find.text('—'), findsOneWidget);
     expect(find.text('No rides yet'), findsOneWidget);
-    expect(find.text('0%'), findsNWidgets(4));
+    expect(find.text('0%'), findsWidgets);
   });
 }

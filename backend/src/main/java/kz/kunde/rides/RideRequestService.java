@@ -21,11 +21,15 @@ public class RideRequestService {
     private static final String VIEW = """
             select r.id, r.quote_id, r.status, q.ride_class, q.tariff_version, q.estimate_kzt,
                    q.distance_meters, q.duration_seconds, r.created_at, q.synthetic,
-                   d.display_name as driver_name, v.description as vehicle_name, v.plate as vehicle_plate
+                   d.display_name as driver_name, v.description as vehicle_name, v.plate as vehicle_plate,
+                   (select round(avg(x.stars), 1) from transactions.ride_ratings x where x.driver_id = d.user_id) as driver_rating,
+                   (select count(*) from transactions.ride_ratings x where x.driver_id = d.user_id) as driver_ratings,
+                   rt.stars as rating_stars, rt.comment as rating_comment, rt.created_at as rating_created_at
             from transactions.rides r join transactions.ride_fare_quotes q on q.id = r.quote_id
             left join transactions.ride_drivers d on d.user_id = r.driver_id
                 and r.status in ('DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','IN_PROGRESS')
             left join transactions.ride_vehicles v on v.driver_id = d.user_id
+            left join transactions.ride_ratings rt on rt.ride_id = r.id
             where r.user_id = ?
             """;
 
@@ -105,13 +109,18 @@ public class RideRequestService {
 
     private RideView view(ResultSet rs, int row) throws SQLException {
         String name = rs.getString("driver_name");
+        long ratings = rs.getLong("driver_ratings");
         AssignedDriver driver = name == null ? null :
-                new AssignedDriver(name, rs.getString("vehicle_name"), rs.getString("vehicle_plate"));
+                new AssignedDriver(name, rs.getString("vehicle_name"), rs.getString("vehicle_plate"),
+                        ratings == 0 ? null : rs.getBigDecimal("driver_rating"), ratings);
+        Integer stars = (Integer) rs.getObject("rating_stars");
+        Rating rating = stars == null ? null : new Rating(stars, rs.getString("rating_comment"),
+                rs.getObject("rating_created_at", OffsetDateTime.class));
         return new RideView(rs.getObject("id", UUID.class), rs.getObject("quote_id", UUID.class),
                 RideState.valueOf(rs.getString("status")), RideClass.valueOf(rs.getString("ride_class")),
                 rs.getString("tariff_version"), rs.getBigDecimal("estimate_kzt"), "KZT",
                 rs.getInt("distance_meters"), rs.getInt("duration_seconds"),
-                rs.getObject("created_at", OffsetDateTime.class), rs.getBoolean("synthetic"), driver);
+                rs.getObject("created_at", OffsetDateTime.class), rs.getBoolean("synthetic"), driver, rating);
     }
 
     private static ApiException conflict(String code, String message) {
@@ -119,9 +128,13 @@ public class RideRequestService {
     }
 
     public record RideView(UUID id, UUID quoteId, RideState status, RideClass rideClass, String tariffVersion,
-            BigDecimal estimateKzt, String currency, int distanceMeters, int durationSeconds, OffsetDateTime createdAt, boolean synthetic, AssignedDriver driver) {}
+            BigDecimal estimateKzt, String currency, int distanceMeters, int durationSeconds, OffsetDateTime createdAt, boolean synthetic, AssignedDriver driver,
+            Rating rating) {}
 
-    public record AssignedDriver(String name, String vehicle, String plate) {}
+    /** Reputation is null until the driver has at least one rating; nothing is estimated. */
+    public record AssignedDriver(String name, String vehicle, String plate, BigDecimal rating, long ratings) {}
+
+    public record Rating(int stars, String comment, OffsetDateTime createdAt) {}
 
     public record Requested(RideView ride, boolean created) {}
 }

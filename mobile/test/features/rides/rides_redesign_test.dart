@@ -11,6 +11,7 @@ class _Auth implements AuthRepository {
 
   final List<Map<String, dynamic>> history;
   final calls = <String>[];
+  final ratings = <Map<String, dynamic>?>[];
 
   static Map<String, dynamic> trip(String status, {bool driver = false}) => {
         'id': 'trip-1',
@@ -55,6 +56,9 @@ class _Auth implements AuthRepository {
         return trip('REQUESTED');
       case ('POST', 'rides/trip-1/dispatch'):
         return trip('SEARCHING_DRIVER');
+      case ('POST', 'rides/trip-1/rating'):
+        ratings.add(body);
+        return {'rideId': 'trip-1', 'stars': body!['stars']};
       case ('GET', 'rides'):
         return history;
     }
@@ -167,8 +171,11 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
   });
 
-  testWidgets('a completed ride shows the fare and the driver, then closes',
+  testWidgets('a completed ride can be rated once and then closes',
       (tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     final auth = _Auth(history: [_Auth.trip('COMPLETED', driver: true)]);
     await tester.pumpWidget(_app(RidesScreen(api: RideApi(auth))));
     await tester.tap(find.byTooltip('History'));
@@ -180,11 +187,49 @@ void main() {
     expect(find.text('1200 KZT'), findsOneWidget);
     expect(find.text('Erlan'), findsOneWidget);
     expect(find.text('Hyundai Elantra · 774 AYA 02'), findsOneWidget);
-    // No rating or payment is claimed: the backend has neither yet.
-    expect(find.byIcon(Icons.star_rounded), findsNothing);
+    expect(find.byTooltip('Rating: 4 of 5'), findsOneWidget);
 
+    await tester.tap(find.byTooltip('Rating: 4 of 5'));
+    await tester.enterText(find.byType(TextField), '  Polite driver  ');
     await tester.tap(find.widgetWithText(FilledButton, 'Done'));
     await tester.pumpAndSettle();
+
+    expect(auth.ratings, [
+      {'stars': 4, 'comment': 'Polite driver'},
+    ]);
     expect(find.text('Ride complete!'), findsNothing);
+  });
+
+  testWidgets(
+      'closing without stars sends nothing; a stored rating is read-only',
+      (tester) async {
+    tester.view.physicalSize = const Size(800, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final auth = _Auth(history: [_Auth.trip('COMPLETED', driver: true)]);
+    await tester.pumpWidget(_app(RidesScreen(api: RideApi(auth))));
+    await tester.tap(find.byTooltip('History'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ride complete'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Done'));
+    await tester.pumpAndSettle();
+    expect(auth.ratings, isEmpty);
+
+    final rated = _Auth(history: [
+      {
+        ..._Auth.trip('COMPLETED', driver: true),
+        'rating': {'stars': 5, 'createdAt': '2026-11-22T11:00:00Z'}
+      },
+    ]);
+    await tester.pumpWidget(const SizedBox());
+    await tester
+        .pumpWidget(_app(RidesScreen(api: RideApi(rated)), language: 'en'));
+    await tester.tap(find.byTooltip('History'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ride complete'));
+    await tester.pumpAndSettle();
+    expect(find.text('Thanks for your rating'), findsOneWidget);
+    expect(find.byType(TextField), findsNothing);
   });
 }

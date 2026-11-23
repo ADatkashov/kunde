@@ -5,62 +5,47 @@ import 'package:flutter/material.dart';
 import '../identity/auth_repository.dart';
 import '../rides/ride_strings.dart';
 
-/// Aggregates computed from the real `admin/rides/trips` rows. The endpoint has
-/// no fare, city or vehicle type, so revenue, average fare and type split are
-/// not derived or invented here.
+/// Figures from `admin/rides/summary` plus the latest rows of `admin/rides/trips`.
+/// Money is the quoted tariff fare of completed, non-synthetic rides: no payment
+/// is captured yet, so it is labelled as a fare total and never as paid revenue.
 class RideAdminStats {
-  RideAdminStats._({
+  RideAdminStats({
     required this.total,
     required this.active,
     required this.completed,
     required this.cancelled,
-    required this.other,
+    required this.completedFare,
+    required this.averageFare,
+    required this.byClass,
     required this.perDay,
     required this.days,
     required this.recent,
   });
 
-  factory RideAdminStats.from(List<Map<String, dynamic>> trips, DateTime now) {
-    final today = DateTime(now.year, now.month, now.day);
-    final days = [
-      for (var i = 6; i >= 0; i--) today.subtract(Duration(days: i)),
-    ];
-    final perDay = List<int>.filled(7, 0);
-    var active = 0, completed = 0, cancelled = 0, other = 0;
-    for (final trip in trips) {
-      final status = trip['status'] as String;
-      if (status == 'COMPLETED') {
-        completed++;
-      } else if (status.startsWith('CANCELLED')) {
-        cancelled++;
-      } else if (const {
-        'REQUESTED',
-        'SEARCHING_DRIVER',
-        'DRIVER_ASSIGNED',
-        'DRIVER_ARRIVING',
-        'DRIVER_ARRIVED',
-        'IN_PROGRESS',
-      }.contains(status)) {
-        active++;
-      } else {
-        other++;
-      }
-      final at = DateTime.parse(trip['createdAt'] as String).toLocal();
-      final day = DateTime(at.year, at.month, at.day);
-      final index = days.indexOf(day);
-      if (index >= 0) perDay[index]++;
-    }
-    final recent = [...trips]..sort((a, b) =>
-        (b['createdAt'] as String).compareTo(a['createdAt'] as String));
-    return RideAdminStats._(
-      total: trips.length,
-      active: active,
-      completed: completed,
-      cancelled: cancelled,
-      other: other,
-      perDay: perDay,
-      days: days,
-      recent: recent.take(8).toList(growable: false),
+  factory RideAdminStats.fromJson(
+    Map<String, dynamic> summary,
+    List<Map<String, dynamic>> trips,
+  ) {
+    final perDay =
+        (summary['perDay'] as List<dynamic>).cast<Map<String, dynamic>>();
+    return RideAdminStats(
+      total: (summary['total'] as num).toInt(),
+      active: (summary['active'] as num).toInt(),
+      completed: (summary['completed'] as num).toInt(),
+      cancelled: (summary['cancelled'] as num).toInt(),
+      completedFare: summary['completedFareKzt'] as num,
+      averageFare: summary['averageFareKzt'] as num?,
+      byClass: {
+        for (final row in (summary['byClass'] as List<dynamic>)
+            .cast<Map<String, dynamic>>())
+          row['rideClass'] as String: (row['rides'] as num).toInt(),
+      },
+      perDay: [for (final row in perDay) (row['rides'] as num).toInt()],
+      days: [for (final row in perDay) DateTime.parse(row['day'] as String)],
+      recent: ([...trips]..sort((a, b) =>
+              (b['createdAt'] as String).compareTo(a['createdAt'] as String)))
+          .take(8)
+          .toList(growable: false),
     );
   }
 
@@ -68,20 +53,23 @@ class RideAdminStats {
   final int active;
   final int completed;
   final int cancelled;
-  final int other;
+  final num completedFare;
+
+  /// Null when no completed, non-synthetic ride exists.
+  final num? averageFare;
+  final Map<String, int> byClass;
   final List<int> perDay;
   final List<DateTime> days;
   final List<Map<String, dynamic>> recent;
+
+  /// Rides that ended without a driver (for example no driver available).
+  int get other => math.max(0, total - active - completed - cancelled);
 }
 
 class RideAdminDashboard extends StatefulWidget {
-  const RideAdminDashboard(
-      {required this.auth, this.now = DateTime.now, super.key});
+  const RideAdminDashboard({required this.auth, super.key});
 
   final AuthRepository auth;
-
-  /// Clock for the 7-day window; tests pass a fixed one.
-  final DateTime Function() now;
 
   @override
   State<RideAdminDashboard> createState() => _RideAdminDashboardState();
@@ -91,12 +79,11 @@ class _RideAdminDashboardState extends State<RideAdminDashboard> {
   late Future<RideAdminStats> _stats = _load();
 
   Future<RideAdminStats> _load() async {
-    final rows = await widget.auth.authorizedJson('GET', 'admin/rides/trips')
+    final summary = await widget.auth
+        .authorizedJson('GET', 'admin/rides/summary') as Map<String, dynamic>;
+    final trips = await widget.auth.authorizedJson('GET', 'admin/rides/trips')
         as List<dynamic>;
-    return RideAdminStats.from(
-      rows.cast<Map<String, dynamic>>(),
-      widget.now(),
-    );
+    return RideAdminStats.fromJson(summary, trips.cast<Map<String, dynamic>>());
   }
 
   void _reload() => setState(() => _stats = _load());
@@ -125,10 +112,7 @@ class _RideAdminDashboardState extends State<RideAdminDashboard> {
             }
             if (snapshot.hasError) {
               return Center(
-                child: TextButton(
-                  onPressed: _reload,
-                  child: Text(s.retry),
-                ),
+                child: TextButton(onPressed: _reload, child: Text(s.retry)),
               );
             }
             return _Body(stats: snapshot.requireData);
@@ -143,6 +127,13 @@ class _Body extends StatelessWidget {
   const _Body({required this.stats});
   final RideAdminStats stats;
 
+  static String _kzt(num value) {
+    final digits = value.round().toString();
+    final grouped = digits.replaceAllMapped(
+        RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => '\u00A0');
+    return '$grouped KZT';
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = RideStrings(context);
@@ -151,18 +142,26 @@ class _Body extends StatelessWidget {
     final kpis = [
       (
         s.t('Всего поездок', 'Барлық сапар', 'Total rides'),
-        stats.total,
+        '${stats.total}',
         scheme.primary
       ),
-      (s.t('Активные', 'Белсенді', 'Active'), stats.active, scheme.tertiary),
-      (s.t('Завершены', 'Аяқталды', 'Completed'), stats.completed, green),
       (
-        s.t('Отменены', 'Тоқтатылды', 'Cancelled'),
-        stats.cancelled,
-        scheme.error
+        s.t('Активные', 'Белсенді', 'Active'),
+        '${stats.active}',
+        scheme.tertiary
+      ),
+      (
+        s.t('Сумма по тарифу', 'Тариф бойынша сома', 'Fare total'),
+        _kzt(stats.completedFare),
+        green
+      ),
+      (
+        s.t('Средняя поездка', 'Орташа сапар', 'Average ride'),
+        stats.averageFare == null ? '—' : _kzt(stats.averageFare!),
+        scheme.onSurface
       ),
     ];
-    final segments = [
+    final statuses = [
       (s.t('Завершены', 'Аяқталды', 'Completed'), stats.completed, green),
       (s.t('Активные', 'Белсенді', 'Active'), stats.active, scheme.primary),
       (
@@ -176,6 +175,20 @@ class _Body extends StatelessWidget {
         scheme.outline
       ),
     ];
+    final classColors = [
+      scheme.primary,
+      scheme.tertiary,
+      green,
+      scheme.secondary,
+    ];
+    final classes = [
+      for (final (index, entry) in stats.byClass.entries.indexed)
+        (
+          s.rideClass(entry.key),
+          entry.value,
+          classColors[index % classColors.length]
+        ),
+    ];
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -185,7 +198,7 @@ class _Body extends StatelessWidget {
           children: [
             for (final (label, value, color) in kpis)
               SizedBox(
-                width: 170,
+                width: 190,
                 child: Card(
                   margin: EdgeInsets.zero,
                   child: Padding(
@@ -196,15 +209,19 @@ class _Body extends StatelessWidget {
                         Text(label,
                             style: Theme.of(context).textTheme.labelLarge),
                         const SizedBox(height: 6),
-                        Text(
-                          '$value',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                color: color,
-                              ),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            value,
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: color,
+                                ),
+                          ),
                         ),
                       ],
                     ),
@@ -213,7 +230,16 @@ class _Body extends StatelessWidget {
               ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 4),
+        Text(
+          s.t(
+            'Суммы считаются по тарифу для завершённых нетестовых поездок; оплата ещё не подключена.',
+            'Сомалар аяқталған сынақ емес сапарлардың тарифі бойынша есептеледі; төлем әлі қосылмаған.',
+            'Totals use the tariff fare of completed non-test rides; payment is not connected yet.',
+          ),
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const SizedBox(height: 12),
         _Panel(
           title: s.t('Поездки по дням (7 дней)',
               'Күндер бойынша сапарлар (7 күн)', 'Rides by day (7 days)'),
@@ -237,49 +263,19 @@ class _Body extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         _Panel(
+          title: s.t('Типы поездок', 'Сапар түрлері', 'Ride classes'),
+          child: _Split(
+              items: classes,
+              total: stats.total,
+              empty: scheme.surfaceContainerHighest),
+        ),
+        const SizedBox(height: 16),
+        _Panel(
           title: s.t('Статусы поездок', 'Сапар күйлері', 'Ride statuses'),
-          child: Row(
-            children: [
-              SizedBox.square(
-                dimension: 130,
-                child: CustomPaint(
-                  painter: _DonutPainter([
-                    for (final (_, value, color) in segments) (value, color),
-                  ], scheme.surfaceContainerHighest),
-                ),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  children: [
-                    for (final (label, value, color) in segments)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 3),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 10,
-                              height: 10,
-                              decoration: BoxDecoration(
-                                  color: color, shape: BoxShape.circle),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(child: Text(label)),
-                            Text(
-                              stats.total == 0
-                                  ? '0%'
-                                  : '${(value * 100 / stats.total).round()}%',
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w700),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          child: _Split(
+              items: statuses,
+              total: stats.total,
+              empty: scheme.surfaceContainerHighest),
         ),
         const SizedBox(height: 16),
         _Panel(
@@ -293,6 +289,8 @@ class _Body extends StatelessWidget {
                       DataColumn(
                           label: Text(s.t('№ заказа', 'Тапсырыс №', 'Ride'))),
                       DataColumn(label: Text(s.driverLabel)),
+                      DataColumn(label: Text(s.tariffLabel)),
+                      DataColumn(label: Text(s.fareLabel)),
                       DataColumn(label: Text(s.t('Дата', 'Күні', 'Date'))),
                       DataColumn(label: Text(s.t('Статус', 'Күйі', 'Status'))),
                     ],
@@ -303,6 +301,9 @@ class _Body extends StatelessWidget {
                           DataCell(Text(trip['driverId'] == null
                               ? '—'
                               : _short(trip['driverId'] as String))),
+                          DataCell(
+                              Text(s.rideClass(trip['rideClass'] as String))),
+                          DataCell(Text(_kzt(trip['fareKzt'] as num))),
                           DataCell(Text(MaterialLocalizations.of(context)
                               .formatShortDate(
                                   DateTime.parse(trip['createdAt'] as String)
@@ -319,6 +320,57 @@ class _Body extends StatelessWidget {
 
   static String _short(String id) =>
       'KND-${id.replaceAll('-', '').substring(0, 6).toUpperCase()}';
+}
+
+/// A donut with its legend and percentage shares.
+class _Split extends StatelessWidget {
+  const _Split({required this.items, required this.total, required this.empty});
+  final List<(String, int, Color)> items;
+  final int total;
+  final Color empty;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        children: [
+          SizedBox.square(
+            dimension: 130,
+            child: CustomPaint(
+              painter: _DonutPainter([
+                for (final (_, value, color) in items) (value, color),
+              ], empty),
+            ),
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              children: [
+                for (final (label, value, color) in items)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                              color: color, shape: BoxShape.circle),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(label)),
+                        Text(
+                          total == 0
+                              ? '0%'
+                              : '${(value * 100 / total).round()}%',
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      );
 }
 
 class _Panel extends StatelessWidget {
