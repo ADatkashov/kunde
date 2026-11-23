@@ -13,6 +13,7 @@
 
 ## Microservice readiness V1 — FeatureGate, V12 — AdminGrants (2026-11-23)
 
+- V4: `platform.support.CaseSubjectOwnership` — Support не импортирует rides/delivery (−2 импорта), владение заказом проверяется прежними `get(owner,id)` через адаптеры доменов, fail-closed при старте.
 - V3: `platform.support.SupportCaseDirectory` — rides/delivery больше не пишут в таблицы Support (−4 SQL-связи), адаптер в `support`; авторизация в доменах без изменений.
 - V2b: `RoutingProvider`, `SyntheticRouting`, `Geo`, `ActiveWork` в `platform`; цикл `delivery ↔ rides` по импортам закрыт (−6 импортов, baseline 46 IMPORT). Остаётся SQL взаимного исключения водитель↔курьер.
 - V2a: `Coordinates` и `Point` вынесены в `platform.geo` (JSON тот же), −6 импортов `delivery/maps → rides`. Остаётся цикл `delivery ↔ rides` через `RideRouting`, `RideMatching.distanceMeters`, `ACTIVE_DELIVERY_STATES` и SQL.
