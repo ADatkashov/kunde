@@ -329,9 +329,7 @@ class _HomeScreenState extends State<HomeScreen> {
         c.enabled &&
         widget.delivery != null) {
       unawaited(_openDelivery());
-    } else if (c.label == s.catBeauty &&
-        c.enabled &&
-        widget.booking != null) {
+    } else if (c.label == s.catBeauty && c.enabled && widget.booking != null) {
       Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => BeautyCategoryScreen(services: widget.booking!),
