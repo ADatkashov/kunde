@@ -1,5 +1,10 @@
 # KUNDE project state
 
+## Microservice readiness audit (2026-11-23, ветка `ccr-040ab629-xks3w5`)
+
+- Аудит фактического кода: модульный монолит, плоские пакеты, одна БД; связи между модулями — импорты и SQL к чужим таблицам (36 пар по импортам/114 SQL-ссылок в baseline), событий/outbox нет. Maps уже отдельный сервис. Отчёт, матрица готовности, порядок выделения и откат: [microservice-readiness](docs/architecture/microservice-readiness.md).
+- Добавлен быстрый тест `ArchitectureBoundariesTest` (без БД; шаг в `backend.yml`): новая межмодульная связь или таблица без владельца ломает сборку, baseline только уменьшается. Бизнес-код и API не менялись; рискованные исправления (V1–V4, V9, V12) оформлены как предложения. Локально `mvn clean verify`: 450 тестов, 0 ошибок.
+
 ## KUNDE Maps Platform — интеграция (2026-11-22, ветка `ccr-f8e4fcef-esjxcm`)
 
 - Аудит `main`: Rides и Delivery уже зависят от интерфейса `RideRouting`, но реализован только `SyntheticRideRouting`; в Flutter-приложениях карт нет. [ADR-020](docs/architecture/adr/ADR-020-kunde-maps-platform-integration.md) (PROPOSED) и [ADR 0007 в kunde-maps](https://github.com/ADatkashov/kunde-maps/blob/main/docs/architecture/decisions/0007-kunde-maps-sdk-and-ecosystem-integration.md).
