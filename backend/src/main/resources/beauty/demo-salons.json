@@ -157,7 +157,8 @@
        "breakFrom": "13:00",
        "breakTo": "14:00"
       }
-     ]
+     ],
+     "inviteCode": "DEMO-ALIYA"
     },
     {
      "name": "Мадина Б.",
@@ -212,7 +213,8 @@
        "breakFrom": "13:00",
        "breakTo": "14:00"
       }
-     ]
+     ],
+     "inviteCode": "DEMO-MADINA"
     },
     {
      "name": "Айгерим Т.",
@@ -260,7 +262,8 @@
        "breakFrom": "13:00",
        "breakTo": "14:00"
       }
-     ]
+     ],
+     "inviteCode": "DEMO-AIGERIM"
     }
    ],
    "reviews": [
@@ -424,7 +427,8 @@
        "breakFrom": "13:00",
        "breakTo": "14:00"
       }
-     ]
+     ],
+     "inviteCode": "DEMO-DANA"
     },
     {
      "name": "Жанна Р.",
@@ -472,7 +476,8 @@
        "breakFrom": "13:00",
        "breakTo": "14:00"
       }
-     ]
+     ],
+     "inviteCode": "DEMO-ZHANNA"
     }
    ],
    "reviews": [
@@ -619,7 +624,8 @@
        "breakFrom": "13:00",
        "breakTo": "14:00"
       }
-     ]
+     ],
+     "inviteCode": "DEMO-SALTANAT"
     },
     {
      "name": "Рустем А.",
@@ -674,7 +680,8 @@
        "breakFrom": "13:00",
        "breakTo": "14:00"
       }
-     ]
+     ],
+     "inviteCode": "DEMO-RUSTEM"
     }
    ],
    "reviews": [
@@ -834,7 +841,8 @@
        "breakFrom": "14:00",
        "breakTo": "15:00"
       }
-     ]
+     ],
+     "inviteCode": "DEMO-TIMUR"
     },
     {
      "name": "Адиль Ж.",
@@ -889,7 +897,8 @@
        "breakFrom": "14:00",
        "breakTo": "15:00"
       }
-     ]
+     ],
+     "inviteCode": "DEMO-ADIL"
     }
    ],
    "reviews": [
@@ -1014,7 +1023,8 @@
        "breakFrom": "13:00",
        "breakTo": "14:00"
       }
-     ]
+     ],
+     "inviteCode": "DEMO-ASEM"
     }
    ],
    "reviews": [
@@ -1147,7 +1157,8 @@
        "breakFrom": "13:00",
        "breakTo": "14:00"
       }
-     ]
+     ],
+     "inviteCode": "DEMO-KAMILA"
     }
    ],
    "reviews": [

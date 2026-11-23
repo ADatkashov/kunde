@@ -158,8 +158,9 @@ public class BookingService {
         }
         // Shared lock: a partner changing this master's schedule (FOR UPDATE) cannot interleave with this booking.
         String master = db.queryForObject("select name from marketplace.booking_masters where id = ? for share", String.class, request.masterId());
-        boolean partnerManaged = db.queryForObject("select partner_id is not null from marketplace.booking_venues where id = ?",
-                Boolean.class, venue.id());
+        // Beauty salons confirm instantly (the customer sees «Запись подтверждена»); other partner venues answer requests.
+        boolean partnerManaged = db.queryForObject("select v.partner_id is not null and not exists (select 1 from marketplace.beauty_salon_profiles p where p.venue_id = v.id) "
+                + "from marketplace.booking_venues v where v.id = ?", Boolean.class, venue.id());
         String comment = request.comment() == null || request.comment().isBlank() ? null : request.comment().strip();
         try {
             UUID id = db.queryForObject("""

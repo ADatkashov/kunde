@@ -69,8 +69,8 @@ public class BeautyDemoSeeder implements ApplicationRunner {
                         sb.get("preparation").asText(), sb.get("priceFrom").asBoolean(), venueId, s.get("name").asText());
             }
             for (JsonNode m : v.get("masters")) {
-                db.update("update marketplace.booking_masters set specialty = ?, experience_years = ? where venue_id = ? and name = ?",
-                        m.get("specialty").asText(), m.get("experience").asInt(), venueId, m.get("name").asText());
+                db.update("update marketplace.booking_masters set specialty = ?, experience_years = ?, invite_code = ? where venue_id = ? and name = ?",
+                        m.get("specialty").asText(), m.get("experience").asInt(), m.get("inviteCode").asText(), venueId, m.get("name").asText());
             }
             int age = 0;
             for (JsonNode r : v.get("reviews")) {
