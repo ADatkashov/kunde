@@ -5,6 +5,24 @@ on:
       executor:
         type: boolean
         default: false
+      admin:
+        type: boolean
+        default: false
+      ref:
+        type: string
+        default: ''
+      api-base-url:
+        type: string
+        default: 'https://kunde-backend-ty81.onrender.com/api/v1/'
+      dev-otp-hint:
+        type: boolean
+        default: true
+      partner-features:
+        type: boolean
+        default: false
+      partner-apply:
+        type: boolean
+        default: false
     secrets:
       ANDROID_KEYSTORE_BASE64:
         required: true
@@ -16,6 +34,10 @@ on:
         required: true
   workflow_dispatch:
     inputs:
+      ref:
+        description: 'Commit SHA, branch or tag to build (default: the branch selected for the run)'
+        type: string
+        default: ''
       executor:
         description: 'Build KUNDE Executor instead of KUNDE Consumer'
         type: boolean
@@ -62,6 +84,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
+          ref: ${{ inputs.ref || github.sha }}
       - name: Require signing secrets and HTTPS API URL
         run: |
           if [ "$KUNDE_ADMIN_BUILD" = true ] && [ "$KUNDE_EXECUTOR_BUILD" = true ]; then
@@ -151,3 +174,17 @@ jobs:
             dist/commit.txt
             dist/version.txt
           retention-days: 14
+      - name: Build summary (commit, version, build number, download)
+        if: success()
+        run: |
+          sha="$(cat dist/commit.txt)"
+          version="$(sed -E "s/.*versionName='([^']*)'.*/\1/" dist/version.txt)"
+          build="$(sed -E "s/.*versionCode='([^']*)'.*/\1/" dist/version.txt)"
+          {
+            echo "### $APK_BASENAME — signed DEV release APK"
+            echo "- Commit: \`$sha\`"
+            echo "- Version: \`$version\`  Build number: \`$build\`"
+            echo "- Package: \`$APK_PACKAGE\`  API: \`$API_BASE_URL\`"
+            echo "- Download: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID} (Artifacts → \`$APK_BASENAME\`)"
+            echo "- E2E status: **NOT RUN by this workflow** — this APK is not E2E-verified. Heavy E2E run separately (docs/engineering-foundation/ci-cd-fast-merge.md)."
+          } >> "$GITHUB_STEP_SUMMARY"

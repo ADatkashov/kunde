@@ -6,11 +6,21 @@ on:
   pull_request:
     paths: ['backend/**', 'scripts/ci/smoke_backend.py', '.github/workflows/backend.yml']
   workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Commit SHA, branch or tag to test (default: selected branch head)'
+        type: string
+        default: ''
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        default: ''
 permissions:
   contents: read
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 jobs:
   backend:
     runs-on: ubuntu-24.04
@@ -30,6 +40,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
+          ref: ${{ inputs.ref || github.sha }}
       - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
         with:
           distribution: temurin

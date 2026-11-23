@@ -1,17 +1,25 @@
 name: Education Android E2E
 on:
-  pull_request:
-    paths:
-      - '.github/workflows/education-native-e2e.yml'
-      - 'scripts/ci/education_native_e2e.py'
-      - 'mobile/lib/features/education/**'
-      - 'backend/src/main/java/kz/kunde/education/**'
+  # HEAVY CHECK: manual / reusable only. It is intentionally NOT triggered by pull_request or push, so it never blocks
+  # merge or the signed APK. See docs/engineering-foundation/ci-cd-fast-merge.md.
   workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Commit SHA, branch or tag to test (default: the branch selected for the run)'
+        required: false
+        type: string
+        default: ''
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: false
+        default: ''
 permissions:
   contents: read
 concurrency:
-  group: education-native-e2e-${{ github.ref }}
-  cancel-in-progress: true
+  group: education-native-e2e-${{ github.event_name }}-${{ inputs.ref || github.ref }}
+  cancel-in-progress: false
 jobs:
   emulator:
     runs-on: ubuntu-24.04
@@ -46,6 +54,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
+          ref: ${{ inputs.ref || github.sha }}
       - name: Enable Android emulator acceleration
         run: |
           mkdir -p reports/education-native
