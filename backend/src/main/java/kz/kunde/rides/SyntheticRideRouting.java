@@ -3,7 +3,7 @@ package kz.kunde.rides;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import kz.kunde.rides.RideMatching.Point;
+import kz.kunde.platform.geo.Point;
 
 /** Deterministic route fixture for internal environments. */
 public final class SyntheticRideRouting implements RideRouting {

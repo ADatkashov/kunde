@@ -6,7 +6,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 import kz.kunde.platform.ApiException;
 import kz.kunde.rides.RideMatching.RideClass;
-import kz.kunde.rides.RideRoutingController.Coordinates;
+import kz.kunde.platform.geo.Coordinates;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;

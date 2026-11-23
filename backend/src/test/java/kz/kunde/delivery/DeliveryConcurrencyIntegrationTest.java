@@ -11,7 +11,7 @@ import kz.kunde.delivery.DeliveryController.CreateRequest;
 import kz.kunde.delivery.DeliveryController.ParcelType;
 import kz.kunde.delivery.DeliveryController.QuoteRequest;
 import kz.kunde.platform.ApiException;
-import kz.kunde.rides.RideRoutingController.Coordinates;
+import kz.kunde.platform.geo.Coordinates;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

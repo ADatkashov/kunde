@@ -16,7 +16,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import kz.kunde.platform.ApiException;
 import kz.kunde.rides.RideMatching;
-import kz.kunde.rides.RideMatching.Point;
+import kz.kunde.platform.geo.Point;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;

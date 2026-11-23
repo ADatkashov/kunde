@@ -18,7 +18,7 @@ import java.util.Locale;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import kz.kunde.rides.RideMatching.Point;
+import kz.kunde.platform.geo.Point;
 import kz.kunde.rides.RideRouting;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;

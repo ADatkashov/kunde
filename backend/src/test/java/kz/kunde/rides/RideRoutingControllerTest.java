@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import kz.kunde.platform.ApiException;
-import kz.kunde.rides.RideRoutingController.Coordinates;
+import kz.kunde.platform.geo.Coordinates;
 import kz.kunde.rides.RideRoutingController.RouteRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.ObjectProvider;

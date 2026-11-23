@@ -11,7 +11,7 @@ import java.util.UUID;
 import kz.kunde.delivery.DeliveryDispatch;
 import kz.kunde.platform.ApiException;
 import kz.kunde.rides.RideMatching.Candidate;
-import kz.kunde.rides.RideMatching.Point;
+import kz.kunde.platform.geo.Point;
 import kz.kunde.rides.RideMatching.RideClass;
 import kz.kunde.rides.RideState.Action;
 import kz.kunde.rides.RideState.Actor;

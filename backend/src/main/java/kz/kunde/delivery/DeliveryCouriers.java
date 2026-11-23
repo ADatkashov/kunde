@@ -4,7 +4,7 @@ import kz.kunde.platform.FeatureToggles;
 import java.util.List;
 import java.util.UUID;
 import kz.kunde.platform.ApiException;
-import kz.kunde.rides.RideRoutingController.Coordinates;
+import kz.kunde.platform.geo.Coordinates;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;

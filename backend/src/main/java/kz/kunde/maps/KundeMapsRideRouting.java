@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
-import kz.kunde.rides.RideMatching.Point;
+import kz.kunde.platform.geo.Point;
 import kz.kunde.rides.RideRouting;
 
 /**

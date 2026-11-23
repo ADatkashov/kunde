@@ -12,7 +12,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.function.Function;
 import kz.kunde.platform.ApiException;
-import kz.kunde.rides.RideMatching.Point;
+import kz.kunde.platform.geo.Coordinates;
+import kz.kunde.platform.geo.Point;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.CacheControl;
@@ -97,12 +98,4 @@ public class RideRoutingController {
     public record ReverseRequest(@NotNull @Valid Coordinates coordinates, @NotNull Language language) {}
 
     public record RouteRequest(@NotNull @Valid Coordinates pickup, @NotNull @Valid Coordinates destination) {}
-
-    public record Coordinates(
-            @NotNull @DecimalMin("-90") @DecimalMax("90") BigDecimal latitude,
-            @NotNull @DecimalMin("-180") @DecimalMax("180") BigDecimal longitude) {
-        public Point point() {
-            return new Point(latitude.doubleValue(), longitude.doubleValue());
-        }
-    }
 }
