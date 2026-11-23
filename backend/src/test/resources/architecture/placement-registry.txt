@@ -6,10 +6,13 @@
 #   CITY_CHILD:<root table>   placed by its root through foreign keys; MUST NOT carry its own city_id
 #   EXECUTOR                  global identity of a driver/courier/specialist who may work in several cities;
 #                             per-city availability is future work and is NOT placed by a single city_id
+#   LOCAL                     per-database infrastructure (outbox, inbox): every database, global or shard, has its own copy
+#                             and a row stays in the database of the transaction that wrote it; never moved between databases
 #   UNDECIDED:<reason>        placement cannot be decided from code alone; blocks physical sharding until resolved
 # See docs/architecture/database-sharding-readiness.md section 4.
 
 # ---- global
+platform.=LOCAL
 identity.=GLOBAL
 profile.=GLOBAL
 serviceability.=GLOBAL

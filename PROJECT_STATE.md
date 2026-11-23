@@ -13,6 +13,7 @@
 
 ## Microservice readiness V1 — FeatureGate, V12 — AdminGrants (2026-11-23)
 
+- Outbox/Inbox ([ADR-022](docs/architecture/adr/ADR-022-transactional-outbox.md), PROPOSED, Flyway V68): `platform.events`, relay выключен, ни один продукт пока не публикует события.
 - V4: `platform.support.CaseSubjectOwnership` — Support не импортирует rides/delivery (−2 импорта), владение заказом проверяется прежними `get(owner,id)` через адаптеры доменов, fail-closed при старте.
 - V3: `platform.support.SupportCaseDirectory` — rides/delivery больше не пишут в таблицы Support (−4 SQL-связи), адаптер в `support`; авторизация в доменах без изменений.
 - V2b: `RoutingProvider`, `SyntheticRouting`, `Geo`, `ActiveWork` в `platform`; цикл `delivery ↔ rides` по импортам закрыт (−6 импортов, baseline 46 IMPORT). Остаётся SQL взаимного исключения водитель↔курьер.

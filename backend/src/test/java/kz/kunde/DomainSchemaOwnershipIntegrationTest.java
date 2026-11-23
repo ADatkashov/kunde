@@ -27,7 +27,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 class DomainSchemaOwnershipIntegrationTest {
     /** Namespaces owned by a domain. Adding a schema must be a reviewed change to this list. */
     private static final Set<String> DOMAIN_SCHEMAS = Set.of(
-            "identity", "profile", "marketplace", "transactions", "payments", "support", "serviceability");
+            "identity", "profile", "marketplace", "transactions", "payments", "support", "serviceability",
+            // ADR-022: platform infrastructure (outbox, inbox); owned by the shared kernel, no foreign keys to products
+            "platform");
 
     /** Reviewed stable cross-schema references. A new one must be documented, then listed here. */
     private static final Set<String> REVIEWED_CROSS_SCHEMA_REFERENCES = Set.of(
