@@ -143,6 +143,16 @@ def has_text(word):
     return any(word.lower() in (n.get("text", "") + " " + n.get("content-desc", "")).lower() for n in tree.iter("node"))
 
 
+def wait_for_text(*words, timeout=30):
+    """Wait until any node shows text that contains one of [words] (labels such as "Remaining: 2.0 km" carry values)."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if any(has_text(word) for word in words):
+            return
+        time.sleep(2)
+    raise RuntimeError(f"No text containing any of {words}")
+
+
 def tap_result_containing(word, timeout=90, tap=True):
     """Tap the first clickable search result whose text contains [word] (the app ranks by map centre, so the exact
     first result of the API call is not guaranteed to be first on screen)."""
@@ -260,7 +270,7 @@ def main():
         android.tap("Навигатор", "Navigate", clickable=True)
         # Real GPS fix -> real route to the passenger -> native map with guidance.
         android.find("Завершить", "End navigation", "Аяқтау", timeout=120)
-        android.find("Осталось", "Remaining", "Қалды", timeout=30)
+        wait_for_text("Осталось", "Remaining", "Қалды", timeout=30)
         android.screenshot("executor-navigation")
         completed.append("executor_navigation_started")
         for fix in densify(route_geometry(DRIVER_START, pickup_point)):

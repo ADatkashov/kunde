@@ -271,10 +271,7 @@ def main():
         android.tap("Повторить", "Retry", "Қайталау")
         find_completed()
         completed.append("consumer_network_retry")
-        android.adb("shell", "input", "keyevent", "4")
-        open_rides()
-        pick_address(("Откуда", "Pickup", "Қайдан"), "[TEST] Synthetic pickup")
-        pick_address(("Куда", "Destination", "Қайда"), "[TEST] Synthetic destination")
+        android.adb("shell", "input", "keyevent", "4")  # History -> the city screen, which keeps both chosen addresses
         create_ride()
         android.tap("Отменить поездку", "Cancel ride", "Сапардан бас тарту")
         android.tap("Отменить поездку", "Cancel ride", "Сапардан бас тарту", clickable=True)
