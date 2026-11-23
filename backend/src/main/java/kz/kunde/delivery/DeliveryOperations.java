@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import kz.kunde.platform.ApiException;
+import kz.kunde.platform.support.SupportCaseDirectory;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -25,18 +26,12 @@ public class DeliveryOperations {
               and (g.organization_id is null or g.organization_id = d.partner_id)
               and (g.resource_id is null or g.resource_id = d.id))
             """;
-    private static final String COMPLAINTS = """
-            select id, delivery_id, category, message, status, created_at
-            from support.cases where delivery_id is not null
-            """;
-    private static final RowMapper<Complaint> COMPLAINT = (rs, row) -> new Complaint(
-            rs.getObject("id", UUID.class), rs.getObject("delivery_id", UUID.class), rs.getString("category"),
-            rs.getString("message"), rs.getString("status"), rs.getObject("created_at", OffsetDateTime.class));
-
     private final JdbcTemplate db;
+    private final SupportCaseDirectory support;
 
-    public DeliveryOperations(JdbcTemplate db) {
+    public DeliveryOperations(JdbcTemplate db, SupportCaseDirectory support) {
         this.db = db;
+        this.support = support;
     }
 
     public List<Shipment> shipments(UUID actor, DeliveryState status, OffsetDateTime from, OffsetDateTime to) {
@@ -108,23 +103,18 @@ public class DeliveryOperations {
     }
 
     public List<Complaint> complaints() {
-        return db.query(COMPLAINTS + " order by (status <> 'RESOLVED') desc, created_at desc, id limit 100", COMPLAINT);
+        return support.list(SupportCaseDirectory.Subject.DELIVERY, 100).stream().map(DeliveryOperations::complaint).toList();
     }
 
     @Transactional
     public Complaint resolve(UUID reviewer, UUID id) {
-        var current = db.query(COMPLAINTS + " and id = ? for update", COMPLAINT, id).stream().findFirst()
+        return support.resolve(SupportCaseDirectory.Subject.DELIVERY, id, reviewer).map(DeliveryOperations::complaint)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "DELIVERY_COMPLAINT_NOT_FOUND",
                         "Delivery complaint was not found"));
-        if ("RESOLVED".equals(current.status())) {
-            return current;
-        }
-        db.update("update support.cases set status = 'RESOLVED', updated_at = statement_timestamp() where id = ?", id);
-        db.update("""
-                insert into support.case_events(case_id, event_type, actor_user_id) values (?, 'RESOLVED', ?)
-                """, id, reviewer);
-        return new Complaint(current.id(), current.deliveryId(), current.category(), current.message(),
-                "RESOLVED", current.createdAt());
+    }
+
+    private static Complaint complaint(SupportCaseDirectory.Case c) {
+        return new Complaint(c.id(), c.subjectId(), c.category(), c.message(), c.status(), c.createdAt());
     }
 
     public record Shipment(UUID id, DeliveryState status, UUID courierId, UUID partnerId, OffsetDateTime createdAt,
