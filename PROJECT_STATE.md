@@ -13,6 +13,7 @@
 
 ## Microservice readiness V1 — FeatureGate, V12 — AdminGrants (2026-11-23)
 
+- V3: `platform.support.SupportCaseDirectory` — rides/delivery больше не пишут в таблицы Support (−4 SQL-связи), адаптер в `support`; авторизация в доменах без изменений.
 - V2b: `RoutingProvider`, `SyntheticRouting`, `Geo`, `ActiveWork` в `platform`; цикл `delivery ↔ rides` по импортам закрыт (−6 импортов, baseline 46 IMPORT). Остаётся SQL взаимного исключения водитель↔курьер.
 - V2a: `Coordinates` и `Point` вынесены в `platform.geo` (JSON тот же), −6 импортов `delivery/maps → rides`. Остаётся цикл `delivery ↔ rides` через `RideRouting`, `RideMatching.distanceMeters`, `ACTIVE_DELIVERY_STATES` и SQL.
 - V12: `AdminGrants` перенесён из `admin` в `platform.authz` (только пакет), −6 импортов `домен → admin` в baseline. V9 (`PartnerDirectory`) отложен: SQL Education держит блокировки `for share of p,s`, нужен отдельный дизайн.

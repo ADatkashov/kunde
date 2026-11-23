@@ -5,6 +5,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import kz.kunde.platform.ApiException;
+import kz.kunde.platform.support.SupportCaseDirectory;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -13,18 +14,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class RideOperationsService {
-    private static final String COMPLAINT = """
-            select id, ride_id, message, status, created_at from support.cases where ride_id is not null
-            """;
-    private static final RowMapper<Complaint> COMPLAINT_ROW = (rs, row) -> new Complaint(
-            rs.getObject(1, UUID.class), rs.getObject(2, UUID.class), rs.getString(3), rs.getString(4),
-            rs.getObject(5, OffsetDateTime.class));
-
     private final JdbcTemplate db;
     private final FeatureToggles toggles;
+    private final SupportCaseDirectory support;
 
-    public RideOperationsService(JdbcTemplate db, FeatureToggles toggles) {
+    public RideOperationsService(JdbcTemplate db, FeatureToggles toggles, SupportCaseDirectory support) {
         this.db = db;
+        this.support = support;
         this.toggles = toggles;
     }
 
@@ -78,33 +74,27 @@ public class RideOperationsService {
 
     public List<Complaint> complaints() {
         requireEnabled();
-        return db.query(COMPLAINT + " order by (status <> 'RESOLVED') desc, created_at desc, id limit 100", COMPLAINT_ROW);
+        return support.list(SupportCaseDirectory.Subject.RIDE, 100).stream().map(RideOperationsService::complaint).toList();
     }
 
     @Transactional
     public Complaint resolve(UUID actor, UUID id) {
         requireEnabled();
-        var current = db.query(COMPLAINT + " and id = ? for update", COMPLAINT_ROW, id).stream()
-                .findFirst().orElseThrow(RideOperationsService::missing);
-        if (!"RESOLVED".equals(current.status())) {
-            db.update("update support.cases set status = 'RESOLVED', updated_at = statement_timestamp() where id = ?", id);
-            db.update("insert into support.case_events (case_id, event_type, actor_user_id) values (?, 'RESOLVED', ?)",
-                    id, actor);
-            return new Complaint(current.id(), current.rideId(), current.message(), "RESOLVED", current.createdAt());
-        }
-        return current;
+        return support.resolve(SupportCaseDirectory.Subject.RIDE, id, actor).map(RideOperationsService::complaint)
+                .orElseThrow(RideOperationsService::missing);
     }
 
     public List<ComplaintEvent> complaintAudit(UUID id) {
         requireEnabled();
-        if (db.query(COMPLAINT + " and id = ?", COMPLAINT_ROW, id).isEmpty()) {
+        if (support.find(SupportCaseDirectory.Subject.RIDE, id).isEmpty()) {
             throw missing();
         }
-        return db.query("""
-                select event_type, actor_user_id, occurred_at from support.case_events
-                where case_id = ? order by id limit 100
-                """, (rs, row) -> new ComplaintEvent(rs.getString(1), rs.getObject(2, UUID.class),
-                        rs.getObject(3, OffsetDateTime.class)), id);
+        return support.events(SupportCaseDirectory.Subject.RIDE, id, 100).stream()
+                .map(e -> new ComplaintEvent(e.eventType(), e.actorUserId(), e.occurredAt())).toList();
+    }
+
+    private static Complaint complaint(SupportCaseDirectory.Case c) {
+        return new Complaint(c.id(), c.subjectId(), c.message(), c.status(), c.createdAt());
     }
 
     private void requireEnabled() {
