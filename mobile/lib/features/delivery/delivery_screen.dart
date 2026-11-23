@@ -7,7 +7,9 @@ import 'package:kunde_design/kunde_design.dart';
 
 import '../identity/auth_repository.dart';
 import '../identity/support_panel.dart';
+import '../maps/kunde_maps.dart';
 import '../rides/ride_api.dart';
+import '../rides/ride_map_panels.dart';
 import 'delivery_api.dart';
 import 'delivery_strings.dart';
 import 'delivery_timeline.dart';
@@ -18,12 +20,16 @@ class DeliveryScreen extends StatefulWidget {
       required this.synthetic,
       this.intakeEnabled = true,
       this.draft,
+      this.maps,
       super.key});
 
   final DeliveryApi api;
   final bool synthetic;
   final bool intakeEnabled;
   final DeliveryOrder? draft;
+
+  /// Present only when the server enables the KUNDE Maps provider; null keeps the saved-address list flow.
+  final KundeMaps? maps;
 
   @override
   State<DeliveryScreen> createState() => _DeliveryScreenState();
@@ -91,9 +97,12 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
     super.dispose();
   }
 
+  /// Marks the "pick on the map" row of the address sheet.
+  static final _onMap = RideAddress('', const {});
+
   Future<void> _pick(bool pickup) async {
     final addresses = widget.api.addresses();
-    final selection = await showModalBottomSheet<RideAddress>(
+    var selection = await showModalBottomSheet<RideAddress>(
       context: context,
       useSafeArea: true,
       isScrollControlled: true,
@@ -124,6 +133,12 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                   children: [
                     Text(pickup ? s.pickup : s.destination,
                         style: Theme.of(context).textTheme.titleLarge),
+                    if (widget.maps != null)
+                      ListTile(
+                          leading: const Icon(Icons.map_outlined),
+                          title: Text(s.t('Выбрать на карте', 'Картадан таңдау',
+                              'Pick on the map')),
+                          onTap: () => Navigator.pop(context, _onMap)),
                     for (final item in available)
                       ListTile(
                           title: Text(item.label),
@@ -146,6 +161,18 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
       },
     );
     if (!mounted || selection == null) return;
+    if (identical(selection, _onMap)) {
+      final maps = widget.maps!;
+      final s = DeliveryStrings(context);
+      final picked = await maps.pick(context,
+          title: pickup ? s.pickup : s.destination,
+          initial: switch (pickup ? _pickup : _destination) {
+            final RideAddress current => pointOf(current),
+            null => null,
+          });
+      if (!mounted || picked == null) return;
+      selection = addressFrom(picked, maps.config.language);
+    }
     setState(() {
       if (pickup) {
         _pickup = selection;
@@ -205,7 +232,8 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
               builder: (_) => _Details(
                   api: widget.api,
                   initial: order,
-                  syntheticRouting: widget.synthetic)));
+                  syntheticRouting: widget.synthetic,
+                  maps: widget.maps)));
     } on IdentityApiError catch (error) {
       if (!mounted) return;
       setState(() {
@@ -226,7 +254,8 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
   @override
   Widget build(BuildContext context) {
     if (!widget.intakeEnabled) {
-      return DeliveryHistoryScreen(api: widget.api, allowDispatch: false);
+      return DeliveryHistoryScreen(
+          api: widget.api, allowDispatch: false, maps: widget.maps);
     }
     final s = DeliveryStrings(context);
     final quote = _quote;
@@ -254,7 +283,8 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                   MaterialPageRoute(
                       builder: (_) => DeliveryHistoryScreen(
                           api: widget.api,
-                          syntheticRouting: widget.synthetic))),
+                          syntheticRouting: widget.synthetic,
+                          maps: widget.maps))),
         ),
       ]),
       body: SafeArea(
@@ -313,6 +343,11 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                 onTap: locked ? null : () => _pick(false),
               ),
             ])),
+            if (widget.maps != null && _pickup != null && _destination != null)
+              RideRoutePreviewPanel(
+                  maps: widget.maps!,
+                  pickup: _pickup!,
+                  destination: _destination!),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               initialValue: _type,
@@ -442,11 +477,13 @@ class DeliveryHistoryScreen extends StatefulWidget {
       this.allowDispatch = true,
       this.syntheticRouting = false,
       this.activeOnly = false,
+      this.maps,
       super.key});
   final DeliveryApi api;
   final bool allowDispatch;
   final bool syntheticRouting;
   final bool activeOnly;
+  final KundeMaps? maps;
 
   @override
   State<DeliveryHistoryScreen> createState() => _HistoryState();
@@ -502,7 +539,8 @@ class _HistoryState extends State<DeliveryHistoryScreen> {
                               api: widget.api,
                               initial: order,
                               allowDispatch: widget.allowDispatch,
-                              syntheticRouting: widget.syntheticRouting)));
+                              syntheticRouting: widget.syntheticRouting,
+                              maps: widget.maps)));
                   if (mounted) _reloadHistory();
                 },
               ),
@@ -518,11 +556,13 @@ class _Details extends StatefulWidget {
       {required this.api,
       required this.initial,
       this.allowDispatch = true,
-      this.syntheticRouting = false});
+      this.syntheticRouting = false,
+      this.maps});
   final DeliveryApi api;
   final DeliveryOrder initial;
   final bool allowDispatch;
   final bool syntheticRouting;
+  final KundeMaps? maps;
 
   @override
   State<_Details> createState() => _DetailsState();
@@ -676,7 +716,13 @@ class _DetailsState extends State<_Details> {
             ListTile(
                 leading: const Icon(Icons.person_outline),
                 title: Text(courier)),
-          if (_location case final point?)
+          if (_location case final point? when widget.maps != null)
+            RideDriverMapPanel(
+                maps: widget.maps!,
+                location: RideDriverLocation(point.$1, point.$2),
+                label: s.t(
+                    'Курьер на карте', 'Курьер картада', 'Courier on the map')),
+          if (_location case final point? when widget.maps == null)
             ListTile(
               leading: const Icon(Icons.my_location),
               title: Text(
@@ -723,6 +769,7 @@ class _DetailsState extends State<_Details> {
                           builder: (_) => DeliveryScreen(
                               api: widget.api,
                               synthetic: widget.syntheticRouting,
+                              maps: widget.maps,
                               draft: _order))),
               child: Text(s.t('Повторить отправление', 'Жөнелтілімді қайталау',
                   'Repeat shipment')),

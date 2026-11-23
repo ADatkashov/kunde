@@ -24,6 +24,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/localization/kunde_localizations.dart';
 import '../data/kunde_api.dart';
+import '../../maps/kunde_maps.dart';
 import '../data/platform_snapshot.dart';
 import 'catalog_search_panel.dart';
 import 'home_strings.dart';
@@ -149,18 +150,25 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _openDelivery() async {
     final snapshot = await _snapshot;
     if (!mounted || (!snapshot.deliveryEnabled && !_deliveryResume)) return;
-    await Navigator.of(context).push<void>(MaterialPageRoute(
-      builder: (_) => snapshot.deliveryEnabled
-          ? DeliveryHomeScreen(
-              api: widget.delivery!,
-              synthetic: snapshot.deliverySyntheticRouting,
-            )
-          : DeliveryScreen(
-              api: widget.delivery!,
-              synthetic: snapshot.deliverySyntheticRouting,
-              intakeEnabled: false,
-            ),
-    ));
+    final maps = snapshot.mapsEnabled ? KundeMaps.forContext(context) : null;
+    try {
+      await Navigator.of(context).push<void>(MaterialPageRoute(
+        builder: (_) => snapshot.deliveryEnabled
+            ? DeliveryHomeScreen(
+                api: widget.delivery!,
+                synthetic: snapshot.deliverySyntheticRouting,
+                maps: maps,
+              )
+            : DeliveryScreen(
+                api: widget.delivery!,
+                synthetic: snapshot.deliverySyntheticRouting,
+                intakeEnabled: false,
+                maps: maps,
+              ),
+      ));
+    } finally {
+      maps?.close();
+    }
   }
 
   void _openSearch() {
@@ -285,6 +293,26 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ];
 
+  /// Taxi opens with the map experience only when the server reports the KUNDE Maps provider; otherwise the existing list flow is unchanged.
+  Future<void> _openRides() async {
+    var mapsEnabled = false;
+    try {
+      mapsEnabled = (await _snapshot).mapsEnabled;
+    } catch (_) {
+      // Without a snapshot the list flow is used.
+    }
+    if (!mounted) return;
+    final maps = mapsEnabled ? KundeMaps.forContext(context) : null;
+    try {
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute(
+            builder: (_) => RidesScreen(api: widget.rides!, maps: maps)),
+      );
+    } finally {
+      maps?.close();
+    }
+  }
+
   void _onCategory(
     ServiceCategory c,
     List<ServiceCategory> all,
@@ -295,9 +323,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (c.isAll) {
       _showAll(all, foodEnabled, bookingEnabled);
     } else if (c.label == s.catRides && c.enabled && widget.rides != null) {
-      Navigator.of(context).push<void>(
-        MaterialPageRoute(builder: (_) => RidesScreen(api: widget.rides!)),
-      );
+      unawaited(_openRides());
     } else if (c.label == s.catDelivery &&
         c.enabled &&
         widget.delivery != null) {

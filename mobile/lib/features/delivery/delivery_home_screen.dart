@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kunde_design/kunde_design.dart';
 
 import '../identity/address_panel.dart';
+import '../maps/kunde_maps.dart';
 import 'delivery_api.dart';
 import 'delivery_screen.dart';
 import 'delivery_strings.dart';
@@ -10,11 +11,15 @@ class DeliveryHomeScreen extends StatelessWidget {
   const DeliveryHomeScreen({
     required this.api,
     required this.synthetic,
+    this.maps,
     super.key,
   });
 
   final DeliveryApi api;
   final bool synthetic;
+
+  /// Present only when the server enables the KUNDE Maps provider.
+  final KundeMaps? maps;
 
   @override
   Widget build(BuildContext context) {
@@ -27,12 +32,13 @@ class DeliveryHomeScreen extends StatelessWidget {
           MaterialPageRoute(builder: builder),
         );
     void newShipment() =>
-        open((_) => DeliveryScreen(api: api, synthetic: synthetic));
+        open((_) => DeliveryScreen(api: api, synthetic: synthetic, maps: maps));
     void history({required bool activeOnly}) => open(
           (_) => DeliveryHistoryScreen(
             api: api,
             syntheticRouting: synthetic,
             activeOnly: activeOnly,
+            maps: maps,
           ),
         );
     return Scaffold(
