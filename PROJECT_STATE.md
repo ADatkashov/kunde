@@ -14,7 +14,6 @@
 ## Microservice readiness V1 — FeatureGate, V12 — AdminGrants (2026-11-23)
 
 - V12: `AdminGrants` перенесён из `admin` в `platform.authz` (только пакет), −6 импортов `домен → admin` в baseline. V9 (`PartnerDirectory`) отложен: SQL Education держит блокировки `for share of p,s`, нужен отдельный дизайн.
-
 - `platform` больше не импортирует настройки 8 из 10 доменов: каждый домен реализует `platform.FeatureGate`, `FeatureToggles` собирает их списком и не стартует без gate на каждый продукт. Baseline импортов уменьшен на 8 (остались `RidesFlags`, `DeliveryProperties`). API и JSON не менялись. `mvn clean verify` на PostgreSQL 16: 492 теста, 0 ошибок.
 
 ## Microservice readiness audit (2026-11-23, ветка `ccr-040ab629-xks3w5`)
