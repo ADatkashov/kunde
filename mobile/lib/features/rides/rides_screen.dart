@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:kunde_design/kunde_design.dart';
+import 'package:kunde_maps_sdk/kunde_maps_sdk.dart';
 
 import '../identity/auth_repository.dart';
 import '../identity/support_panel.dart';
@@ -10,6 +12,7 @@ import '../maps/kunde_maps.dart';
 import 'ride_api.dart';
 import 'ride_map_panels.dart';
 import 'ride_strings.dart';
+import 'ride_widgets.dart';
 
 class RidesScreen extends StatefulWidget {
   const RidesScreen({required this.api, this.maps, super.key});
@@ -116,105 +119,196 @@ class _RidesScreenState extends State<RidesScreen> {
     }
   }
 
+  void _openHistory() => Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => _RideHistory(api: _api, maps: widget.maps),
+        ),
+      );
+
+  /// The KUNDE Maps map across the top of the screen: empty over Almaty until
+  /// both addresses exist, then the pickup, destination and road route.
+  Widget _hero() {
+    final maps = widget.maps!;
+    final pickup = _pickup;
+    final destination = _destination;
+    if (pickup != null && destination != null) {
+      return RideRoutePreviewPanel(
+        maps: maps,
+        pickup: pickup,
+        destination: destination,
+        hero: true,
+      );
+    }
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
+      child: maps.map(
+        context,
+        markers: [
+          if (pickup != null)
+            MapMarker(
+              id: 'pickup',
+              point: pointOf(pickup),
+              color: MapMarker.origin,
+            ),
+        ],
+        height: 300,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = RideStrings(context);
     final quote = _quote;
+    final mapMode = widget.maps != null;
     return Scaffold(
+      extendBodyBehindAppBar: mapMode,
       appBar: AppBar(
-        title: Text(s.rides),
+        backgroundColor: mapMode ? Colors.transparent : null,
+        elevation: mapMode ? 0 : null,
+        scrolledUnderElevation: mapMode ? 0 : null,
+        title: mapMode ? null : Text(s.rides),
+        leading: mapMode && Navigator.of(context).canPop()
+            ? Padding(
+                padding: const EdgeInsets.all(6),
+                child: IconButton.filledTonal(
+                  tooltip: s.back,
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  onPressed: () => Navigator.of(context).maybePop(),
+                ),
+              )
+            : null,
         actions: [
-          IconButton(
-            tooltip: s.history,
-            icon: const Icon(Icons.history_rounded),
-            onPressed: _busy
-                ? null
-                : () => Navigator.of(context).push<void>(
-                      MaterialPageRoute(
-                          builder: (_) =>
-                              _RideHistory(api: _api, maps: widget.maps)),
-                    ),
-          ),
+          if (mapMode)
+            IconButton.filledTonal(
+              tooltip: s.history,
+              icon: const Icon(Icons.history_rounded),
+              onPressed: _busy ? null : _openHistory,
+            )
+          else
+            IconButton(
+              tooltip: s.history,
+              icon: const Icon(Icons.history_rounded),
+              onPressed: _busy ? null : _openHistory,
+            ),
+          if (mapMode) const SizedBox(width: 6),
         ],
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
+        top: !mapMode,
+        child: Column(
           children: [
-            Card(
-              child: Column(
+            Expanded(
+              child: ListView(
+                padding: mapMode ? EdgeInsets.zero : const EdgeInsets.all(16),
                 children: [
-                  ListTile(
-                    leading: const Icon(Icons.trip_origin),
-                    title: Text(s.pickup),
-                    subtitle: _pickup == null ? null : Text(_pickup!.label),
-                    onTap: _busy ? null : () => _chooseAddress(true),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.location_on_outlined),
-                    title: Text(s.destination),
-                    subtitle:
-                        _destination == null ? null : Text(_destination!.label),
-                    onTap: _busy ? null : () => _chooseAddress(false),
+                  if (mapMode) _hero(),
+                  Padding(
+                    padding:
+                        mapMode ? const EdgeInsets.all(16) : EdgeInsets.zero,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Card(
+                          child: Column(
+                            children: [
+                              ListTile(
+                                leading: const Icon(Icons.trip_origin),
+                                title: Text(s.pickup),
+                                subtitle: _pickup == null
+                                    ? null
+                                    : Text(_pickup!.label),
+                                onTap:
+                                    _busy ? null : () => _chooseAddress(true),
+                              ),
+                              const Divider(height: 1),
+                              ListTile(
+                                leading: const Icon(Icons.location_on_outlined),
+                                title: Text(s.destination),
+                                subtitle: _destination == null
+                                    ? null
+                                    : Text(_destination!.label),
+                                onTap:
+                                    _busy ? null : () => _chooseAddress(false),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          s.tariffLabel,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 8),
+                        for (final value in const [
+                          'ECONOMY',
+                          'COMFORT',
+                          'BUSINESS'
+                        ])
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: RideTariffCard(
+                              value: value,
+                              selected: value == _rideClass,
+                              price: value == _rideClass && quote != null
+                                  ? '${quote.fare} KZT'
+                                  : null,
+                              onTap: _busy
+                                  ? null
+                                  : () => setState(() {
+                                        _rideClass = value;
+                                        _invalidateQuote();
+                                      }),
+                            ),
+                          ),
+                        if (quote?.synthetic == true)
+                          ListTile(
+                            leading: const Icon(Icons.science_outlined),
+                            title: Text(s.synthetic),
+                          ),
+                        if (quote != null)
+                          Card(
+                            child: ListTile(
+                              leading: const Icon(Icons.route_outlined),
+                              title: Text(
+                                s.t(
+                                  '${quote.distanceMeters} м · ${(quote.durationSeconds / 60).ceil()} мин',
+                                  '${quote.distanceMeters} м · ${(quote.durationSeconds / 60).ceil()} мин',
+                                  '${quote.distanceMeters} m · ${(quote.durationSeconds / 60).ceil()} min',
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (_error != null) _InlineError(message: _error!),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              initialValue: _rideClass,
-              decoration: InputDecoration(
-                labelText: s.t('Тариф', 'Тариф', 'Fare class'),
-              ),
-              items: [
-                for (final value in ['ECONOMY', 'COMFORT', 'BUSINESS'])
-                  DropdownMenuItem(
-                    value: value,
-                    child: Text(s.rideClass(value)),
-                  ),
-              ],
-              onChanged: _busy
-                  ? null
-                  : (value) => setState(() {
-                        _rideClass = value!;
-                        _invalidateQuote();
-                      }),
-            ),
-            if (widget.maps != null && _pickup != null && _destination != null)
-              RideRoutePreviewPanel(
-                maps: widget.maps!,
-                pickup: _pickup!,
-                destination: _destination!,
-              ),
-            if (quote?.synthetic == true)
-              ListTile(
-                leading: const Icon(Icons.science_outlined),
-                title: Text(s.synthetic),
-              ),
-            if (quote != null)
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.route_outlined),
-                  title: Text('${quote.fare} KZT'),
-                  subtitle: Text(
-                    s.t(
-                      '${quote.distanceMeters} м · ${(quote.durationSeconds / 60).ceil()} мин',
-                      '${quote.distanceMeters} м · ${(quote.durationSeconds / 60).ceil()} мин',
-                      '${quote.distanceMeters} m · ${(quote.durationSeconds / 60).ceil()} min',
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_busy) const LinearProgressIndicator(),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed:
+                          _busy || _pickup == null || _destination == null
+                              ? null
+                              : _submit,
+                      child: Text(quote == null ? s.quote : s.confirm),
                     ),
                   ),
-                ),
+                ],
               ),
-            if (_error != null) _InlineError(message: _error!),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: _busy || _pickup == null || _destination == null
-                  ? null
-                  : _submit,
-              child: Text(quote == null ? s.quote : s.confirm),
             ),
-            if (_busy) const LinearProgressIndicator(),
           ],
         ),
       ),
@@ -492,81 +586,175 @@ class _RideDetailsState extends State<_RideDetails> {
   @override
   Widget build(BuildContext context) {
     final s = RideStrings(context);
+    if (_trip.searching) {
+      return Scaffold(
+        backgroundColor: KundePalette.darkBackground,
+        appBar: AppBar(
+          backgroundColor: KundePalette.darkBackground,
+          foregroundColor: Colors.white,
+          elevation: 0,
+        ),
+        body: RideSearchingView(
+          requested: _trip.status == 'REQUESTED',
+          footer: Column(
+            children: [
+              if (_failed) _InlineError(message: s.error),
+              if (_failed)
+                TextButton(
+                  onPressed: _pending ? null : _refresh,
+                  child: Text(s.retry),
+                ),
+              if (_trip.cancellable)
+                OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white54),
+                  ),
+                  onPressed: _pending ? null : _confirmCancellation,
+                  child: Text(s.cancel),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (_trip.status == 'COMPLETED') {
+      return Scaffold(
+        appBar: AppBar(title: Text(s.rides)),
+        body: SafeArea(
+          child: RideCompletedView(
+            trip: _trip,
+            onDone: () => Navigator.of(context).maybePop(),
+            onRate: (stars, comment) =>
+                widget.api.rate(_trip.id, stars, comment),
+          ),
+        ),
+      );
+    }
+    final location = _driverLocation;
+    final onMap = widget.maps != null && location != null;
     return Scaffold(
-      appBar: AppBar(title: Text(s.rides)),
+      extendBodyBehindAppBar: onMap,
+      appBar: AppBar(
+        backgroundColor: onMap ? Colors.transparent : null,
+        elevation: onMap ? 0 : null,
+        scrolledUnderElevation: onMap ? 0 : null,
+        title: onMap ? null : Text(s.rides),
+        leading: onMap
+            ? Padding(
+                padding: const EdgeInsets.all(6),
+                child: IconButton.filledTonal(
+                  tooltip: s.back,
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  onPressed: () => Navigator.of(context).maybePop(),
+                ),
+              )
+            : null,
+      ),
       body: SafeArea(
+        top: !onMap,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: onMap ? EdgeInsets.zero : const EdgeInsets.all(16),
           children: [
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.local_taxi_outlined),
-                title: Semantics(
-                  liveRegion: true,
-                  child: Text(s.status(_trip.status)),
-                ),
-                subtitle: Text('${_trip.fare} KZT'),
-              ),
-            ),
-            if (_trip.synthetic)
-              ListTile(
-                  leading: const Icon(Icons.science_outlined),
-                  title: Text(s.synthetic)),
-            if (_trip.driver case final driver?)
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.person_outline),
-                  title: Text(driver.name),
-                  subtitle: switch (driver.vehicleSummary) {
-                    final String summary => Text(summary),
-                    null => null,
-                  },
+            if (onMap)
+              ClipRRect(
+                borderRadius:
+                    const BorderRadius.vertical(bottom: Radius.circular(28)),
+                child: RideDriverMapPanel(
+                  maps: widget.maps!,
+                  location: location,
+                  height: 320,
                 ),
               ),
-            if (_driverLocation case final location? when widget.maps != null)
-              RideDriverMapPanel(maps: widget.maps!, location: location),
-            if (_driverLocation case final location? when widget.maps == null)
-              ListTile(
-                leading: const Icon(Icons.my_location),
-                title: Text(s.t('Местоположение водителя',
-                    'Жүргізушінің орналасуы', 'Driver location')),
-                subtitle: Text(
-                    '${location.latitude.toStringAsFixed(5)}, ${location.longitude.toStringAsFixed(5)}'),
-              ),
-            if (_failed) _InlineError(message: s.error),
-            if (_failed)
-              TextButton(
-                onPressed: _pending ? null : _refresh,
-                child: Text(s.retry),
-              ),
-            if (_trip.cancellable)
-              OutlinedButton(
-                onPressed: _pending ? null : _confirmCancellation,
-                child: Text(s.cancel),
-              ),
-            TextButton.icon(
-              icon: const Icon(Icons.support_agent),
-              onPressed: () => Navigator.of(context).push<void>(
-                MaterialPageRoute(
-                    builder: (_) => Scaffold(
-                          appBar: AppBar(
-                              title: Text(s.t('Поддержка поездки',
-                                  'Сапар бойынша қолдау', 'Ride support'))),
-                          body: SafeArea(
-                            child: ListView(
-                              padding: const EdgeInsets.all(16),
-                              children: [
-                                SupportPanel(
-                                    auth: widget.api.auth, rideId: _trip.id)
-                              ],
-                            ),
+            Padding(
+              padding: onMap ? const EdgeInsets.all(16) : EdgeInsets.zero,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (_trip.driver == null)
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.local_taxi_outlined),
+                        title: Semantics(
+                          liveRegion: true,
+                          child: Text(s.status(_trip.status)),
+                        ),
+                        subtitle: Text('${_trip.fare} KZT'),
+                      ),
+                    ),
+                  if (_trip.synthetic)
+                    ListTile(
+                        leading: const Icon(Icons.science_outlined),
+                        title: Text(s.synthetic)),
+                  if (_trip.driver case final driver?)
+                    RideDriverCard(
+                        driver: driver, status: s.status(_trip.status)),
+                  if (_trip.driver != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(s.fareLabel),
+                          Text(
+                            '${_trip.fare} KZT',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w800),
                           ),
-                        )),
+                        ],
+                      ),
+                    ),
+                  if (_driverLocation case final location?
+                      when widget.maps == null)
+                    ListTile(
+                      leading: const Icon(Icons.my_location),
+                      title: Text(s.t('Местоположение водителя',
+                          'Жүргізушінің орналасуы', 'Driver location')),
+                      subtitle: Text(
+                          '${location.latitude.toStringAsFixed(5)}, ${location.longitude.toStringAsFixed(5)}'),
+                    ),
+                  if (_failed) _InlineError(message: s.error),
+                  if (_failed)
+                    TextButton(
+                      onPressed: _pending ? null : _refresh,
+                      child: Text(s.retry),
+                    ),
+                  if (_trip.cancellable)
+                    OutlinedButton(
+                      onPressed: _pending ? null : _confirmCancellation,
+                      child: Text(s.cancel),
+                    ),
+                  TextButton.icon(
+                    icon: const Icon(Icons.support_agent),
+                    onPressed: () => Navigator.of(context).push<void>(
+                      MaterialPageRoute(
+                          builder: (_) => Scaffold(
+                                appBar: AppBar(
+                                    title: Text(s.t(
+                                        'Поддержка поездки',
+                                        'Сапар бойынша қолдау',
+                                        'Ride support'))),
+                                body: SafeArea(
+                                  child: ListView(
+                                    padding: const EdgeInsets.all(16),
+                                    children: [
+                                      SupportPanel(
+                                          auth: widget.api.auth,
+                                          rideId: _trip.id)
+                                    ],
+                                  ),
+                                ),
+                              )),
+                    ),
+                    label: Text(s.t('Сообщить о проблеме',
+                        'Мәселе туралы хабарлау', 'Report a problem')),
+                  ),
+                  if (_pending) const LinearProgressIndicator(),
+                ],
               ),
-              label: Text(s.t('Сообщить о проблеме', 'Мәселе туралы хабарлау',
-                  'Report a problem')),
             ),
-            if (_pending) const LinearProgressIndicator(),
           ],
         ),
       ),

@@ -37,6 +37,12 @@ public class RideOperationsController {
         return ok(operations.trips());
     }
 
+    @GetMapping("/summary")
+    ResponseEntity<RideOperationsService.Summary> summary(@AuthenticationPrincipal Jwt token) {
+        operator(token);
+        return ok(operations.summary());
+    }
+
     @GetMapping("/complaints")
     ResponseEntity<List<RideOperationsService.Complaint>> complaints(@AuthenticationPrincipal Jwt token) {
         operator(token);

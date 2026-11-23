@@ -34,12 +34,16 @@ class RideRoutePreviewPanel extends StatefulWidget {
     required this.maps,
     required this.pickup,
     required this.destination,
+    this.hero = false,
     super.key,
   });
 
   final KundeMaps maps;
   final RideAddress pickup;
   final RideAddress destination;
+
+  /// Full-bleed map with rounded bottom corners instead of a card.
+  final bool hero;
 
   @override
   State<RideRoutePreviewPanel> createState() => _RideRoutePreviewPanelState();
@@ -102,50 +106,70 @@ class _RideRoutePreviewPanelState extends State<RideRoutePreviewPanel> {
     final language = widget.maps.config.language;
     final strings = MapsStrings(language);
     final preview = _preview;
+    final map = widget.maps.map(
+      context,
+      height: widget.hero ? 300 : 240,
+      markers: [
+        MapMarker(
+          id: 'pickup',
+          point: pointOf(widget.pickup),
+          color: MapMarker.origin,
+        ),
+        MapMarker(
+          id: 'destination',
+          point: pointOf(widget.destination),
+          color: MapMarker.destination,
+          radius: 8,
+        ),
+      ],
+      route: preview?.route,
+    );
+    final details = [
+      if (_loading) const LinearProgressIndicator(),
+      if (preview != null) RoutePreview(data: preview, language: language),
+      if (_error != null) ...[
+        Semantics(
+          liveRegion: true,
+          child: Text(
+            strings.error(_error!),
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
+        ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton(
+            onPressed: _loading ? null : _load,
+            child: Text(RideStrings(context).retry),
+          ),
+        ),
+      ],
+    ];
+    if (widget.hero) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ClipRRect(
+            borderRadius:
+                const BorderRadius.vertical(bottom: Radius.circular(28)),
+            child: map,
+          ),
+          if (details.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: details,
+              ),
+            ),
+        ],
+      );
+    }
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            widget.maps.map(
-              context,
-              markers: [
-                MapMarker(
-                  id: 'pickup',
-                  point: pointOf(widget.pickup),
-                  color: MapMarker.origin,
-                ),
-                MapMarker(
-                  id: 'destination',
-                  point: pointOf(widget.destination),
-                  color: MapMarker.destination,
-                  radius: 8,
-                ),
-              ],
-              route: preview?.route,
-            ),
-            const SizedBox(height: 12),
-            if (_loading) const LinearProgressIndicator(),
-            if (preview != null)
-              RoutePreview(data: preview, language: language),
-            if (_error != null) ...[
-              Semantics(
-                liveRegion: true,
-                child: Text(
-                  strings.error(_error!),
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              ),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  onPressed: _loading ? null : _load,
-                  child: Text(RideStrings(context).retry),
-                ),
-              ),
-            ],
-          ],
+          children: [map, const SizedBox(height: 12), ...details],
         ),
       ),
     );
@@ -159,11 +183,13 @@ class RideDriverMapPanel extends StatelessWidget {
     required this.maps,
     required this.location,
     this.label,
+    this.height = 220,
     super.key,
   });
 
   final KundeMaps maps;
   final RideDriverLocation location;
+  final double height;
 
   /// Accessibility label; defaults to the driver text.
   final String? label;
@@ -180,7 +206,7 @@ class RideDriverMapPanel extends StatelessWidget {
           ),
       child: maps.map(
         context,
-        height: 220,
+        height: height,
         markers: [
           MapMarker(
               id: 'driver', point: point, color: MapMarker.vehicle, radius: 9),

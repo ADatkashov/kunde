@@ -81,6 +81,21 @@ class RideApi {
     );
   }
 
+  /// Rates the driver of a completed ride. The server keeps the first rating
+  /// and treats an identical repeat as success.
+  Future<void> rate(String id, int stars, String? comment) async {
+    await auth.authorizedJson(
+      'POST',
+      'rides/$id/rating',
+      body: {
+        'stars': stars,
+        if (comment != null && comment.trim().isNotEmpty)
+          'comment': comment.trim(),
+      },
+      expected: {200, 201},
+    );
+  }
+
   Future<RideTrip> cancel(String id) async => RideTrip.fromJson(
         await auth.authorizedJson('POST', 'rides/$id/cancel')
             as Map<String, dynamic>,
@@ -118,7 +133,8 @@ class RideQuote {
 
 class RideTrip {
   const RideTrip(this.id, this.status, this.fare, this.createdAt,
-      this.synthetic, this.driver);
+      this.synthetic, this.driver,
+      {this.myRating});
 
   factory RideTrip.fromJson(Map<String, dynamic> data) => RideTrip(
         data['id'] as String,
@@ -131,6 +147,10 @@ class RideTrip {
             AssignedRideDriver.fromJson(driver),
           _ => null,
         },
+        myRating: switch (data['rating']) {
+          final Map<String, dynamic> rating => rating['stars'] as int,
+          _ => null,
+        },
       );
 
   final String id;
@@ -139,6 +159,9 @@ class RideTrip {
   final DateTime createdAt;
   final bool synthetic;
   final AssignedRideDriver? driver;
+
+  /// Stars the customer already gave this ride, if any.
+  final int? myRating;
 
   bool get searching => status == 'REQUESTED' || status == 'SEARCHING_DRIVER';
 
@@ -160,15 +183,25 @@ class RideDriverLocation {
 }
 
 class AssignedRideDriver {
-  const AssignedRideDriver(this.name, this.vehicle, this.plate);
+  const AssignedRideDriver(this.name, this.vehicle, this.plate,
+      {this.rating, this.ratings = 0});
 
   factory AssignedRideDriver.fromJson(Map<String, dynamic> json) =>
-      AssignedRideDriver(json['name'] as String, json['vehicle'] as String?,
-          json['plate'] as String?);
+      AssignedRideDriver(
+        json['name'] as String,
+        json['vehicle'] as String?,
+        json['plate'] as String?,
+        rating: (json['rating'] as num?)?.toDouble(),
+        ratings: (json['ratings'] as num?)?.toInt() ?? 0,
+      );
 
   final String name;
   final String? vehicle;
   final String? plate;
+
+  /// Average stars from real ratings; null until the driver has any.
+  final double? rating;
+  final int ratings;
 
   String? get vehicleSummary {
     final parts = [vehicle, plate].whereType<String>();

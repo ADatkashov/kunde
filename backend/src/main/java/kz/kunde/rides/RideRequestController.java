@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.UUID;
 import kz.kunde.identity.ConsumerIdentityService;
@@ -40,12 +41,15 @@ public class RideRequestController {
 
     private final RideDispatchService dispatch;
 
+    private final RideRatingService ratings;
+
     public RideRequestController(ConsumerIdentityService identity, RideRequestService rides, RideQuoteService quotes,
-            RideDispatchService dispatch) {
+            RideDispatchService dispatch, RideRatingService ratings) {
         this.identity = identity;
         this.rides = rides;
         this.quotes = quotes;
         this.dispatch = dispatch;
+        this.ratings = ratings;
     }
 
     @PostMapping("/quotes")
@@ -93,6 +97,13 @@ public class RideRequestController {
         return noStore(HttpStatus.OK, rides.cancel(identity.get(principal).id(), rideId));
     }
 
+    @PostMapping("/{rideId}/rating")
+    public ResponseEntity<RideRatingService.RatingView> rate(@AuthenticationPrincipal Jwt principal,
+            @PathVariable UUID rideId, @Valid @RequestBody Rate request) {
+        var result = ratings.rate(identity.get(principal).id(), rideId, request.stars(), request.comment());
+        return noStore(result.created() ? HttpStatus.CREATED : HttpStatus.OK, result.rating());
+    }
+
     private static <T> ResponseEntity<T> noStore(HttpStatus status, T body) {
         return ResponseEntity.status(status).cacheControl(CacheControl.noStore()).body(body);
     }
@@ -101,4 +112,6 @@ public class RideRequestController {
             @NotNull @Valid Coordinates destination) {}
 
     public record CreateRide(@NotNull UUID quoteId) {}
+
+    public record Rate(@NotNull @Min(1) @Max(5) Integer stars, @Size(max = 500) String comment) {}
 }

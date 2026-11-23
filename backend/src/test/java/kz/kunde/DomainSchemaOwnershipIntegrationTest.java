@@ -99,6 +99,7 @@ class DomainSchemaOwnershipIntegrationTest {
             "transactions.ride_fleets -> marketplace.partners",
             "transactions.ride_fleet_events -> identity.users",
             "transactions.ride_driver_review_events -> identity.users",
+            "transactions.ride_ratings -> identity.users",
             "transactions.bookings -> marketplace.booking_venues",
             "transactions.bookings -> marketplace.booking_services",
             "transactions.bookings -> marketplace.booking_masters",

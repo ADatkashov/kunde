@@ -18,7 +18,7 @@ import '../../food/presentation/food_home_screen.dart';
 import '../../groceries/presentation/groceries_home_screen.dart';
 import '../../health/health_home_screen.dart';
 import '../../rides/ride_api.dart';
-import '../../rides/rides_screen.dart';
+import '../../rides/rides_hub_screen.dart';
 
 import 'package:flutter/material.dart';
 
@@ -306,7 +306,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       await Navigator.of(context).push<void>(
         MaterialPageRoute(
-            builder: (_) => RidesScreen(api: widget.rides!, maps: maps)),
+            builder: (_) => RidesHubScreen(api: widget.rides!, maps: maps)),
       );
     } finally {
       maps?.close();
