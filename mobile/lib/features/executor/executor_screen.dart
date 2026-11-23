@@ -8,6 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import '../identity/auth_repository.dart';
 import '../maps/kunde_maps.dart';
 import '../rides/ride_strings.dart';
+import '../rides/ride_widgets.dart' show rideFare;
 import 'auto_work_screen.dart';
 import 'gate_scan_screen.dart';
 import 'leisure_work_screen.dart';
@@ -15,6 +16,7 @@ import 'delivery_work_screen.dart';
 import 'food_work_screen.dart';
 import 'driver_navigation_screen.dart';
 import 'executor_api.dart';
+import 'executor_home_widgets.dart';
 
 class ExecutorScreen extends StatefulWidget {
   const ExecutorScreen(
@@ -63,6 +65,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
   bool _educationEnabled = false;
   bool _autoResume = false;
   bool _mapsAvailable = false;
+  int _tab = 0;
 
   @override
   void initState() {
@@ -373,7 +376,6 @@ class _ExecutorScreenState extends State<ExecutorScreen>
   Widget build(BuildContext context) {
     final s = RideStrings(context);
     final profile = _profile;
-    final vehicle = profile?.vehicle;
     final active = _trips.where((trip) => trip.nextStep != null);
     final failure = _failure ?? _locationFailure;
     return Scaffold(
@@ -494,143 +496,317 @@ class _ExecutorScreenState extends State<ExecutorScreen>
                 ],
               ),
             ),
-          if (profile != null) ...[
-            Card(
-                child: ListTile(
-                    title: Text(profile.name),
-                    subtitle: Text(_status(s, profile.status)))),
-            if (vehicle != null)
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.directions_car_outlined),
-                  title:
-                      Text('${vehicle['description']} · ${vehicle['plate']}'),
-                  subtitle: Text(_status(s, vehicle['status'] as String)),
-                ),
-              ),
-            if (vehicle == null)
-              Form(
-                key: _form,
-                child: Column(
-                  children: [
-                    _field(
-                        _description,
-                        s.t('Модель автомобиля', 'Көлік үлгісі',
-                            'Vehicle model'),
-                        s,
-                        max: 100),
-                    _field(_plate,
-                        s.t('Госномер', 'Мемлекеттік нөмір', 'Plate'), s,
-                        max: 16, pattern: RegExp(r'^[A-Za-z0-9]{3,16}$')),
-                    DropdownButtonFormField<String>(
-                      initialValue: _rideClass,
-                      items: [
-                        for (final item in ['ECONOMY', 'COMFORT', 'BUSINESS'])
-                          DropdownMenuItem(
-                              value: item, child: Text(s.rideClass(item))),
-                      ],
-                      onChanged: _busy
-                          ? null
-                          : (value) => setState(() => _rideClass = value!),
-                    ),
-                    FilledButton(
-                      onPressed: _busy
-                          ? null
-                          : () {
-                              if (_form.currentState!.validate()) {
-                                unawaited(_load(() => _api.vehicle(
-                                    _description.text.trim(),
-                                    _plate.text.trim(),
-                                    _rideClass)));
-                              }
-                            },
-                      child: Text(s.t(
-                          'Добавить автомобиль', 'Көлік қосу', 'Add vehicle')),
-                    ),
-                  ],
-                ),
-              ),
-            SwitchListTile(
-              title: Text(s.t('На линии', 'Желіде', 'Online')),
-              subtitle: Text(s.t(
-                  'Положение передаётся только при открытом приложении.',
-                  'Орналасқан жер қолданба ашық кезде ғана жіберіледі.',
-                  'Location is shared only while the app is open.')),
-              value: profile.online,
-              onChanged: _busy || !profile.approved ? null : _setOnline,
-            ),
-            if (profile.online && !_sharing)
-              OutlinedButton(
-                onPressed: _busy ? null : () => _setOnline(true),
-                child: Text(s.t('Разрешить геопозицию',
-                    'Орналасуға рұқсат беру', 'Enable location')),
-              ),
-            for (final offer in _offers
-                .where((offer) => offer.expiresAt.isAfter(DateTime.now())))
-              Card(
-                child: ListTile(
-                  title: Text(offer.synthetic
-                      ? s.synthetic
-                      : s.t('Предложение поездки', 'Сапар ұсынысы',
-                          'Ride offer')),
-                  subtitle: Wrap(
-                    spacing: 8,
-                    children: [
-                      FilledButton(
-                        onPressed: _busy
-                            ? null
-                            : () => _load(() => _api.respond(offer.id, true)),
-                        child: Text(s.t('Принять', 'Қабылдау', 'Accept')),
-                      ),
-                      TextButton(
-                        onPressed: _busy
-                            ? null
-                            : () => _load(() => _api.respond(offer.id, false)),
-                        child: Text(s.t('Отклонить', 'Қабылдамау', 'Decline')),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            for (final trip in active)
-              Card(
-                child: ListTile(
-                  title: Text(trip.synthetic
-                      ? '${s.synthetic} · ${s.status(trip.status)}'
-                      : s.status(trip.status)),
-                  subtitle: Wrap(
-                    spacing: 8,
-                    children: [
-                      FilledButton(
-                        onPressed: _busy
-                            ? null
-                            : () => _load(
-                                () => _api.advance(trip.id, trip.nextStep!)),
-                        child: Text(_actionName(s, trip.nextStep!)),
-                      ),
-                      if (_mapsAvailable && trip.navigationTarget != null)
-                        OutlinedButton.icon(
-                          icon: const Icon(Icons.navigation_outlined),
-                          onPressed: _busy ? null : () => _navigate(trip),
-                          label:
-                              Text(s.t('Навигатор', 'Навигатор', 'Navigate')),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            if (_trips.any((trip) => trip.nextStep == null))
-              Text(s.history, style: Theme.of(context).textTheme.titleLarge),
-            for (final trip in _trips.where((trip) => trip.nextStep == null))
-              ListTile(
-                title: Text(trip.synthetic
-                    ? '${s.synthetic} · ${s.status(trip.status)}'
-                    : s.status(trip.status)),
-                subtitle: Text(MaterialLocalizations.of(context)
-                    .formatShortDate(trip.createdAt.toLocal())),
-              ),
-          ],
+          if (profile != null)
+            ...switch (_tab) {
+              1 => _ordersTab(s),
+              2 => _incomeTab(s, profile),
+              3 => _profileTab(s, profile),
+              _ => _homeTab(s, profile, active.toList()),
+            },
         ],
+      ),
+      bottomNavigationBar: profile == null
+          ? null
+          : NavigationBar(
+              selectedIndex: _tab,
+              onDestinationSelected: (index) => setState(() => _tab = index),
+              destinations: [
+                NavigationDestination(
+                    icon: const Icon(Icons.home_outlined),
+                    selectedIcon: const Icon(Icons.home_rounded),
+                    label: s.t('Главная', 'Басты', 'Home')),
+                NavigationDestination(
+                    icon: const Icon(Icons.receipt_long_outlined),
+                    selectedIcon: const Icon(Icons.receipt_long_rounded),
+                    label: s.t('Заказы', 'Тапсырыстар', 'Orders')),
+                NavigationDestination(
+                    icon: const Icon(Icons.account_balance_wallet_outlined),
+                    selectedIcon:
+                        const Icon(Icons.account_balance_wallet_rounded),
+                    label: s.t('Доход', 'Табыс', 'Income')),
+                NavigationDestination(
+                    icon: const Icon(Icons.person_outline_rounded),
+                    selectedIcon: const Icon(Icons.person_rounded),
+                    label: s.t('Профиль', 'Профиль', 'Profile')),
+              ],
+            ),
+    );
+  }
+
+  Widget _driverHeader(RideStrings s, ExecutorProfile profile) {
+    final vehicle = profile.vehicle;
+    final text = Theme.of(context).textTheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(children: [
+        const CircleAvatar(child: Icon(Icons.person_rounded)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(profile.name,
+                  style:
+                      text.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+              Text(
+                  vehicle == null
+                      ? _status(s, profile.status)
+                      : '${vehicle['description']} · ${vehicle['plate']}',
+                  style: text.bodySmall),
+            ],
+          ),
+        ),
+        if (!profile.approved)
+          Chip(
+              label: Text(_status(
+                  s,
+                  profile.status != 'APPROVED'
+                      ? profile.status
+                      : (vehicle?['status'] as String? ?? 'PENDING')))),
+      ]),
+    );
+  }
+
+  Widget _vehicleForm(RideStrings s) => Form(
+        key: _form,
+        child: Column(
+          children: [
+            _field(_description,
+                s.t('Модель автомобиля', 'Көлік үлгісі', 'Vehicle model'), s,
+                max: 100),
+            _field(_plate, s.t('Госномер', 'Мемлекеттік нөмір', 'Plate'), s,
+                max: 16, pattern: RegExp(r'^[A-Za-z0-9]{3,16}$')),
+            DropdownButtonFormField<String>(
+              initialValue: _rideClass,
+              items: [
+                for (final item in ['ECONOMY', 'COMFORT', 'BUSINESS'])
+                  DropdownMenuItem(value: item, child: Text(s.rideClass(item))),
+              ],
+              onChanged:
+                  _busy ? null : (value) => setState(() => _rideClass = value!),
+            ),
+            FilledButton(
+              onPressed: _busy
+                  ? null
+                  : () {
+                      if (_form.currentState!.validate()) {
+                        unawaited(_load(() => _api.vehicle(
+                            _description.text.trim(),
+                            _plate.text.trim(),
+                            _rideClass)));
+                      }
+                    },
+              child:
+                  Text(s.t('Добавить автомобиль', 'Көлік қосу', 'Add vehicle')),
+            ),
+          ],
+        ),
+      );
+
+  List<Widget> _homeTab(
+      RideStrings s, ExecutorProfile profile, List<ExecutorTrip> active) {
+    final summary = ExecutorDaySummary.of(_trips, DateTime.now());
+    final finished = _trips.where((trip) => trip.nextStep == null).toList();
+    final pending = !profile.approved;
+    return [
+      ExecutorOnlineBanner(
+        online: profile.online,
+        onChanged: _busy || pending ? null : _setOnline,
+        hint: pending
+            ? s.t(
+                'Доступно после проверки профиля и автомобиля.',
+                'Профиль мен көлік тексерілгеннен кейін қолжетімді.',
+                'Available after profile and vehicle review.')
+            : s.t(
+                'Положение передаётся только при открытом приложении.',
+                'Орналасқан жер қолданба ашық кезде ғана жіберіледі.',
+                'Location is shared only while the app is open.'),
+      ),
+      if (profile.online && !_sharing)
+        OutlinedButton(
+          onPressed: _busy ? null : () => _setOnline(true),
+          child: Text(s.t('Разрешить геопозицию', 'Орналасуға рұқсат беру',
+              'Enable location')),
+        ),
+      _driverHeader(s, profile),
+      if (profile.vehicle == null) _vehicleForm(s),
+      ExecutorEarningsCard(summary: summary, rating: profile.rating),
+      const SizedBox(height: 16),
+      ExecutorPrimaryButton(
+        label: s.t('Получить заказ', 'Тапсырыс алу', 'Get an order'),
+        onPressed: _busy || pending
+            ? null
+            : () => profile.online ? _load() : _setOnline(true),
+      ),
+      const SizedBox(height: 8),
+      for (final offer
+          in _offers.where((offer) => offer.expiresAt.isAfter(DateTime.now())))
+        Card(
+          child: ListTile(
+            title: Text(offer.synthetic
+                ? s.synthetic
+                : s.t('Предложение поездки', 'Сапар ұсынысы', 'Ride offer')),
+            subtitle: Wrap(
+              spacing: 8,
+              children: [
+                FilledButton(
+                  onPressed: _busy
+                      ? null
+                      : () => _load(() => _api.respond(offer.id, true)),
+                  child: Text(s.t('Принять', 'Қабылдау', 'Accept')),
+                ),
+                TextButton(
+                  onPressed: _busy
+                      ? null
+                      : () => _load(() => _api.respond(offer.id, false)),
+                  child: Text(s.t('Отклонить', 'Қабылдамау', 'Decline')),
+                ),
+              ],
+            ),
+          ),
+        ),
+      for (final trip in active)
+        Card(
+          child: ListTile(
+            title: Text(trip.synthetic
+                ? '${s.synthetic} · ${s.status(trip.status)}'
+                : s.status(trip.status)),
+            subtitle: Wrap(
+              spacing: 8,
+              children: [
+                FilledButton(
+                  onPressed: _busy
+                      ? null
+                      : () =>
+                          _load(() => _api.advance(trip.id, trip.nextStep!)),
+                  child: Text(_actionName(s, trip.nextStep!)),
+                ),
+                if (_mapsAvailable && trip.navigationTarget != null)
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.navigation_outlined),
+                    onPressed: _busy ? null : () => _navigate(trip),
+                    label: Text(s.t('Навигатор', 'Навигатор', 'Navigate')),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      const SizedBox(height: 8),
+      ExecutorMenuTile(
+          icon: Icons.assignment_outlined,
+          title: s.t('Мои поездки', 'Менің сапарларым', 'My rides'),
+          onTap: () => setState(() => _tab = 1)),
+      ExecutorMenuTile(
+          icon: Icons.account_balance_wallet_outlined,
+          title: s.t(
+              'Доход и выплаты', 'Табыс және төлемдер', 'Income and payouts'),
+          onTap: () => setState(() => _tab = 2)),
+      ExecutorMenuTile(
+          icon: Icons.bar_chart_rounded,
+          title: s.t('Статистика', 'Статистика', 'Statistics'),
+          onTap: () => _showStatistics(s, profile, summary)),
+      ExecutorMenuTile(
+          icon: Icons.support_agent_rounded,
+          title: s.t('Поддержка', 'Қолдау', 'Support'),
+          onTap: () => _showNotice(
+              s.t('Поддержка', 'Қолдау', 'Support'),
+              s.t(
+                  'Чат поддержки для водителей ещё не подключён. Обратитесь к вашему парку или оператору.',
+                  'Жүргізушілерге арналған қолдау чаты әлі қосылмаған. Паркке немесе операторға хабарласыңыз.',
+                  'Driver support chat is not connected yet. Contact your fleet or operator.'))),
+      if (finished.isNotEmpty) ...[
+        const SizedBox(height: 8),
+        Text(s.history, style: Theme.of(context).textTheme.titleLarge),
+        for (final trip in finished.take(3)) _tripTile(s, trip),
+      ],
+    ];
+  }
+
+  Widget _tripTile(RideStrings s, ExecutorTrip trip) => ListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(trip.synthetic
+            ? '${s.synthetic} · ${s.status(trip.status)}'
+            : s.status(trip.status)),
+        subtitle: Text(MaterialLocalizations.of(context)
+            .formatShortDate(trip.createdAt.toLocal())),
+        trailing: trip.fareKzt == null || trip.synthetic
+            ? null
+            : Text(rideFare(trip.fareKzt!),
+                style: const TextStyle(fontWeight: FontWeight.w700)),
+      );
+
+  List<Widget> _ordersTab(RideStrings s) => [
+        Text(s.t('Мои поездки', 'Менің сапарларым', 'My rides'),
+            style: Theme.of(context).textTheme.headlineSmall),
+        if (_trips.isEmpty)
+          Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Text(s.noRides)),
+        for (final trip in _trips) _tripTile(s, trip),
+      ];
+
+  List<Widget> _incomeTab(RideStrings s, ExecutorProfile profile) {
+    final summary = ExecutorDaySummary.of(_trips, DateTime.now());
+    return [
+      Text(s.t('Доход и выплаты', 'Табыс және төлемдер', 'Income and payouts'),
+          style: Theme.of(context).textTheme.headlineSmall),
+      const SizedBox(height: 12),
+      ExecutorEarningsCard(summary: summary, rating: profile.rating),
+      ListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(s.t('За 7 дней', '7 күн ішінде', 'Last 7 days')),
+        trailing: Text(rideFare(summary.weekFare),
+            key: const Key('executor-week-fare'),
+            style: const TextStyle(fontWeight: FontWeight.w700)),
+      ),
+      Text(
+          s.t(
+              'Суммы — тарифная оценка завершённых поездок за последние 50 заказов. Тестовые маршруты не учитываются. Онлайн-выплаты ещё не подключены.',
+              'Сомалар — соңғы 50 тапсырыстағы аяқталған сапарлардың тариф бағасы. Сынақ бағыттары есепке алынбайды. Онлайн төлемдер әлі қосылмаған.',
+              'Amounts are tariff estimates of completed rides within the last 50 orders. Test routes are excluded. Online payouts are not connected yet.'),
+          style: Theme.of(context).textTheme.bodySmall),
+    ];
+  }
+
+  List<Widget> _profileTab(RideStrings s, ExecutorProfile profile) => [
+        _driverHeader(s, profile),
+        if (profile.vehicle == null) _vehicleForm(s),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.logout),
+          onPressed: _busy ? null : _logout,
+          label: Text(s.t('Выйти', 'Шығу', 'Sign out')),
+        ),
+      ];
+
+  void _showStatistics(
+      RideStrings s, ExecutorProfile profile, ExecutorDaySummary summary) {
+    _showNotice(
+      s.t('Статистика', 'Статистика', 'Statistics'),
+      '${s.t('Завершено', 'Аяқталды', 'Completed')}: ${summary.completed}\n'
+      '${s.t('Отменено', 'Бас тартылды', 'Cancelled')}: ${summary.cancelled}\n'
+      '${s.t('Рейтинг', 'Рейтинг', 'Rating')}: ${profile.rating == null ? '—' : profile.rating!.toStringAsFixed(profile.rating! % 1 == 0 ? 0 : 2)}'
+      '${profile.ratings == 0 ? '' : ' (${profile.ratings})'}',
+    );
+  }
+
+  void _showNotice(String title, String message) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 8),
+              Text(message),
+            ],
+          ),
+        ),
       ),
     );
   }
