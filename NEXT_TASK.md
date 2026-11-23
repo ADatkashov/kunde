@@ -1,5 +1,9 @@
 # Следующие проверки
 
+## KUNDE Beauty & Care 1.0
+
+Phase 1, часть 2 ([план](docs/product/beauty-care.md)): салоны и филиалы поверх `booking_venues` (V64: рейтинг, координаты, фото, модерация), DEV-fixtures, `GET /api/v1/beauty/salons` с серверными фильтрами и пагинацией, затем главный экран Consumer «Красота и уход». Команда: `cd backend && mvn test -Dtest='Beauty*,BookingApiIntegrationTest'`.
+
 ## KUNDE Delivery 1.0
 
 Провести нативную DEV-приёмку Consumer → Executor → Partner/Admin на общей ревизии после интеграции KUNDE Maps. Критерии включают выбор адресов на карте, дорожную котировку, назначение, GPS, вручение и видимость по ролям. Сценарий оплаты проверяется после подключения утверждённого провайдера. [Аудит, очередь интеграции и ограничения](docs/product/delivery-1.0-audit.md).

@@ -147,7 +147,8 @@ class FeatureTogglesApiIntegrationTest {
         send("PUT", "/api/v1/admin/features/HOME_SERVICES", admin, "{\"enabled\":true,\"reason\":\"pilot remains closed\"}")
                 .andExpect(status().isConflict());
         send("GET", "/api/v1/admin/features", admin, null).andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(9))
+                .andExpect(jsonPath("$.length()").value(10))
+                .andExpect(jsonPath("$[?(@.feature=='BEAUTY')].effective").value(false))
                 .andExpect(jsonPath("$[?(@.feature=='HOME_SERVICES')].allowedByEnvironment").value(false))
                 .andExpect(jsonPath("$[?(@.feature=='HOME_SERVICES')].effective").value(false))
                 .andExpect(jsonPath("$[?(@.feature=='LEISURE')].effective").value(true))

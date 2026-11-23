@@ -1,5 +1,10 @@
 # KUNDE project state
 
+## KUNDE Beauty & Care 1.0 (2026-11-23, ветка `ccr-247e6e41-upaipi`)
+
+- Аудит `main` и план по фазам: [beauty-care.md](docs/product/beauty-care.md). Beauty строится на существующем Booking Engine (барбершопы `BARBER`, защита от двойной записи через `EXCLUDE`).
+- Phase 1 (часть 1): флаг `BEAUTY_ENABLED` (по умолчанию выкл., только local/dev/test), V63 (переключатель + `beauty_categories`), `GET /api/v1/beauty/categories`, `beautyEnabled` в capabilities. Локальный PostgreSQL 16: 29 тестов прошли. **Не сделано:** салоны/каталог/фильтры, hold, оплата, Partner/Executor/Admin экраны, Flutter-экраны Beauty.
+
 ## KUNDE Maps Platform — интеграция (2026-11-22, ветка `ccr-f8e4fcef-esjxcm`)
 
 - Аудит `main`: Rides и Delivery уже зависят от интерфейса `RideRouting`, но реализован только `SyntheticRideRouting`; в Flutter-приложениях карт нет. [ADR-020](docs/architecture/adr/ADR-020-kunde-maps-platform-integration.md) (PROPOSED) и [ADR 0007 в kunde-maps](https://github.com/ADatkashov/kunde-maps/blob/main/docs/architecture/decisions/0007-kunde-maps-sdk-and-ecosystem-integration.md).

@@ -71,6 +71,9 @@ app:
   # Service booking (barbershops) DEV pilot: DEV mock confirmation; forbidden outside dev/local/test (BookingGuard).
   home-services:
     enabled: ${HOME_SERVICES_ENABLED:false}
+  # Beauty & Care (salons, masters, booking). Off by default; needs booking; dev/local/test only (BeautySettings).
+  beauty:
+    enabled: ${BEAUTY_ENABLED:false}
   booking:
     enabled: ${BOOKING_ENABLED:false}
     seed-demo: ${BOOKING_SEED_DEMO:false}

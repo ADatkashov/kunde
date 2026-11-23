@@ -43,6 +43,7 @@ paths:
                   oidcIssuerConfigured: { type: boolean, example: false }
                   aiEnabled: { type: boolean, example: false }
                   homeServicesEnabled: { type: boolean, example: false, description: Effective switch for the Home Services pilot. }
+                  beautyEnabled: { type: boolean, example: false, description: Effective switch for Beauty and Care (BEAUTY_ENABLED). }
                   mapsEnabled: { type: boolean, example: false, description: KUNDE Maps Platform is the configured routing provider (MAPS_ENABLED); map screens also require the product flag, for example ridesEnabled. }
                   deliveryEnabled: { type: boolean, example: false }
                   deliverySyntheticRouting: { type: boolean, example: false }
@@ -1247,6 +1248,21 @@ paths:
           description: Invalid category code syntax or pagination.
         '404':
           description: HOME_SERVICES_DISABLED.
+  /beauty/categories:
+    get:
+      operationId: listBeautyCategories
+      description: Active Beauty and Care categories in display order (featured ones form the home grid). Hidden while BEAUTY_ENABLED is off.
+      parameters:
+        - { name: featured, in: query, schema: { type: boolean } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 10000, default: 0 } }
+      responses:
+        '200':
+          description: Localized categories with code, nameRu, nameKk, nameEn, icon and featured.
+        '400':
+          description: Invalid pagination.
+        '404':
+          description: BEAUTY_DISABLED.
   /booking/venues:
     get:
       operationId: listBookingVenues
