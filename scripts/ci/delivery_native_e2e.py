@@ -225,7 +225,22 @@ def main():
             raise RuntimeError("Could not enter the one-time code") from None
         tap("Проверить код", "Verify code", "Кодты тексеру")
         tap("Завершить", "Complete delivery", "Аяқтау", clickable=True, enabled=True)
-        reveal(*COMPLETED)
+        executor_token = fixture.session("+77000000002")
+        deadline = time.monotonic() + 20
+        while time.monotonic() < deadline:
+            shipments = fixture.call("GET", "executor/deliveries", token=executor_token)
+            if any(shipment["status"] == "COMPLETED" for shipment in shipments):
+                break
+            time.sleep(1)
+        else:
+            states = sorted({shipment["status"] for shipment in shipments})
+            android.screenshot("failed-executor-complete")
+            raise RuntimeError(f"Completion did not persist. Executor shipment states: {states}")
+        try:
+            reveal(*COMPLETED, direction="up")
+        except RuntimeError:
+            android.screenshot("failed-executor-completed-history")
+            raise
         android.screenshot("executor-completed")
         fixture.completed.append("verified_handoff_executor_history")
 
