@@ -13,8 +13,8 @@ import java.util.regex.Pattern;
 import kz.kunde.delivery.DeliveryController.CreateRequest;
 import kz.kunde.delivery.DeliveryController.QuoteRequest;
 import kz.kunde.platform.ApiException;
-import kz.kunde.rides.RideRouting;
-import kz.kunde.rides.SyntheticRideRouting;
+import kz.kunde.platform.geo.RoutingProvider;
+import kz.kunde.platform.geo.SyntheticRouting;
 import kz.kunde.platform.geo.Coordinates;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
@@ -24,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class DeliveryService {
-    private static final RideRouting TEST_ROUTING = new SyntheticRideRouting();
+    private static final RoutingProvider TEST_ROUTING = new SyntheticRouting();
     private static final Pattern REQUEST_KEY = Pattern.compile("[A-Za-z0-9_-]{16,64}");
     private static final String ORDERS = """
             select d.*, q.parcel_type, q.amount_kzt, q.synthetic_route, q.weight_grams, q.length_cm,
@@ -39,9 +39,9 @@ public class DeliveryService {
     private final JdbcTemplate db;
     private final DeliveryProperties settings;
     private final FeatureToggles toggles;
-    private final ObjectProvider<RideRouting> routing;
+    private final ObjectProvider<RoutingProvider> routing;
 
-    public DeliveryService(JdbcTemplate db, DeliveryProperties settings, ObjectProvider<RideRouting> routing, FeatureToggles toggles) {
+    public DeliveryService(JdbcTemplate db, DeliveryProperties settings, ObjectProvider<RoutingProvider> routing, FeatureToggles toggles) {
         this.toggles = toggles;
         this.db = db;
         this.settings = settings;
@@ -60,11 +60,11 @@ public class DeliveryService {
         if (provider == null) {
             throw routingUnavailable();
         }
-        RideRouting.Route route;
+        RoutingProvider.Route route;
         try {
             route = provider.route(request.pickup().point(), request.destination().point()).orElseThrow(() ->
                     new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "DELIVERY_ROUTE_NOT_FOUND", "No route found"));
-        } catch (RideRouting.Unavailable failure) {
+        } catch (RoutingProvider.Unavailable failure) {
             throw routingUnavailable();
         }
         if (route.synthetic() && !settings.syntheticRoutingEnabled()) {

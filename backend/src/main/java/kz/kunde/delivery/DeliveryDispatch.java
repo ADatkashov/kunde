@@ -15,7 +15,8 @@ import java.util.UUID;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import kz.kunde.platform.ApiException;
-import kz.kunde.rides.RideMatching;
+import kz.kunde.platform.dispatch.ActiveWork;
+import kz.kunde.platform.geo.Geo;
 import kz.kunde.platform.geo.Point;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -25,11 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class DeliveryDispatch {
-    public static final String ACTIVE_DELIVERY_STATES = """
-            ('COURIER_ASSIGNED','COURIER_ARRIVING','COURIER_ARRIVED','PICKED_UP','IN_TRANSIT',
-             'DELIVERED','DELIVERY_FAILED','RETURN_REQUESTED','RETURNING')
-            """;
-
     private static final String AVAILABLE = """
             and c.online and c.status = 'APPROVED' and u.status = 'ACTIVE'
             and c.observed_at > statement_timestamp() - interval '2 minutes'
@@ -37,7 +33,7 @@ public class DeliveryDispatch {
             and not exists (select 1 from transactions.rides r where r.driver_id = c.user_id and
                 r.status in ('DRIVER_ASSIGNED','DRIVER_ARRIVING','DRIVER_ARRIVED','IN_PROGRESS'))
             and not exists (select 1 from transactions.deliveries active where active.courier_id = c.user_id
-                and active.status in """ + " " + ACTIVE_DELIVERY_STATES + ") ";
+                and active.status in """ + " " + ActiveWork.ACTIVE_DELIVERY_STATES + ") ";
 
     private final JdbcTemplate db;
     private final FeatureToggles toggles;
@@ -91,7 +87,7 @@ public class DeliveryDispatch {
                   and not exists (select 1 from transactions.delivery_offers o
                                   where o.delivery_id = ? and o.courier_id = c.user_id)
                 """ + AVAILABLE, (rs, row) -> new Candidate(rs.getObject("user_id", UUID.class),
-                        RideMatching.distanceMeters(pickup, new Point(rs.getDouble("latitude"), rs.getDouble("longitude")))),
+                        Geo.distanceMeters(pickup, new Point(rs.getDouble("latitude"), rs.getDouble("longitude")))),
                 trip.quote(), trip.sender(), id);
         candidates.stream().filter(candidate -> candidate.distance() <= 5000)
                 .min(Comparator.comparingDouble(Candidate::distance).thenComparing(Candidate::id))
@@ -176,8 +172,8 @@ public class DeliveryDispatch {
                 from transactions.deliveries d join transactions.delivery_quotes q on q.id = d.quote_id
                 where d.courier_id = ?
                 order by d.created_at desc, d.id desc limit 100
-                """.formatted(ACTIVE_DELIVERY_STATES, ACTIVE_DELIVERY_STATES, ACTIVE_DELIVERY_STATES, ACTIVE_DELIVERY_STATES,
-                        ACTIVE_DELIVERY_STATES, ACTIVE_DELIVERY_STATES, ACTIVE_DELIVERY_STATES),
+                """.formatted(ActiveWork.ACTIVE_DELIVERY_STATES, ActiveWork.ACTIVE_DELIVERY_STATES, ActiveWork.ACTIVE_DELIVERY_STATES, ActiveWork.ACTIVE_DELIVERY_STATES,
+                        ActiveWork.ACTIVE_DELIVERY_STATES, ActiveWork.ACTIVE_DELIVERY_STATES, ActiveWork.ACTIVE_DELIVERY_STATES),
                 (rs, row) -> new CourierShipment(rs.getObject("id", UUID.class),
                         DeliveryState.valueOf(rs.getString("status")), rs.getString("parcel_type"),
                         rs.getString("pickup_address"), rs.getString("destination_address"), rs.getString("courier_note"),

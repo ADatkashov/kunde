@@ -1,5 +1,6 @@
 package kz.kunde.rides;
 
+import kz.kunde.platform.geo.RoutingProvider;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Mockito.mock;
@@ -22,7 +23,7 @@ class RideRoutingControllerTest {
             new Coordinates(new BigDecimal("43.25"), new BigDecimal("76.94")));
 
     @SuppressWarnings("unchecked")
-    private final ObjectProvider<RideRouting> provider = mock(ObjectProvider.class);
+    private final ObjectProvider<RoutingProvider> provider = mock(ObjectProvider.class);
 
     @Test
     void eitherFlagDisablesRouting() {
@@ -43,11 +44,11 @@ class RideRoutingControllerTest {
 
     @Test
     void returnsTheProvidersRoadRouteWithNoStore() {
-        var adapter = mock(RideRouting.class);
+        var adapter = mock(RoutingProvider.class);
         when(provider.getIfAvailable()).thenReturn(adapter);
         var pickup = request.pickup().point();
         var destination = request.destination().point();
-        var route = new RideRouting.Route(3000, 360, List.of(pickup, destination));
+        var route = new RoutingProvider.Route(3000, 360, List.of(pickup, destination));
         when(adapter.route(pickup, destination)).thenReturn(Optional.of(route));
 
         var response = new RideRoutingController(kz.kunde.platform.TestToggles.of(flags(true, true)), provider).preview(request);
@@ -57,10 +58,10 @@ class RideRoutingControllerTest {
 
     @Test
     void mapsProviderTimeoutToServiceUnavailable() {
-        var adapter = mock(RideRouting.class);
+        var adapter = mock(RoutingProvider.class);
         when(provider.getIfAvailable()).thenReturn(adapter);
         when(adapter.route(request.pickup().point(), request.destination().point()))
-                .thenThrow(new RideRouting.Unavailable(new java.util.concurrent.TimeoutException()));
+                .thenThrow(new RoutingProvider.Unavailable(new java.util.concurrent.TimeoutException()));
         var controller = new RideRoutingController(kz.kunde.platform.TestToggles.of(flags(true, true)), provider);
         assertThatExceptionOfType(ApiException.class).isThrownBy(() -> controller.preview(request))
                 .satisfies(error -> {

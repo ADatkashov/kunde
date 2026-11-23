@@ -1,5 +1,6 @@
 package kz.kunde.rides;
 
+import kz.kunde.platform.geo.RoutingProvider;
 import kz.kunde.platform.FeatureToggles;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
@@ -31,15 +32,15 @@ import org.springframework.web.bind.annotation.RestController;
 @PreAuthorize("@consumerAccessPolicy.allowed(authentication)")
 public class RideRoutingController {
     private final FeatureToggles toggles;
-    private final ObjectProvider<RideRouting> routing;
+    private final ObjectProvider<RoutingProvider> routing;
 
-    public RideRoutingController(FeatureToggles toggles, ObjectProvider<RideRouting> routing) {
+    public RideRoutingController(FeatureToggles toggles, ObjectProvider<RoutingProvider> routing) {
         this.toggles = toggles;
         this.routing = routing;
     }
 
     @PostMapping("/route-preview")
-    public ResponseEntity<RideRouting.Route> preview(@Valid @RequestBody RouteRequest request) {
+    public ResponseEntity<RoutingProvider.Route> preview(@Valid @RequestBody RouteRequest request) {
         var route = withRouting(provider -> provider.route(request.pickup().point(), request.destination().point()))
                 .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "RIDE_ROUTE_NOT_FOUND",
                         "No road route was found for these points"));
@@ -47,7 +48,7 @@ public class RideRoutingController {
     }
 
     @PostMapping("/address-search")
-    public ResponseEntity<List<RideRouting.Place>> search(@Valid @RequestBody SearchRequest request) {
+    public ResponseEntity<List<RoutingProvider.Place>> search(@Valid @RequestBody SearchRequest request) {
         var query = request.query().strip();
         if (query.length() < 2) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "RIDE_ADDRESS_QUERY_INVALID",
@@ -58,14 +59,14 @@ public class RideRoutingController {
     }
 
     @PostMapping("/reverse-geocode")
-    public ResponseEntity<RideRouting.Place> reverse(@Valid @RequestBody ReverseRequest request) {
+    public ResponseEntity<RoutingProvider.Place> reverse(@Valid @RequestBody ReverseRequest request) {
         var place = withRouting(provider -> provider.reverseGeocode(request.coordinates().point(), request.language().locale()))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "RIDE_ADDRESS_NOT_FOUND",
                         "No address was found for this point"));
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(place);
     }
 
-    private <T> T withRouting(Function<RideRouting, T> operation) {
+    private <T> T withRouting(Function<RoutingProvider, T> operation) {
         if (!toggles.rides().consumerAvailable()) {
             throw new ApiException(HttpStatus.NOT_FOUND, "RIDES_UNAVAILABLE", "Rides is currently unavailable");
         }
@@ -75,7 +76,7 @@ public class RideRoutingController {
         }
         try {
             return operation.apply(provider);
-        } catch (RideRouting.Unavailable failure) {
+        } catch (RoutingProvider.Unavailable failure) {
             throw routingUnavailable();
         }
     }

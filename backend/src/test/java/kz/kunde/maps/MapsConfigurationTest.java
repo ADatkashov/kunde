@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import kz.kunde.rides.RideRouting;
+import kz.kunde.platform.geo.RoutingProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.mock.env.MockEnvironment;
@@ -22,15 +22,15 @@ class MapsConfigurationTest {
     void isOffByDefaultSoRidesKeepFailingClosed() {
         runner.run(context -> {
             assertThat(context).hasNotFailed();
-            assertThat(context).doesNotHaveBean(RideRouting.class);
+            assertThat(context).doesNotHaveBean(RoutingProvider.class);
         });
     }
 
     @Test
     void providesTheMapsBackedRoutingWhenEnabled() {
         runner.withPropertyValues("app.maps.enabled=true", "app.maps.routing-url=" + ROUTING, "app.maps.search-url=" + SEARCH)
-                .run(context -> assertThat(context).hasSingleBean(RideRouting.class)
-                        .getBean(RideRouting.class).isInstanceOf(KundeMapsRideRouting.class));
+                .run(context -> assertThat(context).hasSingleBean(RoutingProvider.class)
+                        .getBean(RoutingProvider.class).isInstanceOf(KundeMapsRideRouting.class));
     }
 
     @Test

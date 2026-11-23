@@ -26,11 +26,8 @@ IMPORT booking/BeautyPartnerController.java -> partner.PartnerAccessPolicy
 IMPORT booking/BeautyPartnerController.java -> partner.PartnerService
 IMPORT booking/BookingPartnerController.java -> partner.PartnerAccessPolicy
 IMPORT booking/BookingPartnerService.java -> partner.PartnerService
-IMPORT delivery/DeliveryDispatch.java -> rides.RideMatching
 IMPORT delivery/DeliveryPartnerController.java -> partner.PartnerAccessPolicy
 IMPORT delivery/DeliveryPartnerController.java -> partner.PartnerService
-IMPORT delivery/DeliveryService.java -> rides.RideRouting
-IMPORT delivery/DeliveryService.java -> rides.SyntheticRideRouting
 IMPORT education/EducationOperationsController.java -> partner.PartnerAccessPolicy
 IMPORT education/EducationOperationsService.java -> partner.PartnerService
 IMPORT events/EventsCatalogController.java -> leisure.LeisureCatalogService
@@ -45,12 +42,9 @@ IMPORT leisure/LeisureDemoSeeder.java -> partner.PartnerOpsDemoSeeder
 IMPORT leisure/LeisureExecutorService.java -> partner.PartnerService
 IMPORT leisure/LeisurePartnerController.java -> partner.PartnerAccessPolicy
 IMPORT leisure/LeisurePartnerService.java -> partner.PartnerService
-IMPORT maps/KundeMapsRideRouting.java -> rides.RideRouting
-IMPORT maps/MapsConfiguration.java -> rides.RideRouting
 IMPORT partner/PartnerOpsDemoSeeder.java -> auth.PhoneAuthProperties
 IMPORT platform/FeatureToggles.java -> delivery.DeliveryProperties
 IMPORT platform/FeatureToggles.java -> rides.RidesFlags
-IMPORT rides/RideDispatchService.java -> delivery.DeliveryDispatch
 IMPORT rides/RideFleetService.java -> partner.PartnerService
 IMPORT support/SupportCaseService.java -> delivery.DeliveryService
 IMPORT support/SupportCaseService.java -> rides.RideRequestService
