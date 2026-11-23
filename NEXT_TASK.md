@@ -2,7 +2,7 @@
 
 ## KUNDE Beauty & Care 1.0
 
-Phase 1, часть 2 ([план](docs/product/beauty-care.md)): салоны и филиалы поверх `booking_venues` (V64: рейтинг, координаты, фото, модерация), DEV-fixtures, `GET /api/v1/beauty/salons` с серверными фильтрами и пагинацией, затем главный экран Consumer «Красота и уход». Команда: `cd backend && mvn test -Dtest='Beauty*,BookingApiIntegrationTest'`.
+Consumer готов ([beauty-care.md](docs/product/beauty-care.md)). Дальше: Partner (панель салона, услуги, расписание мастеров, записи и клиенты, акции), Executor (записи мастера, «Начать приём»), Admin (модерация, аналитика), перенос записи, онлайн-оплата через провайдер, E2E. Команды: `cd backend && mvn test -Dtest='Beauty*,Booking*'`; `cd mobile && flutter test test/features/beauty test/features/booking`.
 
 ## KUNDE Delivery 1.0
 

@@ -125,6 +125,21 @@ class _FakeBackend {
       lastHealthSearch = request.url;
       return _json([_healthVenue]);
     }
+    if (path == 'beauty/categories') {
+      return _json([
+        {
+          'code': 'BARBERSHOPS',
+          'nameRu': 'Барбершопы',
+          'nameKk': 'Барбершоптар',
+          'nameEn': 'Barbershops',
+          'icon': 'content_cut',
+          'featured': true,
+        }
+      ]);
+    }
+    if (path == 'beauty/promotions') {
+      return _json({'maxPercent': null, 'items': []});
+    }
     if (path == 'booking/venues') {
       return _json(request.url.queryParameters['category'] == 'CLEANING'
           ? [_cleanVenue]
@@ -560,7 +575,7 @@ void main() {
             beautyEnabled: true));
     expect(find.text('Красота'), findsOneWidget);
     expect(find.text('Дом и быт'), findsOneWidget);
-    expect(find.text('Барбершопы'), findsOneWidget);
+    expect(find.text('Красота и уход'), findsOneWidget);
     expect(find.text('Уборка'), findsOneWidget);
   });
 
@@ -570,7 +585,7 @@ void main() {
     await _show(
         tester, ServicesHomeScreen(services: services, beautyEnabled: true));
 
-    expect(find.text('Барбершопы'), findsOneWidget);
+    expect(find.text('Красота и уход'), findsOneWidget);
     expect(find.text('Уборка'), findsNothing);
   });
 
@@ -579,7 +594,7 @@ void main() {
     final services = await _services(_FakeBackend());
     await _show(tester, ServicesHomeScreen(services: services));
 
-    expect(find.text('Барбершопы'), findsNothing);
+    expect(find.text('Красота и уход'), findsNothing);
     expect(find.text('Красота'), findsNothing);
   });
 
@@ -672,6 +687,7 @@ void main() {
 
     await tester.tap(category('Красота'));
     await tester.pumpAndSettle();
+    expect(find.text('Красота и уход'), findsOneWidget);
     expect(find.text('Барбершопы'), findsOneWidget);
     expect(find.text('Уборка'), findsNothing);
     Navigator.of(tester.element(find.text('Барбершопы'))).pop();

@@ -35,7 +35,7 @@ class ServicesHomeScreen extends StatelessWidget {
             if (beautyEnabled) ...[
               Text(s.catBeauty, style: theme.textTheme.titleLarge),
               const SizedBox(height: 8),
-              BarbershopsEntry(services: services),
+              BeautyCareEntry(services: services),
             ],
             if (homeServicesEnabled) ...[
               if (beautyEnabled) const SizedBox(height: 20),

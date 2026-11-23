@@ -7,6 +7,7 @@ import '../../leisure/data/leisure_api.dart';
 import '../../leisure/leisure_services.dart';
 import '../../leisure/presentation/leisure_home_screen.dart';
 import '../../booking/booking_services.dart';
+import '../../beauty/presentation/beauty_home_screen.dart';
 import '../../booking/presentation/category_screens.dart';
 import '../../delivery/delivery_api.dart';
 import '../../delivery/delivery_home_screen.dart';
@@ -330,11 +331,7 @@ class _HomeScreenState extends State<HomeScreen> {
         widget.delivery != null) {
       unawaited(_openDelivery());
     } else if (c.label == s.catBeauty && c.enabled && widget.booking != null) {
-      Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => BeautyCategoryScreen(services: widget.booking!),
-        ),
-      );
+      Navigator.of(context).push(beautyShellRouteFor(widget.booking!));
     } else if (c.label == s.catHome && c.enabled && widget.booking != null) {
       Navigator.of(context).push(
         MaterialPageRoute<void>(
