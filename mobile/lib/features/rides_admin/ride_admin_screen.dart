@@ -12,6 +12,7 @@ import '../health/health_admin_screen.dart';
 import '../home_services_admin/home_services_categories_screen.dart';
 import '../rides/ride_strings.dart';
 import 'ride_admin_dashboard.dart';
+import 'ride_driver_access_screen.dart';
 
 class RideAdminScreen extends StatefulWidget {
   const RideAdminScreen({required this.auth, super.key});
@@ -460,7 +461,7 @@ class _RideAdminScreenState extends State<RideAdminScreen> {
         for (final (route, label, icon) in [
           (
             'drivers',
-            s.t('Водители', 'Жүргізушілер', 'Drivers'),
+            s.t('Допуск на линию', 'Желіге жіберу', 'Line access'),
             Icons.person_outline,
           ),
           (
@@ -487,8 +488,10 @@ class _RideAdminScreenState extends State<RideAdminScreen> {
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => Navigator.of(context).push<void>(
                   MaterialPageRoute(
-                    builder: (_) => _AdminQueue(
-                        auth: widget.auth, route: route, label: label),
+                    builder: (_) => route == 'drivers'
+                        ? RideDriverAccessScreen(auth: widget.auth)
+                        : _AdminQueue(
+                            auth: widget.auth, route: route, label: label),
                   ),
                 ),
               ),

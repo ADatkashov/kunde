@@ -27,7 +27,9 @@ public class RideDriverService {
         requireExecutor();
         return db.query("""
                 select d.user_id, d.display_name, d.status, d.online, v.id as vehicle_id, v.description,
-                    v.plate, v.ride_class, v.status as vehicle_status
+                    v.plate, v.ride_class, v.status as vehicle_status,
+                    (select round(avg(x.stars), 1) from transactions.ride_ratings x where x.driver_id = d.user_id) as rating,
+                    (select count(*) from transactions.ride_ratings x where x.driver_id = d.user_id) as ratings
                 from transactions.ride_drivers d left join transactions.ride_vehicles v on v.driver_id = d.user_id
                 where d.user_id = ?
                 """, (rs, row) -> {
@@ -36,7 +38,8 @@ public class RideDriverService {
                             rs.getString("plate"), RideClass.valueOf(rs.getString("ride_class")),
                             Status.valueOf(rs.getString("vehicle_status")));
                     return new Driver(driver, rs.getString("display_name"), Status.valueOf(rs.getString("status")),
-                            rs.getBoolean("online"), vehicle);
+                            rs.getBoolean("online"), vehicle,
+                            rs.getLong("ratings") == 0 ? null : rs.getBigDecimal("rating"), rs.getLong("ratings"));
                 }, driver).stream().findFirst().orElseThrow(() -> notFound("DRIVER_NOT_FOUND", "Driver profile not found"));
     }
 
@@ -179,6 +182,8 @@ public class RideDriverService {
     public enum Status { PENDING, APPROVED, BLOCKED }
     public enum Decision { APPROVED, BLOCKED }
     public record ReviewEvent(long id, UUID vehicleId, UUID reviewerId, Status status, OffsetDateTime occurredAt) {}
-    public record Driver(UUID userId, String displayName, Status status, boolean online, Vehicle vehicle) {}
+    /** Rating is null until the driver has at least one rating; nothing is estimated. */
+    public record Driver(UUID userId, String displayName, Status status, boolean online, Vehicle vehicle,
+            java.math.BigDecimal rating, long ratings) {}
     public record Vehicle(UUID id, String description, String plate, RideClass rideClass, Status status) {}
 }
