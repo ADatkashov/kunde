@@ -6,9 +6,40 @@ import 'package:kunde_mobile/features/maps/kunde_maps.dart';
 /// A [KundeMaps] for widget tests: real SDK routing and search over the
 /// given HTTP client, but no native map. Maps are drawn as text so tests can
 /// assert what would be shown, and the picker returns queued points.
+/// A GPS for widget tests: no platform plugin, either a fixed point or none.
+class FakeLocationSource implements LocationSource {
+  const FakeLocationSource([this.point]);
+
+  final GeoPoint? point;
+
+  @override
+  Future<GpsAccess> access() async =>
+      point == null ? GpsAccess.denied : GpsAccess.ok;
+
+  @override
+  Future<LocationFix?> current({
+    Duration timeout = const Duration(seconds: 12),
+  }) async {
+    final fixed = point;
+    return fixed == null ? null : LocationFix(fixed, 5, DateTime(2026, 11, 23));
+  }
+
+  @override
+  Stream<LocationFix> watch({
+    required MapsStrings strings,
+    bool navigation = false,
+    bool vehicle = true,
+    bool notification = true,
+  }) =>
+      const Stream.empty();
+}
+
 class FakeKundeMaps extends KundeMaps {
-  FakeKundeMaps(http.Client client, [List<PickedLocation>? picks])
-      : picks = picks ?? [],
+  FakeKundeMaps(
+    http.Client client, [
+    List<PickedLocation>? picks,
+    GeoPoint? here,
+  ])  : picks = picks ?? [],
         super(
           client: client,
           config: MapsConfig(
@@ -19,7 +50,9 @@ class FakeKundeMaps extends KundeMaps {
             webUrl: 'https://web.test',
             language: 'en',
           ),
-        );
+        ) {
+    geolocation = Geolocation(FakeLocationSource(here));
+  }
 
   final List<PickedLocation> picks;
   final titles = <String>[];
