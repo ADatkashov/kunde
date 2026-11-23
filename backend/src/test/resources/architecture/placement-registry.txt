@@ -1,0 +1,95 @@
+# Placement registry: table-name prefix -> how the table is placed when operational data is split by city.
+# First matching line wins (specific prefixes above generic ones). A table without a line fails PlacementRegistryTest.
+# Format: <schema>.<table-prefix>=<class>
+#   GLOBAL                    always on the global database (identity, partners, reference data, city registry)
+#   CITY_ROOT                 aggregate root; owns a nullable-until-backfilled, immutable city_id column (V67)
+#   CITY_CHILD:<root table>   placed by its root through foreign keys; MUST NOT carry its own city_id
+#   EXECUTOR                  global identity of a driver/courier/specialist who may work in several cities;
+#                             per-city availability is future work and is NOT placed by a single city_id
+#   UNDECIDED:<reason>        placement cannot be decided from code alone; blocks physical sharding until resolved
+# See docs/architecture/database-sharding-readiness.md section 4.
+
+# ---- global
+identity.=GLOBAL
+profile.=GLOBAL
+serviceability.=GLOBAL
+marketplace.partners=GLOBAL
+marketplace.partner_=GLOBAL
+marketplace.categories=GLOBAL
+marketplace.offering=GLOBAL
+marketplace.health_categories=GLOBAL
+marketplace.home_service=GLOBAL
+marketplace.auto_service_categories=GLOBAL
+marketplace.auto_admin_events=GLOBAL
+marketplace.health_moderation_events=GLOBAL
+marketplace.leisure_categories=GLOBAL
+marketplace.beauty_categories=GLOBAL
+marketplace.grocery_categories=GLOBAL
+transactions.customer_vehicles=GLOBAL
+
+# ---- support
+support.=UNDECIDED:cases reference rides/deliveries by foreign key; a case is global per user but its subject lives in a city (soft reference needed)
+
+# ---- food
+marketplace.food_restaurants=CITY_ROOT
+marketplace.food_favorites=UNDECIDED:user-owned favourites reference restaurants of any city; decide user-global soft references vs per-city copy
+marketplace.food_reviews=CITY_CHILD:transactions.food_orders
+marketplace.food_review_complaints=CITY_CHILD:transactions.food_orders
+marketplace.food_=CITY_CHILD:marketplace.food_restaurants
+transactions.food_orders=CITY_CHILD:marketplace.food_restaurants
+transactions.food_promo_redemptions=CITY_CHILD:marketplace.food_promotions
+transactions.food_=CITY_CHILD:transactions.food_orders
+
+# ---- groceries (user-scoped data over Food catalogue)
+marketplace.grocery_product_reviews=CITY_CHILD:transactions.food_orders
+marketplace.grocery_=UNDECIDED:cart, lists and favourites are per user but reference dishes of restaurants that may sit in different cities
+
+# ---- booking, health, auto
+marketplace.booking_venues=CITY_ROOT
+marketplace.booking_=CITY_CHILD:marketplace.booking_venues
+transactions.bookings=CITY_CHILD:marketplace.booking_venues
+transactions.booking_events=CITY_CHILD:transactions.bookings
+transactions.health_favorites=CITY_CHILD:marketplace.booking_venues
+marketplace.beauty_salon_profiles=CITY_CHILD:marketplace.booking_venues
+marketplace.beauty_service_profiles=CITY_CHILD:marketplace.booking_venues
+marketplace.beauty_reviews=CITY_CHILD:marketplace.booking_venues
+marketplace.beauty_favorites=CITY_CHILD:marketplace.booking_venues
+marketplace.beauty_promotions=UNDECIDED:venue_id is nullable (platform-wide promotions possible); decide global promotion catalogue vs per-city copy
+transactions.auto_jobs=CITY_ROOT
+transactions.auto_job_events=CITY_CHILD:transactions.auto_jobs
+transactions.auto_quotes=CITY_CHILD:marketplace.booking_venues
+transactions.auto_payment=UNDECIDED:payments - financial integrity and idempotency must not be split by city; needs a payments ownership decision
+transactions.auto_complaints=CITY_CHILD:transactions.auto_jobs
+transactions.auto_reviews=CITY_CHILD:marketplace.booking_venues
+transactions.auto_specialist=EXECUTOR
+marketplace.auto_roadside_tariffs=UNDECIDED:tariffs normally differ by city but the table has no city column and no approved tariff-per-city rule
+
+# ---- leisure and events
+marketplace.leisure_venues=CITY_ROOT
+marketplace.leisure_=CITY_CHILD:marketplace.leisure_venues
+transactions.leisure_orders=CITY_CHILD:marketplace.leisure_venues
+transactions.leisure_payment=UNDECIDED:payments - ticket payments and refunds; same open decision as auto payments
+transactions.leisure_=CITY_CHILD:transactions.leisure_orders
+
+# ---- education
+marketplace.education_courses=CITY_ROOT
+marketplace.education_=CITY_CHILD:marketplace.education_courses
+transactions.education_payment=UNDECIDED:payments - enrolment fees; same open decision as auto payments
+transactions.education_enrollments=CITY_CHILD:marketplace.education_courses
+transactions.education_=CITY_CHILD:transactions.education_enrollments
+
+# ---- rides
+transactions.rides=CITY_ROOT
+transactions.ride_fare_quotes=UNDECIDED:a quote exists before any ride row; needs its own city_id or a short TTL decision
+transactions.ride_drivers=EXECUTOR
+transactions.ride_vehicles=EXECUTOR
+transactions.ride_fleet=EXECUTOR
+transactions.ride_driver_review_events=EXECUTOR
+transactions.ride_=CITY_CHILD:transactions.rides
+
+# ---- delivery
+transactions.deliveries=CITY_ROOT
+transactions.delivery_quotes=UNDECIDED:a quote exists before any delivery row; needs its own city_id or a short TTL decision
+transactions.delivery_couriers=EXECUTOR
+transactions.delivery_courier_=EXECUTOR
+transactions.delivery_=CITY_CHILD:transactions.deliveries
