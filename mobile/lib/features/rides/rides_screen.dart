@@ -179,6 +179,8 @@ class _RidesScreenState extends State<RidesScreen> {
       if (!mounted) return;
       if (error.code == 'RIDE_QUOTE_UNAVAILABLE') {
         unawaited(_quoteAll(notice: strings.priceUpdated));
+      } else if (error.code == 'RIDE_ALREADY_REQUESTED') {
+        await _openActiveRide(strings);
       } else {
         setState(
           () => _error =
@@ -189,6 +191,26 @@ class _RidesScreenState extends State<RidesScreen> {
       if (mounted) setState(() => _error = strings.error);
     } finally {
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// The server allows one active ride per customer. Say so and open that ride
+  /// (it can be cancelled there) instead of a generic failure.
+  Future<void> _openActiveRide(RideStrings strings) async {
+    setState(() => _error = strings.rideAlreadyActive);
+    try {
+      final trips = await _api.history();
+      final active = trips.where((trip) => trip.active);
+      if (!mounted || active.isEmpty) return;
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) =>
+              _RideDetails(api: _api, trip: active.first, maps: widget.maps),
+        ),
+      );
+      if (mounted) setState(() => _error = null);
+    } catch (_) {
+      // The notice above stays; History lists the active ride.
     }
   }
 
@@ -264,6 +286,10 @@ class _RidesScreenState extends State<RidesScreen> {
       }
     } on IdentityApiError catch (error) {
       if (!mounted) return;
+      if (error.code == 'RIDE_ALREADY_REQUESTED') {
+        await _openActiveRide(strings);
+        return;
+      }
       setState(() {
         if (error.code == 'RIDE_QUOTE_UNAVAILABLE') _invalidateQuote();
         _error = error.status == 503 ? strings.unavailable : strings.error;
