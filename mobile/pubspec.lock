@@ -392,8 +392,8 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/kunde_maps_sdk"
-      ref: "12457ed2e2cd1636fdb8a35c3342ce02a3dd3f32"
-      resolved-ref: "12457ed2e2cd1636fdb8a35c3342ce02a3dd3f32"
+      ref: "3a6134736d27e073e8d98e878a0ffc5c5bf375b8"
+      resolved-ref: "3a6134736d27e073e8d98e878a0ffc5c5bf375b8"
       url: "https://github.com/ADatkashov/kunde-maps.git"
     source: git
     version: "0.2.1"
