@@ -19,7 +19,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import kz.kunde.platform.geo.Point;
-import kz.kunde.rides.RideRouting;
+import kz.kunde.platform.geo.RoutingProvider;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -116,7 +116,7 @@ class KundeMapsRideRoutingTest {
     void outagesQuotaAndAuthFailuresAreUnavailable() throws Exception {
         for (var status : List.of(401, 403, 429, 500, 502, 503, 504)) {
             var routing = serve(exchange -> new Reply(status, "{\"error\":\"x\"}"), "");
-            assertThatExceptionOfType(RideRouting.Unavailable.class).as("status " + status)
+            assertThatExceptionOfType(RoutingProvider.Unavailable.class).as("status " + status)
                     .isThrownBy(() -> routing.route(PICKUP, DESTINATION));
             server.stop(0);
         }
@@ -130,7 +130,7 @@ class KundeMapsRideRoutingTest {
                 "{\"distance_m\":100,\"duration_s\":10,\"geometry\":{\"coordinates\":[[76,143],[77,43]]}}",
                 "{\"distance_m\":1e99,\"duration_s\":10,\"geometry\":{\"coordinates\":[[76,43],[77,43]]}}")) {
             var routing = serve(exchange -> new Reply(200, body), "");
-            assertThatExceptionOfType(RideRouting.Unavailable.class).as(body)
+            assertThatExceptionOfType(RoutingProvider.Unavailable.class).as(body)
                     .isThrownBy(() -> routing.route(PICKUP, DESTINATION));
             server.stop(0);
         }
@@ -139,7 +139,7 @@ class KundeMapsRideRoutingTest {
     @Test
     void oversizedResponsesAreRejected() throws Exception {
         var routing = serve(exchange -> new Reply(200, "{\"pad\":\"" + "x".repeat(70_000) + "\"}"), "");
-        assertThatExceptionOfType(RideRouting.Unavailable.class).isThrownBy(() -> routing.route(PICKUP, DESTINATION));
+        assertThatExceptionOfType(RoutingProvider.Unavailable.class).isThrownBy(() -> routing.route(PICKUP, DESTINATION));
     }
 
     @Test
@@ -155,7 +155,7 @@ class KundeMapsRideRoutingTest {
     void anUnreachableServiceIsUnavailable() throws Exception {
         var routing = serve(exchange -> new Reply(200, "{}"), "");
         server.stop(0);
-        assertThatExceptionOfType(RideRouting.Unavailable.class).isThrownBy(() -> routing.route(PICKUP, DESTINATION));
+        assertThatExceptionOfType(RoutingProvider.Unavailable.class).isThrownBy(() -> routing.route(PICKUP, DESTINATION));
     }
 
     @Test
@@ -163,12 +163,12 @@ class KundeMapsRideRoutingTest {
         var routing = serve(exchange -> new Reply(500, "{}"), "key");
         try {
             routing.route(PICKUP, DESTINATION);
-        } catch (RideRouting.Unavailable failure) {
+        } catch (RoutingProvider.Unavailable failure) {
             assertThat(String.valueOf(failure.getCause().getMessage())).doesNotContain("43.2").doesNotContain("76.9").doesNotContain("key");
         }
         try {
             routing.geocode("секретный адрес", Locale.forLanguageTag("ru"));
-        } catch (RideRouting.Unavailable failure) {
+        } catch (RoutingProvider.Unavailable failure) {
             assertThat(String.valueOf(failure.getCause().getMessage())).doesNotContain("секретный");
         }
     }
@@ -200,7 +200,7 @@ class KundeMapsRideRoutingTest {
                 {"results":[{"name":"A","lat":43.2,"lon":76.9},{"name":"B","lat":999,"lon":76.9},{"name":"","lat":43.2,"lon":76.9},
                 {"name":"C","lat":"x","lon":1},{"name":"D","locality":"Алматы","lat":43.3,"lon":76.8}]}""";
         var routing = serve(exchange -> new Reply(200, body), "");
-        assertThat(routing.geocode("abc", Locale.ENGLISH)).extracting(RideRouting.Place::address)
+        assertThat(routing.geocode("abc", Locale.ENGLISH)).extracting(RoutingProvider.Place::address)
                 .containsExactly("A", "D, Алматы");
     }
 
@@ -210,7 +210,7 @@ class KundeMapsRideRoutingTest {
         assertThat(routing.geocode("a", Locale.ENGLISH)).isEmpty();
         server.stop(0);
         var down = serve(exchange -> new Reply(429, "{}"), "");
-        assertThatExceptionOfType(RideRouting.Unavailable.class).isThrownBy(() -> down.geocode("abc", Locale.ENGLISH));
+        assertThatExceptionOfType(RoutingProvider.Unavailable.class).isThrownBy(() -> down.geocode("abc", Locale.ENGLISH));
     }
 
     @Test

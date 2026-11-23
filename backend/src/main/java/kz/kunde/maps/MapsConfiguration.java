@@ -1,7 +1,7 @@
 package kz.kunde.maps;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import kz.kunde.rides.RideRouting;
+import kz.kunde.platform.geo.RoutingProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
 /**
- * Wires the KUNDE Maps Platform as the {@link RideRouting} provider shared by Rides and Delivery. Off by default. It cannot be combined with
+ * Wires the KUNDE Maps Platform as the {@link RoutingProvider} provider shared by Rides and Delivery. Off by default. It cannot be combined with
  * the synthetic fixtures: two providers would make the choice ambiguous, and a fixture must never stand in for a real route.
  */
 @Configuration
@@ -31,7 +31,7 @@ public class MapsConfiguration {
 
     @Bean
     @ConditionalOnProperty(name = "app.maps.enabled", havingValue = "true")
-    RideRouting kundeMapsRideRouting(MapsProperties maps, ObjectMapper json) {
+    RoutingProvider kundeMapsRideRouting(MapsProperties maps, ObjectMapper json) {
         return new KundeMapsRideRouting(maps, json);
     }
 }

@@ -1,5 +1,6 @@
 package kz.kunde.rides;
 
+import kz.kunde.platform.dispatch.ActiveWork;
 import kz.kunde.platform.FeatureToggles;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -8,7 +9,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import kz.kunde.delivery.DeliveryDispatch;
 import kz.kunde.platform.ApiException;
 import kz.kunde.rides.RideMatching.Candidate;
 import kz.kunde.platform.geo.Point;
@@ -131,7 +131,7 @@ public class RideDispatchService {
                     where d.user_id = ? and d.status = 'APPROVED' and d.online
                         and not exists (select 1 from transactions.deliveries active where active.courier_id = d.user_id
                             and active.status in
-                """ + DeliveryDispatch.ACTIVE_DELIVERY_STATES + """
+                """ + ActiveWork.ACTIVE_DELIVERY_STATES + """
                         )
                         and d.observed_at > statement_timestamp() - interval '2 minutes'
                         and v.status = 'APPROVED' and v.ride_class = ?
