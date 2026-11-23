@@ -29,12 +29,13 @@ MAPS_ROUTING = os.environ.get("MAPS_ROUTING_URL", "https://kunde-maps-routing-de
 PICKUP_QUERY = "Esentai mall"
 DESTINATION_QUERY = "MEGA Alma-Ata"
 DRIVER_START = (43.2300, 76.9330)  # about 1.4 km from the pickup, inside the 5 km dispatch radius
-completed = []
+completed = base.Stages()
+observations = []
 
 
 def report(status, phase):
     (REPORT / "status.json").write_text(json.dumps({
-        "status": status, "phase": phase, "completed": completed, "data": "real DEV Maps Platform", "paymentEnabled": False,
+        "status": status, "phase": phase, "completed": completed, "observations": observations, "secondsSinceStart": completed.seconds, "data": "real DEV Maps Platform", "paymentEnabled": False,
     }, indent=2) + "\n")
 
 
@@ -132,7 +133,28 @@ def dump_ui(name):
         pass
 
 
-def tap_result_containing(word, timeout=90):
+def has_text(word):
+    """True when a node on screen shows [word] (single dump, no waiting)."""
+    import xml.etree.ElementTree as ET
+    try:
+        android.adb("shell", "uiautomator", "dump", "/sdcard/kunde-visual.xml")
+        tree = ET.fromstring(android.adb("exec-out", "cat", "/sdcard/kunde-visual.xml"))
+    except (subprocess.SubprocessError, ET.ParseError):
+        return False
+    return any(word.lower() in (n.get("text", "") + " " + n.get("content-desc", "")).lower() for n in tree.iter("node"))
+
+
+def wait_for_text(*words, timeout=30):
+    """Wait until any node shows text that contains one of [words] (labels such as "Remaining: 2.0 km" carry values)."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if any(has_text(word) for word in words):
+            return
+        time.sleep(2)
+    raise RuntimeError(f"No text containing any of {words}")
+
+
+def tap_result_containing(word, timeout=90, tap=True):
     """Tap the first clickable search result whose text contains [word] (the app ranks by map centre, so the exact
     first result of the API call is not guaranteed to be first on screen)."""
     import re
@@ -147,6 +169,8 @@ def tap_result_containing(word, timeout=90):
         for node in tree.iter("node"):
             text = node.get("text", "") + " " + node.get("content-desc", "")
             if word.lower() in text.lower() and node.get("clickable") == "true" and node.get("class") != "android.widget.EditText":
+                if not tap:
+                    return
                 x1, y1, x2, y2 = [int(v) for v in re.findall(r"\d+", node.get("bounds", ""))]
                 android.adb("shell", "input", "tap", (x1 + x2) // 2, (y1 + y2) // 2)
                 return
@@ -209,6 +233,11 @@ def main():
             time.sleep(2)
         completed.append("executor_online")
 
+        # The order screen now defaults pickup to "My location" and asks for it on open; grant it so the run is deterministic
+        # (the denied-permission path is covered by the Flutter widget tests, not here).
+        for permission in ("ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"):
+            android.adb("shell", "pm", "grant", base.CONSUMER, f"android.permission.{permission}")
+        geo(DRIVER_START)
         base.launch(base.CONSUMER)
         base.login("7000000001", "Алматы", "Almaty")
 
@@ -221,8 +250,8 @@ def main():
                      "Кептелісті ескермейтін әдеттегі уақыт", timeout=120)
         android.screenshot("consumer-route-preview")
         completed.append("consumer_pickup_destination_route_preview")
-        android.tap("Узнать стоимость", "Get fare", "Бағасын білу")
-        android.find("KZT", timeout=90)  # priced by the Rides tariff from the Maps route, not a synthetic fixture
+        # Fares for every class arrive with the route preview; the tariff price comes from the Rides tariff on the Maps route.
+        tap_result_containing("₸", timeout=90, tap=False)
         try:
             android.find("Тестовый маршрут", "Test route", "Сынақ бағыты", timeout=3)
             raise AssertionError("The quote was marked as a synthetic route")
@@ -230,8 +259,9 @@ def main():
             pass
         android.screenshot("consumer-quote")
         completed.append("consumer_server_priced_quote")
-        android.tap("Заказать поездку", "Request ride", "Сапарға тапсырыс беру")
-        android.find("Ищем водителя", "Finding a driver", "Жүргізуші ізделуде", timeout=60)
+        order = [word for word in ("Order", "Заказать") if has_text(word)]
+        tap_result_containing(order[0] if order else "Order")
+        android.find("Ищем водителя...", "Finding a driver...", "Жүргізуші ізделуде...", timeout=60)
         completed.append("consumer_ride_requested")
 
         phase = "driver_navigation"
@@ -241,7 +271,7 @@ def main():
         android.tap("Навигатор", "Navigate", clickable=True)
         # Real GPS fix -> real route to the passenger -> native map with guidance.
         android.find("Завершить", "End navigation", "Аяқтау", timeout=120)
-        android.find("Осталось", "Remaining", "Қалды", timeout=30)
+        wait_for_text("Осталось", "Remaining", "Қалды", timeout=30)
         android.screenshot("executor-navigation")
         completed.append("executor_navigation_started")
         for fix in densify(route_geometry(DRIVER_START, pickup_point)):
@@ -257,9 +287,22 @@ def main():
         phase = "consumer_sees_driver"
         android.tap("Выехать", "Depart", "Жолға шығу")
         base.launch(base.CONSUMER)
-        android.find("Водитель назначен", "Driver assigned", "Жүргізуші тағайындалды", "Водитель в пути", "Driver is arriving", timeout=60)
+        wait_for_text("Водитель назначен", "Driver assigned", "Жүргізуші тағайындалды", "Водитель в пути", "Driver is on the way",
+                      "Жүргізуші жолда", timeout=60)
         android.find("Местоположение водителя на карте", "Driver location on the map", "Жүргізушінің картадағы орны", timeout=60)
-        android.screenshot("consumer-driver-on-map")
+        # A semantic label alone does not prove the map drew. An unrendered (flat grey) screen is ~25 KB as PNG, one with tiles,
+        # roads and a marker is several times larger. Sample for up to 60 s and keep evidence either way; a blank map is
+        # recorded as an observation (not hidden, not silently passed) until the cause is understood.
+        sizes = []
+        for second in range(0, 61, 10):
+            android.screenshot(f"consumer-driver-map-t{second:02d}")
+            sizes.append((android.REPORT / f"consumer-driver-map-t{second:02d}.png").stat().st_size)
+            if sizes[-1] >= 45_000:
+                completed.append("consumer_tracking_map_rendered")
+                break
+            time.sleep(10)
+        else:
+            observations.append(f"consumer tracking map stayed blank (PNG sizes {sizes}); driver card and label were present")
         completed.append("consumer_driver_on_map")
 
         phase = "maps_outage_fails_closed"
@@ -275,6 +318,7 @@ def main():
         report("PASSED", phase)
     except Exception:
         report("FAILED", phase)
+        base.capture_failure()
         raise
     finally:
         if process is not None and process.poll() is None:
