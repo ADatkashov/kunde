@@ -11,6 +11,7 @@ import '../identity/auth_repository.dart';
 import '../health/health_admin_screen.dart';
 import '../home_services_admin/home_services_categories_screen.dart';
 import '../rides/ride_strings.dart';
+import 'ride_admin_dashboard.dart';
 
 class RideAdminScreen extends StatefulWidget {
   const RideAdminScreen({required this.auth, super.key});
@@ -442,6 +443,20 @@ class _RideAdminScreenState extends State<RideAdminScreen> {
                 ),
               ),
             ),
+        if (permissions.contains('RIDE_OPERATIONS'))
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.insights_outlined),
+              title: Text(
+                  s.t('Аналитика поездок', 'Сапар талдауы', 'Rides analytics')),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push<void>(
+                MaterialPageRoute(
+                  builder: (_) => RideAdminDashboard(auth: widget.auth),
+                ),
+              ),
+            ),
+          ),
         for (final (route, label, icon) in [
           (
             'drivers',

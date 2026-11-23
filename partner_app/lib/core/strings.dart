@@ -200,6 +200,41 @@ class S {
       ? _t('На линии', 'Желіде', 'Online')
       : _t('Не на линии', 'Желіде емес', 'Offline');
 
+  String get taxiTitle => 'KUNDE Taxi';
+  String get taxiSubtitle =>
+      _t('Таксомоторный парк', 'Таксі паркі', 'Taxi fleet');
+  String get taxiTabService => _t('Сервис', 'Сервис', 'Service');
+  String get taxiTabDrivers => _t('Водители', 'Жүргізушілер', 'Drivers');
+  String get taxiTripsToday =>
+      _t('Поездки сегодня', 'Бүгінгі сапарлар', 'Trips today');
+  String get taxiCompleted => _t('Завершено', 'Аяқталды', 'Completed');
+  String get taxiActive => _t('Активные', 'Белсенді', 'Active');
+  String get taxiMenuFleet =>
+      _t('Управление автопарком', 'Автопарқты басқару', 'Fleet management');
+  String get taxiMenuDrivers => _t(
+      'Водители и смены', 'Жүргізушілер мен ауысымдар', 'Drivers and shifts');
+  String get taxiMenuOrders =>
+      _t('Заказы и отчёты', 'Тапсырыстар мен есептер', 'Orders and reports');
+  String get taxiMenuTariffs =>
+      _t('Тарифы и зоны', 'Тарифтер мен аймақтар', 'Tariffs and zones');
+  String get taxiMenuAnalytics => _t('Аналитика', 'Талдау', 'Analytics');
+  String get taxiSoon => _t('Скоро', 'Жақында', 'Soon');
+  String get taxiVehicles => _t('Автомобили', 'Көліктер', 'Vehicles');
+  String get taxiNoVehicles =>
+      _t('Автомобилей пока нет', 'Көліктер әлі жоқ', 'No vehicles yet');
+  String get taxiNoDrivers =>
+      _t('Водителей пока нет', 'Жүргізушілер әлі жоқ', 'No drivers yet');
+  String get taxiNoTrips =>
+      _t('Поездок пока нет', 'Сапарлар әлі жоқ', 'No trips yet');
+  String get taxiCandidates =>
+      _t('Можно добавить', 'Қосуға болады', 'Available to attach');
+  String taxiClass(String? value) => switch (value) {
+        'ECONOMY' => _t('Эконом', 'Эконом', 'Economy'),
+        'COMFORT' => _t('Комфорт', 'Комфорт', 'Comfort'),
+        'BUSINESS' => _t('Бизнес', 'Бизнес', 'Business'),
+        _ => '',
+      };
+
   // ── Common ──────────────────────────────────────────────────────────
   String get retry => _t('Повторить', 'Қайталау', 'Retry');
   String get refresh => _t('Обновить', 'Жаңарту', 'Refresh');
