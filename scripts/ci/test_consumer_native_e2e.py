@@ -190,22 +190,67 @@ class SessionFailurePathTests(unittest.TestCase):
     def test_expiry_waits_real_token_lifetime_then_requires_authorized_update(self):
         scenario = Scenario({})
         with patch("consumer_native_e2e.time.sleep") as sleep, patch.object(scenario, "profile"), \
-             patch.object(scenario, "tap_label"), patch.object(scenario, "enter"), \
-             patch.object(scenario, "wait"), patch.object(scenario, "app_label"), \
+             patch.object(scenario, "tap_label"), patch.object(scenario, "enter_verified") as typed, \
+             patch.object(scenario, "app_label"), \
              patch.object(scenario, "db_profile", return_value={"name": "ExpiredRefreshed"}):
             scenario.access_token_expiry()
         sleep.assert_called_once_with(310)
+        typed.assert_called_once_with("ExpiredRefreshed")
         self.assertEqual(len(scenario.completed), 1)
 
     def test_expiry_fails_when_update_was_not_persisted(self):
         scenario = Scenario({})
         with patch("consumer_native_e2e.time.sleep"), patch.object(scenario, "profile"), \
-             patch.object(scenario, "tap_label"), patch.object(scenario, "enter"), \
-             patch.object(scenario, "wait"), patch.object(scenario, "app_label"), \
+             patch.object(scenario, "tap_label"), patch.object(scenario, "enter_verified"), \
+             patch.object(scenario, "app_label"), \
              patch.object(scenario, "db_profile", return_value={"name": "Other"}):
-            with self.assertRaisesRegex(AssertionError, "authorize"):
+            with self.assertRaisesRegex(AssertionError, "persist the typed name"):
                 scenario.access_token_expiry()
         self.assertEqual(scenario.completed, [])
+
+    def test_enter_verified_retypes_when_adb_doubles_a_key_and_fails_if_it_never_matches(self):
+        class Field:
+            def __init__(self, text):
+                self.text = text
+
+            def get(self, key, default=None):
+                return self.text
+
+        scenario = Scenario({})
+        doubled, exact = Field("ExpiredRefreshedd"), Field("ExpiredRefreshed")
+        with patch.object(scenario, "enter") as enter, patch.object(scenario, "wait"), \
+             patch("consumer_native_e2e.hierarchy"), \
+             patch("consumer_native_e2e.editable", side_effect=[doubled, exact]):
+            scenario.enter_verified("ExpiredRefreshed")
+        self.assertEqual(enter.call_count, 2)
+        with patch.object(scenario, "enter") as enter, patch.object(scenario, "wait"), \
+             patch("consumer_native_e2e.hierarchy"), \
+             patch("consumer_native_e2e.editable", return_value=None):
+            with self.assertRaisesRegex(AssertionError, "did not reach the field"):
+                scenario.enter_verified("ExpiredRefreshed")
+        self.assertEqual(enter.call_count, 3)
+
+    def test_sign_out_scrolls_the_profile_list_until_the_control_is_built(self):
+        scenario = Scenario({})
+        node = object()
+        with patch("consumer_native_e2e.hierarchy"), patch("consumer_native_e2e.time.sleep"), \
+             patch("consumer_native_e2e.find_label", side_effect=[None, None, node]), \
+             patch("consumer_native_e2e.screen_size", return_value=(1080, 2400)), \
+             patch("consumer_native_e2e.adb") as adb_call, patch.object(scenario, "tap") as tap:
+            scenario.sign_out()
+        tap.assert_called_once_with(node)
+        self.assertEqual(adb_call.call_count, 2)
+        self.assertEqual(adb_call.call_args.args, ("shell", "input", "swipe", "540", "1800", "540", "800", "300"))
+
+    def test_sign_out_falls_back_to_the_normal_wait_and_error_when_never_found(self):
+        scenario = Scenario({})
+        with patch("consumer_native_e2e.hierarchy"), patch("consumer_native_e2e.time.sleep"), \
+             patch("consumer_native_e2e.find_label", return_value=None), \
+             patch("consumer_native_e2e.screen_size", return_value=(1080, 2400)), \
+             patch("consumer_native_e2e.adb"), patch.object(scenario, "tap_label", side_effect=TimeoutError) as fallback:
+            with self.assertRaises(TimeoutError):
+                scenario.sign_out(attempts=2)
+        fallback.assert_called_once_with("Sign out", package="com.example.kunde_mobile")
 
     def test_token_secrecy_detects_jwt_in_log_or_vault_without_echoing_it(self):
         scenario = Scenario({})

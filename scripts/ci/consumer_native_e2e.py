@@ -85,6 +85,20 @@ def editable(tree, password=False):
     return chosen[0]
 
 
+def screen_size():
+    match = re.search(rb"(\d+)x(\d+)\s*$", adb("shell", "wm", "size").strip())
+    if match is None:
+        raise RuntimeError("Cannot read the emulator screen size")
+    return int(match[1]), int(match[2])
+
+
+def synthetic_text(value):
+    """Synthetic profile names only: anything else is reported as its length."""
+    if isinstance(value, str) and re.fullmatch(r"[A-Za-z0-9 -]{0,40}", value):
+        return value
+    return None if value is None else {"length": len(value)}
+
+
 def safe_diagnostics(tree):
     nodes = list(tree.iter("node"))
     return {"nodeCount": len(nodes),
@@ -143,6 +157,7 @@ class Scenario:
         self.not_executed = []
         self.vault_paths = []
         self.trace = []
+        self.expiry_probe = {}
 
     def wait(self, predicate, seconds=60):
         end = time.monotonic() + seconds
@@ -166,6 +181,41 @@ class Scenario:
 
     def app_label(self, label):
         return self.wait(lambda tree: find_label(tree, [label], PACKAGE))
+
+    def sign_out(self, attempts=8):
+        """Tap "Sign out" on the Profile tab, scrolling the list until the control is built.
+
+        The profile list is longer than one screen, and a ListView exposes only the rows it has built, so the control is
+        absent from the accessibility tree until it is scrolled into view.
+        """
+        for _ in range(attempts):
+            try:
+                node = find_label(hierarchy(), ("Sign out",), PACKAGE)
+            except (ET.ParseError, subprocess.CalledProcessError):
+                node = None
+            if node is not None:
+                self.tap(node)
+                return
+            width, height = screen_size()
+            adb("shell", "input", "swipe", str(width // 2), str(height * 3 // 4), str(width // 2), str(height // 3), "300")
+            time.sleep(1)
+        self.tap_label("Sign out", package=PACKAGE)  # same wait and error as every other tap
+
+    def enter_verified(self, value, attempts=3):
+        """Type [value] into the single editable field and read it back before continuing.
+
+        `adb input text` can double or drop a key when the emulator is slow right after a long idle period (observed: the
+        profile name ended with a doubled last letter, so the app correctly saved the wrong text). The scenario under test is the
+        token refresh, not key injection, so a wrong read-back is retried; a field that never holds the value still fails.
+        """
+        for _ in range(attempts):
+            self.enter(self.wait(lambda tree: editable(tree)), value)
+            field = editable(hierarchy())
+            text = field.get("text") if field is not None else None
+            self.expiry_probe["fieldText"] = synthetic_text(text)
+            if text == value:
+                return
+        raise AssertionError("The typed profile name did not reach the field")
 
     def hide_keyboard(self):
         status = None
@@ -351,12 +401,14 @@ class Scenario:
         self.stage = "access_token_expiry_update"
         self.profile()
         self.tap_label("Edit profile", package=PACKAGE)
-        self.enter(self.wait(lambda tree: editable(tree)), "ExpiredRefreshed")
+        self.enter_verified("ExpiredRefreshed")
         self.tap_label("English", package=PACKAGE)
         self.tap_label("Save changes", package=PACKAGE)
         self.app_label("Profile saved")
-        if self.db_profile()["name"] != "ExpiredRefreshed":
-            raise AssertionError("Refreshed access token did not authorize profile update")
+        saved_name = self.db_profile()["name"]
+        self.expiry_probe["dbName"] = synthetic_text(saved_name)
+        if saved_name != "ExpiredRefreshed":
+            raise AssertionError("The profile update after access-token expiry did not persist the typed name")
         self.completed.append("expired access token refreshed natively before authorized profile update")
 
     def token_secrecy(self):
@@ -420,7 +472,7 @@ class Scenario:
         if self.binding_count() != 1:
             raise AssertionError("Expected fresh seed-only fixture")
         self.stage = "registration_cancel"
-        self.tap_label("Sign out", package=PACKAGE)
+        self.sign_out()
         self.app_label("Create account")
         self.tap_label("Create account", package=PACKAGE)
         self.registration_form()
@@ -463,7 +515,7 @@ class Scenario:
             raise AssertionError("Registered profile was not persisted")
         self.completed.append("real registration native PKCE callback canonical UUID and profile save")
         self.stage = "duplicate_registration"
-        self.tap_label("Sign out", package=PACKAGE)
+        self.sign_out()
         self.app_label("Create account")
         self.tap_label("Create account", package=PACKAGE)
         self.registration_form()
@@ -559,7 +611,7 @@ class Scenario:
         self.app_label("NativeValidated")
         self.completed.append("native API offline state and retry without account loss")
         self.stage = "provider_logout_relogin"
-        self.tap_label("Sign out", package=PACKAGE)
+        self.sign_out()
         self.app_label("Sign in")
         self.tap_label("Sign in", package=PACKAGE)
         self.login_form()  # A still-active browser SSO session would return directly to the app and fail this check.
@@ -595,6 +647,7 @@ def main():
         result["appFiles"] = scenario.vault_paths[:40]  # file names only, never contents
     if scenario.trace and result["status"] != "PASSED_EXECUTED_SCENARIOS":
         result["reloginTrace"] = scenario.trace  # package names and counters only
+        result["expiryProbe"] = scenario.expiry_probe
     result["environment"] = scenario.environment
     if scenario.completed:
         result["nativeE2E"] = "EXECUTED_PARTIAL"
