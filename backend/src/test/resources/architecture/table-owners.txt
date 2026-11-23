@@ -1,0 +1,37 @@
+# Data-owner registry: table name prefix -> owning module (package kz.kunde.<module>).
+# First matching line wins, so keep specific prefixes above generic ones.
+# A table without an owner here fails ArchitectureBoundariesTest: declare the owner when you add a migration.
+# Format: <schema>.<table-name-prefix>=<module>
+identity.admin_=admin
+identity.auth_=auth
+identity.otp_=auth
+identity.refresh_=auth
+identity.phone_identities=auth
+identity.feature_toggle=platform
+identity.users=identity
+identity.external_bindings=identity
+identity.account_events=identity
+profile.=identity
+serviceability.=identity
+support.=support
+transactions.auto_=auto
+transactions.customer_vehicles=auto
+marketplace.auto_=auto
+transactions.booking=booking
+marketplace.beauty_=booking
+marketplace.booking_=booking
+marketplace.home_service=booking
+marketplace.health_=health
+transactions.health_=health
+marketplace.education_=education
+transactions.education_=education
+marketplace.food_=food
+transactions.food_=food
+marketplace.grocery_=groceries
+marketplace.leisure_=leisure
+transactions.leisure_=leisure
+transactions.ride=rides
+transactions.deliver=delivery
+marketplace.partner=partner
+marketplace.offering=catalog
+marketplace.categories=catalog
