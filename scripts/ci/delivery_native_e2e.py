@@ -93,6 +93,14 @@ def seed_courier():
     ], check=True, stdout=subprocess.DEVNULL)
 
 
+def completion_state():
+    return subprocess.check_output([
+        "docker", "exec", os.environ["DELIVERY_POSTGRES_CONTAINER"],
+        "psql", "--username", "kunde_e2e", "--dbname", "kunde_e2e", "-Atc",
+        "select status from transactions.deliveries order by created_at desc limit 1",
+    ], text=True, timeout=10).strip()
+
+
 def create_delivery(*, capture_quote=True):
     tap("Доставка", "Delivery", "Жеткізу")
     tap("Отправить посылку", "Send a parcel", "Сәлемдеме жіберу", clickable=True)
@@ -224,8 +232,31 @@ def main():
         except subprocess.SubprocessError:
             raise RuntimeError("Could not enter the one-time code") from None
         tap("Проверить код", "Verify code", "Кодты тексеру")
-        tap("Завершить", "Complete delivery", "Аяқтау")
-        reveal(*COMPLETED)
+        complete = ("Завершить", "Complete delivery", "Аяқтау")
+        tap(*complete, clickable=True, enabled=True)
+        # Keep diagnostic reads off the authenticated API quota. If the first
+        # UI action did not persist, let that quota window expire before retrying.
+        if completion_state() == "DELIVERED":
+            try:
+                android.find(*COMPLETED, timeout=10)
+            except RuntimeError:
+                if completion_state() == "DELIVERED":
+                    time.sleep(60)
+                    tap(*complete, clickable=True, enabled=True)
+        deadline = time.monotonic() + 20
+        while time.monotonic() < deadline:
+            state = completion_state()
+            if state == "COMPLETED":
+                break
+            time.sleep(1)
+        else:
+            android.screenshot("failed-executor-complete")
+            raise RuntimeError(f"Completion did not persist. Shipment state: {state}")
+        try:
+            reveal(*COMPLETED, direction="up")
+        except RuntimeError:
+            android.screenshot("failed-executor-completed-history")
+            raise
         android.screenshot("executor-completed")
         fixture.completed.append("verified_handoff_executor_history")
 
