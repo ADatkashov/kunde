@@ -123,6 +123,17 @@ def clock(iso):
     return iso[11:16]
 
 
+WEEKDAYS = {"ru": ("пн", "вт", "ср", "чт", "пт", "сб", "вс"), "en": ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")}
+MONTHS = {"ru": ("янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"),
+          "en": ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")}
+
+
+def day_labels(iso):
+    """Accessibility labels of the schedule day chip for the venue-local date of an ISO timestamp (the app's lzWeekdayDay)."""
+    day = datetime.date(int(iso[0:4]), int(iso[5:7]), int(iso[8:10]))
+    return tuple(f"{WEEKDAYS[lang][day.weekday()]}, {day.day} {MONTHS[lang][day.month - 1]}" for lang in ("ru", "en"))
+
+
 def setup():
     if API_ONLY:  # with the app, this number signs in through the app first (its token is set by main)
         world.consumer = fixture.session(CONSUMER_PHONE)
@@ -401,6 +412,9 @@ def ui_purchase():
     android.find(*SCHEDULE, timeout=30)
     time.sleep(1)
     android.screenshot("consumer-event")
+    # The schedule opens on the first day that has sessions, which depends on the time of day the test runs.
+    # Select the chosen session's day explicitly before tapping its time.
+    tap(*day_labels(world.session["startsAt"]))
     tap(clock(world.session["startsAt"]))
     tap(resource_id="leisure-primary")
     android.find(*SEATS_TITLE, timeout=30)
