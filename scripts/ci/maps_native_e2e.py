@@ -286,7 +286,8 @@ def main():
         phase = "consumer_sees_driver"
         android.tap("Выехать", "Depart", "Жолға шығу")
         base.launch(base.CONSUMER)
-        android.find("Водитель назначен", "Driver assigned", "Жүргізуші тағайындалды", "Водитель в пути", "Driver is arriving", timeout=60)
+        wait_for_text("Водитель назначен", "Driver assigned", "Жүргізуші тағайындалды", "Водитель в пути", "Driver is on the way",
+                      "Жүргізуші жолда", timeout=60)
         android.find("Местоположение водителя на карте", "Driver location on the map", "Жүргізушінің картадағы орны", timeout=60)
         android.screenshot("consumer-driver-on-map")
         completed.append("consumer_driver_on_map")
