@@ -167,6 +167,19 @@ def find_completed():
     )
 
 
+def open_history(back_first=False):
+    """Reach the History tab from wherever the previous step left the app (Rides is now a hub plus a city screen)."""
+    if back_first:
+        android.adb("shell", "input", "keyevent", "4")
+    for _ in range(5):
+        try:
+            android.tap("История", "History", "Тарих", timeout=4)
+            return
+        except RuntimeError:
+            android.adb("shell", "input", "keyevent", "4")
+    raise RuntimeError("History did not open")
+
+
 def capture_failure():
     """Keep what the screen showed when a step failed: a failed run must be diagnosable from its artifact alone."""
     try:
@@ -236,9 +249,15 @@ def main():
         completed.append("executor_arrival_start_complete_history")
 
         launch(CONSUMER)
-        find_completed()
-        android.adb("shell", "input", "keyevent", "4")
-        android.tap("История", "History", "Тарих")
+        android.find("Поездка завершена!", "Ride complete!", "Сапар аяқталды!", timeout=60)
+        android.screenshot("consumer-completed")
+        completed.append("consumer_trip_completed_screen")
+        android.tap("Оценка: 5 из 5", "Rating: 5 of 5", "Баға: 5-тен 5")
+        android.tap("Готово", "Done", "Дайын", clickable=True)
+        rides_now = call("GET", "rides", token=session("+77000000001"))
+        assert rides_now[0]["status"] == "COMPLETED" and rides_now[0]["rating"]["stars"] == 5, "Rating from the UI was not stored"
+        completed.append("consumer_rating_stored_in_backend")
+        open_history()
         find_completed()
         android.screenshot("consumer-history")
         completed.append("consumer_history")
@@ -246,13 +265,16 @@ def main():
         phase = "network_retry_and_cancellation"
         android.adb("shell", "input", "keyevent", "4")
         stop_backend(process)
-        android.tap("История", "History", "Тарих")
+        open_history()
         android.find("Повторить", "Retry", "Қайталау", timeout=30)
         process = start_backend(True)
         android.tap("Повторить", "Retry", "Қайталау")
         find_completed()
         completed.append("consumer_network_retry")
         android.adb("shell", "input", "keyevent", "4")
+        open_rides()
+        pick_address(("Откуда", "Pickup", "Қайдан"), "[TEST] Synthetic pickup")
+        pick_address(("Куда", "Destination", "Қайда"), "[TEST] Synthetic destination")
         create_ride()
         android.tap("Отменить поездку", "Cancel ride", "Сапардан бас тарту")
         android.tap("Отменить поездку", "Cancel ride", "Сапардан бас тарту", clickable=True)

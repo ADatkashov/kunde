@@ -132,7 +132,18 @@ def dump_ui(name):
         pass
 
 
-def tap_result_containing(word, timeout=90):
+def has_text(word):
+    """True when a node on screen shows [word] (single dump, no waiting)."""
+    import xml.etree.ElementTree as ET
+    try:
+        android.adb("shell", "uiautomator", "dump", "/sdcard/kunde-visual.xml")
+        tree = ET.fromstring(android.adb("exec-out", "cat", "/sdcard/kunde-visual.xml"))
+    except (subprocess.SubprocessError, ET.ParseError):
+        return False
+    return any(word.lower() in (n.get("text", "") + " " + n.get("content-desc", "")).lower() for n in tree.iter("node"))
+
+
+def tap_result_containing(word, timeout=90, tap=True):
     """Tap the first clickable search result whose text contains [word] (the app ranks by map centre, so the exact
     first result of the API call is not guaranteed to be first on screen)."""
     import re
@@ -147,6 +158,8 @@ def tap_result_containing(word, timeout=90):
         for node in tree.iter("node"):
             text = node.get("text", "") + " " + node.get("content-desc", "")
             if word.lower() in text.lower() and node.get("clickable") == "true" and node.get("class") != "android.widget.EditText":
+                if not tap:
+                    return
                 x1, y1, x2, y2 = [int(v) for v in re.findall(r"\d+", node.get("bounds", ""))]
                 android.adb("shell", "input", "tap", (x1 + x2) // 2, (y1 + y2) // 2)
                 return
@@ -226,8 +239,8 @@ def main():
                      "Кептелісті ескермейтін әдеттегі уақыт", timeout=120)
         android.screenshot("consumer-route-preview")
         completed.append("consumer_pickup_destination_route_preview")
-        android.tap("Узнать стоимость", "Get fare", "Бағасын білу")
-        android.find("KZT", timeout=90)  # priced by the Rides tariff from the Maps route, not a synthetic fixture
+        # Fares for every class arrive with the route preview; the tariff price comes from the Rides tariff on the Maps route.
+        tap_result_containing("₸", timeout=90, tap=False)
         try:
             android.find("Тестовый маршрут", "Test route", "Сынақ бағыты", timeout=3)
             raise AssertionError("The quote was marked as a synthetic route")
@@ -235,8 +248,9 @@ def main():
             pass
         android.screenshot("consumer-quote")
         completed.append("consumer_server_priced_quote")
-        android.tap("Заказать поездку", "Request ride", "Сапарға тапсырыс беру")
-        android.find("Ищем водителя", "Finding a driver", "Жүргізуші ізделуде", timeout=60)
+        order = [word for word in ("Order", "Заказать") if has_text(word)]
+        tap_result_containing(order[0] if order else "Order")
+        android.find("Ищем водителя...", "Finding a driver...", "Жүргізуші ізделуде...", timeout=60)
         completed.append("consumer_ride_requested")
 
         phase = "driver_navigation"
