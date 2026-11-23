@@ -33,7 +33,9 @@ class _BeautyAsyncState<T> extends State<BeautyAsync<T>> {
           if (snapshot.hasError) {
             return BeautyErrorView(
               error: snapshot.error,
-              onRetry: () => setState(() => _future = widget.load()),
+              onRetry: () => setState(() {
+                _future = widget.load();
+              }),
             );
           }
           return widget.builder(context, snapshot.data as T);

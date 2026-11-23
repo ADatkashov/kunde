@@ -1,3 +1,4 @@
+import '../beauty/presentation/beauty_admin_screen.dart';
 import '../education/education_operations_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -371,6 +372,18 @@ class _RideAdminScreenState extends State<RideAdminScreen> {
                       LeisureAdminScreen(auth: widget.auth, product: 'LEISURE'),
                 ),
               ),
+            ),
+          ),
+        if (permissions.contains('BEAUTY_OPERATIONS'))
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.spa_outlined),
+              title: Text(s.t('Красота и уход: аналитика',
+                  'Сұлулық және күтім: аналитика', 'Beauty & Care analytics')),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push<void>(MaterialPageRoute(
+                builder: (_) => BeautyAdminScreen(auth: widget.auth),
+              )),
             ),
           ),
         if (permissions.contains('HOME_SERVICES_CATALOG'))

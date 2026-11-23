@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../beauty/beauty_theme.dart';
+import '../beauty/presentation/beauty_executor_screen.dart';
 import '../identity/auth_repository.dart';
 import '../maps/kunde_maps.dart';
 import '../rides/ride_strings.dart';
@@ -60,6 +62,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
   bool _deliveryResume = false;
   bool _deliverySynthetic = false;
   bool _autoEnabled = false;
+  bool _beautyEnabled = false;
   bool _leisureAvailable = false;
   bool _gateAvailable = false;
   bool _educationEnabled = false;
@@ -150,6 +153,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
           _leisureAvailable = leisure;
           _gateAvailable = capabilities['eventsEnabled'] == true;
           _educationEnabled = education;
+          _beautyEnabled = capabilities['beautyEnabled'] == true;
         });
       }
     } catch (_) {
@@ -435,6 +439,14 @@ class _ExecutorScreenState extends State<ExecutorScreen>
               onPressed: () =>
                   Navigator.of(context).push<void>(MaterialPageRoute(
                 builder: (_) => LeisureWorkScreen(auth: widget.auth),
+              )),
+            ),
+          if (_beautyEnabled)
+            IconButton(
+              icon: const Icon(Icons.spa_outlined),
+              tooltip: s.t('Мастер красоты', 'Сұлулық шебері', 'Beauty master'),
+              onPressed: () => Navigator.of(context).push<void>(beautyRoute(
+                BeautyExecutorScreen(auth: widget.auth),
               )),
             ),
           if (_autoEnabled || _autoResume)

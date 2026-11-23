@@ -2,7 +2,7 @@
 
 ## KUNDE Beauty & Care 1.0
 
-Consumer готов ([beauty-care.md](docs/product/beauty-care.md)). Дальше: Partner (панель салона, услуги, расписание мастеров, записи и клиенты, акции), Executor (записи мастера, «Начать приём»), Admin (модерация, аналитика), перенос записи, онлайн-оплата через провайдер, E2E. Команды: `cd backend && mvn test -Dtest='Beauty*,Booking*'`; `cd mobile && flutter test test/features/beauty test/features/booking`.
+Consumer, Partner-обзор, Executor и Admin-аналитика готовы ([beauty-care.md](docs/product/beauty-care.md)). Дальше: Partner CRUD услуг/акций/расписания и модерация отзывов, Admin модерация и жалобы, перенос записи, hold и онлайн-оплата (провайдер), уведомления, нативные Android E2E, DEV-деплой и Release APK. Команды: `cd backend && mvn test -Dtest='Beauty*,Booking*'`; `cd mobile && flutter test test/features/beauty test/features/booking`.
 
 ## KUNDE Delivery 1.0
 
