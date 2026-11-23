@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 import kz.kunde.delivery.DeliveryController.CreateRequest;
 import kz.kunde.delivery.DeliveryController.QuoteRequest;
 import kz.kunde.platform.ApiException;
+import kz.kunde.rides.RideMatching.Point;
 import kz.kunde.rides.RideRouting;
 import kz.kunde.rides.SyntheticRideRouting;
 import kz.kunde.rides.RideRoutingController.Coordinates;
@@ -89,7 +90,8 @@ public class DeliveryService {
                 returning id, created_at, expires_at
                 """, (rs, row) -> new Quote(rs.getObject("id", UUID.class), settings.tariffVersion(), amount, "KZT",
                         route.distanceMeters(), route.durationSeconds(), route.synthetic(),
-                        rs.getObject("created_at", OffsetDateTime.class), rs.getObject("expires_at", OffsetDateTime.class)),
+                        rs.getObject("created_at", OffsetDateTime.class), rs.getObject("expires_at", OffsetDateTime.class),
+                        route.synthetic() ? List.of() : route.geometry()),
                 user, partner, request.parcelType().name(), request.weightGrams(), request.lengthCm(), request.widthCm(),
                 request.heightCm(), request.pickup().latitude(), request.pickup().longitude(),
                 request.destination().latitude(), request.destination().longitude(), route.distanceMeters(),
@@ -258,7 +260,8 @@ public class DeliveryService {
     }
 
     public record Quote(UUID id, String tariffVersion, BigDecimal amountKzt, String currency, int distanceMeters,
-            int durationSeconds, boolean syntheticRoute, OffsetDateTime createdAt, OffsetDateTime expiresAt) {}
+            int durationSeconds, boolean syntheticRoute, OffsetDateTime createdAt, OffsetDateTime expiresAt,
+            List<Point> geometry) {}
 
     public record Order(UUID id, UUID quoteId, DeliveryState status, String parcelType, String pickupAddress,
             String destinationAddress, String recipientName, String recipientPhone, String description,

@@ -3,8 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
+import 'package:kunde_maps_sdk/kunde_maps_sdk.dart';
+
 import '../delivery/delivery_strings.dart';
 import '../identity/auth_repository.dart';
+import '../maps/kunde_maps.dart';
+import 'driver_navigation_screen.dart';
 
 class DeliveryWorkScreen extends StatefulWidget {
   const DeliveryWorkScreen(
@@ -12,12 +16,16 @@ class DeliveryWorkScreen extends StatefulWidget {
       required this.synthetic,
       this.intakeEnabled = true,
       this.readPosition,
+      this.mapsFactory,
       super.key});
 
   final AuthRepository auth;
   final bool synthetic;
   final bool intakeEnabled;
   final Future<({double latitude, double longitude})> Function()? readPosition;
+
+  /// Creates the Maps SDK facade for courier navigation. Null (the server did not enable Maps) hides the Navigate button.
+  final KundeMaps Function(BuildContext context)? mapsFactory;
 
   @override
   State<DeliveryWorkScreen> createState() => _DeliveryWorkScreenState();
@@ -493,6 +501,11 @@ class _DeliveryWorkScreenState extends State<DeliveryWorkScreen>
           FilledButton(
               onPressed: _busy ? null : () => _progress(id, step.$1),
               child: Text(step.$2)),
+        if (widget.mapsFactory != null && _target(shipment) != null)
+          OutlinedButton.icon(
+              icon: const Icon(Icons.navigation_outlined),
+              onPressed: _busy ? null : () => _navigate(shipment, s),
+              label: Text(s.t('Навигатор', 'Навигатор', 'Navigate'))),
         if (_trackable.contains(status) && !widget.synthetic)
           _sharingId == id
               ? Column(
@@ -562,6 +575,46 @@ class _DeliveryWorkScreenState extends State<DeliveryWorkScreen>
                       'Sender unavailable'))),
       ]),
     ));
+  }
+
+  /// Where to guide the courier now: to the sender before pickup (and back to
+  /// the sender on return), to the recipient while carrying the parcel.
+  static GeoPoint? _target(Map<String, dynamic> shipment) {
+    final key = switch (shipment['status']) {
+      'COURIER_ASSIGNED' || 'COURIER_ARRIVING' || 'RETURNING' => 'pickup',
+      'PICKED_UP' || 'IN_TRANSIT' => 'destination',
+      _ => null,
+    };
+    final point = key == null ? null : shipment[key];
+    if (point is! Map<String, dynamic>) return null;
+    try {
+      return GeoPoint.parse(point['latitude'], point['longitude']);
+    } on FormatException {
+      return null;
+    }
+  }
+
+  Future<void> _navigate(
+      Map<String, dynamic> shipment, DeliveryStrings s) async {
+    final target = _target(shipment);
+    final factory = widget.mapsFactory;
+    if (target == null || factory == null) return;
+    final maps = factory(context);
+    try {
+      await Navigator.of(context).push<void>(MaterialPageRoute(
+        builder: (_) => DriverNavigationScreen(
+          maps: maps,
+          target: target,
+          title: shipment['status'] == 'RETURNING' ||
+                  shipment['status'] == 'COURIER_ASSIGNED' ||
+                  shipment['status'] == 'COURIER_ARRIVING'
+              ? s.t('К отправителю', 'Жіберушіге', 'To sender')
+              : s.t('К получателю', 'Алушыға', 'To recipient'),
+        ),
+      ));
+    } finally {
+      maps.close();
+    }
   }
 
   Future<void> _progress(String id, String action) => _load(

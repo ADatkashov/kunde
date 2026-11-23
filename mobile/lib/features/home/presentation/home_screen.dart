@@ -24,6 +24,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/localization/kunde_localizations.dart';
 import '../data/kunde_api.dart';
+import '../../maps/kunde_maps.dart';
 import '../data/platform_snapshot.dart';
 import 'catalog_search_panel.dart';
 import 'home_strings.dart';
@@ -149,18 +150,25 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _openDelivery() async {
     final snapshot = await _snapshot;
     if (!mounted || (!snapshot.deliveryEnabled && !_deliveryResume)) return;
-    await Navigator.of(context).push<void>(MaterialPageRoute(
-      builder: (_) => snapshot.deliveryEnabled
-          ? DeliveryHomeScreen(
-              api: widget.delivery!,
-              synthetic: snapshot.deliverySyntheticRouting,
-            )
-          : DeliveryScreen(
-              api: widget.delivery!,
-              synthetic: snapshot.deliverySyntheticRouting,
-              intakeEnabled: false,
-            ),
-    ));
+    final maps = snapshot.mapsEnabled ? KundeMaps.forContext(context) : null;
+    try {
+      await Navigator.of(context).push<void>(MaterialPageRoute(
+        builder: (_) => snapshot.deliveryEnabled
+            ? DeliveryHomeScreen(
+                api: widget.delivery!,
+                synthetic: snapshot.deliverySyntheticRouting,
+                maps: maps,
+              )
+            : DeliveryScreen(
+                api: widget.delivery!,
+                synthetic: snapshot.deliverySyntheticRouting,
+                intakeEnabled: false,
+                maps: maps,
+              ),
+      ));
+    } finally {
+      maps?.close();
+    }
   }
 
   void _openSearch() {

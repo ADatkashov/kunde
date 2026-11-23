@@ -42,6 +42,11 @@ import org.springframework.transaction.annotation.Transactional;
         "app.auth.phone.secret=synthetic-rides-only-for-integration-tests",
         "app.rides.enabled=true",
         "app.rides.consumer-enabled=true",
+        "app.delivery.enabled=true",
+        "app.delivery.consumer-enabled=true",
+        "app.delivery.base-kzt=200",
+        "app.delivery.per-km-kzt=100",
+        "app.delivery.per-kg-kzt=100",
         "app.maps.enabled=true",
         "app.maps.timeout-seconds=5",
         "app.rides.pricing.tariffs.economy.version=maps-v1",
@@ -123,6 +128,26 @@ class RideQuoteMapsIntegrationTest {
                 .andExpect(jsonPath("$.distanceMeters").value(2508))
                 .andExpect(jsonPath("$.durationSeconds").value(207))
                 .andExpect(jsonPath("$.synthetic").value(false));
+    }
+
+    @Test
+    void deliveryQuoteIncludesTheRoadGeometryUsedToCalculateThePrice() throws Exception {
+        http.perform(post("/api/v1/deliveries/quotes").with(customer("maps-sender"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"parcelType":"DOCUMENTS","weightGrams":500,"lengthCm":30,"widthCm":20,"heightCm":2,
+                                 "pickup":{"latitude":43.238194,"longitude":76.94498},
+                                 "destination":{"latitude":43.25,"longitude":76.93}}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.amountKzt").value(500.80))
+                .andExpect(jsonPath("$.distanceMeters").value(2508))
+                .andExpect(jsonPath("$.syntheticRoute").value(false))
+                .andExpect(jsonPath("$.geometry", hasSize(greaterThan(2))))
+                .andExpect(jsonPath("$.geometry[0].latitude").value(43.238194))
+                .andExpect(jsonPath("$.geometry[0].longitude").value(76.94498));
+        org.assertj.core.api.Assertions.assertThat(routeCalls.get()).isEqualTo(1);
     }
 
     @Test

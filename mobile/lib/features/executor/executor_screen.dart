@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../identity/auth_repository.dart';
+import '../maps/kunde_maps.dart';
 import '../rides/ride_strings.dart';
 import 'auto_work_screen.dart';
 import 'gate_scan_screen.dart';
@@ -16,10 +17,16 @@ import 'executor_api.dart';
 
 class ExecutorScreen extends StatefulWidget {
   const ExecutorScreen(
-      {required this.auth, this.checkDeliveryMode = false, super.key});
+      {required this.auth,
+      this.checkDeliveryMode = false,
+      this.mapsFactory = KundeMaps.forContext,
+      super.key});
 
   final AuthRepository auth;
   final bool checkDeliveryMode;
+
+  /// Creates the Maps SDK facade when the server enables it; tests replace it.
+  final KundeMaps Function(BuildContext context) mapsFactory;
 
   @override
   State<ExecutorScreen> createState() => _ExecutorScreenState();
@@ -54,6 +61,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
   bool _gateAvailable = false;
   bool _educationEnabled = false;
   bool _autoResume = false;
+  bool _mapsAvailable = false;
 
   @override
   void initState() {
@@ -84,6 +92,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
         _deliveryResume = shipments.any((row) =>
             row is Map<String, dynamic> && row['pickupAddress'] != null);
         _deliverySynthetic = capabilities['deliverySyntheticRouting'] == true;
+        _mapsAvailable = capabilities['mapsEnabled'] == true;
       });
     } catch (_) {
       if (mounted && _deliveryEnabled) setState(() => _deliveryEnabled = false);
@@ -370,6 +379,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
                   auth: widget.auth,
                   synthetic: _deliverySynthetic,
                   intakeEnabled: _deliveryEnabled,
+                  mapsFactory: _mapsAvailable ? widget.mapsFactory : null,
                 ),
               )),
             ),
