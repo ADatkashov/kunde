@@ -460,8 +460,11 @@ class BookingApiIntegrationTest {
         String token = login("+77000000301");
         var slot = slots(slug, service, null, tomorrow()).getFirst();
         String request = book(slug, service, (String) slot.get("masterName"), (String) slot.get("startsAt"), null);
-        String id = JsonPath.read(body(send("POST", "/api/v1/booking/bookings", token, request, "beauty-gate-0000000001")
-                .andExpect(status().isCreated())), "$.id");
+        String created = body(send("POST", "/api/v1/booking/bookings", token, request, "beauty-gate-0000000001")
+                .andExpect(status().isCreated()));
+        String id = JsonPath.read(created, "$.id");
+        assertThat((String) JsonPath.read(created, "$.bookingNumber")).matches("KND-\\d{6,}");
+        assertThat(db.queryForObject("select count(distinct booking_number) = count(*) from transactions.bookings", Boolean.class)).isTrue();
         UUID user = db.queryForObject("select b.user_id from transactions.bookings b where b.id = ?::uuid", UUID.class, id);
         try {
             toggles.set(user, kz.kunde.platform.FeatureToggles.Feature.BEAUTY, false, "Disable test pilot", null);

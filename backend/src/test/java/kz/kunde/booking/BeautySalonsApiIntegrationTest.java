@@ -140,6 +140,25 @@ class BeautySalonsApiIntegrationTest {
     }
 
     @Test
+    void activePromotionIsAppliedToTheBookingPriceOnTheServerAndTheExpectedPriceIsChecked() throws Exception {
+        String token = login("+77000000311");
+        String venue = salonId("beauty-luna");
+        String service = db.queryForObject("select s.id from marketplace.booking_services s where s.venue_id = ?::uuid and s.name = 'Окрашивание волос'", String.class, venue);
+        String day = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Almaty")).plusDays(2).toString();
+        String slots = body(http.perform(get("/api/v1/booking/slots?venueId=" + venue + "&serviceId=" + service + "&date=" + day)).andExpect(status().isOk()));
+        String request = "{\"venueId\":\"" + venue + "\",\"serviceId\":\"" + service + "\",\"masterId\":\""
+                + JsonPath.read(slots, "$[0].masterId") + "\",\"startsAt\":\"" + JsonPath.read(slots, "$[0].startsAt") + "\"";
+        http.perform(post("/api/v1/booking/bookings").header("Authorization", "Bearer " + token).header("Idempotency-Key", "beauty-price-000000001")
+                .contentType(MediaType.APPLICATION_JSON).content(request + ",\"expectedPriceMinor\":2500000}"))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("BOOKING_PRICE_CHANGED"));
+        http.perform(post("/api/v1/booking/bookings").header("Authorization", "Bearer " + token).header("Idempotency-Key", "beauty-price-000000002")
+                .contentType(MediaType.APPLICATION_JSON).content(request + ",\"expectedPriceMinor\":1750000}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.priceMinor").value(1750000))
+                .andExpect(jsonPath("$.originalPriceMinor").value(2500000)).andExpect(jsonPath("$.discountPercent").value(30))
+                .andExpect(jsonPath("$.bookingNumber").value(org.hamcrest.Matchers.matchesPattern("KND-\\d{6,}")));
+    }
+
+    @Test
     void favoritesAreOwnedAndIdempotent() throws Exception {
         String mine = login("+77000000311");
         String other = login("+77000000312");
