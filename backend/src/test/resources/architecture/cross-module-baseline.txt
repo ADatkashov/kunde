@@ -26,7 +26,6 @@ IMPORT booking/BeautyPartnerController.java -> partner.PartnerAccessPolicy
 IMPORT booking/BeautyPartnerController.java -> partner.PartnerService
 IMPORT booking/BookingPartnerController.java -> partner.PartnerAccessPolicy
 IMPORT booking/BookingPartnerService.java -> partner.PartnerService
-IMPORT delivery/DeliveryAdminController.java -> admin.AdminGrants
 IMPORT delivery/DeliveryController.java -> rides.RideRoutingController
 IMPORT delivery/DeliveryCouriers.java -> rides.RideRoutingController
 IMPORT delivery/DeliveryDispatch.java -> rides.RideMatching
@@ -37,16 +36,13 @@ IMPORT delivery/DeliveryService.java -> rides.RideRouting
 IMPORT delivery/DeliveryService.java -> rides.RideRoutingController
 IMPORT delivery/DeliveryService.java -> rides.SyntheticRideRouting
 IMPORT delivery/DeliveryTracking.java -> rides.RideRoutingController
-IMPORT education/EducationCertificateService.java -> admin.AdminGrants
 IMPORT education/EducationOperationsController.java -> partner.PartnerAccessPolicy
-IMPORT education/EducationOperationsService.java -> admin.AdminGrants
 IMPORT education/EducationOperationsService.java -> partner.PartnerService
 IMPORT events/EventsCatalogController.java -> leisure.LeisureCatalogService
 IMPORT events/SearchRouteController.java -> leisure.LeisureCatalogService
 IMPORT food/FoodPartnerController.java -> partner.PartnerAccessPolicy
 IMPORT food/FoodPartnerService.java -> partner.PartnerService
 IMPORT groceries/GroceriesAccountController.java -> food.FoodOrderService
-IMPORT health/HealthAdminController.java -> admin.AdminGrants
 IMPORT health/HealthAdminController.java -> partner.PartnerAccessPolicy
 IMPORT health/HealthDemoSeeder.java -> booking.BookingDemoSeeder
 IMPORT leisure/LeisureDemoSeeder.java -> auth.PhoneAuthProperties
@@ -60,10 +56,8 @@ IMPORT maps/MapsConfiguration.java -> rides.RideRouting
 IMPORT partner/PartnerOpsDemoSeeder.java -> auth.PhoneAuthProperties
 IMPORT platform/FeatureToggles.java -> delivery.DeliveryProperties
 IMPORT platform/FeatureToggles.java -> rides.RidesFlags
-IMPORT rides/RideAdminController.java -> admin.AdminGrants
 IMPORT rides/RideDispatchService.java -> delivery.DeliveryDispatch
 IMPORT rides/RideFleetService.java -> partner.PartnerService
-IMPORT rides/RideOperationsController.java -> admin.AdminGrants
 IMPORT support/SupportCaseService.java -> delivery.DeliveryService
 IMPORT support/SupportCaseService.java -> rides.RideRequestService
 SQL admin/AdminAutoController.java -> marketplace.auto_admin_events (owner auto)

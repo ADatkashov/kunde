@@ -1,5 +1,6 @@
 package kz.kunde.admin;
 
+import kz.kunde.platform.authz.AdminGrants;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -9,7 +10,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
-import kz.kunde.admin.AdminGrants.Permission;
+import kz.kunde.platform.authz.AdminGrants.Permission;
 import kz.kunde.food.FoodPromotionService;
 import kz.kunde.food.FoodPromotionService.PromotionView;
 import kz.kunde.partner.PartnerAccessPolicy;
