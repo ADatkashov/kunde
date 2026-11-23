@@ -29,12 +29,12 @@ MAPS_ROUTING = os.environ.get("MAPS_ROUTING_URL", "https://kunde-maps-routing-de
 PICKUP_QUERY = "Esentai mall"
 DESTINATION_QUERY = "MEGA Alma-Ata"
 DRIVER_START = (43.2300, 76.9330)  # about 1.4 km from the pickup, inside the 5 km dispatch radius
-completed = []
+completed = base.Stages()
 
 
 def report(status, phase):
     (REPORT / "status.json").write_text(json.dumps({
-        "status": status, "phase": phase, "completed": completed, "data": "real DEV Maps Platform", "paymentEnabled": False,
+        "status": status, "phase": phase, "completed": completed, "secondsSinceStart": completed.seconds, "data": "real DEV Maps Platform", "paymentEnabled": False,
     }, indent=2) + "\n")
 
 

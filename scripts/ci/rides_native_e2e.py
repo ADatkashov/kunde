@@ -17,7 +17,22 @@ APKS = Path(os.environ["RUNNER_TEMP"]) / "rides-apk"
 CONSUMER = "com.example.kunde_mobile"
 EXECUTOR = "com.kunde.executor"
 API = "http://127.0.0.1:8081/api/v1/"
-completed = []
+
+
+class Stages(list):
+    """Completed stage names plus the seconds since the run began when each finished (emulator on a CI runner, not a device)."""
+
+    def __init__(self):
+        super().__init__()
+        self.started = time.monotonic()
+        self.seconds = {}
+
+    def append(self, name):
+        super().append(name)
+        self.seconds[name] = round(time.monotonic() - self.started, 1)
+
+
+completed = Stages()
 FIXTURE_AUTH_KEY = secrets.token_urlsafe(48)
 
 
@@ -26,6 +41,7 @@ def write_report(status, phase):
         "status": status,
         "phase": phase,
         "completed": completed,
+        "secondsSinceStart": completed.seconds,
         "data": "synthetic",
         "paymentEnabled": False,
     }, indent=2) + "\n")
