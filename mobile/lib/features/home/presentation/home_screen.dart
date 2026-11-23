@@ -9,6 +9,7 @@ import '../../leisure/presentation/leisure_home_screen.dart';
 import '../../booking/booking_services.dart';
 import '../../booking/presentation/category_screens.dart';
 import '../../delivery/delivery_api.dart';
+import '../../delivery/delivery_home_screen.dart';
 import '../../delivery/delivery_screen.dart';
 import '../../education/education_screen.dart';
 import '../../identity/auth_repository.dart';
@@ -152,12 +153,18 @@ class _HomeScreenState extends State<HomeScreen> {
     final maps = snapshot.mapsEnabled ? KundeMaps.forContext(context) : null;
     try {
       await Navigator.of(context).push<void>(MaterialPageRoute(
-        builder: (_) => DeliveryScreen(
-          api: widget.delivery!,
-          synthetic: snapshot.deliverySyntheticRouting,
-          intakeEnabled: snapshot.deliveryEnabled,
-          maps: maps,
-        ),
+        builder: (_) => snapshot.deliveryEnabled
+            ? DeliveryHomeScreen(
+                api: widget.delivery!,
+                synthetic: snapshot.deliverySyntheticRouting,
+                maps: maps,
+              )
+            : DeliveryScreen(
+                api: widget.delivery!,
+                synthetic: snapshot.deliverySyntheticRouting,
+                intakeEnabled: false,
+                maps: maps,
+              ),
       ));
     } finally {
       maps?.close();
