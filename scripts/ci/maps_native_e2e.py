@@ -132,6 +132,29 @@ def dump_ui(name):
         pass
 
 
+def tap_result_containing(word, timeout=90):
+    """Tap the first clickable search result whose text contains [word] (the app ranks by map centre, so the exact
+    first result of the API call is not guaranteed to be first on screen)."""
+    import re
+    import xml.etree.ElementTree as ET
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            android.adb("shell", "uiautomator", "dump", "/sdcard/kunde-visual.xml")
+            tree = ET.fromstring(android.adb("exec-out", "cat", "/sdcard/kunde-visual.xml"))
+        except (subprocess.SubprocessError, ET.ParseError):
+            continue
+        for node in tree.iter("node"):
+            text = node.get("text", "") + " " + node.get("content-desc", "")
+            if word.lower() in text.lower() and node.get("clickable") == "true" and node.get("class") != "android.widget.EditText":
+                x1, y1, x2, y2 = [int(v) for v in re.findall(r"\d+", node.get("bounds", ""))]
+                android.adb("shell", "input", "tap", (x1 + x2) // 2, (y1 + y2) // 2)
+                return
+        time.sleep(2)
+    dump_ui("picker-result-missing")
+    raise RuntimeError(f"No search result containing {word!r}")
+
+
 def choose_on_map(label, query, name):
     """Open the map picker for a field, search the real index, choose the result, confirm."""
     android.tap(*label, clickable=True)
@@ -144,7 +167,7 @@ def choose_on_map(label, query, name):
         raise
     android.tap(node_class="android.widget.EditText")
     android.adb("shell", "input", "text", query.replace(" ", "%s"))
-    android.tap(name, clickable=True, timeout=90)
+    tap_result_containing(query.split()[0])
     android.screenshot(f"picker-{query.split()[0].lower()}")
     android.tap("Confirm", "Подтвердить", "Растау", clickable=True)
 

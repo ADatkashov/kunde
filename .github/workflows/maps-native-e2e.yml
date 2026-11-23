@@ -1,22 +1,7 @@
 name: Taxi with KUNDE Maps Android E2E
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/maps-native-e2e.yml'
-      - 'scripts/ci/maps_native_e2e.py'
-      - 'mobile/lib/features/maps/**'
-      - 'mobile/lib/features/rides/**'
-      - 'mobile/lib/features/executor/**'
-      - 'backend/src/main/java/kz/kunde/maps/**'
-  pull_request:
-    paths:
-      - '.github/workflows/maps-native-e2e.yml'
-      - 'scripts/ci/maps_native_e2e.py'
-      - 'mobile/lib/features/maps/**'
-      - 'mobile/lib/features/rides/**'
-      - 'mobile/lib/features/executor/**'
-      - 'backend/src/main/java/kz/kunde/maps/**'
+  # Manual while the scenario is stabilised: it depends on the free-tier DEV Maps Platform and on real map rendering in an
+  # emulator, so it must not gate unrelated pull requests. Run it from the Actions tab.
   workflow_dispatch:
 permissions:
   contents: read
