@@ -175,6 +175,22 @@ class Scenario:
     def app_label(self, label):
         return self.wait(lambda tree: find_label(tree, [label], PACKAGE))
 
+    def enter_verified(self, value, attempts=3):
+        """Type [value] into the single editable field and read it back before continuing.
+
+        `adb input text` can double or drop a key when the emulator is slow right after a long idle period (observed: the
+        profile name ended with a doubled last letter, so the app correctly saved the wrong text). The scenario under test is the
+        token refresh, not key injection, so a wrong read-back is retried; a field that never holds the value still fails.
+        """
+        for _ in range(attempts):
+            self.enter(self.wait(lambda tree: editable(tree)), value)
+            field = editable(hierarchy())
+            text = field.get("text") if field is not None else None
+            self.expiry_probe["fieldText"] = synthetic_text(text)
+            if text == value:
+                return
+        raise AssertionError("The typed profile name did not reach the field")
+
     def hide_keyboard(self):
         status = None
         for _ in range(3):
@@ -359,23 +375,14 @@ class Scenario:
         self.stage = "access_token_expiry_update"
         self.profile()
         self.tap_label("Edit profile", package=PACKAGE)
-        self.enter(self.wait(lambda tree: editable(tree)), "ExpiredRefreshed")
-        # Diagnostics only (synthetic constants, no UI dump): did the typed text reach the field before Save?
-        try:
-            field = editable(hierarchy())
-            self.expiry_probe["fieldHoldsTypedValue"] = field is not None and field.get("text") == "ExpiredRefreshed"
-            self.expiry_probe["fieldText"] = synthetic_text(field.get("text") if field is not None else None)
-        except Exception as error:
-            self.expiry_probe["fieldProbeError"] = type(error).__name__
+        self.enter_verified("ExpiredRefreshed")
         self.tap_label("English", package=PACKAGE)
         self.tap_label("Save changes", package=PACKAGE)
         self.app_label("Profile saved")
         saved_name = self.db_profile()["name"]
         self.expiry_probe["dbName"] = synthetic_text(saved_name)
-        self.expiry_probe["dbNameIsTypedValue"] = saved_name == "ExpiredRefreshed"
-        self.expiry_probe["dbNameIsPreviousValue"] = saved_name == "NativeValidated"
         if saved_name != "ExpiredRefreshed":
-            raise AssertionError("Refreshed access token did not authorize profile update")
+            raise AssertionError("The profile update after access-token expiry did not persist the typed name")
         self.completed.append("expired access token refreshed natively before authorized profile update")
 
     def token_secrecy(self):
