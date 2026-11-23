@@ -5,12 +5,14 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.OffsetDateTime;
 import java.util.HexFormat;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
-import kz.kunde.delivery.DeliveryService;
 import kz.kunde.identity.ConsumerIdentityService;
 import kz.kunde.platform.ApiException;
-import kz.kunde.rides.RideRequestService;
+import kz.kunde.platform.support.CaseSubjectOwnership;
+import kz.kunde.platform.support.SupportCaseDirectory.Subject;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -46,14 +48,22 @@ public class SupportCaseService {
 
     private final JdbcTemplate db;
     private final ConsumerIdentityService identity;
-    private final RideRequestService rides;
-    private final DeliveryService deliveries;
+    private final Map<Subject, CaseSubjectOwnership> subjects = new EnumMap<>(Subject.class);
 
-    public SupportCaseService(JdbcTemplate db, ConsumerIdentityService identity, RideRequestService rides, DeliveryService deliveries) {
+    /** Every {@link Subject} needs exactly one ownership check from its product; otherwise startup fails (fail closed). */
+    public SupportCaseService(JdbcTemplate db, ConsumerIdentityService identity, List<CaseSubjectOwnership> ownership) {
         this.db = db;
         this.identity = identity;
-        this.rides = rides;
-        this.deliveries = deliveries;
+        for (CaseSubjectOwnership check : ownership) {
+            if (subjects.put(check.subject(), check) != null) {
+                throw new IllegalStateException("More than one CaseSubjectOwnership for " + check.subject());
+            }
+        }
+        for (Subject subject : Subject.values()) {
+            if (!subjects.containsKey(subject)) {
+                throw new IllegalStateException("No CaseSubjectOwnership for " + subject);
+            }
+        }
     }
 
     @Transactional
@@ -83,10 +93,10 @@ public class SupportCaseService {
         }
         UUID owner = identity.get(principal).id();
         if (rideId != null) {
-            rides.get(owner, rideId);
+            subjects.get(Subject.RIDE).requireOwnedBy(owner, rideId);
         }
         if (deliveryId != null) {
-            deliveries.get(owner, null, deliveryId);
+            subjects.get(Subject.DELIVERY).requireOwnedBy(owner, deliveryId);
         }
         // One lock per owner (not per key): both the idempotency lookup and the case cap must be
         // evaluated serially, otherwise concurrent requests with different keys exceed the cap.
