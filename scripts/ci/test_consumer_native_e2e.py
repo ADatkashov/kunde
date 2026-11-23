@@ -190,22 +190,45 @@ class SessionFailurePathTests(unittest.TestCase):
     def test_expiry_waits_real_token_lifetime_then_requires_authorized_update(self):
         scenario = Scenario({})
         with patch("consumer_native_e2e.time.sleep") as sleep, patch.object(scenario, "profile"), \
-             patch.object(scenario, "tap_label"), patch.object(scenario, "enter"), \
-             patch.object(scenario, "wait"), patch.object(scenario, "app_label"), \
+             patch.object(scenario, "tap_label"), patch.object(scenario, "enter_verified") as typed, \
+             patch.object(scenario, "app_label"), \
              patch.object(scenario, "db_profile", return_value={"name": "ExpiredRefreshed"}):
             scenario.access_token_expiry()
         sleep.assert_called_once_with(310)
+        typed.assert_called_once_with("ExpiredRefreshed")
         self.assertEqual(len(scenario.completed), 1)
 
     def test_expiry_fails_when_update_was_not_persisted(self):
         scenario = Scenario({})
         with patch("consumer_native_e2e.time.sleep"), patch.object(scenario, "profile"), \
-             patch.object(scenario, "tap_label"), patch.object(scenario, "enter"), \
-             patch.object(scenario, "wait"), patch.object(scenario, "app_label"), \
+             patch.object(scenario, "tap_label"), patch.object(scenario, "enter_verified"), \
+             patch.object(scenario, "app_label"), \
              patch.object(scenario, "db_profile", return_value={"name": "Other"}):
-            with self.assertRaisesRegex(AssertionError, "authorize"):
+            with self.assertRaisesRegex(AssertionError, "persist the typed name"):
                 scenario.access_token_expiry()
         self.assertEqual(scenario.completed, [])
+
+    def test_enter_verified_retypes_when_adb_doubles_a_key_and_fails_if_it_never_matches(self):
+        class Field:
+            def __init__(self, text):
+                self.text = text
+
+            def get(self, key, default=None):
+                return self.text
+
+        scenario = Scenario({})
+        doubled, exact = Field("ExpiredRefreshedd"), Field("ExpiredRefreshed")
+        with patch.object(scenario, "enter") as enter, patch.object(scenario, "wait"), \
+             patch("consumer_native_e2e.hierarchy"), \
+             patch("consumer_native_e2e.editable", side_effect=[doubled, exact]):
+            scenario.enter_verified("ExpiredRefreshed")
+        self.assertEqual(enter.call_count, 2)
+        with patch.object(scenario, "enter") as enter, patch.object(scenario, "wait"), \
+             patch("consumer_native_e2e.hierarchy"), \
+             patch("consumer_native_e2e.editable", return_value=None):
+            with self.assertRaisesRegex(AssertionError, "did not reach the field"):
+                scenario.enter_verified("ExpiredRefreshed")
+        self.assertEqual(enter.call_count, 3)
 
     def test_token_secrecy_detects_jwt_in_log_or_vault_without_echoing_it(self):
         scenario = Scenario({})
