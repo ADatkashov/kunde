@@ -85,6 +85,13 @@ def editable(tree, password=False):
     return chosen[0]
 
 
+def screen_size():
+    match = re.search(rb"(\d+)x(\d+)\s*$", adb("shell", "wm", "size").strip())
+    if match is None:
+        raise RuntimeError("Cannot read the emulator screen size")
+    return int(match[1]), int(match[2])
+
+
 def synthetic_text(value):
     """Synthetic profile names only: anything else is reported as its length."""
     if isinstance(value, str) and re.fullmatch(r"[A-Za-z0-9 -]{0,40}", value):
@@ -174,6 +181,25 @@ class Scenario:
 
     def app_label(self, label):
         return self.wait(lambda tree: find_label(tree, [label], PACKAGE))
+
+    def sign_out(self, attempts=8):
+        """Tap "Sign out" on the Profile tab, scrolling the list until the control is built.
+
+        The profile list is longer than one screen, and a ListView exposes only the rows it has built, so the control is
+        absent from the accessibility tree until it is scrolled into view.
+        """
+        for _ in range(attempts):
+            try:
+                node = find_label(hierarchy(), ("Sign out",), PACKAGE)
+            except (ET.ParseError, subprocess.CalledProcessError):
+                node = None
+            if node is not None:
+                self.tap(node)
+                return
+            width, height = screen_size()
+            adb("shell", "input", "swipe", str(width // 2), str(height * 3 // 4), str(width // 2), str(height // 3), "300")
+            time.sleep(1)
+        self.tap_label("Sign out", package=PACKAGE)  # same wait and error as every other tap
 
     def enter_verified(self, value, attempts=3):
         """Type [value] into the single editable field and read it back before continuing.
@@ -446,7 +472,7 @@ class Scenario:
         if self.binding_count() != 1:
             raise AssertionError("Expected fresh seed-only fixture")
         self.stage = "registration_cancel"
-        self.tap_label("Sign out", package=PACKAGE)
+        self.sign_out()
         self.app_label("Create account")
         self.tap_label("Create account", package=PACKAGE)
         self.registration_form()
@@ -489,7 +515,7 @@ class Scenario:
             raise AssertionError("Registered profile was not persisted")
         self.completed.append("real registration native PKCE callback canonical UUID and profile save")
         self.stage = "duplicate_registration"
-        self.tap_label("Sign out", package=PACKAGE)
+        self.sign_out()
         self.app_label("Create account")
         self.tap_label("Create account", package=PACKAGE)
         self.registration_form()
@@ -585,7 +611,7 @@ class Scenario:
         self.app_label("NativeValidated")
         self.completed.append("native API offline state and retry without account loss")
         self.stage = "provider_logout_relogin"
-        self.tap_label("Sign out", package=PACKAGE)
+        self.sign_out()
         self.app_label("Sign in")
         self.tap_label("Sign in", package=PACKAGE)
         self.login_form()  # A still-active browser SSO session would return directly to the app and fail this check.
