@@ -14,6 +14,7 @@ import kz.kunde.partner.PartnerService;
 import kz.kunde.partner.PartnerService.Role;
 import kz.kunde.platform.ApiException;
 import kz.kunde.platform.FeatureToggles;
+import kz.kunde.platform.partner.PartnerDirectory;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.support.SqlArrayValue;
@@ -35,9 +36,12 @@ public class EducationOperationsService {
     private final PartnerService partners;
     private final AdminGrants admins;
     private final FeatureToggles toggles;
+    private final PartnerDirectory partnerDirectory;
 
-    public EducationOperationsService(JdbcClient db, PartnerService partners, AdminGrants admins, FeatureToggles toggles) {
+    public EducationOperationsService(JdbcClient db, PartnerService partners, AdminGrants admins, FeatureToggles toggles,
+            PartnerDirectory partnerDirectory) {
         this.db = db;
+        this.partnerDirectory = partnerDirectory;
         this.partners = partners;
         this.admins = admins;
         this.toggles = toggles;
@@ -183,12 +187,12 @@ public class EducationOperationsService {
     }
 
     public List<Session> instructorSessions(UUID actor) {
+        var partnerIds = partnerDirectory.approvedPartnersOfStaff(actor);
+        if (partnerIds.isEmpty()) return List.of();
         return db.sql(SESSIONS + """
-                join marketplace.partners p on p.id=c.partner_id and p.verification_status='APPROVED'
-                join marketplace.partner_staff s on s.partner_id=p.id and s.user_id=:actor and s.status='ACTIVE'
-                where h.instructor_id=:actor and c.status='PUBLISHED'
+                where h.instructor_id=:actor and c.status='PUBLISHED' and c.partner_id in (:partners)
                 order by h.starts_at desc,h.id limit 100
-                """).param("actor", actor).query(Session.class).list();
+                """).param("actor", actor).param("partners", partnerIds).query(Session.class).list();
     }
 
     @Transactional
@@ -213,14 +217,13 @@ public class EducationOperationsService {
     }
 
     public List<Learner> roster(UUID actor, UUID session) {
-        db.sql("""
-                select h.id from marketplace.education_cohorts h
+        UUID partner = db.sql("""
+                select c.partner_id from marketplace.education_cohorts h
                 join marketplace.education_courses c on c.id=h.course_id and c.status='PUBLISHED'
-                join marketplace.partners p on p.id=c.partner_id and p.verification_status='APPROVED'
-                join marketplace.partner_staff s on s.partner_id=p.id and s.user_id=:actor and s.status='ACTIVE'
                 where h.id=:session and h.instructor_id=:actor
                 """).param("actor", actor).param("session", session).query(UUID.class).optional()
                 .orElseThrow(EducationOperationsService::notFound);
+        if (!partnerDirectory.isActiveStaffOfApprovedPartner(actor, partner)) throw notFound();
         return db.sql("""
                 select e.id,e.attendance,s.response,s.status as assignment_status,s.feedback
                 from transactions.education_enrollments e

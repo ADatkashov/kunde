@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 import kz.kunde.platform.ApiException;
 import kz.kunde.platform.FeatureToggles;
+import kz.kunde.platform.partner.PartnerDirectory;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
@@ -27,10 +28,12 @@ public class EducationEnrollmentService {
 
     private final JdbcClient db;
     private final FeatureToggles toggles;
+    private final PartnerDirectory partnerDirectory;
 
-    public EducationEnrollmentService(JdbcClient db, FeatureToggles toggles) {
+    public EducationEnrollmentService(JdbcClient db, FeatureToggles toggles, PartnerDirectory partnerDirectory) {
         this.db = db;
         this.toggles = toggles;
+        this.partnerDirectory = partnerDirectory;
     }
 
     public List<Cohort> cohorts(UUID course) {
@@ -186,15 +189,17 @@ public class EducationEnrollmentService {
 
     @Transactional
     public Assignment reviewAssignment(UUID instructor, UUID cohort, UUID id, boolean approved, String feedback) {
-        UUID user = db.sql("""
-                select e.user_id from transactions.education_enrollments e
+        UUID[] row = db.sql("""
+                select e.user_id, c.partner_id from transactions.education_enrollments e
                 join marketplace.education_cohorts h on h.id=e.cohort_id and h.instructor_id=:actor
                 join marketplace.education_courses c on c.id=e.course_id and c.status='PUBLISHED'
-                join marketplace.partners p on p.id=c.partner_id and p.verification_status='APPROVED'
-                join marketplace.partner_staff s on s.partner_id=p.id and s.user_id=:actor and s.status='ACTIVE'
-                where e.cohort_id=:cohort and e.id=:id for update of e for share of h,c,p,s
-                """).param("actor", instructor).param("cohort", cohort).param("id", id).query(UUID.class).optional()
+                where e.cohort_id=:cohort and e.id=:id for update of e for share of h,c
+                """).param("actor", instructor).param("cohort", cohort).param("id", id)
+                .query((rs, n) -> new UUID[] {rs.getObject(1, UUID.class), rs.getObject(2, UUID.class)}).optional()
                 .orElseThrow(EducationEnrollmentService::notFound);
+        // Shared lock on the partner and staff rows until commit, as the former join did (ADR-021).
+        if (!partnerDirectory.lockActiveStaffOfApprovedPartner(instructor, row[1])) throw notFound();
+        UUID user = row[0];
         var enrollment = owned(user, id);
         var assignment = assignment(enrollment);
         if (assignment == null || assignment.response() == null) throw notFound();
