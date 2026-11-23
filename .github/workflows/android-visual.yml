@@ -1,17 +1,34 @@
 name: Android visual comparison
 on:
-  pull_request:
-    paths:
-      - 'mobile/**'
-      - 'packages/kunde_design/**'
-      - '.github/workflows/android-visual.yml'
-      - 'scripts/ci/capture_android_visual.py'
+  # HEAVY CHECK: manual / reusable only. It is intentionally NOT triggered by pull_request or push, so it never blocks
+  # merge or the signed APK. See docs/engineering-foundation/ci-cd-fast-merge.md.
   workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Commit SHA, branch or tag to test (default: the branch selected for the run)'
+        required: false
+        type: string
+        default: ''
+      base-sha:
+        description: 'Commit to compare against (default: merge-base with origin/main)'
+        required: false
+        type: string
+        default: ''
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: false
+        default: ''
+      base-sha:
+        type: string
+        required: false
+        default: ''
 permissions:
   contents: read
 concurrency:
-  group: android-visual-${{ github.ref }}
-  cancel-in-progress: true
+  group: android-visual-${{ github.event_name }}-${{ inputs.ref || github.ref }}
+  cancel-in-progress: false
 jobs:
   screenshots:
     runs-on: ubuntu-24.04
@@ -40,11 +57,12 @@ jobs:
       FOOD_SEED_DEMO: 'true'
       BOOKING_ENABLED: 'true'
       BOOKING_SEED_DEMO: 'true'
-      BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+      BASE_SHA: ${{ inputs.base-sha }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
+          ref: ${{ inputs.ref || github.sha }}
           fetch-depth: 0
       - name: Enable Android emulator acceleration
         run: |
@@ -66,6 +84,8 @@ jobs:
         run: mvn -B -ntp -DskipTests package
       - name: Build before and after x86_64 debug APKs
         run: |
+          BASE_SHA="${BASE_SHA:-$(git merge-base origin/main HEAD)}"
+          echo "Visual baseline: $BASE_SHA"
           git worktree add --detach "$RUNNER_TEMP/kunde-before" "$BASE_SHA"
           mkdir -p "$RUNNER_TEMP/visual-apk" reports/visual
           build() (

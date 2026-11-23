@@ -1,5 +1,7 @@
 # Android Release APK (DEV only)
 
+> Автосборка: после каждого merge в `main` workflow `Release APK on merge (DEV)` сам собирает нужные APK, не дожидаясь E2E. См. [ci-cd-fast-merge.md](../engineering-foundation/ci-cd-fast-merge.md).
+
 Workflow `android-release.yml` can be run manually and builds `KUNDE-dev-release.apk`: `flutter build apk --release`, arm64, API
 `https://kunde-backend-ty81.onrender.com/api/v1/` via `--dart-define=API_BASE_URL`, 90 s request timeout (Render Free cold start ~1 min).
 Release signing is read only from environment variables; without them the release build fails (no debug-key fallback).

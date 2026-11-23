@@ -1,0 +1,121 @@
+name: Release APK on merge (DEV)
+# Builds the signed DEV Release APKs right after a merge to main. It does NOT wait for E2E, visual or any other heavy check:
+# those are manual (see e2e-suite.yml). A green build here means "signed, verified APK of exactly this commit", NOT "E2E passed".
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Commit SHA, branch or tag to build (default: selected branch head)'
+        type: string
+        default: ''
+      consumer:
+        description: 'Build Consumer'
+        type: boolean
+        default: true
+      executor:
+        description: 'Build Executor'
+        type: boolean
+        default: true
+      admin:
+        description: 'Build Admin'
+        type: boolean
+        default: true
+      partner:
+        description: 'Build Partner'
+        type: boolean
+        default: true
+permissions:
+  contents: read
+concurrency:
+  # One group per commit: two merges in a row build both APKs; nothing is cancelled and nothing queues behind E2E.
+  group: release-apk-${{ github.event_name }}-${{ inputs.ref || github.sha }}
+  cancel-in-progress: false
+jobs:
+  targets:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      consumer: ${{ steps.t.outputs.consumer }}
+      executor: ${{ steps.t.outputs.executor }}
+      admin: ${{ steps.t.outputs.admin }}
+      partner: ${{ steps.t.outputs.partner }}
+      sha: ${{ steps.t.outputs.sha }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          ref: ${{ inputs.ref || github.sha }}
+      - id: t
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          WANT_CONSUMER: ${{ inputs.consumer }}
+          WANT_EXECUTOR: ${{ inputs.executor }}
+          WANT_ADMIN: ${{ inputs.admin }}
+          WANT_PARTNER: ${{ inputs.partner }}
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT" = workflow_dispatch ]; then
+            for app in consumer executor admin partner; do
+              v="WANT_${app^^}"; echo "$app=${!v}" >> "$GITHUB_OUTPUT"
+            done
+          else
+            if git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+              git diff --name-only "$BEFORE" HEAD > changed.txt
+            else
+              echo "mobile/lib/main.dart
+          partner_app/pubspec.yaml
+          packages/kunde_design/pubspec.yaml" > changed.txt   # unknown base: build everything
+            fi
+            python3 scripts/ci/release_targets.py < changed.txt | python3 -c 'import json,sys; [print(f"{k}={str(v).lower()}") for k,v in json.load(sys.stdin).items()]' >> "$GITHUB_OUTPUT"
+          fi
+          cat "$GITHUB_OUTPUT"
+  consumer:
+    needs: targets
+    if: needs.targets.outputs.consumer == 'true'
+    uses: ./.github/workflows/android-release.yml
+    with:
+      ref: ${{ needs.targets.outputs.sha }}
+    secrets:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+  executor:
+    needs: targets
+    if: needs.targets.outputs.executor == 'true'
+    uses: ./.github/workflows/android-release.yml
+    with:
+      executor: true
+      ref: ${{ needs.targets.outputs.sha }}
+    secrets:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+  admin:
+    needs: targets
+    if: needs.targets.outputs.admin == 'true'
+    uses: ./.github/workflows/android-release.yml
+    with:
+      admin: true
+      ref: ${{ needs.targets.outputs.sha }}
+    secrets:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+  partner:
+    needs: targets
+    if: needs.targets.outputs.partner == 'true'
+    uses: ./.github/workflows/partner-release.yml
+    with:
+      ref: ${{ needs.targets.outputs.sha }}
+    secrets:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}

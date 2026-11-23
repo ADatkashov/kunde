@@ -14,6 +14,8 @@ trigger/caching descriptions below; historical evidence remains unchanged.
 - `security.yml`: automatic PR/main dependency, secret and base-container scans.
   The separate upstream SDK tooling job runs only on manual dispatch.
 
+> **Обновлено:** актуальная схема (APK после merge, ручные E2E suite) — [ci-cd-fast-merge.md](ci-cd-fast-merge.md).
+
 APK build/native dependency audit, Android native E2E, unsigned iOS, vendor baseline,
 container remediation probe and preview publishing are manual only. Their scripts,
 assertions and failure exit codes are retained. Run APK/native checks when native

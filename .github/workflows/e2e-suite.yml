@@ -1,0 +1,201 @@
+name: E2E suite (manual, async)
+# Heavy, slow checks that must never gate merge or the signed APK. Run them from Actions -> "E2E suite (manual, async)" -> Run workflow,
+# at any time and in parallel with Release APK builds. Every job tests the commit chosen in `ref`.
+# Result in the run summary is PASSED / FAILED / NOT RUN per check; a skipped check is never reported as passed.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Commit SHA, branch or tag to test (empty = head of the selected branch)'
+        type: string
+        default: ''
+      all:
+        description: 'Run EVERYTHING below'
+        type: boolean
+        default: false
+      consumer:
+        description: 'Consumer E2E (auto, education, groceries, health, leisure)'
+        type: boolean
+        default: false
+      partner:
+        description: 'Partner E2E (groceries fulfilment + Partner APK checks)'
+        type: boolean
+        default: false
+      executor:
+        description: 'Executor E2E (delivery two-app)'
+        type: boolean
+        default: false
+      admin:
+        description: 'Admin E2E (Partner/Admin/Executor roles)'
+        type: boolean
+        default: false
+      taxi:
+        description: 'Taxi E2E (rides two-app)'
+        type: boolean
+        default: false
+      maps:
+        description: 'Maps Native E2E (Taxi with KUNDE Maps)'
+        type: boolean
+        default: false
+      multi_app:
+        description: 'Multi-app E2E (delivery, rides, roles, groceries-roles)'
+        type: boolean
+        default: false
+      emulator:
+        description: 'Android Emulator E2E (identity)'
+        type: boolean
+        default: false
+      visual:
+        description: 'Visual regression (before/after screenshots)'
+        type: boolean
+        default: false
+      backend:
+        description: 'Full backend integration tests'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+# No workflow-level concurrency: each called workflow has its own group keyed by ref, and they never cancel each other or Release APK.
+jobs:
+  resolve:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      sha: ${{ steps.r.outputs.sha }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref || github.sha }}
+      - id: r
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "Testing commit $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+
+  consumer_auto:
+    needs: resolve
+    if: ${{ inputs.consumer || inputs.all }}
+    uses: ./.github/workflows/auto-native-e2e.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+
+  consumer_education:
+    needs: resolve
+    if: ${{ inputs.consumer || inputs.all }}
+    uses: ./.github/workflows/education-native-e2e.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+
+  consumer_groceries:
+    needs: resolve
+    if: ${{ inputs.consumer || inputs.all }}
+    uses: ./.github/workflows/groceries-native-e2e.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+
+  consumer_health:
+    needs: resolve
+    if: ${{ inputs.consumer || inputs.all }}
+    uses: ./.github/workflows/health-native-e2e.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+
+  consumer_leisure:
+    needs: resolve
+    if: ${{ inputs.consumer || inputs.all }}
+    uses: ./.github/workflows/leisure-native-e2e.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+
+  partner_groceries_roles:
+    needs: resolve
+    if: ${{ inputs.partner || inputs.multi_app || inputs.all }}
+    uses: ./.github/workflows/groceries-roles-native-e2e.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+
+  partner_apk_build:
+    needs: resolve
+    if: ${{ inputs.partner || inputs.all }}
+    uses: ./.github/workflows/partner-android.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+
+  executor_delivery:
+    needs: resolve
+    if: ${{ inputs.executor || inputs.multi_app || inputs.all }}
+    uses: ./.github/workflows/delivery-native-e2e.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+
+  admin_education_roles:
+    needs: resolve
+    if: ${{ inputs.admin || inputs.multi_app || inputs.all }}
+    uses: ./.github/workflows/education-roles-native-e2e.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+
+  taxi_rides:
+    needs: resolve
+    if: ${{ inputs.taxi || inputs.multi_app || inputs.all }}
+    uses: ./.github/workflows/rides-native-e2e.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+
+  maps_taxi:
+    needs: resolve
+    if: ${{ inputs.maps || inputs.all }}
+    uses: ./.github/workflows/maps-native-e2e.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+
+  emulator_identity:
+    needs: resolve
+    if: ${{ inputs.emulator || inputs.all }}
+    uses: ./.github/workflows/android-e2e.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+
+  visual:
+    needs: resolve
+    if: ${{ inputs.visual || inputs.all }}
+    uses: ./.github/workflows/android-visual.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+
+  backend_full:
+    needs: resolve
+    if: ${{ inputs.backend || inputs.all }}
+    uses: ./.github/workflows/backend.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+
+  report:
+    if: always()
+    needs: [resolve, consumer_auto, consumer_education, consumer_groceries, consumer_health, consumer_leisure, partner_groceries_roles, partner_apk_build, executor_delivery, admin_education_roles, taxi_rides, maps_taxi, emulator_identity, visual, backend_full]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Summarise results
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+          SHA: ${{ needs.resolve.outputs.sha }}
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, os
+          names = {"consumer_auto": "Auto (Consumer)", "consumer_education": "Education (Consumer)", "consumer_groceries": "Groceries (Consumer)", "consumer_health": "Health (Consumer)", "consumer_leisure": "Leisure (Consumer)", "partner_groceries_roles": "Partner fulfilment", "partner_apk_build": "Partner Android APK build+checks", "executor_delivery": "Delivery two-app (Consumer+Executor)", "admin_education_roles": "Partner, Admin and Executor roles", "taxi_rides": "Taxi two-app (Consumer+Executor)", "maps_taxi": "Taxi with KUNDE Maps", "emulator_identity": "Android emulator identity E2E", "visual": "Android visual comparison", "backend_full": "Full backend integration (mvn verify + smoke)"}
+          needs = json.loads(os.environ['NEEDS'])
+          label = {'success': 'PASSED', 'failure': 'FAILED', 'cancelled': 'FAILED (cancelled)', 'skipped': 'NOT RUN'}
+          print('## E2E suite for commit `' + os.environ['SHA'] + '`')
+          print('| Check | Status |\n|---|---|')
+          for key, title in names.items():
+              print('| ' + title + ' | ' + label.get(needs[key]['result'], needs[key]['result']) + ' |')
+          if any(needs[k]['result'] in ('failure', 'cancelled') for k in names):
+              print('\n**At least one check FAILED. Do not mark this commit as E2E-verified.**')
+          PY
+          python3 - <<'PY'
+          import json, os, sys
+          needs = json.loads(os.environ['NEEDS'])
+          bad = [k for k, v in needs.items() if v['result'] in ('failure', 'cancelled')]
+          sys.exit(1 if bad else 0)
+          PY

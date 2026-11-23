@@ -1,20 +1,25 @@
 name: Rides two-app Android E2E
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/rides-native-e2e.yml'
-      - 'scripts/ci/rides_native_e2e.py'
-  pull_request:
-    paths:
-      - '.github/workflows/rides-native-e2e.yml'
-      - 'scripts/ci/rides_native_e2e.py'
+  # HEAVY CHECK: manual / reusable only. It is intentionally NOT triggered by pull_request or push, so it never blocks
+  # merge or the signed APK. See docs/engineering-foundation/ci-cd-fast-merge.md.
   workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Commit SHA, branch or tag to test (default: the branch selected for the run)'
+        required: false
+        type: string
+        default: ''
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: false
+        default: ''
 permissions:
   contents: read
 concurrency:
-  group: rides-native-e2e-${{ github.ref }}
-  cancel-in-progress: true
+  group: rides-native-e2e-${{ github.event_name }}-${{ inputs.ref || github.ref }}
+  cancel-in-progress: false
 jobs:
   emulator:
     runs-on: ubuntu-24.04
@@ -51,6 +56,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
+          ref: ${{ inputs.ref || github.sha }}
       - name: Enable Android emulator acceleration
         run: |
           mkdir -p reports/rides-native
@@ -103,18 +109,3 @@ jobs:
           name: rides-native-e2e
           path: reports/rides-native/
           retention-days: 3
-  release-dev-apk:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: emulator
-    strategy:
-      fail-fast: false
-      matrix:
-        executor: [false, true]
-    uses: ./.github/workflows/android-release.yml
-    with:
-      executor: ${{ matrix.executor }}
-    secrets:
-      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
