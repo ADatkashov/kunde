@@ -240,8 +240,11 @@ def api_checks():
     assignment = fixture.call("POST", f"partner/partners/{world.partner}/leisure/sessions/{walk_session}/assignments", token=world.partner_token,
                               expected=201, body={"phone": OTHER_PHONE, "role": "GUIDE"})
     fixture.call("POST", f"executor/leisure/assignments/{assignment['id']}/step", token=world.other, body={"step": "ACCEPT"})
-    status, _ = raw("POST", f"executor/leisure/assignments/{assignment['id']}/step", token=world.other, body={"step": "START"})
-    check(status == 409, "starting outside the work window is refused")
+    # Seeded session times depend on the local clock. Keep this acceptance check outside the two-hour work window.
+    sql("update marketplace.leisure_sessions set starts_at = now() + interval '1 day', "
+        "ends_at = now() + interval '1 day 2 hours' where id = '" + walk_session + "'")
+    status, body = raw("POST", f"executor/leisure/assignments/{assignment['id']}/step", token=world.other, body={"step": "START"})
+    check(status == 409 and body["code"] == "OUTSIDE_WORK_WINDOW", "starting outside the work window is refused")
     completed.append("executor_assignment_only_where_needed")
 
 
