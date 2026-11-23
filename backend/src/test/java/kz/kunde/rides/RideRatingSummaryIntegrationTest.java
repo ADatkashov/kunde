@@ -68,7 +68,7 @@ class RideRatingSummaryIntegrationTest {
         http.perform(post(rate).with(client("rating-rider", false)).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"stars\":1}")).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("RIDE_ALREADY_RATED"));
-        assertThat(db.queryForObject("select count(*) from transactions.ride_ratings", Long.class)).isEqualTo(1L);
+        assertThat(db.queryForObject("select count(*) from transactions.ride_ratings where ride_id = ?", Long.class, completed)).isEqualTo(1L);
 
         // The customer sees their own rating on the ride.
         http.perform(get("/api/v1/rides/" + completed).with(client("rating-rider", false)))

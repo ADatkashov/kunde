@@ -135,6 +135,8 @@ def open_rides():
     for _ in range(4):
         try:
             android.tap("Поездки", "Rides", "Сапарлар", timeout=5)
+            # Rides opens on the category hub (RidesHubScreen); city rides is the only category with a backend contract.
+            android.tap("По городу", "City rides", "Қала бойынша", timeout=15)
             android.find("Откуда", "Pickup", "Қайдан", timeout=15)
             return
         except RuntimeError:
