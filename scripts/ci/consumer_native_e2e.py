@@ -143,6 +143,7 @@ class Scenario:
         self.not_executed = []
         self.vault_paths = []
         self.trace = []
+        self.expiry_probe = {}
 
     def wait(self, predicate, seconds=60):
         end = time.monotonic() + seconds
@@ -352,10 +353,19 @@ class Scenario:
         self.profile()
         self.tap_label("Edit profile", package=PACKAGE)
         self.enter(self.wait(lambda tree: editable(tree)), "ExpiredRefreshed")
+        # Diagnostics only (synthetic constants, no UI dump): did the typed text reach the field before Save?
+        try:
+            field = editable(hierarchy())
+            self.expiry_probe["fieldHoldsTypedValue"] = field is not None and field.get("text") == "ExpiredRefreshed"
+        except Exception as error:
+            self.expiry_probe["fieldProbeError"] = type(error).__name__
         self.tap_label("English", package=PACKAGE)
         self.tap_label("Save changes", package=PACKAGE)
         self.app_label("Profile saved")
-        if self.db_profile()["name"] != "ExpiredRefreshed":
+        saved_name = self.db_profile()["name"]
+        self.expiry_probe["dbNameIsTypedValue"] = saved_name == "ExpiredRefreshed"
+        self.expiry_probe["dbNameIsPreviousValue"] = saved_name == "NativeValidated"
+        if saved_name != "ExpiredRefreshed":
             raise AssertionError("Refreshed access token did not authorize profile update")
         self.completed.append("expired access token refreshed natively before authorized profile update")
 
@@ -595,6 +605,7 @@ def main():
         result["appFiles"] = scenario.vault_paths[:40]  # file names only, never contents
     if scenario.trace and result["status"] != "PASSED_EXECUTED_SCENARIOS":
         result["reloginTrace"] = scenario.trace  # package names and counters only
+        result["expiryProbe"] = scenario.expiry_probe
     result["environment"] = scenario.environment
     if scenario.completed:
         result["nativeE2E"] = "EXECUTED_PARTIAL"
