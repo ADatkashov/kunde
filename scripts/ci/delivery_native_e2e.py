@@ -224,7 +224,7 @@ def main():
         except subprocess.SubprocessError:
             raise RuntimeError("Could not enter the one-time code") from None
         tap("Проверить код", "Verify code", "Кодты тексеру")
-        tap("Завершить", "Complete delivery", "Аяқтау")
+        tap("Завершить", "Complete delivery", "Аяқтау", clickable=True, enabled=True)
         reveal(*COMPLETED)
         android.screenshot("executor-completed")
         fixture.completed.append("verified_handoff_executor_history")
