@@ -49,7 +49,7 @@ jobs:
           cache-dependency-path: backend/pom.xml
       - name: Architecture boundaries (fast, no database)
         working-directory: backend
-        run: mvn --batch-mode --no-transfer-progress -q test -Dtest=ArchitectureBoundariesTest
+        run: mvn --batch-mode --no-transfer-progress -q test -Dtest='ArchitectureBoundariesTest,PlacementRegistryTest,PlacementServiceTest'
       - name: Verify and package
         working-directory: backend
         env:
