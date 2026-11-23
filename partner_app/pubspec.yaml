@@ -8,7 +8,7 @@ dependencies:
   kunde_maps_sdk:
     git:
       url: https://github.com/ADatkashov/kunde-maps.git
-      ref: 4c24f94f512cf79630eb2859086f0ebb5ae4cfed
+      ref: 12457ed2e2cd1636fdb8a35c3342ce02a3dd3f32
       path: packages/kunde_maps_sdk
   kunde_design:
     path: ../packages/kunde_design
