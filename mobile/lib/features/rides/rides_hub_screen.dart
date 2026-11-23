@@ -71,13 +71,18 @@ class RidesHubScreen extends StatelessWidget {
                 for (final (key, icon, available) in _categories)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 10),
-                    child: _HubTile(
-                      icon: icon,
-                      title: s.hubTitle(key),
-                      subtitle: s.hubSubtitle(key),
-                      available: available,
-                      soon: s.soon,
-                      onTap: available ? () => _openCity(context) : null,
+                    // Own semantics boundary per tile, else all tiles merge
+                    // into one accessibility node (TalkBack, UI tests).
+                    child: Semantics(
+                      container: true,
+                      child: _HubTile(
+                        icon: icon,
+                        title: s.hubTitle(key),
+                        subtitle: s.hubSubtitle(key),
+                        available: available,
+                        soon: s.soon,
+                        onTap: available ? () => _openCity(context) : null,
+                      ),
                     ),
                   ),
               ],
