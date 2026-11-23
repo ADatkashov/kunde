@@ -85,6 +85,13 @@ def editable(tree, password=False):
     return chosen[0]
 
 
+def synthetic_text(value):
+    """Synthetic profile names only: anything else is reported as its length."""
+    if isinstance(value, str) and re.fullmatch(r"[A-Za-z0-9 -]{0,40}", value):
+        return value
+    return None if value is None else {"length": len(value)}
+
+
 def safe_diagnostics(tree):
     nodes = list(tree.iter("node"))
     return {"nodeCount": len(nodes),
@@ -357,12 +364,14 @@ class Scenario:
         try:
             field = editable(hierarchy())
             self.expiry_probe["fieldHoldsTypedValue"] = field is not None and field.get("text") == "ExpiredRefreshed"
+            self.expiry_probe["fieldText"] = synthetic_text(field.get("text") if field is not None else None)
         except Exception as error:
             self.expiry_probe["fieldProbeError"] = type(error).__name__
         self.tap_label("English", package=PACKAGE)
         self.tap_label("Save changes", package=PACKAGE)
         self.app_label("Profile saved")
         saved_name = self.db_profile()["name"]
+        self.expiry_probe["dbName"] = synthetic_text(saved_name)
         self.expiry_probe["dbNameIsTypedValue"] = saved_name == "ExpiredRefreshed"
         self.expiry_probe["dbNameIsPreviousValue"] = saved_name == "NativeValidated"
         if saved_name != "ExpiredRefreshed":
