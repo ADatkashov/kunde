@@ -4,6 +4,7 @@ import os
 import re
 import secrets
 import subprocess
+import time
 import uuid
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -33,9 +34,33 @@ def tap(*labels, **options):
     android.adb("shell", "input", "tap", *reveal(*labels, **options))
 
 
+def focused_field(identifier):
+    deadline = time.monotonic() + 15
+    while time.monotonic() < deadline:
+        try:
+            android.adb("shell", "uiautomator", "dump", "/sdcard/kunde-visual.xml")
+            root = ET.fromstring(android.adb("exec-out", "cat", "/sdcard/kunde-visual.xml"))
+        except (subprocess.SubprocessError, ET.ParseError):
+            continue
+        for node in root.iter("node"):
+            if node.get("resource-id", "").rsplit("/", 1)[-1] == identifier:
+                for editor in node.iter("node"):
+                    if editor.get("class") == "android.widget.EditText" and editor.get("focused") == "true":
+                        return editor.get("text", "")
+    raise RuntimeError(f"Text entry did not focus {identifier}")
+
+
 def enter(identifier, value):
     tap(resource_id=identifier)
+    focused_field(identifier)
     android.adb("shell", "input", "text", value)
+    actual = focused_field(identifier)
+    if actual != value:
+        android.adb("shell", "input", "keyevent", "KEYCODE_MOVE_END",
+                    *(["KEYCODE_DEL"] * len(actual)))
+        android.adb("shell", "input", "text", value)
+        if focused_field(identifier) != value:
+            raise RuntimeError(f"Text entry did not populate {identifier}")
     android.adb("shell", "input", "keyevent", "4")
 
 
@@ -70,6 +95,7 @@ def seed_courier():
 
 def create_delivery(*, capture_quote=True):
     tap("Доставка", "Delivery", "Жеткізу")
+    tap("Отправить посылку", "Send a parcel", "Сәлемдеме жіберу", clickable=True)
     tap(*PICKUP)
     tap("[DEV/TEST] Отправитель", "[DEV/TEST] Pickup", "[DEV/TEST] Жіберуші")
     tap(*DESTINATION)
@@ -116,8 +142,9 @@ def recover_history():
 
 
 def cancel_second_delivery():
-    android.adb("shell", "input", "keyevent", "4")
-    android.adb("shell", "input", "keyevent", "4")
+    android.adb("shell", "am", "force-stop", fixture.CONSUMER)
+    fixture.launch(fixture.CONSUMER)
+    android.find("Алматы", "Almaty", timeout=60)
     create_delivery(capture_quote=False)
     android.find("Ищем курьера", "Finding a courier", "Курьер ізделуде")
     cancel = ("Отменить доставку", "Cancel delivery", "Жеткізуден бас тарту")

@@ -254,7 +254,8 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
   @override
   Widget build(BuildContext context) {
     if (!widget.intakeEnabled) {
-      return _History(api: widget.api, allowDispatch: false, maps: widget.maps);
+      return DeliveryHistoryScreen(
+          api: widget.api, allowDispatch: false, maps: widget.maps);
     }
     final s = DeliveryStrings(context);
     final quote = _quote;
@@ -280,7 +281,7 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
               : () => Navigator.push<void>(
                   context,
                   MaterialPageRoute(
-                      builder: (_) => _History(
+                      builder: (_) => DeliveryHistoryScreen(
                           api: widget.api,
                           syntheticRouting: widget.synthetic,
                           maps: widget.maps))),
@@ -470,22 +471,25 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
   }
 }
 
-class _History extends StatefulWidget {
-  const _History(
+class DeliveryHistoryScreen extends StatefulWidget {
+  const DeliveryHistoryScreen(
       {required this.api,
       this.allowDispatch = true,
       this.syntheticRouting = false,
-      this.maps});
+      this.activeOnly = false,
+      this.maps,
+      super.key});
   final DeliveryApi api;
   final bool allowDispatch;
   final bool syntheticRouting;
+  final bool activeOnly;
   final KundeMaps? maps;
 
   @override
-  State<_History> createState() => _HistoryState();
+  State<DeliveryHistoryScreen> createState() => _HistoryState();
 }
 
-class _HistoryState extends State<_History> {
+class _HistoryState extends State<DeliveryHistoryScreen> {
   late Future<List<DeliveryOrder>> _history = widget.api.history();
 
   void _reloadHistory() {
@@ -498,7 +502,8 @@ class _HistoryState extends State<_History> {
   Widget build(BuildContext context) {
     final s = DeliveryStrings(context);
     return Scaffold(
-      appBar: AppBar(title: Text(s.history)),
+      appBar:
+          AppBar(title: Text(widget.activeOnly ? s.activeOrders : s.history)),
       body: SafeArea(
           child: FutureBuilder(
         future: _history,
@@ -513,7 +518,9 @@ class _HistoryState extends State<_History> {
               child: Text(s.retry),
             ));
           }
-          final orders = snapshot.data!;
+          final orders = snapshot.data!
+              .where((order) => !widget.activeOnly || order.active)
+              .toList(growable: false);
           if (orders.isEmpty) {
             return Center(
                 child: Text(s.t('Отправлений пока нет.',

@@ -16,6 +16,10 @@ class DeliveryStrings {
   String get pickup => t('Откуда забрать', 'Алып кету мекенжайы', 'Pickup');
   String get destination =>
       t('Куда доставить', 'Жеткізу мекенжайы', 'Destination');
+  String get sendParcel =>
+      t('Отправить посылку', 'Сәлемдеме жіберу', 'Send a parcel');
+  String get activeOrders =>
+      t('Активные заказы', 'Белсенді тапсырыстар', 'Active orders');
   String get history =>
       t('История отправлений', 'Жөнелтілімдер тарихы', 'Shipment history');
   String get retry => t('Повторить', 'Қайталау', 'Retry');
