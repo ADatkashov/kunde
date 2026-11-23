@@ -56,6 +56,12 @@ public class BookingSlots {
         }
     }
 
+    void requireBeauty() {
+        if (!toggles.enabled(FeatureToggles.Feature.BEAUTY)) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "BEAUTY_DISABLED", "Beauty is unavailable");
+        }
+    }
+
     void requireHealthCatalog() {
         if (!healthEnabled()) {
             throw new ApiException(HttpStatus.NOT_FOUND, "HEALTH_DISABLED", "Health catalog is unavailable");
@@ -77,6 +83,9 @@ public class BookingSlots {
                 "Venue is not available"));
         if ("CLEANING".equals(venue.category())) {
             requireHomeServices();
+        }
+        if ("BARBER".equals(venue.category())) {
+            requireBeauty();
         }
         return venue;
     }

@@ -204,6 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
     bool ridesEnabled,
     bool deliveryEnabled, {
     bool homeServicesEnabled = false,
+    bool beautyEnabled = false,
     bool autoEnabled = false,
     bool leisureEnabled = false,
     bool eventsEnabled = false,
@@ -252,7 +253,7 @@ class _HomeScreenState extends State<HomeScreen> {
           icon: Icons.content_cut_rounded,
           label: s.catBeauty,
           color: const Color(0xFFB83280),
-          enabled: bookingEnabled && widget.booking != null,
+          enabled: beautyEnabled && widget.booking != null,
         ),
         ServiceCategory(
           icon: Icons.favorite_rounded,
@@ -329,7 +330,7 @@ class _HomeScreenState extends State<HomeScreen> {
         widget.delivery != null) {
       unawaited(_openDelivery());
     } else if (c.label == s.catBeauty &&
-        bookingEnabled &&
+        c.enabled &&
         widget.booking != null) {
       Navigator.of(context).push(
         MaterialPageRoute<void>(
@@ -471,6 +472,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   leisureEnabled: snapshot?.leisureEnabled ?? false,
                   eventsEnabled: snapshot?.eventsEnabled ?? false,
                   homeServicesEnabled: snapshot?.homeServicesEnabled ?? false,
+                  beautyEnabled: snapshot?.beautyEnabled ?? false,
                   healthEnabled: snapshot?.healthEnabled ?? false,
                   educationEnabled: snapshot?.educationEnabled ?? false,
                   groceriesEnabled: snapshot?.groceriesEnabled ?? false,
@@ -670,7 +672,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ],
                     if (snapshot?.bookingEnabled == true &&
-                        widget.booking != null) ...[
+                        widget.booking != null &&
+                        (snapshot?.homeServicesEnabled == true ||
+                            snapshot?.beautyEnabled == true)) ...[
                       const SizedBox(height: 24),
                       SectionTitle(title: s.catServices),
                       const SizedBox(height: 8),
@@ -692,22 +696,24 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            if (snapshot?.beautyEnabled == true)
+                              const SizedBox(width: 8),
                           ],
-                          Expanded(
-                            child: ServicePhotoCard(
-                              label: s.catBeauty,
-                              asset: 'assets/photos/beauty.jpg',
-                              onTap: () => _onCategory(
-                                categories.firstWhere(
-                                  (c) => c.label == s.catBeauty,
+                          if (snapshot?.beautyEnabled == true)
+                            Expanded(
+                              child: ServicePhotoCard(
+                                label: s.catBeauty,
+                                asset: 'assets/photos/beauty.jpg',
+                                onTap: () => _onCategory(
+                                  categories.firstWhere(
+                                    (c) => c.label == s.catBeauty,
+                                  ),
+                                  categories,
+                                  marketplace,
+                                  true,
                                 ),
-                                categories,
-                                marketplace,
-                                true,
                               ),
                             ),
-                          ),
                         ],
                       ),
                     ],

@@ -68,6 +68,9 @@ public class BookingCatalogController {
         if ("CLEANING".equals(category)) {
             slots.requireHomeServices();
         }
+        if ("BARBER".equals(category)) {
+            slots.requireBeauty();
+        }
         List<Venue> list = jdbc.query(VENUE_SELECT + " where v.category = ? order by v.is_open desc, v.sort_order, v.name",
                 BookingCatalogController::mapVenue, category);
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(list);
@@ -154,6 +157,9 @@ public class BookingCatalogController {
                 .stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "VENUE_NOT_FOUND",
                         "Venue is not available"));
         if ("HEALTH".equals(venue.category())) { slots.requireHealthCatalog(); }
+        if ("BARBER".equals(venue.category())) {
+            slots.requireBeauty();
+        }
         if ("CLEANING".equals(venue.category())) {
             slots.requireHomeServices();
         }

@@ -22,15 +22,16 @@
 | KUNDE Maps (адрес, «Рядом», маршрут) | Backend за `MAPS_ENABLED`, клиентских экранов нет | `PROJECT_STATE.md` |
 | Внешние зависимости | Реальный платёжный провайдер не подключён; проверка на Samsung — только владелец | — |
 
-Решение: Beauty — расширение Booking Engine (категории `BARBER` и новые), а не новый модуль. Запись в барбершоп остаётся под `BOOKING_ENABLED` и **не** зависит от `BEAUTY_ENABLED` (иначе сломался бы действующий пилот); `BEAUTY_ENABLED` закрывает новый публичный Beauty API.
+Решение: Beauty — расширение Booking Engine (категории `BARBER` и новые), а не новый модуль. Решение владельца (2026-11-23): запись в барбершоп **подчиняется `BEAUTY_ENABLED`**, как уборка подчиняется `HOME_SERVICES_ENABLED`. Для работы нужны оба флага: `BOOKING_ENABLED` (механизм) и `BEAUTY_ENABLED` (продукт). Без Beauty каталог, карточка, слоты и новые записи барбершопа отвечают `404 BEAUTY_DISABLED`; история, чтение и отмена уже созданных записей остаются доступными. DEV включает оба флага (Terraform, `android-visual.yml`); на уже развёрнутом DEV-сервисе `BEAUTY_ENABLED` нужно выставить при следующем деплое, иначе барбершопы там скроются.
 
 ## Сделано в этой ветке (Phase 1 — Foundation, часть 1)
 
-- `BEAUTY_ENABLED` (`app.beauty.enabled`): выключен по умолчанию, допускается только в явном окружении `local/dev/test` при `BOOKING_ENABLED=true` (`BeautySettings`), управляется Admin API переключателей (`Feature.BEAUTY`, аудит, версия) и отражается в `GET /api/v1/capabilities` как `beautyEnabled`.
+- `BEAUTY_ENABLED` (`app.beauty.enabled`): закрывает весь Beauty, включая барбершопы Booking Engine; выключен по умолчанию, допускается только в явном окружении `local/dev/test` при `BOOKING_ENABLED=true` (`BeautySettings`), управляется Admin API переключателей (`Feature.BEAUTY`, аудит, версия) и отражается в `GET /api/v1/capabilities` как `beautyEnabled`.
 - Flyway **V63**: допустимые значения `feature_toggles(.events)` расширены `BEAUTY`; таблица `marketplace.beauty_categories` (RU/KK/EN, 8 плиток главной + 4 в «Ещё»).
 - `GET /api/v1/beauty/categories?featured&limit&offset` (публичный, пагинация, `404 BEAUTY_DISABLED` при выключенном флаге).
-- Flutter: `PlatformSnapshot.beautyEnabled`, подпись переключателя «Красота и уход» в Admin.
-- Проверено локально (PostgreSQL 16): `Beauty*`, `PlatformControllerTest`, `HomeServicesSettingsTest`, `FeatureTogglesApiIntegrationTest`, `BookingApiIntegrationTest` — 29 тестов, 0 ошибок. Flutter-тесты не запускались (SDK в окружении нет).
+- Booking: `BARBER`-заведения (список, карточка, слоты, создание записи) закрыты флагом; тест `disabledBeautyBlocksBarbershopCatalogSlotsAndNewBookingsButKeepsExistingBookings`.
+- Flutter: `PlatformSnapshot.beautyEnabled`; плитка «Красота» и блок барбершопов в «Услуги» зависят от `beautyEnabled`; подпись переключателя в Admin. Ограничение: ярлык «Выбрать услугу» в пустом списке записей виден только если экран получил флаги (в `OrdersHubTab` они пока не пробрасываются).
+- Проверено локально (PostgreSQL 16): `Beauty*`, `PlatformControllerTest`, `HomeServicesSettingsTest`, `FeatureTogglesApiIntegrationTest`, `BookingApiIntegrationTest` — 76 тестов (плюс Auto, Partner, Health), 0 ошибок. Flutter-тесты не запускались (SDK в окружении нет).
 
 ## План (по фазам из ТЗ)
 

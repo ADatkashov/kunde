@@ -43,6 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
         "app.identity.consumer-enabled=true",
         "app.food.enabled=true",
         "app.booking.enabled=true",
+        "app.beauty.enabled=true",
         "app.auth.phone.enabled=true",
         "app.auth.phone.secret=synthetic-test-secret-synthetic-test-secret",
         "app.auth.phone.dev-otp.enabled=true",

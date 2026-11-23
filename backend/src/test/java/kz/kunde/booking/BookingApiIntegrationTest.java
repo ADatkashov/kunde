@@ -42,6 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
         "app.identity.consumer-enabled=true",
         "app.booking.enabled=true",
         "app.home-services.enabled=true",
+        "app.beauty.enabled=true",
         "app.auth.phone.enabled=true",
         "app.auth.phone.secret=synthetic-test-secret-synthetic-test-secret",
         "app.auth.phone.dev-otp.enabled=true",
@@ -444,6 +445,35 @@ class BookingApiIntegrationTest {
             send("POST", "/api/v1/booking/bookings", token, request, "clean-gate-000000002")
                     .andExpect(status().isNotFound());
             send("GET", "/api/v1/booking/venues?category=BARBER", null, null, null).andExpect(status().isOk());
+            send("GET", "/api/v1/booking/bookings/" + id, token, null, null).andExpect(status().isOk());
+            send("POST", "/api/v1/booking/bookings/" + id + "/cancel", token, null, null).andExpect(status().isOk());
+        } finally {
+            toggles.invalidate();
+        }
+    }
+
+    @Test
+    void disabledBeautyBlocksBarbershopCatalogSlotsAndNewBookingsButKeepsExistingBookings() throws Exception {
+        String slug = "barber-alatau";
+        String service = "Мужская стрижка";
+        String venue = venueId(slug);
+        String token = login("+77000000301");
+        var slot = slots(slug, service, null, tomorrow()).getFirst();
+        String request = book(slug, service, (String) slot.get("masterName"), (String) slot.get("startsAt"), null);
+        String id = JsonPath.read(body(send("POST", "/api/v1/booking/bookings", token, request, "beauty-gate-0000000001")
+                .andExpect(status().isCreated())), "$.id");
+        UUID user = db.queryForObject("select b.user_id from transactions.bookings b where b.id = ?::uuid", UUID.class, id);
+        try {
+            toggles.set(user, kz.kunde.platform.FeatureToggles.Feature.BEAUTY, false, "Disable test pilot", null);
+            send("GET", "/api/v1/capabilities", null, null, null)
+                    .andExpect(jsonPath("$.beautyEnabled").value(false))
+                    .andExpect(jsonPath("$.bookingEnabled").value(true));
+            send("GET", "/api/v1/booking/venues?category=BARBER", null, null, null).andExpect(status().isNotFound());
+            send("GET", "/api/v1/booking/venues/" + venue, null, null, null).andExpect(status().isNotFound());
+            send("GET", "/api/v1/booking/slots?venueId=" + venue + "&serviceId=" + serviceId(slug, service)
+                    + "&date=" + tomorrow(), null, null, null).andExpect(status().isNotFound());
+            send("POST", "/api/v1/booking/bookings", token, request, "beauty-gate-0000000002").andExpect(status().isNotFound());
+            send("GET", "/api/v1/booking/venues?category=CLEANING", null, null, null).andExpect(status().isOk());
             send("GET", "/api/v1/booking/bookings/" + id, token, null, null).andExpect(status().isOk());
             send("POST", "/api/v1/booking/bookings/" + id + "/cancel", token, null, null).andExpect(status().isOk());
         } finally {

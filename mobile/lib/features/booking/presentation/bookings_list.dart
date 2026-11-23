@@ -12,16 +12,28 @@ import 'services_home_screen.dart';
 /// History of the signed-in customer's bookings, restored from the server on every open.
 class BookingsList extends StatefulWidget {
   const BookingsList(
-      {required this.services, this.healthOnly = false, super.key});
+      {required this.services,
+      this.healthOnly = false,
+      this.beautyEnabled = false,
+      this.homeServicesEnabled = false,
+      super.key});
 
   final BookingServices services;
   final bool healthOnly;
+
+  /// The «choose a service» shortcut of the empty state opens the services catalog only with a product enabled.
+  final bool beautyEnabled;
+  final bool homeServicesEnabled;
 
   @override
   State<BookingsList> createState() => _BookingsListState();
 }
 
 class _BookingsListState extends State<BookingsList> {
+  bool get _canChooseService =>
+      !widget.healthOnly &&
+      (widget.beautyEnabled || widget.homeServicesEnabled);
+
   late Future<List<BookingRecord>> _bookings =
       widget.services.api.bookings(healthOnly: widget.healthOnly);
 
@@ -65,12 +77,14 @@ class _BookingsListState extends State<BookingsList> {
             icon: Icons.event_busy_outlined,
             title: s.bkEmptyTitle,
             body: s.bkEmptyBody,
-            actionLabel: widget.healthOnly ? null : s.bkChooseService,
-            onAction: widget.healthOnly
+            actionLabel: _canChooseService ? s.bkChooseService : null,
+            onAction: !_canChooseService
                 ? null
                 : () => Navigator.of(context).push(MaterialPageRoute<void>(
-                    builder: (_) =>
-                        ServicesHomeScreen(services: widget.services))),
+                    builder: (_) => ServicesHomeScreen(
+                        services: widget.services,
+                        beautyEnabled: widget.beautyEnabled,
+                        homeServicesEnabled: widget.homeServicesEnabled))),
           );
         }
         final upcoming =

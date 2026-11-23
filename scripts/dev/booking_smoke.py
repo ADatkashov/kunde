@@ -2,7 +2,7 @@
 """End-to-end smoke test of the KUNDE barbershop booking DEV pilot over real HTTP (stdlib only).
 
 Usage: booking_smoke.py BASE_URL [PHONE] [--keep]
-Needs a backend started with HOME_SERVICES_ENABLED, BOOKING_ENABLED (and BOOKING_SEED_DEMO), AUTH_PHONE_ENABLED and AUTH_DEV_OTP_ENABLED in a
+Needs a backend started with HOME_SERVICES_ENABLED, BEAUTY_ENABLED, BOOKING_ENABLED (and BOOKING_SEED_DEMO), AUTH_PHONE_ENABLED and AUTH_DEV_OTP_ENABLED in a
 dev/local/test environment and a synthetic allowlisted number (default +77000000001). Books one slot and cancels it
 (unless --keep); exit code 1 on the first failed check.
 """
