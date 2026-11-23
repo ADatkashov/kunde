@@ -17,7 +17,22 @@ APKS = Path(os.environ["RUNNER_TEMP"]) / "rides-apk"
 CONSUMER = "com.example.kunde_mobile"
 EXECUTOR = "com.kunde.executor"
 API = "http://127.0.0.1:8081/api/v1/"
-completed = []
+
+
+class Stages(list):
+    """Completed stage names plus the seconds since the run began when each finished (emulator on a CI runner, not a device)."""
+
+    def __init__(self):
+        super().__init__()
+        self.started = time.monotonic()
+        self.seconds = {}
+
+    def append(self, name):
+        super().append(name)
+        self.seconds[name] = round(time.monotonic() - self.started, 1)
+
+
+completed = Stages()
 FIXTURE_AUTH_KEY = secrets.token_urlsafe(48)
 
 
@@ -26,6 +41,7 @@ def write_report(status, phase):
         "status": status,
         "phase": phase,
         "completed": completed,
+        "secondsSinceStart": completed.seconds,
         "data": "synthetic",
         "paymentEnabled": False,
     }, indent=2) + "\n")
@@ -135,6 +151,8 @@ def open_rides():
     for _ in range(4):
         try:
             android.tap("Поездки", "Rides", "Сапарлар", timeout=5)
+            # Rides opens on the category hub (RidesHubScreen); city rides is the only category with a backend contract.
+            android.tap("По городу", "City rides", "Қала бойынша", timeout=15)
             android.find("Откуда", "Pickup", "Қайдан", timeout=15)
             return
         except RuntimeError:
@@ -153,7 +171,7 @@ def create_ride():
     android.tap("Узнать стоимость", "Get fare", "Бағасын білу")
     android.find("Тестовый маршрут", "Test route", "Сынақ бағыты")
     android.tap("Заказать поездку", "Request ride", "Сапарға тапсырыс беру")
-    android.find("Ищем водителя", "Finding a driver", "Жүргізуші ізделуде", timeout=45)
+    android.find("Ищем водителя...", "Finding a driver...", "Жүргізуші ізделуде...", timeout=45)
 
 
 def find_completed():
@@ -163,6 +181,29 @@ def find_completed():
         "Test route · Ride complete",
         "Сынақ бағыты · Сапар аяқталды",
     )
+
+
+def open_history(back_first=False):
+    """Reach the History tab from wherever the previous step left the app (Rides is now a hub plus a city screen)."""
+    if back_first:
+        android.adb("shell", "input", "keyevent", "4")
+    for _ in range(5):
+        try:
+            android.tap("История", "History", "Тарих", timeout=4)
+            return
+        except RuntimeError:
+            android.adb("shell", "input", "keyevent", "4")
+    raise RuntimeError("History did not open")
+
+
+def capture_failure():
+    """Keep what the screen showed when a step failed: a failed run must be diagnosable from its artifact alone."""
+    try:
+        android.screenshot("failure")
+        android.adb("shell", "uiautomator", "dump", "/sdcard/kunde-failure.xml")
+        (android.REPORT / "failure-ui.xml").write_bytes(android.adb("exec-out", "cat", "/sdcard/kunde-failure.xml"))
+    except Exception as error:  # diagnostics must never mask the original failure
+        print(f"could not capture failure state: {error}")
 
 
 def main():
@@ -224,9 +265,15 @@ def main():
         completed.append("executor_arrival_start_complete_history")
 
         launch(CONSUMER)
-        find_completed()
-        android.adb("shell", "input", "keyevent", "4")
-        android.tap("История", "History", "Тарих")
+        android.find("Поездка завершена!", "Ride complete!", "Сапар аяқталды!", timeout=60)
+        android.screenshot("consumer-completed")
+        completed.append("consumer_trip_completed_screen")
+        android.tap("Оценка: 5 из 5", "Rating: 5 of 5", "Баға: 5-тен 5")
+        android.tap("Готово", "Done", "Дайын", clickable=True)
+        rides_now = call("GET", "rides", token=session("+77000000001"))
+        assert rides_now[0]["status"] == "COMPLETED" and rides_now[0]["rating"]["stars"] == 5, "Rating from the UI was not stored"
+        completed.append("consumer_rating_stored_in_backend")
+        open_history()
         find_completed()
         android.screenshot("consumer-history")
         completed.append("consumer_history")
@@ -234,13 +281,13 @@ def main():
         phase = "network_retry_and_cancellation"
         android.adb("shell", "input", "keyevent", "4")
         stop_backend(process)
-        android.tap("История", "History", "Тарих")
+        open_history()
         android.find("Повторить", "Retry", "Қайталау", timeout=30)
         process = start_backend(True)
         android.tap("Повторить", "Retry", "Қайталау")
         find_completed()
         completed.append("consumer_network_retry")
-        android.adb("shell", "input", "keyevent", "4")
+        android.adb("shell", "input", "keyevent", "4")  # History -> the city screen, which keeps both chosen addresses
         create_ride()
         android.tap("Отменить поездку", "Cancel ride", "Сапардан бас тарту")
         android.tap("Отменить поездку", "Cancel ride", "Сапардан бас тарту", clickable=True)
@@ -285,6 +332,7 @@ def main():
         write_report("PASSED", phase)
     except Exception:
         write_report("FAILED", phase)
+        capture_failure()
         raise
     finally:
         if process is not None and process.poll() is None:
