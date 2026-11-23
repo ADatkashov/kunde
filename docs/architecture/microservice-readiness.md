@@ -5,6 +5,8 @@
 
 Как воспроизвести цифры: `cd backend && mvn test -Dtest=ArchitectureBoundariesTest`; полный список связей — [`cross-module-baseline.txt`](../../backend/src/test/resources/architecture/cross-module-baseline.txt); владельцы таблиц — [`table-owners.txt`](../../backend/src/test/resources/architecture/table-owners.txt).
 
+См. также: [database-sharding-readiness](database-sharding-readiness.md) — размещение данных по городам.
+
 ## 1. Текущая фактическая архитектура
 
 - Один деплой `kunde-api`, плоские пакеты `kz.kunde.<module>` (подпакетов нет): `auth, identity, partner, admin, catalog, platform, config, auto, booking, health, food, groceries, delivery, rides, maps, leisure, events, education, support, fulfillment, order, notification, analytics`.
