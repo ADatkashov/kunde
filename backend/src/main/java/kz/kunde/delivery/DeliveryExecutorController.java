@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.UUID;
 import kz.kunde.identity.ConsumerIdentityService;
-import kz.kunde.rides.RideRoutingController.Coordinates;
+import kz.kunde.platform.geo.Coordinates;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;

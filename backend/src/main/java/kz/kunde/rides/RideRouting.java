@@ -3,7 +3,7 @@ package kz.kunde.rides;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import kz.kunde.rides.RideMatching.Point;
+import kz.kunde.platform.geo.Point;
 
 /** Maps provider boundary. Coordinates are WGS 84 and duration and distance come from a road route.
  * Implementations report provider outages with {@link Unavailable}. Empty results denote no match.

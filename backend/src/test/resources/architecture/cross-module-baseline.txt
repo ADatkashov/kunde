@@ -26,16 +26,11 @@ IMPORT booking/BeautyPartnerController.java -> partner.PartnerAccessPolicy
 IMPORT booking/BeautyPartnerController.java -> partner.PartnerService
 IMPORT booking/BookingPartnerController.java -> partner.PartnerAccessPolicy
 IMPORT booking/BookingPartnerService.java -> partner.PartnerService
-IMPORT delivery/DeliveryController.java -> rides.RideRoutingController
-IMPORT delivery/DeliveryCouriers.java -> rides.RideRoutingController
 IMPORT delivery/DeliveryDispatch.java -> rides.RideMatching
-IMPORT delivery/DeliveryExecutorController.java -> rides.RideRoutingController
 IMPORT delivery/DeliveryPartnerController.java -> partner.PartnerAccessPolicy
 IMPORT delivery/DeliveryPartnerController.java -> partner.PartnerService
 IMPORT delivery/DeliveryService.java -> rides.RideRouting
-IMPORT delivery/DeliveryService.java -> rides.RideRoutingController
 IMPORT delivery/DeliveryService.java -> rides.SyntheticRideRouting
-IMPORT delivery/DeliveryTracking.java -> rides.RideRoutingController
 IMPORT education/EducationOperationsController.java -> partner.PartnerAccessPolicy
 IMPORT education/EducationOperationsService.java -> partner.PartnerService
 IMPORT events/EventsCatalogController.java -> leisure.LeisureCatalogService
@@ -50,7 +45,6 @@ IMPORT leisure/LeisureDemoSeeder.java -> partner.PartnerOpsDemoSeeder
 IMPORT leisure/LeisureExecutorService.java -> partner.PartnerService
 IMPORT leisure/LeisurePartnerController.java -> partner.PartnerAccessPolicy
 IMPORT leisure/LeisurePartnerService.java -> partner.PartnerService
-IMPORT maps/KundeMapsRideRouting.java -> rides.RideMatching
 IMPORT maps/KundeMapsRideRouting.java -> rides.RideRouting
 IMPORT maps/MapsConfiguration.java -> rides.RideRouting
 IMPORT partner/PartnerOpsDemoSeeder.java -> auth.PhoneAuthProperties

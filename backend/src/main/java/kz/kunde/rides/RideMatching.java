@@ -7,20 +7,12 @@ import java.util.Comparator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import kz.kunde.platform.geo.Point;
 
 public final class RideMatching {
     private RideMatching() {}
 
     public enum RideClass { ECONOMY, COMFORT, BUSINESS, MINIVAN }
-
-    public record Point(double latitude, double longitude) {
-        public Point {
-            if (!Double.isFinite(latitude) || Math.abs(latitude) > 90
-                    || !Double.isFinite(longitude) || Math.abs(longitude) > 180) {
-                throw new IllegalArgumentException("Invalid coordinates");
-            }
-        }
-    }
 
     public record Candidate(UUID driverId, RideClass rideClass, boolean online, boolean verified,
             boolean vehicleApproved, boolean hasActiveRide, Point location, Instant observedAt) {}

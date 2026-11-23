@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import kz.kunde.rides.RideMatching.Candidate;
-import kz.kunde.rides.RideMatching.Point;
+import kz.kunde.platform.geo.Point;
 import org.junit.jupiter.api.Test;
 
 class RideMatchingTest {

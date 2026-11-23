@@ -13,7 +13,7 @@ import kz.kunde.rides.RideDispatchService.Offer;
 import kz.kunde.rides.RideState.Action;
 import kz.kunde.rides.RideDriverService.Driver;
 import kz.kunde.rides.RideMatching.RideClass;
-import kz.kunde.rides.RideRoutingController.Coordinates;
+import kz.kunde.platform.geo.Coordinates;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;

@@ -15,7 +15,7 @@ import kz.kunde.delivery.DeliveryController.QuoteRequest;
 import kz.kunde.platform.ApiException;
 import kz.kunde.rides.RideRouting;
 import kz.kunde.rides.SyntheticRideRouting;
-import kz.kunde.rides.RideRoutingController.Coordinates;
+import kz.kunde.platform.geo.Coordinates;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
