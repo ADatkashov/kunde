@@ -27,6 +27,11 @@ class RidesScreen extends StatefulWidget {
 }
 
 class _RidesScreenState extends State<RidesScreen> {
+  /// Classes the map flow prices at once. A class the server has no tariff for
+  /// answers `RIDE_CLASS_UNAVAILABLE` and is simply not shown.
+  static const _baseClasses = ['ECONOMY', 'COMFORT', 'BUSINESS'];
+  static const _allClasses = [..._baseClasses, 'MINIVAN'];
+
   RideAddress? _pickup;
   RideAddress? _destination;
   String _rideClass = 'ECONOMY';
@@ -35,12 +40,156 @@ class _RidesScreenState extends State<RidesScreen> {
   bool _busy = false;
   String? _error;
 
+  // Map flow only: one server quote per class for the current pair of points.
+  Map<String, RideQuote> _quotes = const {};
+  final Map<String, String> _keys = {};
+  bool _quoting = false;
+  bool _quoted = false;
+  int _quoteRun = 0;
+
   RideApi get _api => widget.api;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.maps != null) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => unawaited(_locateStart()),
+      );
+    }
+  }
 
   void _invalidateQuote() {
     _quote = null;
     _key = null;
     _error = null;
+    _quotes = const {};
+    _keys.clear();
+    _quoted = false;
+  }
+
+  /// Like the reference: the pickup starts at "My location". The device
+  /// position is used for this screen only; without it the user picks a point.
+  Future<void> _locateStart() async {
+    final maps = widget.maps;
+    if (maps == null || !mounted || _pickup != null) return;
+    final label = RideStrings(context).myLocation;
+    final GeoPoint? point;
+    try {
+      point = await maps.geolocation.currentPoint();
+    } catch (_) {
+      return;
+    }
+    if (point == null || !mounted || _pickup != null) return;
+    final here = point;
+    setState(() {
+      _pickup = RideAddress(label, {
+        'latitude': here.lat,
+        'longitude': here.lon,
+      });
+      _invalidateQuote();
+    });
+    if (_destination != null) unawaited(_quoteAll());
+  }
+
+  /// Prices every class for the current points, in parallel. Prices are the
+  /// server's quotes; the device computes nothing.
+  Future<void> _quoteAll({String? notice}) async {
+    final pickup = _pickup;
+    final destination = _destination;
+    if (pickup == null || destination == null) return;
+    final run = ++_quoteRun;
+    setState(() {
+      _quoting = true;
+      _quoted = false;
+      _quotes = const {};
+      _keys.clear();
+      _quote = null;
+      _key = null;
+      _error = notice;
+    });
+    final found = <String, RideQuote>{};
+    Object? failure;
+    await Future.wait([
+      for (final value in _allClasses)
+        () async {
+          try {
+            found[value] = await _api.quote(pickup, destination, value);
+          } on IdentityApiError catch (error) {
+            if (error.code != 'RIDE_CLASS_UNAVAILABLE') failure = error;
+          } catch (error) {
+            failure = error;
+          }
+        }(),
+    ]);
+    if (!mounted || run != _quoteRun) return;
+    final strings = RideStrings(context);
+    setState(() {
+      _quoting = false;
+      _quoted = true;
+      _quotes = found;
+      if (found.isEmpty) {
+        final failed = failure;
+        _error = failed is IdentityApiError && failed.status == 503
+            ? strings.unavailable
+            : strings.error;
+        return;
+      }
+      if (!found.containsKey(_rideClass)) {
+        _rideClass = _allClasses.firstWhere(found.containsKey);
+      }
+      _select(_rideClass);
+    });
+  }
+
+  void _select(String value) {
+    _rideClass = value;
+    _quote = _quotes[value];
+    _key = _quote == null ? null : _keys.putIfAbsent(value, _newKey);
+  }
+
+  static String _newKey() {
+    final random = Random.secure();
+    return base64Url.encode(List.generate(18, (_) => random.nextInt(256)));
+  }
+
+  /// Map flow: one tap orders the selected, already priced class.
+  Future<void> _order() async {
+    final strings = RideStrings(context);
+    final quote = _quote;
+    final key = _key;
+    if (quote == null || key == null) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final trip = await _api.create(quote, key);
+      if (!mounted) return;
+      setState(_invalidateQuote);
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) =>
+              _RideDetails(api: _api, trip: trip, maps: widget.maps),
+        ),
+      );
+      // The quotes were spent by the order; price the same route again.
+      if (mounted) unawaited(_quoteAll());
+    } on IdentityApiError catch (error) {
+      if (!mounted) return;
+      if (error.code == 'RIDE_QUOTE_UNAVAILABLE') {
+        unawaited(_quoteAll(notice: strings.priceUpdated));
+      } else {
+        setState(
+          () => _error =
+              error.status == 503 ? strings.unavailable : strings.error,
+        );
+      }
+    } catch (_) {
+      if (mounted) setState(() => _error = strings.error);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _chooseAddress(bool pickup) async {
@@ -74,7 +223,14 @@ class _RidesScreenState extends State<RidesScreen> {
         _destination = address;
       }
       _invalidateQuote();
+      if (maps == null || _pickup == null || _destination == null) {
+        _quoteRun++;
+        _quoting = false;
+      }
     });
+    if (maps != null && _pickup != null && _destination != null) {
+      unawaited(_quoteAll());
+    }
   }
 
   Future<void> _submit() async {
@@ -156,6 +312,65 @@ class _RidesScreenState extends State<RidesScreen> {
     );
   }
 
+  /// Classes on screen. The map flow shows what the server priced; before the
+  /// quotes arrive (or when all failed) the standard three stay visible.
+  List<String> _visibleClasses(bool mapMode) {
+    if (!mapMode) return _baseClasses;
+    if (_quoted && _quotes.isNotEmpty) {
+      return [
+        for (final value in _allClasses)
+          if (_quotes.containsKey(value)) value
+      ];
+    }
+    return _baseClasses;
+  }
+
+  /// Pickup and destination. In the map flow the rows read like the reference:
+  /// a coloured marker, the chosen address and a chevron or "+".
+  Widget _addressCard(RideStrings s, bool mapMode) {
+    final scheme = Theme.of(context).colorScheme;
+    final pickup = _pickup;
+    final destination = _destination;
+    return Card(
+      child: Column(
+        children: [
+          ListTile(
+            leading: Icon(
+              mapMode ? Icons.circle : Icons.trip_origin,
+              size: mapMode ? 14 : null,
+              color: mapMode ? scheme.primary : null,
+            ),
+            title: Text(mapMode ? (pickup?.label ?? s.pickup) : s.pickup),
+            subtitle: mapMode || pickup == null ? null : Text(pickup.label),
+            trailing: mapMode ? const Icon(Icons.chevron_right_rounded) : null,
+            onTap: _busy ? null : () => _chooseAddress(true),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: Icon(
+              Icons.location_on,
+              color: mapMode ? Colors.red : null,
+            ),
+            title: Text(
+              mapMode ? (destination?.label ?? s.destination) : s.destination,
+            ),
+            subtitle:
+                mapMode || destination == null ? null : Text(destination.label),
+            trailing: mapMode
+                ? Icon(
+                    destination == null
+                        ? Icons.add_rounded
+                        : Icons.chevron_right_rounded,
+                    color: scheme.primary,
+                  )
+                : null,
+            onTap: _busy ? null : () => _chooseAddress(false),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = RideStrings(context);
@@ -209,31 +424,7 @@ class _RidesScreenState extends State<RidesScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Card(
-                          child: Column(
-                            children: [
-                              ListTile(
-                                leading: const Icon(Icons.trip_origin),
-                                title: Text(s.pickup),
-                                subtitle: _pickup == null
-                                    ? null
-                                    : Text(_pickup!.label),
-                                onTap:
-                                    _busy ? null : () => _chooseAddress(true),
-                              ),
-                              const Divider(height: 1),
-                              ListTile(
-                                leading: const Icon(Icons.location_on_outlined),
-                                title: Text(s.destination),
-                                subtitle: _destination == null
-                                    ? null
-                                    : Text(_destination!.label),
-                                onTap:
-                                    _busy ? null : () => _chooseAddress(false),
-                              ),
-                            ],
-                          ),
-                        ),
+                        _addressCard(s, mapMode),
                         const SizedBox(height: 16),
                         Text(
                           s.tariffLabel,
@@ -243,24 +434,28 @@ class _RidesScreenState extends State<RidesScreen> {
                               ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 8),
-                        for (final value in const [
-                          'ECONOMY',
-                          'COMFORT',
-                          'BUSINESS'
-                        ])
+                        for (final value in _visibleClasses(mapMode))
                           Padding(
                             padding: const EdgeInsets.only(bottom: 8),
                             child: RideTariffCard(
                               value: value,
                               selected: value == _rideClass,
-                              price: value == _rideClass && quote != null
-                                  ? '${quote.fare} KZT'
-                                  : null,
+                              price: mapMode
+                                  ? _quotes[value] == null
+                                      ? null
+                                      : rideFare(_quotes[value]!.fare)
+                                  : value == _rideClass && quote != null
+                                      ? '${quote.fare} KZT'
+                                      : null,
                               onTap: _busy
                                   ? null
                                   : () => setState(() {
-                                        _rideClass = value;
-                                        _invalidateQuote();
+                                        if (mapMode) {
+                                          _select(value);
+                                        } else {
+                                          _rideClass = value;
+                                          _invalidateQuote();
+                                        }
                                       }),
                             ),
                           ),
@@ -269,7 +464,9 @@ class _RidesScreenState extends State<RidesScreen> {
                             leading: const Icon(Icons.science_outlined),
                             title: Text(s.synthetic),
                           ),
-                        if (quote != null)
+                        // The map flow already shows distance and typical time in
+                        // the route preview above; the list flow has no map.
+                        if (quote != null && !mapMode)
                           Card(
                             child: ListTile(
                               leading: const Icon(Icons.route_outlined),
@@ -283,6 +480,14 @@ class _RidesScreenState extends State<RidesScreen> {
                             ),
                           ),
                         if (_error != null) _InlineError(message: _error!),
+                        if (mapMode && _error != null && _quoted)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: TextButton(
+                              onPressed: _quoting ? null : _quoteAll,
+                              child: Text(s.retry),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -294,17 +499,28 @@ class _RidesScreenState extends State<RidesScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (_busy) const LinearProgressIndicator(),
+                  if (_busy || _quoting) const LinearProgressIndicator(),
                   const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
-                    child: FilledButton(
-                      onPressed:
-                          _busy || _pickup == null || _destination == null
-                              ? null
-                              : _submit,
-                      child: Text(quote == null ? s.quote : s.confirm),
-                    ),
+                    child: mapMode
+                        ? FilledButton(
+                            onPressed: _busy || _quoting || quote == null
+                                ? null
+                                : _order,
+                            child: Text(
+                              quote == null
+                                  ? s.order
+                                  : '${s.order} · ${rideFare(quote.fare)}',
+                            ),
+                          )
+                        : FilledButton(
+                            onPressed:
+                                _busy || _pickup == null || _destination == null
+                                    ? null
+                                    : _submit,
+                            child: Text(quote == null ? s.quote : s.confirm),
+                          ),
                   ),
                 ],
               ),

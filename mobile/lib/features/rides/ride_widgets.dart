@@ -6,6 +6,22 @@ import 'package:kunde_design/kunde_design.dart';
 import 'ride_api.dart';
 import 'ride_strings.dart';
 
+/// A server fare as the reference shows it: `1 200 ₸`. Whole tenge have no
+/// decimals; a fractional estimate keeps two so nothing is rounded silently.
+String rideFare(num value) {
+  final cents = (value * 100).round();
+  final fraction = cents % 100;
+  final digits = (cents ~/ 100).toString();
+  final grouped = StringBuffer();
+  for (var i = 0; i < digits.length; i++) {
+    if (i > 0 && (digits.length - i) % 3 == 0) grouped.write('\u00A0');
+    grouped.write(digits[i]);
+  }
+  final decimals =
+      fraction == 0 ? '' : '.${fraction.toString().padLeft(2, '0')}';
+  return '$grouped$decimals\u00A0₸';
+}
+
 /// One selectable fare class. [price] is shown only after the server has issued
 /// a quote for this class; nothing is estimated on the device.
 class RideTariffCard extends StatelessWidget {

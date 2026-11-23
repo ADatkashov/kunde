@@ -11,6 +11,7 @@ import 'package:kunde_mobile/features/home/data/platform_snapshot.dart';
 import 'package:kunde_mobile/features/identity/auth_repository.dart';
 import 'package:kunde_mobile/features/rides/ride_api.dart';
 import 'package:kunde_mobile/features/rides/ride_map_panels.dart';
+import 'package:kunde_mobile/features/rides/ride_widgets.dart' show rideFare;
 import 'package:kunde_mobile/features/rides/rides_screen.dart';
 
 import '../../support/fake_kunde_maps.dart';
@@ -20,8 +21,21 @@ final _route = File(
   '../backend/src/test/resources/maps/routes-200.json',
 ).readAsBytesSync();
 
+const _fares = {
+  'ECONOMY': 435.14,
+  'COMFORT': 1700,
+  'BUSINESS': 3500,
+  'MINIVAN': 4800,
+};
+
 class _Auth implements AuthRepository {
   final calls = <(String, String, Map<String, dynamic>?)>[];
+
+  /// Classes the server has no tariff for (422 RIDE_CLASS_UNAVAILABLE).
+  Set<String> unavailable = {};
+
+  /// How many `POST rides` calls answer that the quote is gone.
+  int staleQuotes = 0;
 
   @override
   Future<dynamic> authorizedJson(
@@ -34,14 +48,22 @@ class _Auth implements AuthRepository {
     calls.add((method, path, body));
     switch ((method, path)) {
       case ('POST', 'rides/quotes'):
+        final value = body!['rideClass'] as String;
+        if (unavailable.contains(value)) {
+          throw IdentityApiError(422, 'RIDE_CLASS_UNAVAILABLE');
+        }
         return {
-          'id': 'quote-1',
-          'estimateKzt': 435.14,
+          'id': 'quote-$value',
+          'estimateKzt': _fares[value],
           'distanceMeters': 2508,
           'durationSeconds': 207,
           'synthetic': false,
         };
       case ('POST', 'rides'):
+        if (staleQuotes > 0) {
+          staleQuotes--;
+          throw IdentityApiError(409, 'RIDE_QUOTE_UNAVAILABLE');
+        }
         return _trip('DRIVER_ASSIGNED');
       case ('GET', 'rides/trip-1'):
         return _trip('DRIVER_ASSIGNED');
@@ -95,7 +117,7 @@ void main() {
   });
 
   testWidgets(
-    'Taxi with maps: pick pickup and destination, preview the route, server prices the quote',
+    'Taxi with maps: pick points, preview the route, the server prices every class',
     (tester) async {
       final auth = _Auth();
       final maps = FakeKundeMaps(routing(), [
@@ -107,6 +129,9 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byType(RideRoutePreviewPanel), findsNothing);
+      // No price before there is a route to price.
+      expect(find.textContaining('₸'), findsNothing);
+      expect(auth.calls.where((c) => c.$2 == 'rides/quotes'), isEmpty);
 
       await tester.tap(find.text('Pickup'));
       await tester.pumpAndSettle();
@@ -120,26 +145,122 @@ void main() {
       expect(find.text('map:pickup,destination:route'), findsOneWidget);
       expect(find.text('Distance'), findsOneWidget);
       expect(find.text('Typical time, traffic not included'), findsOneWidget);
-      // The preview is route only: no price before the server quotes.
-      expect(find.textContaining('KZT'), findsNothing);
       expect(requests.single.path, '/v1/route');
       expect(requests.single.queryParameters['from'], '43.238194,76.944980');
       expect(requests.single.queryParameters['to'], '43.250000,76.930000');
       expect(requests.single.queryParameters['lang'], 'en');
 
-      await tester.scrollUntilVisible(
-        find.widgetWithText(FilledButton, 'Get fare'),
-        200,
-      );
-      await tester.tap(find.widgetWithText(FilledButton, 'Get fare'));
-      await tester.pumpAndSettle();
-      final quote = auth.calls.singleWhere((c) => c.$2 == 'rides/quotes');
+      // All four classes are priced by the server, without a "Get fare" step.
+      final quotes = auth.calls.where((c) => c.$2 == 'rides/quotes').toList();
+      expect(quotes.map((c) => c.$3!['rideClass']).toSet(),
+          {'ECONOMY', 'COMFORT', 'BUSINESS', 'MINIVAN'});
+      for (final quote in quotes) {
+        expect(quote.$3!['pickup'],
+            {'latitude': 43.238194, 'longitude': 76.94498});
+        expect(
+            quote.$3!['destination'], {'latitude': 43.25, 'longitude': 76.93});
+      }
+      expect(find.text('Get fare'), findsNothing);
+      expect(find.text('Minivan'), findsOneWidget);
+      expect(find.text('435.14\u00A0₸'), findsOneWidget);
+      expect(find.text('1\u00A0700\u00A0₸'), findsOneWidget);
+      expect(find.text('3\u00A0500\u00A0₸'), findsOneWidget);
+      expect(find.text('4\u00A0800\u00A0₸'), findsOneWidget);
+      // The first class is selected and its price is on the order button.
       expect(
-          quote.$3!['pickup'], {'latitude': 43.238194, 'longitude': 76.94498});
-      expect(quote.$3!['destination'], {'latitude': 43.25, 'longitude': 76.93});
-      expect(find.textContaining('435.14 KZT'), findsOneWidget);
+        find.widgetWithText(FilledButton, 'Order · 435.14\u00A0₸'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Comfort'));
+      await tester.pumpAndSettle();
+      expect(
+        find.widgetWithText(FilledButton, 'Order · 1\u00A0700\u00A0₸'),
+        findsOneWidget,
+      );
+      await tester
+          .tap(find.widgetWithText(FilledButton, 'Order · 1\u00A0700\u00A0₸'));
+      await tester.pumpAndSettle();
+      final order =
+          auth.calls.singleWhere((c) => c.$1 == 'POST' && c.$2 == 'rides');
+      expect(order.$3, {'quoteId': 'quote-COMFORT'});
+      // Stop the 5 s status poll before the test ends.
+      await tester.pageBack();
+      await tester.pumpAndSettle();
     },
   );
+
+  testWidgets('pickup starts at My location from the device position', (
+    tester,
+  ) async {
+    final auth = _Auth();
+    final maps = FakeKundeMaps(
+      routing(),
+      [_search('Abay 10', 43.25, 76.93)],
+      const GeoPoint(43.238194, 76.94498),
+    );
+    await tester.pumpWidget(_app(RidesScreen(api: RideApi(auth), maps: maps)));
+    await tester.pumpAndSettle();
+    expect(find.text('My location'), findsOneWidget);
+    expect(find.text('Pickup'), findsNothing);
+    expect(auth.calls.where((c) => c.$2 == 'rides/quotes'), isEmpty);
+
+    await tester.tap(find.text('Destination'));
+    await tester.pumpAndSettle();
+    final quote = auth.calls.firstWhere((c) => c.$2 == 'rides/quotes');
+    expect(quote.$3!['pickup'], {'latitude': 43.238194, 'longitude': 76.94498});
+    expect(maps.titles, ['Destination']);
+    expect(find.widgetWithText(FilledButton, 'Order · 435.14\u00A0₸'),
+        findsOneWidget);
+  });
+
+  testWidgets('a class without a tariff is not offered', (tester) async {
+    final auth = _Auth()..unavailable = {'MINIVAN'};
+    final maps = FakeKundeMaps(routing(), [
+      _search('A', 43.238194, 76.94498),
+      _search('B', 43.25, 76.93),
+    ]);
+    await tester.pumpWidget(_app(RidesScreen(api: RideApi(auth), maps: maps)));
+    await tester.tap(find.text('Pickup'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Destination'));
+    await tester.pumpAndSettle();
+    expect(find.text('Economy'), findsOneWidget);
+    expect(find.text('Business'), findsOneWidget);
+    expect(find.text('Minivan'), findsNothing);
+    expect(find.text('The request failed. Try again.'), findsNothing);
+  });
+
+  testWidgets('an expired quote is re-priced instead of failing the order', (
+    tester,
+  ) async {
+    final auth = _Auth()..staleQuotes = 1;
+    final maps = FakeKundeMaps(routing(), [
+      _search('A', 43.238194, 76.94498),
+      _search('B', 43.25, 76.93),
+    ]);
+    await tester.pumpWidget(_app(RidesScreen(api: RideApi(auth), maps: maps)));
+    await tester.tap(find.text('Pickup'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Destination'));
+    await tester.pumpAndSettle();
+    final before = auth.calls.where((c) => c.$2 == 'rides/quotes').length;
+    await tester
+        .tap(find.widgetWithText(FilledButton, 'Order · 435.14\u00A0₸'));
+    await tester.pumpAndSettle();
+    expect(auth.calls.where((c) => c.$2 == 'rides/quotes').length, before + 4);
+    expect(find.text('The price was updated. Check it and order again.'),
+        findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Order · 435.14\u00A0₸'),
+        findsOneWidget);
+  });
+
+  test('rideFare groups thousands and keeps cents only when present', () {
+    expect(rideFare(1200), '1\u00A0200\u00A0₸');
+    expect(rideFare(250000), '250\u00A0000\u00A0₸');
+    expect(rideFare(435.14), '435.14\u00A0₸');
+    expect(rideFare(0), '0\u00A0₸');
+  });
 
   testWidgets('a failing route service shows a message and Retry recovers', (
     tester,
@@ -196,13 +317,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Destination'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(
-      find.widgetWithText(FilledButton, 'Get fare'),
-      200,
-    );
-    await tester.tap(find.widgetWithText(FilledButton, 'Get fare'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Request ride'));
+    await tester
+        .tap(find.widgetWithText(FilledButton, 'Order · 435.14\u00A0₸'));
     await tester.pumpAndSettle();
 
     expect(find.text('map:driver:none'), findsOneWidget);

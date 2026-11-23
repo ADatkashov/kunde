@@ -39,6 +39,14 @@ class RideStrings {
   String get cancel =>
       t('Отменить поездку', 'Сапардан бас тарту', 'Cancel ride');
   String get back => t('Назад', 'Артқа', 'Back');
+  String get myLocation =>
+      t('Моё местоположение', 'Менің орным', 'My location');
+  String get order => t('Заказать', 'Тапсырыс беру', 'Order');
+  String get priceUpdated => t(
+        'Цена обновилась. Проверьте её и закажите снова.',
+        'Баға жаңарды. Тексеріп, қайта тапсырыс беріңіз.',
+        'The price was updated. Check it and order again.',
+      );
 
   String get hubTagline => t(
         'Быстро, удобно и безопасно по Алматы',
@@ -134,12 +142,18 @@ class RideStrings {
         'ECONOMY' => t('Недорогая поездка', 'Үнемді сапар', 'Affordable ride'),
         'COMFORT' => t('Больше места и комфорта', 'Көбірек орын мен жайлылық',
             'More room'),
+        'MINIVAN' => t(
+            'Для большой компании',
+            'Үлкен топқа арналған',
+            'For a larger group',
+          ),
         _ => t('Премиальный автомобиль', 'Премиум көлік', 'Premium car'),
       };
 
   String rideClass(String value) => switch (value) {
         'ECONOMY' => t('Эконом', 'Эконом', 'Economy'),
         'COMFORT' => t('Комфорт', 'Комфорт', 'Comfort'),
+        'MINIVAN' => t('Минивэн', 'Минивэн', 'Minivan'),
         _ => t('Бизнес', 'Бизнес', 'Business'),
       };
 
