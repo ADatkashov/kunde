@@ -209,6 +209,11 @@ def main():
             time.sleep(2)
         completed.append("executor_online")
 
+        # The order screen now defaults pickup to "My location" and asks for it on open; grant it so the run is deterministic
+        # (the denied-permission path is covered by the Flutter widget tests, not here).
+        for permission in ("ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"):
+            android.adb("shell", "pm", "grant", base.CONSUMER, f"android.permission.{permission}")
+        geo(DRIVER_START)
         base.launch(base.CONSUMER)
         base.login("7000000001", "Алматы", "Almaty")
 

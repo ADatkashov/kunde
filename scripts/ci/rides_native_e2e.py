@@ -155,7 +155,7 @@ def create_ride():
     android.tap("Узнать стоимость", "Get fare", "Бағасын білу")
     android.find("Тестовый маршрут", "Test route", "Сынақ бағыты")
     android.tap("Заказать поездку", "Request ride", "Сапарға тапсырыс беру")
-    android.find("Ищем водителя", "Finding a driver", "Жүргізуші ізделуде", timeout=45)
+    android.find("Ищем водителя...", "Finding a driver...", "Жүргізуші ізделуде...", timeout=45)
 
 
 def find_completed():
