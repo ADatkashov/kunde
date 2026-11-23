@@ -1,5 +1,3 @@
-import 'package:kunde_maps_sdk/kunde_maps_sdk.dart';
-
 import '../identity/auth_repository.dart';
 import '../rides/ride_api.dart';
 
@@ -45,34 +43,7 @@ class DeliveryApi {
       data['distanceMeters'] as int,
       data['durationSeconds'] as int,
       data['syntheticRoute'] == true,
-      route: _roadRoute(data),
     );
-  }
-
-  MapRoute? _roadRoute(Map<String, dynamic> quote) {
-    final geometry = quote['geometry'];
-    if (quote['syntheticRoute'] == true ||
-        geometry is! List ||
-        geometry.length < 2) {
-      return null;
-    }
-    try {
-      return MapRoute({
-        'distance_m': quote['distanceMeters'],
-        'duration_s': quote['durationSeconds'],
-        'geometry': {
-          'coordinates': [
-            for (final Map<String, dynamic> point in geometry)
-              [point['longitude'], point['latitude']],
-          ],
-        },
-        'steps': <Object>[],
-      });
-    } on FormatException {
-      return null;
-    } on TypeError {
-      return null;
-    }
   }
 
   Future<DeliveryOrder> create(
@@ -150,15 +121,13 @@ class DeliveryApi {
 
 class DeliveryQuote {
   const DeliveryQuote(
-      this.id, this.amount, this.distance, this.duration, this.synthetic,
-      {this.route});
+      this.id, this.amount, this.distance, this.duration, this.synthetic);
 
   final String id;
   final num amount;
   final int distance;
   final int duration;
   final bool synthetic;
-  final MapRoute? route;
 }
 
 class DeliveryOrder {

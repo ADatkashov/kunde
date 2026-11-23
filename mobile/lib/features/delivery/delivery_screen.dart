@@ -347,8 +347,7 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
               RideRoutePreviewPanel(
                   maps: widget.maps!,
                   pickup: _pickup!,
-                  destination: _destination!,
-                  quotedRoute: quote?.route),
+                  destination: _destination!),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               initialValue: _type,
@@ -477,8 +476,8 @@ class DeliveryHistoryScreen extends StatefulWidget {
       {required this.api,
       this.allowDispatch = true,
       this.syntheticRouting = false,
-      this.maps,
       this.activeOnly = false,
+      this.maps,
       super.key});
   final DeliveryApi api;
   final bool allowDispatch;

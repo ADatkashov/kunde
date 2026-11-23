@@ -293,6 +293,26 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ];
 
+  /// Taxi opens with the map experience only when the server reports the KUNDE Maps provider; otherwise the existing list flow is unchanged.
+  Future<void> _openRides() async {
+    var mapsEnabled = false;
+    try {
+      mapsEnabled = (await _snapshot).mapsEnabled;
+    } catch (_) {
+      // Without a snapshot the list flow is used.
+    }
+    if (!mounted) return;
+    final maps = mapsEnabled ? KundeMaps.forContext(context) : null;
+    try {
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute(
+            builder: (_) => RidesScreen(api: widget.rides!, maps: maps)),
+      );
+    } finally {
+      maps?.close();
+    }
+  }
+
   void _onCategory(
     ServiceCategory c,
     List<ServiceCategory> all,
@@ -303,9 +323,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (c.isAll) {
       _showAll(all, foodEnabled, bookingEnabled);
     } else if (c.label == s.catRides && c.enabled && widget.rides != null) {
-      Navigator.of(context).push<void>(
-        MaterialPageRoute(builder: (_) => RidesScreen(api: widget.rides!)),
-      );
+      unawaited(_openRides());
     } else if (c.label == s.catDelivery &&
         c.enabled &&
         widget.delivery != null) {

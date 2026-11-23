@@ -6,13 +6,18 @@ import 'package:flutter/material.dart';
 
 import '../identity/auth_repository.dart';
 import '../identity/support_panel.dart';
+import '../maps/kunde_maps.dart';
 import 'ride_api.dart';
+import 'ride_map_panels.dart';
 import 'ride_strings.dart';
 
 class RidesScreen extends StatefulWidget {
-  const RidesScreen({required this.api, super.key});
+  const RidesScreen({required this.api, this.maps, super.key});
 
   final RideApi api;
+
+  /// Present only when the server enables the KUNDE Maps provider; null keeps the list-based address flow.
+  final KundeMaps? maps;
 
   @override
   State<RidesScreen> createState() => _RidesScreenState();
@@ -36,12 +41,28 @@ class _RidesScreenState extends State<RidesScreen> {
   }
 
   Future<void> _chooseAddress(bool pickup) async {
-    final address = await showModalBottomSheet<RideAddress>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (_) => _AddressPicker(api: _api),
-    );
+    final s = RideStrings(context);
+    final maps = widget.maps;
+    final RideAddress? address;
+    if (maps != null) {
+      final picked = await maps.pick(
+        context,
+        title: pickup ? s.pickup : s.destination,
+        initial: switch (pickup ? _pickup : _destination) {
+          final RideAddress current => pointOf(current),
+          null => null,
+        },
+      );
+      address =
+          picked == null ? null : addressFrom(picked, maps.config.language);
+    } else {
+      address = await showModalBottomSheet<RideAddress>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        builder: (_) => _AddressPicker(api: _api),
+      );
+    }
     if (address == null || !mounted) return;
     setState(() {
       if (pickup) {
@@ -77,7 +98,8 @@ class _RidesScreenState extends State<RidesScreen> {
         setState(_invalidateQuote);
         await Navigator.of(context).push<void>(
           MaterialPageRoute(
-            builder: (_) => _RideDetails(api: _api, trip: trip),
+            builder: (_) =>
+                _RideDetails(api: _api, trip: trip, maps: widget.maps),
           ),
         );
       }
@@ -109,7 +131,8 @@ class _RidesScreenState extends State<RidesScreen> {
                 ? null
                 : () => Navigator.of(context).push<void>(
                       MaterialPageRoute(
-                          builder: (_) => _RideHistory(api: _api)),
+                          builder: (_) =>
+                              _RideHistory(api: _api, maps: widget.maps)),
                     ),
           ),
         ],
@@ -158,6 +181,12 @@ class _RidesScreenState extends State<RidesScreen> {
                         _invalidateQuote();
                       }),
             ),
+            if (widget.maps != null && _pickup != null && _destination != null)
+              RideRoutePreviewPanel(
+                maps: widget.maps!,
+                pickup: _pickup!,
+                destination: _destination!,
+              ),
             if (quote?.synthetic == true)
               ListTile(
                 leading: const Icon(Icons.science_outlined),
@@ -288,8 +317,9 @@ class _AddressPickerState extends State<_AddressPicker> {
 }
 
 class _RideHistory extends StatefulWidget {
-  const _RideHistory({required this.api});
+  const _RideHistory({required this.api, this.maps});
   final RideApi api;
+  final KundeMaps? maps;
 
   @override
   State<_RideHistory> createState() => _RideHistoryState();
@@ -347,8 +377,8 @@ class _RideHistoryState extends State<_RideHistory> {
                       onTap: () async {
                         await Navigator.of(context).push<void>(
                           MaterialPageRoute(
-                            builder: (_) =>
-                                _RideDetails(api: widget.api, trip: trip),
+                            builder: (_) => _RideDetails(
+                                api: widget.api, trip: trip, maps: widget.maps),
                           ),
                         );
                         if (mounted) {
@@ -367,9 +397,10 @@ class _RideHistoryState extends State<_RideHistory> {
 }
 
 class _RideDetails extends StatefulWidget {
-  const _RideDetails({required this.api, required this.trip});
+  const _RideDetails({required this.api, required this.trip, this.maps});
   final RideApi api;
   final RideTrip trip;
+  final KundeMaps? maps;
 
   @override
   State<_RideDetails> createState() => _RideDetailsState();
@@ -492,7 +523,9 @@ class _RideDetailsState extends State<_RideDetails> {
                   },
                 ),
               ),
-            if (_driverLocation case final location?)
+            if (_driverLocation case final location? when widget.maps != null)
+              RideDriverMapPanel(maps: widget.maps!, location: location),
+            if (_driverLocation case final location? when widget.maps == null)
               ListTile(
                 leading: const Icon(Icons.my_location),
                 title: Text(s.t('Местоположение водителя',

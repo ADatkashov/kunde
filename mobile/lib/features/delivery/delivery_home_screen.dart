@@ -17,6 +17,8 @@ class DeliveryHomeScreen extends StatelessWidget {
 
   final DeliveryApi api;
   final bool synthetic;
+
+  /// Present only when the server enables the KUNDE Maps provider.
   final KundeMaps? maps;
 
   @override

@@ -34,14 +34,12 @@ class RideRoutePreviewPanel extends StatefulWidget {
     required this.maps,
     required this.pickup,
     required this.destination,
-    this.quotedRoute,
     super.key,
   });
 
   final KundeMaps maps;
   final RideAddress pickup;
   final RideAddress destination;
-  final MapRoute? quotedRoute;
 
   @override
   State<RideRoutePreviewPanel> createState() => _RideRoutePreviewPanelState();
@@ -103,8 +101,7 @@ class _RideRoutePreviewPanelState extends State<RideRoutePreviewPanel> {
   Widget build(BuildContext context) {
     final language = widget.maps.config.language;
     final strings = MapsStrings(language);
-    final quoted = widget.quotedRoute;
-    final preview = quoted == null ? _preview : RoutePreviewData([quoted]);
+    final preview = _preview;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -129,10 +126,10 @@ class _RideRoutePreviewPanelState extends State<RideRoutePreviewPanel> {
               route: preview?.route,
             ),
             const SizedBox(height: 12),
-            if (_loading && quoted == null) const LinearProgressIndicator(),
+            if (_loading) const LinearProgressIndicator(),
             if (preview != null)
               RoutePreview(data: preview, language: language),
-            if (_error != null && quoted == null) ...[
+            if (_error != null) ...[
               Semantics(
                 liveRegion: true,
                 child: Text(

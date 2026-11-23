@@ -13,6 +13,7 @@ import 'gate_scan_screen.dart';
 import 'leisure_work_screen.dart';
 import 'delivery_work_screen.dart';
 import 'food_work_screen.dart';
+import 'driver_navigation_screen.dart';
 import 'executor_api.dart';
 
 class ExecutorScreen extends StatefulWidget {
@@ -196,6 +197,26 @@ class _ExecutorScreenState extends State<ExecutorScreen>
       if (mounted) setState(() => _failure = 'UNKNOWN');
     } finally {
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _navigate(ExecutorTrip trip) async {
+    final target = trip.navigationTarget;
+    if (target == null || !_mapsAvailable) return;
+    final s = RideStrings(context);
+    final maps = widget.mapsFactory(context);
+    try {
+      await Navigator.of(context).push<void>(MaterialPageRoute(
+        builder: (_) => DriverNavigationScreen(
+          maps: maps,
+          target: target,
+          title: trip.status == 'IN_PROGRESS'
+              ? s.t('К пункту назначения', 'Межелі орынға', 'To destination')
+              : s.t('К пассажиру', 'Жолаушыға', 'To passenger'),
+        ),
+      ));
+    } finally {
+      maps.close();
     }
   }
 
@@ -577,12 +598,24 @@ class _ExecutorScreenState extends State<ExecutorScreen>
                   title: Text(trip.synthetic
                       ? '${s.synthetic} · ${s.status(trip.status)}'
                       : s.status(trip.status)),
-                  subtitle: FilledButton(
-                    onPressed: _busy
-                        ? null
-                        : () =>
-                            _load(() => _api.advance(trip.id, trip.nextStep!)),
-                    child: Text(_actionName(s, trip.nextStep!)),
+                  subtitle: Wrap(
+                    spacing: 8,
+                    children: [
+                      FilledButton(
+                        onPressed: _busy
+                            ? null
+                            : () => _load(
+                                () => _api.advance(trip.id, trip.nextStep!)),
+                        child: Text(_actionName(s, trip.nextStep!)),
+                      ),
+                      if (_mapsAvailable && trip.navigationTarget != null)
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.navigation_outlined),
+                          onPressed: _busy ? null : () => _navigate(trip),
+                          label:
+                              Text(s.t('Навигатор', 'Навигатор', 'Navigate')),
+                        ),
+                    ],
                   ),
                 ),
               ),
