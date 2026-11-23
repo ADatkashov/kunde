@@ -192,7 +192,10 @@ public class RideDispatchService {
     public List<DriverTrip> history(UUID driver) {
         return db.query("""
                 select r.id, r.status, q.ride_class, r.created_at, q.synthetic,
-                       q.pickup_latitude, q.pickup_longitude, q.destination_latitude, q.destination_longitude
+                       q.pickup_latitude, q.pickup_longitude, q.destination_latitude, q.destination_longitude,
+                       q.estimate_kzt,
+                       (select max(e.occurred_at) from transactions.ride_events e
+                        where e.ride_id = r.id and e.status = 'COMPLETED')
                 from transactions.rides r join transactions.ride_fare_quotes q on q.id = r.quote_id
                 where r.driver_id = ? order by r.created_at desc, r.id desc limit 50
                 """, (rs, row) -> {
@@ -201,7 +204,8 @@ public class RideDispatchService {
                     return new DriverTrip(rs.getObject(1, UUID.class), status, RideClass.valueOf(rs.getString(3)),
                             rs.getObject(4, OffsetDateTime.class), rs.getBoolean(5),
                             active ? new Point(rs.getDouble(6), rs.getDouble(7)) : null,
-                            active ? new Point(rs.getDouble(8), rs.getDouble(9)) : null);
+                            active ? new Point(rs.getDouble(8), rs.getDouble(9)) : null,
+                            rs.getBigDecimal(10), rs.getObject(11, OffsetDateTime.class));
                 }, driver);
     }
 
@@ -252,6 +256,6 @@ public class RideDispatchService {
     private record Trip(UUID id, UUID customerId, UUID driverId, RideState status, RideClass rideClass, Point pickup) {}
     public record DriverLocation(Point point, OffsetDateTime observedAt) {}
     public record DriverTrip(UUID id, RideState status, RideClass rideClass, OffsetDateTime createdAt, boolean synthetic,
-            Point pickup, Point destination) {}
+            Point pickup, Point destination, java.math.BigDecimal fareKzt, OffsetDateTime completedAt) {}
     public record Offer(UUID id, UUID rideId, String state, OffsetDateTime expiresAt, boolean synthetic) {}
 }

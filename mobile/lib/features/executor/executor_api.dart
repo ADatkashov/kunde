@@ -66,12 +66,18 @@ class ExecutorProfile {
       : name = json['displayName'] as String,
         status = json['status'] as String,
         online = json['online'] as bool,
-        vehicle = json['vehicle'] as Map<String, dynamic>?;
+        vehicle = json['vehicle'] as Map<String, dynamic>?,
+        rating = json['rating'] as num?,
+        ratings = (json['ratings'] as num?)?.toInt() ?? 0;
 
   final String name;
   final String status;
   final bool online;
   final Map<String, dynamic>? vehicle;
+
+  /// Average customer rating; null until the first rating, never estimated.
+  final num? rating;
+  final int ratings;
 
   bool get approved => status == 'APPROVED' && vehicle?['status'] == 'APPROVED';
 }
@@ -94,12 +100,20 @@ class ExecutorTrip {
         createdAt = DateTime.parse(json['createdAt'] as String),
         synthetic = json['synthetic'] == true,
         pickup = _point(json['pickup']),
-        destination = _point(json['destination']);
+        destination = _point(json['destination']),
+        fareKzt = json['fareKzt'] as num?,
+        completedAt = json['completedAt'] == null
+            ? null
+            : DateTime.parse(json['completedAt'] as String);
 
   final String id;
   final String status;
   final DateTime createdAt;
   final bool synthetic;
+
+  /// Quoted tariff fare in KZT. It is an estimate, not a captured payment.
+  final num? fareKzt;
+  final DateTime? completedAt;
 
   /// Route endpoints, sent by the server to the assigned driver while the trip is active only.
   final GeoPoint? pickup;
