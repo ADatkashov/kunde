@@ -1,5 +1,6 @@
 package kz.kunde.admin;
 
+import kz.kunde.platform.authz.AdminGrants;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -12,8 +13,8 @@ import com.jayway.jsonpath.JsonPath;
 import com.nimbusds.jwt.SignedJWT;
 import java.util.List;
 import java.util.UUID;
-import kz.kunde.admin.AdminGrants.Permission;
-import kz.kunde.admin.AdminGrants.Scope;
+import kz.kunde.platform.authz.AdminGrants.Permission;
+import kz.kunde.platform.authz.AdminGrants.Scope;
 import kz.kunde.partner.PartnerService;
 import kz.kunde.platform.ApiException;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;

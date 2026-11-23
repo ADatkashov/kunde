@@ -1,7 +1,8 @@
 package kz.kunde.admin;
 
+import kz.kunde.platform.authz.AdminGrants;
 import java.util.List;
-import kz.kunde.admin.AdminGrants.Permission;
+import kz.kunde.platform.authz.AdminGrants.Permission;
 import kz.kunde.delivery.DeliveryOperations;
 import kz.kunde.partner.PartnerAccessPolicy;
 import kz.kunde.platform.ApiException;

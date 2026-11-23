@@ -6,7 +6,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.UUID;
-import kz.kunde.admin.AdminGrants;
+import kz.kunde.platform.authz.AdminGrants;
 import kz.kunde.platform.ApiException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;

@@ -4,7 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.UUID;
-import kz.kunde.admin.AdminGrants;
+import kz.kunde.platform.authz.AdminGrants;
 import kz.kunde.partner.PartnerAccessPolicy;
 import kz.kunde.platform.ApiException;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

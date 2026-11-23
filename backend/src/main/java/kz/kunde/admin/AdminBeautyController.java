@@ -1,5 +1,7 @@
 package kz.kunde.admin;
 
+import kz.kunde.platform.authz.AdminGrants;
+
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.time.OffsetDateTime;

@@ -1,4 +1,4 @@
-package kz.kunde.admin;
+package kz.kunde.platform.authz;
 
 import java.util.List;
 import java.util.UUID;

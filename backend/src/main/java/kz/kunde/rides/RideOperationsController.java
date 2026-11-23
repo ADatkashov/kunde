@@ -2,7 +2,7 @@ package kz.kunde.rides;
 
 import java.util.List;
 import java.util.UUID;
-import kz.kunde.admin.AdminGrants;
+import kz.kunde.platform.authz.AdminGrants;
 import kz.kunde.identity.ConsumerIdentityService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.CacheControl;

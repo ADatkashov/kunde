@@ -11,7 +11,9 @@
 - Добавлено (только expand): миграция V67 (пустой реестр `serviceability.cities`, nullable неизменяемый `city_id` на 7 корнях агрегатов, без backfill), `platform.placement` (`ShardKey/ShardResolver`, `SingleShardResolver` всегда `default`, локаторы агрегатов по ID), реестр `placement-registry.txt` + быстрый `PlacementRegistryTest`, интеграционный `CityPlacementIntegrationTest`. API и поведение не менялись, локаторы пока не подключены к эндпоинтам.
 - **Не сделано:** список городов и backfill (нужно решение владельца), решение по платежам, мягкие ссылки вместо FK на users/partners, реплики/пулы/HPA, физические shards.
 
-## Microservice readiness V1 — FeatureGate (2026-11-23)
+## Microservice readiness V1 — FeatureGate, V12 — AdminGrants (2026-11-23)
+
+- V12: `AdminGrants` перенесён из `admin` в `platform.authz` (только пакет), −6 импортов `домен → admin` в baseline. V9 (`PartnerDirectory`) отложен: SQL Education держит блокировки `for share of p,s`, нужен отдельный дизайн.
 
 - `platform` больше не импортирует настройки 8 из 10 доменов: каждый домен реализует `platform.FeatureGate`, `FeatureToggles` собирает их списком и не стартует без gate на каждый продукт. Baseline импортов уменьшен на 8 (остались `RidesFlags`, `DeliveryProperties`). API и JSON не менялись. `mvn clean verify` на PostgreSQL 16: 492 теста, 0 ошибок.
 
