@@ -289,7 +289,16 @@ def main():
         wait_for_text("Водитель назначен", "Driver assigned", "Жүргізуші тағайындалды", "Водитель в пути", "Driver is on the way",
                       "Жүргізуші жолда", timeout=60)
         android.find("Местоположение водителя на карте", "Driver location on the map", "Жүргізушінің картадағы орны", timeout=60)
+        # A semantic label alone does not prove the map drew: an unrendered (flat grey) map screen is ~25 KB as PNG, a screen with
+        # tiles, roads and a marker is several times larger. Wait for real pixels instead of trusting the label.
+        deadline = time.monotonic() + 90
+        while len(android.adb("exec-out", "screencap", "-p")) < 45_000:
+            if time.monotonic() > deadline:
+                android.screenshot("consumer-driver-map-blank")
+                raise AssertionError("Consumer tracking map did not render tiles within 90 s")
+            time.sleep(5)
         android.screenshot("consumer-driver-on-map")
+        completed.append("consumer_tracking_map_rendered")
         completed.append("consumer_driver_on_map")
 
         phase = "maps_outage_fails_closed"
