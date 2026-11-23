@@ -167,6 +167,16 @@ def find_completed():
     )
 
 
+def capture_failure():
+    """Keep what the screen showed when a step failed: a failed run must be diagnosable from its artifact alone."""
+    try:
+        android.screenshot("failure")
+        android.adb("shell", "uiautomator", "dump", "/sdcard/kunde-failure.xml")
+        (android.REPORT / "failure-ui.xml").write_bytes(android.adb("exec-out", "cat", "/sdcard/kunde-failure.xml"))
+    except Exception as error:  # diagnostics must never mask the original failure
+        print(f"could not capture failure state: {error}")
+
+
 def main():
     REPORT.mkdir(parents=True, exist_ok=True)
     android.REPORT = REPORT
@@ -287,6 +297,7 @@ def main():
         write_report("PASSED", phase)
     except Exception:
         write_report("FAILED", phase)
+        capture_failure()
         raise
     finally:
         if process is not None and process.poll() is None:

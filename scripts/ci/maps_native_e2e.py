@@ -275,6 +275,7 @@ def main():
         report("PASSED", phase)
     except Exception:
         report("FAILED", phase)
+        base.capture_failure()
         raise
     finally:
         if process is not None and process.poll() is None:
