@@ -295,8 +295,8 @@ def main():
         # recorded as an observation (not hidden, not silently passed) until the cause is understood.
         sizes = []
         for second in range(0, 61, 10):
-            sizes.append(len(android.adb("exec-out", "screencap", "-p")))
             android.screenshot(f"consumer-driver-map-t{second:02d}")
+            sizes.append((android.REPORT / f"consumer-driver-map-t{second:02d}.png").stat().st_size)
             if sizes[-1] >= 45_000:
                 completed.append("consumer_tracking_map_rendered")
                 break
