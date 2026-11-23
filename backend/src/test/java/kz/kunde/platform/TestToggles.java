@@ -15,14 +15,16 @@ public final class TestToggles {
     private TestToggles() {}
 
     public static FeatureToggles of(RidesFlags rides) {
-        return new FeatureToggles(mock(JdbcTemplate.class), new AutoProperties(false, false), rides, new DeliveryProperties(false, false, false, false, false, false, false, 300, 1000, 50, "test",
-                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO),
+        var env = new org.springframework.mock.env.MockEnvironment();
+        var delivery = new DeliveryProperties(false, false, false, false, false, false, false, 300, 1000, 50, "test",
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
+        return new FeatureToggles(mock(JdbcTemplate.class), java.util.List.of(new AutoProperties(false, false), rides, delivery,
                 new LeisureFlags(new LeisureProperties(false, false), new org.springframework.mock.env.MockEnvironment().withProperty("app.environment", "test")),
-                new kz.kunde.health.HealthSettings(new org.springframework.mock.env.MockEnvironment()),
-                new kz.kunde.education.EducationSettings(new org.springframework.mock.env.MockEnvironment()),
-                new kz.kunde.groceries.GroceriesSettings(new org.springframework.mock.env.MockEnvironment()),
-                new kz.kunde.events.EventsSettings(new org.springframework.mock.env.MockEnvironment()),
-                new kz.kunde.booking.HomeServicesSettings(new org.springframework.mock.env.MockEnvironment()),
-                new kz.kunde.booking.BeautySettings(new org.springframework.mock.env.MockEnvironment()));
+                new kz.kunde.health.HealthSettings(env),
+                new kz.kunde.education.EducationSettings(env),
+                new kz.kunde.groceries.GroceriesSettings(env),
+                new kz.kunde.events.EventsSettings(env),
+                new kz.kunde.booking.HomeServicesSettings(env),
+                new kz.kunde.booking.BeautySettings(env)), rides, delivery);
     }
 }

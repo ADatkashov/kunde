@@ -1,5 +1,7 @@
 package kz.kunde.auto;
 
+import kz.kunde.platform.FeatureGate;
+import kz.kunde.platform.FeatureToggles;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 
@@ -7,4 +9,14 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 @ConfigurationProperties("app.auto")
 public record AutoProperties(
         @DefaultValue("false") boolean enabled,
-        @DefaultValue("false") boolean seedDemo) {}
+        @DefaultValue("false") boolean seedDemo) implements FeatureGate {
+    @Override
+    public FeatureToggles.Feature feature() {
+        return FeatureToggles.Feature.AUTO;
+    }
+
+    @Override
+    public boolean allowedByEnvironment() {
+        return enabled();
+    }
+}

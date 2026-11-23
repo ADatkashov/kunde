@@ -1,11 +1,23 @@
 package kz.kunde.rides;
 
+import kz.kunde.platform.FeatureGate;
+import kz.kunde.platform.FeatureToggles;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 
 @ConfigurationProperties("app.rides")
 public record RidesFlags(boolean enabled, boolean consumerEnabled, boolean executorEnabled,
-        boolean partnerEnabled, boolean dispatchEnabled, boolean paymentsEnabled, boolean syntheticRoutingEnabled) {
+        boolean partnerEnabled, boolean dispatchEnabled, boolean paymentsEnabled, boolean syntheticRoutingEnabled) implements FeatureGate {
+    @Override
+    public FeatureToggles.Feature feature() {
+        return FeatureToggles.Feature.RIDES;
+    }
+
+    @Override
+    public boolean allowedByEnvironment() {
+        return enabled();
+    }
+
 
     @ConstructorBinding
     public RidesFlags {}

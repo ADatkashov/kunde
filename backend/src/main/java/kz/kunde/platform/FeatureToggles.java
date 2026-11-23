@@ -6,15 +6,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import kz.kunde.auto.AutoProperties;
-import kz.kunde.booking.BeautySettings;
-import kz.kunde.booking.HomeServicesSettings;
 import kz.kunde.delivery.DeliveryProperties;
-import kz.kunde.education.EducationSettings;
-import kz.kunde.events.EventsSettings;
-import kz.kunde.leisure.LeisureFlags;
-import kz.kunde.groceries.GroceriesSettings;
-import kz.kunde.health.HealthSettings;
 import kz.kunde.rides.RidesFlags;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -38,49 +30,36 @@ public class FeatureToggles {
     private static final long CACHE_MILLIS = 5_000;
 
     private final JdbcTemplate db;
-    private final AutoProperties auto;
+    private final Map<Feature, FeatureGate> gates = new EnumMap<>(Feature.class);
     private final RidesFlags rides;
     private final DeliveryProperties delivery;
-    private final LeisureFlags leisure;
-    private final HealthSettings health;
-    private final EducationSettings education;
-    private final EventsSettings events;
-    private final GroceriesSettings groceries;
-    private final HomeServicesSettings homeServices;
-    private final BeautySettings beauty;
     private final Clock clock;
     private volatile Map<Feature, Toggle> cache;
     private volatile long loadedAt;
 
-    public FeatureToggles(JdbcTemplate db, AutoProperties auto, RidesFlags rides, DeliveryProperties delivery, LeisureFlags leisure, HealthSettings health, EducationSettings education,
-            GroceriesSettings groceries, EventsSettings events, HomeServicesSettings homeServices, BeautySettings beauty) {
+    /**
+     * Every {@link Feature} must be backed by exactly one {@link FeatureGate} supplied by its own domain, otherwise the
+     * application does not start (fail closed). {@code rides}/{@code delivery} are only used for the master-switch views.
+     */
+    public FeatureToggles(JdbcTemplate db, List<FeatureGate> featureGates, RidesFlags rides, DeliveryProperties delivery) {
         this.db = db;
-        this.auto = auto;
+        for (FeatureGate gate : featureGates) {
+            if (gates.put(gate.feature(), gate) != null) {
+                throw new IllegalStateException("More than one FeatureGate for " + gate.feature());
+            }
+        }
+        for (Feature feature : Feature.values()) {
+            if (!gates.containsKey(feature)) {
+                throw new IllegalStateException("No FeatureGate for " + feature);
+            }
+        }
         this.rides = rides;
         this.delivery = delivery;
-        this.leisure = leisure;
-        this.health = health;
-        this.education = education;
-        this.groceries = groceries;
-        this.events = events;
-        this.homeServices = homeServices;
-        this.beauty = beauty;
         this.clock = Clock.systemUTC();
     }
 
     public boolean allowedByEnvironment(Feature feature) {
-        return switch (feature) {
-            case AUTO -> auto.enabled();
-            case RIDES -> rides.enabled();
-            case DELIVERY -> delivery.enabled();
-            case LEISURE -> leisure.allowedByEnvironment();
-            case HEALTH -> health.enabled();
-            case EDUCATION -> education.allowedByEnvironment();
-            case EVENTS -> events.allowedByEnvironment();
-            case HOME_SERVICES -> homeServices.allowedByEnvironment();
-            case BEAUTY -> beauty.allowedByEnvironment();
-            case GROCERIES -> groceries.allowedByEnvironment();
-        };
+        return gates.get(feature).allowedByEnvironment();
     }
 
     /** Whether the feature is on right now: allowed by the environment and not switched off by an administrator. */
