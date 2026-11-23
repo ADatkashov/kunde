@@ -37,6 +37,9 @@ class _Auth implements AuthRepository {
   /// How many `POST rides` calls answer that the quote is gone.
   int staleQuotes = 0;
 
+  /// The customer already has an active ride (409 RIDE_ALREADY_REQUESTED).
+  bool activeRide = false;
+
   @override
   Future<dynamic> authorizedJson(
     String method,
@@ -59,7 +62,12 @@ class _Auth implements AuthRepository {
           'durationSeconds': 207,
           'synthetic': false,
         };
+      case ('GET', 'rides'):
+        return [_trip('SEARCHING_DRIVER')];
+      case ('POST', 'rides/trip-1/dispatch'):
+        return _trip('SEARCHING_DRIVER');
       case ('POST', 'rides'):
+        if (activeRide) throw IdentityApiError(409, 'RIDE_ALREADY_REQUESTED');
         if (staleQuotes > 0) {
           staleQuotes--;
           throw IdentityApiError(409, 'RIDE_QUOTE_UNAVAILABLE');
@@ -212,6 +220,31 @@ void main() {
     expect(maps.titles, ['Destination']);
     expect(find.widgetWithText(FilledButton, 'Order · 435.14\u00A0₸'),
         findsOneWidget);
+  });
+
+  testWidgets('an already active ride is explained and opened, not a failure',
+      (tester) async {
+    final auth = _Auth()..activeRide = true;
+    final maps = FakeKundeMaps(
+      routing(),
+      [_search('Abay 10', 43.25, 76.93)],
+      const GeoPoint(43.238194, 76.94498),
+    );
+    await tester.pumpWidget(_app(RidesScreen(api: RideApi(auth), maps: maps)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Destination'));
+    await tester.pumpAndSettle();
+    await tester
+        .tap(find.widgetWithText(FilledButton, 'Order · 435.14\u00A0₸'));
+    // The active ride page keeps polling, so settle by hand.
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+    expect(find.text('The request failed. Try again.'), findsNothing);
+    expect(
+        auth.calls.where((c) => c.$1 == 'GET' && c.$2 == 'rides'), isNotEmpty);
+    expect(find.text('Cancel ride'), findsWidgets);
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 
   testWidgets('a class without a tariff is not offered', (tester) async {

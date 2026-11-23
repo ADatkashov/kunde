@@ -42,6 +42,11 @@ class RideStrings {
   String get myLocation =>
       t('Моё местоположение', 'Менің орным', 'My location');
   String get order => t('Заказать', 'Тапсырыс беру', 'Order');
+  String get rideAlreadyActive => t(
+        'У вас уже есть активный заказ. Откройте его или отмените.',
+        'Сізде белсенді тапсырыс бар. Оны ашыңыз немесе бас тартыңыз.',
+        'You already have an active ride. Open it or cancel it.',
+      );
   String get priceUpdated => t(
         'Цена обновилась. Проверьте её и закажите снова.',
         'Баға жаңарды. Тексеріп, қайта тапсырыс беріңіз.',
