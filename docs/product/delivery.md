@@ -13,11 +13,13 @@
 | Flutter | Consumer, Executor и Partner, RU/KK/EN, Material 3 | Навигация, темы, i18n, API и карты | Экраны Delivery | Подключить через capabilities |
 | CI и сборки | Backend, Flutter, Security CI, Rides Android E2E, DEV signing | PostgreSQL, существующие workflows и подпись | Сквозной сценарий Delivery и артефакты | Проверить на интегрированном коммите |
 
+[Актуальный аудит и очередь интеграции](delivery-1.0-audit.md).
+
 ## API персональных отправлений
 
-- `POST /api/v1/deliveries/quotes` принимает тип, вес в граммах, три размера в сантиметрах и две точки. Возвращает KZT, версию ставки, расстояние, оценку времени, время создания и срок действия. `syntheticRoute: true` обозначает тестовый маршрут.
+- `POST /api/v1/deliveries/quotes` принимает тип, вес в граммах, три размера в сантиметрах и две точки. Максимум для документов — 2 кг, для остальных типов — 30 кг. Среда может задать меньший лимит. Возвращает KZT, версию ставки, расстояние, оценку времени, время создания и срок действия. `syntheticRoute: true` обозначает тестовый маршрут.
 - `POST /api/v1/deliveries` принимает котировку, адреса, имя и телефон получателя, описание, примечание курьеру и явное подтверждение допустимости содержимого. Нужен `Idempotency-Key`. Котировка доступна один раз владельцу в пределах срока действия. Совпадающий повтор возвращает существующую запись, конфликтующий даёт 409.
-- `GET /api/v1/deliveries` и `GET /api/v1/deliveries/{id}` возвращают историю и детали владельца с `Cache-Control: no-store`.
+- `GET /api/v1/deliveries` и `GET /api/v1/deliveries/{id}` возвращают историю и детали владельца с версией тарифа, расстоянием и оценкой времени из сохранённой котировки и заголовком `Cache-Control: no-store`.
 - `POST /api/v1/deliveries/{id}/cancel` проводит переход из `CREATED` в `CANCELLED_BY_CUSTOMER`. Повтор безопасен. Создание и отмена фиксируются в неизменяемой истории.
 
 ## Внутренняя конфигурация
@@ -77,3 +79,19 @@ Backend повторяет подбор для отправлений в сос�
 ### Admin в браузере DEV
 
 `bash scripts/admin-web/build.sh` собирает существующий Flutter Admin. `node scripts/admin-web/server.mjs` обслуживает сборку и передаёт только запросы входа, профиля, возможностей и Admin Rides/Delivery в существующий KUNDE DEV API. Админские разрешения проверяет backend. Для разделов Delivery требуется заранее выданный `DELIVERY_OPERATIONS`. Сессия браузера хранится в памяти вкладки. После перезагрузки страницы потребуется вход.
+
+
+## DEV-проверки и сборки
+
+- [Delivery Android E2E](https://github.com/ADatkashov/kunde/actions/runs/45065942400) прошёл для Consumer и Executor с локальными Spring Boot и PostgreSQL, тестовым маршрутом и одноразовым кодом.
+- На отдельной локальной базе тот же backend обращался к реальному DEV KUNDE Maps. Valhalla вернула маршрут 2 508 м за 207 с. По HTTP проверены котировка, отказ для маршрута вне покрытия, идемпотентное создание, назначение, контроль доступа к координатам, вручение, оценка, корпоративное отправление с отменой и видимость в роли Admin. Использованы синтетические аккаунты. Платёжная операция в этих проверках отсутствовала.
+- [iOS без подписи](https://github.com/ADatkashov/kunde/actions/runs/45066700276) успешно собрал общий Flutter-проект на `ca882e0`.
+
+Четыре подписанных APK ниже собраны из промежуточной ревизии `eb5f1f09220b031837f2ae7b128787c4e82f2801`. Проверки подписи и package ID в GitHub Actions прошли. Сборки содержат изменение формы Consumer. Более поздние изменения Partner и журнала статусов в них отсутствуют.
+
+| Приложение | Архив APK |
+| --- | --- |
+| Consumer | [KUNDE-dev-release](https://github.com/ADatkashov/kunde/actions/runs/45066001478/artifacts/14771378723) |
+| Partner | [KUNDE-Partner-dev-release](https://github.com/ADatkashov/kunde/actions/runs/45066002105/artifacts/14771044264) |
+| Executor | [KUNDE-executor-dev-release](https://github.com/ADatkashov/kunde/actions/runs/45066001898/artifacts/14771358851) |
+| Admin | [KUNDE-admin-dev-release](https://github.com/ADatkashov/kunde/actions/runs/45066001332/artifacts/14771756491) |

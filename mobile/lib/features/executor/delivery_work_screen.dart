@@ -15,12 +15,14 @@ class DeliveryWorkScreen extends StatefulWidget {
       {required this.auth,
       required this.synthetic,
       this.intakeEnabled = true,
+      this.readPosition,
       this.mapsFactory,
       super.key});
 
   final AuthRepository auth;
   final bool synthetic;
   final bool intakeEnabled;
+  final Future<({double latitude, double longitude})> Function()? readPosition;
 
   /// Creates the Maps SDK facade for courier navigation. Null (the server did not enable Maps) hides the Navigate button.
   final KundeMaps Function(BuildContext context)? mapsFactory;
@@ -29,7 +31,16 @@ class DeliveryWorkScreen extends StatefulWidget {
   State<DeliveryWorkScreen> createState() => _DeliveryWorkScreenState();
 }
 
-class _DeliveryWorkScreenState extends State<DeliveryWorkScreen> {
+class _DeliveryWorkScreenState extends State<DeliveryWorkScreen>
+    with WidgetsBindingObserver {
+  static const _trackable = {
+    'COURIER_ASSIGNED',
+    'COURIER_ARRIVING',
+    'COURIER_ARRIVED',
+    'PICKED_UP',
+    'IN_TRANSIT',
+    'RETURNING',
+  };
   static const _root = 'executor/deliveries';
   final _name = TextEditingController();
   String _vehicle = 'BICYCLE';
@@ -41,10 +52,19 @@ class _DeliveryWorkScreenState extends State<DeliveryWorkScreen> {
   bool _error = false;
   bool _handoffError = false;
   Timer? _poll;
+  Timer? _locationTimer;
+  Future<void>? _positionUpdate;
+  String? _sharingId;
+  bool _sharingFailed = false;
+  bool _clearingLocation = false;
+  bool _foreground = true;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    _foreground = lifecycle == null || lifecycle == AppLifecycleState.resumed;
     unawaited(_load());
     _poll = Timer.periodic(const Duration(seconds: 7), (_) {
       if (ModalRoute.of(context)?.isCurrent == true && _profile != null) {
@@ -54,7 +74,20 @@ class _DeliveryWorkScreenState extends State<DeliveryWorkScreen> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _foreground = state == AppLifecycleState.resumed;
+    if (!_foreground) {
+      _locationTimer?.cancel();
+      _locationTimer = null;
+    } else {
+      _scheduleLocation();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _locationTimer?.cancel();
     _poll?.cancel();
     _name.dispose();
     super.dispose();
@@ -86,6 +119,11 @@ class _DeliveryWorkScreenState extends State<DeliveryWorkScreen> {
           ? <Map<String, dynamic>>[]
           : (await _call('GET', _root) as List).cast<Map<String, dynamic>>();
       if (!mounted) return;
+      if (_sharingId != null &&
+          !shipments.any((row) =>
+              row['id'] == _sharingId && _trackable.contains(row['status']))) {
+        _clearSharingState();
+      }
       setState(() {
         _profile = profile;
         _offers = offers;
@@ -107,41 +145,121 @@ class _DeliveryWorkScreenState extends State<DeliveryWorkScreen> {
     }
   }
 
+  Future<({double latitude, double longitude})> _readPosition(
+      {bool requestPermission = false}) async {
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      throw IdentityUnavailable();
+    }
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied && requestPermission) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission != LocationPermission.whileInUse &&
+        permission != LocationPermission.always) {
+      throw IdentityUnavailable();
+    }
+    final position = await Geolocator.getCurrentPosition(
+      locationSettings:
+          const LocationSettings(timeLimit: Duration(seconds: 12)),
+    );
+    return (latitude: position.latitude, longitude: position.longitude);
+  }
+
   Future<void> _sendLocation({required bool fixture, String? shipmentId}) =>
       _load(() async {
-        final double latitude;
-        final double longitude;
-        if (fixture) {
-          latitude = 43.24;
-          longitude = 76.92;
-        } else {
-          if (!await Geolocator.isLocationServiceEnabled()) {
-            throw IdentityUnavailable();
-          }
-          var permission = await Geolocator.checkPermission();
-          if (permission == LocationPermission.denied) {
-            permission = await Geolocator.requestPermission();
-          }
-          if (permission != LocationPermission.whileInUse &&
-              permission != LocationPermission.always) {
-            throw IdentityUnavailable();
-          }
-          final position = await Geolocator.getCurrentPosition(
-            locationSettings:
-                const LocationSettings(timeLimit: Duration(seconds: 12)),
-          );
-          latitude = position.latitude;
-          longitude = position.longitude;
-        }
+        final point = fixture
+            ? (latitude: 43.24, longitude: 76.92)
+            : await (widget.readPosition?.call() ??
+                _readPosition(requestPermission: true));
         if (!mounted) return;
-        await _call(
-            'PUT',
-            shipmentId == null
-                ? '$_root/location'
-                : '$_root/$shipmentId/location',
-            body: {'latitude': latitude, 'longitude': longitude},
-            expected: {204});
+        await _pushPosition(shipmentId, point);
       });
+
+  Future<dynamic> _pushPosition(
+          String? shipmentId, ({double latitude, double longitude}) point) =>
+      _call(
+        'PUT',
+        shipmentId == null ? '$_root/location' : '$_root/$shipmentId/location',
+        body: {'latitude': point.latitude, 'longitude': point.longitude},
+        expected: {204},
+      );
+
+  void _startSharing(String id) {
+    setState(() {
+      _sharingId = id;
+      _sharingFailed = false;
+    });
+    _tickLocation(requestPermission: true);
+  }
+
+  void _scheduleLocation() {
+    if (_sharingId == null || !_foreground || _locationTimer != null) return;
+    _locationTimer = Timer(const Duration(seconds: 7), () {
+      _locationTimer = null;
+      _tickLocation();
+    });
+  }
+
+  void _tickLocation({bool requestPermission = false}) {
+    final id = _sharingId;
+    if (id == null || !_foreground || _positionUpdate != null) return;
+    _positionUpdate = _publishPosition(id, requestPermission: requestPermission)
+        .whenComplete(() {
+      _positionUpdate = null;
+      if (mounted) _scheduleLocation();
+    });
+  }
+
+  Future<void> _publishPosition(String id,
+      {required bool requestPermission}) async {
+    try {
+      final point = await (widget.readPosition?.call() ??
+          _readPosition(requestPermission: requestPermission));
+      if (!mounted || !_foreground || _sharingId != id) return;
+      await _pushPosition(id, point);
+      if (mounted && _sharingId == id && _sharingFailed) {
+        setState(() => _sharingFailed = false);
+      }
+    } on IdentityApiError catch (error) {
+      if (!mounted || _sharingId != id) return;
+      if (error.status == 403 || error.status == 404) {
+        setState(() {
+          _clearSharingState();
+          _error = true;
+        });
+      } else {
+        setState(() => _sharingFailed = true);
+      }
+    } catch (_) {
+      if (mounted && _sharingId == id) {
+        setState(() => _sharingFailed = true);
+      }
+    }
+  }
+
+  void _clearSharingState() {
+    _locationTimer?.cancel();
+    _locationTimer = null;
+    _sharingId = null;
+    _sharingFailed = false;
+  }
+
+  Future<void> _stopSharing(String id) async {
+    setState(() {
+      _clearSharingState();
+      _clearingLocation = true;
+    });
+    try {
+      await _positionUpdate;
+      if (mounted) {
+        await _call('DELETE', '$_root/$id/location', expected: {204});
+      }
+    } catch (_) {
+      if (mounted) setState(() => _error = true);
+    } finally {
+      if (mounted) setState(() => _clearingLocation = false);
+    }
+  }
 
   Future<void> _handoff(String id, DeliveryStrings s) async {
     var code = '';
@@ -388,14 +506,41 @@ class _DeliveryWorkScreenState extends State<DeliveryWorkScreen> {
               icon: const Icon(Icons.navigation_outlined),
               onPressed: _busy ? null : () => _navigate(shipment, s),
               label: Text(s.t('Навигатор', 'Навигатор', 'Navigate'))),
-        if (const {
-          'COURIER_ASSIGNED',
-          'COURIER_ARRIVING',
-          'COURIER_ARRIVED',
-          'PICKED_UP',
-          'IN_TRANSIT',
-          'RETURNING'
-        }.contains(status))
+        if (_trackable.contains(status) && !widget.synthetic)
+          _sharingId == id
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Semantics(
+                      liveRegion: true,
+                      child: Text(_sharingFailed
+                          ? s.t(
+                              'Нет GPS или связи. Повторяем при подключении.',
+                              'GPS немесе байланыс жоқ. Қосылғанда қайталаймыз.',
+                              'GPS or network unavailable. Retrying.')
+                          : s.t(
+                              'Передаём точку, пока приложение открыто',
+                              'Қолданба ашық кезде орынды жібереміз',
+                              'Sharing while the app is open')),
+                    ),
+                    TextButton(
+                      onPressed: _busy ? null : () => _stopSharing(id),
+                      child: Text(s.t('Остановить передачу', 'Жіберуді тоқтату',
+                          'Stop sharing location')),
+                    ),
+                  ],
+                )
+              : OutlinedButton(
+                  onPressed: _busy || _clearingLocation || _sharingId != null
+                      ? null
+                      : () => _startSharing(id),
+                  child: Text(s.t(
+                    'Показывать мою точку отправителю',
+                    'Орнымды жіберушіге көрсету',
+                    'Share live location with sender',
+                  )),
+                ),
+        if (_trackable.contains(status) && widget.synthetic)
           Wrap(spacing: 8, children: [
             TextButton(
               onPressed: _busy
