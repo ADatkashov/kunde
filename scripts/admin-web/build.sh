@@ -8,6 +8,6 @@ if ! command -v flutter >/dev/null; then
   export PATH="$sdk/flutter/bin:$PATH"
 fi
 
-cd "$(dirname "$0")/../../mobile"
+cd "$(dirname "$0")/../../apps/admin"
 flutter pub get --enforce-lockfile
-flutter build web --no-pub --no-web-resources-cdn --target lib/admin_rides_main.dart
+flutter build web --no-pub --no-web-resources-cdn --target lib/main.dart

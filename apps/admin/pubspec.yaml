@@ -1,0 +1,28 @@
+name: kunde_admin
+description: KUNDE Admin app
+publish_to: none
+version: 0.1.0+1
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.2
+  kunde_api:
+    path: ../../packages/kunde_api
+  kunde_auth:
+    path: ../../packages/kunde_auth
+  kunde_localization:
+    path: ../../packages/kunde_localization
+  kunde_models:
+    path: ../../packages/kunde_models
+  kunde_operator:
+    path: ../../packages/kunde_operator
+  kunde_ui:
+    path: ../../packages/kunde_ui
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+flutter:
+  uses-material-design: true

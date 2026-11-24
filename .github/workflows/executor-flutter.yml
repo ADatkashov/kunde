@@ -1,0 +1,40 @@
+name: Executor Flutter CI
+on:
+  push:
+    branches: [main]
+    paths: ['apps/executor/**', 'packages/**', '.github/workflows/executor-flutter.yml']
+  pull_request:
+    paths: ['apps/executor/**', 'packages/**', '.github/workflows/executor-flutter.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  executor-flutter:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: '3.47.9'
+          channel: stable
+          cache: true
+      - name: Resolve, analyze, format and test
+        working-directory: apps/executor
+        run: |
+          flutter pub get --enforce-lockfile
+          flutter analyze --fatal-infos
+          dart format --output=none --set-exit-if-changed lib test
+          flutter test --machine > flutter-tests.json
+          python3 -c 'import json; e=[json.loads(s) for s in open("flutter-tests.json") if s.lstrip().startswith("{")]; assert any(x.get("type")=="done" and x.get("success") is True for x in e), "Missing successful test completion event"; t=[x for x in e if x.get("type")=="testDone" and not x.get("hidden",False)]; print("FLUTTER_TEST_SUMMARY",json.dumps({"tests":len(t),"success":sum(x.get("result")=="success" for x in t),"skipped":sum(x.get("skipped",False) for x in t)}))'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: executor-flutter-reports
+          path: apps/executor/flutter-tests.json
+          retention-days: 3

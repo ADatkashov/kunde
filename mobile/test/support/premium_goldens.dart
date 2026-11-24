@@ -11,11 +11,12 @@ Future<void> loadPremiumFonts() async {
   final packages = jsonDecode(await config.readAsString())['packages'] as List;
   final flutter = config.absolute.uri.resolve(
       packages.singleWhere((p) => p['name'] == 'flutter')['rootUri'] as String);
-  final loader = FontLoader('KundeSans');
+  final loader = FontLoader('packages/kunde_design/KundeSans');
   for (final weight in ['Regular', 'Medium', 'Bold', 'ExtraBold', 'Black']) {
-    loader.addFont(File('assets/fonts/NotoSans-$weight.ttf')
-        .readAsBytes()
-        .then(ByteData.sublistView));
+    loader.addFont(
+        File('../packages/kunde_design/assets/fonts/NotoSans-$weight.ttf')
+            .readAsBytes()
+            .then(ByteData.sublistView));
   }
   await loader.load();
   final icons = FontLoader('MaterialIcons')

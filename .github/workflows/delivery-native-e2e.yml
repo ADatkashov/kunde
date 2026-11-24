@@ -93,9 +93,8 @@ jobs:
           flutter build apk --debug --target-platform android-x64 \
             --dart-define=API_BASE_URL="$fixture_url" --dart-define=PHONE_AUTH_ENABLED=true
           cp build/app/outputs/flutter-apk/app-debug.apk "$RUNNER_TEMP/delivery-apk/consumer.apk"
-          KUNDE_EXECUTOR_BUILD=true flutter build apk --debug --target-platform android-x64 \
-            --target lib/executor_main.dart --dart-define=API_BASE_URL="$fixture_url"
-          cp build/app/outputs/flutter-apk/app-debug.apk "$RUNNER_TEMP/delivery-apk/executor.apk"
+          (cd ../apps/executor && flutter pub get --enforce-lockfile && flutter build apk --debug --target-platform android-x64 \
+            --dart-define=API_BASE_URL="$fixture_url" && cp build/app/outputs/flutter-apk/app-debug.apk "$RUNNER_TEMP/delivery-apk/executor.apk")
       - uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
         env:
           DELIVERY_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}

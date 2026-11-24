@@ -11,7 +11,7 @@ abstract final class KundeTheme {
     final base = ThemeData(
       colorScheme: scheme,
       useMaterial3: true,
-      fontFamily: 'KundeSans',
+      fontFamily: 'packages/kunde_design/KundeSans',
       scaffoldBackgroundColor: background,
     );
     return base.copyWith(
@@ -33,7 +33,7 @@ abstract final class KundeTheme {
             bodyMedium: const TextStyle(fontSize: 15, height: 1.4),
           )
           .apply(
-            fontFamily: 'KundeSans',
+            fontFamily: 'packages/kunde_design/KundeSans',
             bodyColor: scheme.onSurface,
             displayColor: scheme.onSurface,
           ),

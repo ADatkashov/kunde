@@ -1,0 +1,41 @@
+name: kunde_executor
+description: KUNDE Executor app
+publish_to: none
+version: 0.1.0+1
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  geolocator: ^14.0.0
+  http: ^1.2.2
+  kunde_api:
+    path: ../../packages/kunde_api
+  kunde_auth:
+    path: ../../packages/kunde_auth
+  kunde_design:
+    path: ../../packages/kunde_design
+  kunde_localization:
+    path: ../../packages/kunde_localization
+  kunde_maps:
+    path: ../../packages/kunde_maps
+  kunde_models:
+    path: ../../packages/kunde_models
+  kunde_operator:
+    path: ../../packages/kunde_operator
+  kunde_ui:
+    path: ../../packages/kunde_ui
+  mobile_scanner: ^7.5.0
+  url_launcher: ^6.3.3
+  kunde_maps_sdk:
+    # KUNDE Maps SDK 0.2.1, pinned to the immutable release commit of kunde-maps (release tags cannot be created from CI-less agent sessions).
+    git:
+      url: https://github.com/ADatkashov/kunde-maps.git
+      path: packages/kunde_maps_sdk
+      ref: 3a6134736d27e073e8d98e878a0ffc5c5bf375b8
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+flutter:
+  uses-material-design: true
