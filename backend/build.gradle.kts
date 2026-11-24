@@ -52,3 +52,21 @@ tasks.withType<Test>().configureEach {
 tasks.bootJar {
     archiveFileName = "kunde-api-${project.version}.jar"
 }
+
+// Resolved dependency graph (runtime + test) in the shape the security baseline reads: {groupId, artifactId, version, children}.
+// scripts/ci/osv_audit.py and security_baseline.py consume it; usage: ./gradlew dependencyTreeJson -PtreeOutput=../reports/maven.json
+tasks.register("dependencyTreeJson") {
+    group = "verification"
+    description = "Writes the resolved dependency tree as JSON for the OSV audit"
+    doLast {
+        fun node(d: ResolvedDependency): String =
+            "{\"groupId\":\"${d.moduleGroup}\",\"artifactId\":\"${d.moduleName}\",\"version\":\"${d.moduleVersion}\"," +
+                "\"children\":[${d.children.sortedBy { it.name }.joinToString(",") { node(it) }}]}"
+        val roots = configurations.getByName("testRuntimeClasspath").resolvedConfiguration.firstLevelModuleDependencies
+        val json = "{\"groupId\":\"${project.group}\",\"artifactId\":\"${project.name}\",\"version\":\"${project.version}\"," +
+            "\"children\":[${roots.sortedBy { it.name }.joinToString(",") { node(it) }}]}"
+        val out = file(providers.gradleProperty("treeOutput").orElse("build/reports/dependency-tree.json").get())
+        out.parentFile.mkdirs()
+        out.writeText(json + "\n")
+    }
+}

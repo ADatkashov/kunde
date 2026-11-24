@@ -1,6 +1,6 @@
 """Exercise the packaged Java21 JAR against synthetic PostgreSQL, then stop it."""
 import http.client, json, os, pathlib, subprocess, time, zipfile
-jar=pathlib.Path("backend/target/kunde-api-0.1.0-SNAPSHOT.jar")
+jar=pathlib.Path("backend/build/libs/kunde-api-0.1.0-SNAPSHOT.jar")
 with zipfile.ZipFile(jar) as archive:
     assert "BOOT-INF/lib/spring-webmvc-7.0.10.jar" in archive.namelist()
 out=pathlib.Path("reports");out.mkdir(exist_ok=True)

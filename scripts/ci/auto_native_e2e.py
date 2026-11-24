@@ -88,7 +88,7 @@ def start_backend(auto_enabled):
     env["AUTO_ENABLED"] = "true" if auto_enabled else "false"
     env["AUTO_SEED_DEMO"] = "true" if auto_enabled else "false"
     env["AUTH_PHONE_SECRET"] = fixture.FIXTURE_AUTH_KEY
-    args = ["java", "-jar", "backend/target/kunde-api-0.1.0-SNAPSHOT.jar",
+    args = ["java", "-jar", "backend/build/libs/kunde-api-0.1.0-SNAPSHOT.jar",
             "--server.address=127.0.0.1", "--server.port=8081"]
     log_path = Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "auto-backend.log"
     offset = log_path.stat().st_size if log_path.exists() else 0

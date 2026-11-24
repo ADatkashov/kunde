@@ -45,11 +45,15 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-          cache: maven
-          cache-dependency-path: backend/pom.xml
+          cache: gradle
+      - name: Gradle wrapper integrity (pinned distribution checksum and wrapper jar hash)
+        working-directory: backend
+        run: |
+          grep -q '^distributionSha256Sum=[0-9a-f]\{64\}$' gradle/wrapper/gradle-wrapper.properties
+          (cd gradle/wrapper && sha256sum -c gradle-wrapper.jar.sha256)
       - name: Architecture boundaries (fast, no database)
         working-directory: backend
-        run: mvn --batch-mode --no-transfer-progress -q test -Dtest='ArchitectureBoundariesTest,PlacementRegistryTest,PlacementServiceTest'
+        run: ./gradlew --no-daemon -q test --tests 'kz.kunde.architecture.*' --tests '*PlacementServiceTest'
       - name: Verify and package
         working-directory: backend
         env:
@@ -57,10 +61,10 @@ jobs:
           DB_USERNAME: kunde_ci
           DB_PASSWORD: synthetic_ci_only
         run: |
-          mvn --batch-mode --no-transfer-progress clean verify
-          test -s target/kunde-api-0.1.0-SNAPSHOT.jar
-          jar tf target/kunde-api-0.1.0-SNAPSHOT.jar > target/jar-contents.txt
-          grep -q 'BOOT-INF/lib/' target/jar-contents.txt
+          ./gradlew --no-daemon clean build
+          test -s build/libs/kunde-api-0.1.0-SNAPSHOT.jar
+          jar tf build/libs/kunde-api-0.1.0-SNAPSHOT.jar > build/jar-contents.txt
+          grep -q 'BOOT-INF/lib/' build/jar-contents.txt
       - name: Packaged JAR HTTP and fail-closed smoke
         env:
           DB_URL: jdbc:postgresql://localhost:5432/kunde
@@ -72,6 +76,6 @@ jobs:
         with:
           name: backend-reports
           path: |
-            backend/target/surefire-reports/*.xml
+            backend/build/test-results/test/*.xml
             reports/backend-smoke.json
           retention-days: 3

@@ -27,6 +27,7 @@ def main():
     p.add_argument("--maven", type=pathlib.Path)
     p.add_argument("--pub", type=pathlib.Path)
     p.add_argument("--effective", type=pathlib.Path)
+    p.add_argument("--gradle-catalog", type=pathlib.Path)
     p.add_argument("--settings", type=pathlib.Path)
     p.add_argument("--output", type=pathlib.Path, required=True)
     a=p.parse_args()
@@ -38,7 +39,7 @@ def main():
     code=2
     try:
         coordinates=set()
-        for file in [a.maven,a.pub,a.effective,a.settings,a.python_requirements]:
+        for file in [a.maven,a.pub,a.effective,a.gradle_catalog,a.settings,a.python_requirements]:
             if file: report["inputSha256"][str(file)]=hashlib.sha256(file.read_bytes()).hexdigest()
         def visit(node):
             version=node["version"]
@@ -62,6 +63,14 @@ def main():
                 version=plugin.findtext("m:version",namespaces=namespace)
                 if not version or "$" in version: raise ValueError("Unresolved plugin version")
                 coordinates.add(("Maven",group+":"+name,version))
+        if a.gradle_catalog:
+            # Build-root plugins of the backend: [versions] entry of the plugin -> artifact that hosts it.
+            text=a.gradle_catalog.read_text()
+            for key,name in [("springBoot","org.springframework.boot:spring-boot-gradle-plugin"),
+                             ("dependencyManagement","io.spring.gradle:dependency-management-plugin")]:
+                match=re.search(r'^'+key+r'\s*=\s*"([^"]+)"',text,re.M)
+                if not match or "$" in match[1]: raise ValueError("Unresolved Gradle plugin version")
+                coordinates.add(("Maven",name,match[1]))
         if a.settings:
             text=a.settings.read_text()
             for identifier,name in [("com.android.application","com.android.tools.build:gradle"),
