@@ -36,6 +36,10 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
+    // `./gradlew test --tests X` is run across all modules; a module without a match must not fail the build.
+    filter {
+        isFailOnNoMatchingTests = false
+    }
     // The architecture ratchet rewrites its baseline on request (-Dkunde.architecture.updateBaseline=true).
     systemProperty("kunde.architecture.updateBaseline", System.getProperty("kunde.architecture.updateBaseline") ?: "false")
 }
