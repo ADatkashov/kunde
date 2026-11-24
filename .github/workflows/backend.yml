@@ -79,3 +79,21 @@ jobs:
             backend/*/build/test-results/test/*.xml
             reports/backend-smoke.json
           retention-days: 3
+  # Render builds backend/Dockerfile (DEV), but until ADR-023 nothing in CI ever built it: a broken COPY/jar path would only show up
+  # at deploy time. Build only (no push, no secrets); runs in parallel with the test job.
+  docker-image:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref || github.sha }}
+      - name: Build backend image (Dockerfile as deployed to Render)
+        run: docker build --pull=false -t kunde-api:ci backend
+      - name: Image contract (non-root user, jar present)
+        run: |
+          test "$(docker image inspect kunde-api:ci --format '{{.Config.User}}')" = "10001:10001"
+          docker create --name probe kunde-api:ci >/dev/null
+          docker cp probe:/app/app.jar /tmp/app.jar
+          test -s /tmp/app.jar
