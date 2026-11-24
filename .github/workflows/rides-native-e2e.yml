@@ -81,7 +81,7 @@ jobs:
         working-directory: backend
         run: ./gradlew --no-daemon -q bootJar
       - name: Build the two local-fixture debug APKs
-        working-directory: mobile
+        working-directory: apps/consumer
         run: |
           flutter pub get --enforce-lockfile
           mkdir -p "$RUNNER_TEMP/rides-apk"
@@ -89,7 +89,7 @@ jobs:
           flutter build apk --debug --target-platform android-x64 \
             --dart-define=API_BASE_URL="$fixture_url" --dart-define=PHONE_AUTH_ENABLED=true
           cp build/app/outputs/flutter-apk/app-debug.apk "$RUNNER_TEMP/rides-apk/consumer.apk"
-          (cd ../apps/executor && flutter pub get --enforce-lockfile && flutter build apk --debug --target-platform android-x64 \
+          (cd ../executor && flutter pub get --enforce-lockfile && flutter build apk --debug --target-platform android-x64 \
             --dart-define=API_BASE_URL="$fixture_url" && cp build/app/outputs/flutter-apk/app-debug.apk "$RUNNER_TEMP/rides-apk/executor.apk")
       - uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
         env:

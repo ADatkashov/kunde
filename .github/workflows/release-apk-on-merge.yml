@@ -66,8 +66,8 @@ jobs:
             if git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
               git diff --name-only "$BEFORE" HEAD > changed.txt
             else
-              echo "mobile/lib/main.dart
-          partner_app/pubspec.yaml
+              echo "apps/consumer/lib/main.dart
+          apps/partner/pubspec.yaml
           packages/kunde_design/pubspec.yaml" > changed.txt   # unknown base: build everything
             fi
             python3 scripts/ci/release_targets.py < changed.txt | python3 -c 'import json,sys; [print(f"{k}={str(v).lower()}") for k,v in json.load(sys.stdin).items()]' >> "$GITHUB_OUTPUT"

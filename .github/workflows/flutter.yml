@@ -2,9 +2,9 @@ name: Flutter CI
 on:
   push:
     branches: [main]
-    paths: ['mobile/**', 'packages/**', '.github/workflows/flutter.yml']
+    paths: ['apps/consumer/**', 'packages/**', '.github/workflows/flutter.yml']
   pull_request:
-    paths: ['mobile/**', 'packages/**', '.github/workflows/flutter.yml']
+    paths: ['apps/consumer/**', 'packages/**', '.github/workflows/flutter.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -25,11 +25,11 @@ jobs:
           channel: stable
           cache: true
       - name: Resolve, analyze, format and test
-        working-directory: mobile
+        working-directory: apps/consumer
         run: |
           flutter pub get --enforce-lockfile
           flutter analyze --fatal-infos
-          for package in ../packages/*/; do
+          for package in ../../packages/*/; do
             (cd "$package" && flutter pub get && flutter analyze --fatal-infos)
           done
           dart format --output=none --set-exit-if-changed lib test
@@ -39,5 +39,5 @@ jobs:
         if: always()
         with:
           name: flutter-reports
-          path: mobile/flutter-tests.json
+          path: apps/consumer/flutter-tests.json
           retention-days: 3

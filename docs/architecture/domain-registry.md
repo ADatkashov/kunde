@@ -27,4 +27,4 @@
 Бывшие заготовки (ADR-023 «Судьба заготовок»), перенесены: `food.order` (жизненный цикл заказа Food), `food.fulfillment` (самовывоз), `platform.notifications` (цепочка доставки, допустимость каналов), `platform.analytics` (каталог событий и шлюз минимизации). Ни одна из них пока не вызывается из кода; отдельные домены появятся при реальной бизнес-ответственности.
 
 **Feature flags:** `FOOD_*`, `GROCERIES_*`, `DELIVERY_*`, `RIDES_*`, `MAPS_ENABLED`, `BEAUTY_ENABLED`, `BOOKING_*`, … + runtime-переключатели `identity.feature_toggles`; точный перечень выводится из `FeatureGate`-бинов (`platform.FeatureToggles`).
-**Расположение тестов:** сейчас `backend/src/test/java/kz/kunde/<pkg>`, `mobile/test/features/<feature>`; целевое — в модуле/приложении домена.
+**Расположение тестов:** сейчас `backend/src/test/java/kz/kunde/<pkg>`, `apps/consumer/test/features/<feature>`; целевое — в модуле/приложении домена.

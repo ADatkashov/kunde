@@ -74,7 +74,7 @@ jobs:
       - name: Isolated synthetic Keycloak and backend stack
         run: bash scripts/ci/start_identity_test_stack.sh
       - name: Build and verify Consumer debug APK for loopback fixture
-        working-directory: mobile
+        working-directory: apps/consumer
         env:
           GRADLE_USER_HOME: /tmp/kunde-gradle
         run: |

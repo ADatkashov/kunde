@@ -20,7 +20,7 @@ jobs:
           channel: stable
           cache: false
       - name: Retain previous unsigned Foundation CI capability without signing secrets
-        working-directory: mobile
+        working-directory: apps/consumer
         run: |
           flutter pub get --enforce-lockfile
           flutter build ios --debug --no-codesign

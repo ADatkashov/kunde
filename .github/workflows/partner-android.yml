@@ -33,18 +33,18 @@ jobs:
           channel: stable
           cache: true
       - name: Analyze and test
-        working-directory: partner_app
+        working-directory: apps/partner
         run: |
           flutter pub get
           flutter analyze --fatal-infos
           flutter test
       - name: Build Partner DEV debug APK
-        working-directory: partner_app
+        working-directory: apps/partner
         run: |
           flutter build apk --debug --target-platform android-arm64 \
             --dart-define=API_BASE_URL=https://kunde-backend-ty81.onrender.com/api/v1/
       - name: Verify distinct Partner application ID
-        working-directory: partner_app
+        working-directory: apps/partner
         run: |
           apk=build/app/outputs/flutter-apk/app-debug.apk
           test -s "$apk"
@@ -55,6 +55,6 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: KUNDE-Partner-DEV-debug-APK
-          path: partner_app/build/app/outputs/flutter-apk/app-debug.apk
+          path: apps/partner/build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 7
           if-no-files-found: error

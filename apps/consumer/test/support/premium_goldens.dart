@@ -14,7 +14,7 @@ Future<void> loadPremiumFonts() async {
   final loader = FontLoader('packages/kunde_design/KundeSans');
   for (final weight in ['Regular', 'Medium', 'Bold', 'ExtraBold', 'Black']) {
     loader.addFont(
-        File('../packages/kunde_design/assets/fonts/NotoSans-$weight.ttf')
+        File('../../packages/kunde_design/assets/fonts/NotoSans-$weight.ttf')
             .readAsBytes()
             .then(ByteData.sublistView));
   }

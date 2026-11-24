@@ -559,7 +559,7 @@ class Scenario:
         adb("shell", "am", "force-stop", "com.android.chrome")
         adb("reverse", "tcp:8180", "tcp:8180")
         adb("reverse", "tcp:8081", "tcp:8081")
-        adb("install", "-r", "mobile/build/app/outputs/flutter-apk/app-debug.apk")
+        adb("install", "-r", "apps/consumer/build/app/outputs/flutter-apk/app-debug.apk")
         adb("shell", "pm", "clear", PACKAGE)
         self.launch()
         self.stage = "welcome_locales"

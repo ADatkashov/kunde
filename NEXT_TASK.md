@@ -2,11 +2,11 @@
 
 ## Архитектура: четыре независимых Flutter-приложения (ADR-023, решение 5)
 
-Сейчас два проекта: `mobile/` (Consumer; Executor и Admin — точки входа `executor_main.dart`, `admin_rides_main.dart` и env-флаги `KUNDE_EXECUTOR_BUILD`/`KUNDE_ADMIN_BUILD` в `mobile/android/app/build.gradle.kts`) и `partner_app/`. Цель — `apps/{consumer,partner,executor,admin}`, у каждого свой `pubspec.yaml`, entrypoint, навигация, тесты, CI/релиз, прежние application ID (`com.example.kunde_mobile`, `com.kunde.executor`, `com.kunde.admin`, `com.kunde.kunde_partner`) и подпись; общий код — только реально общий (`packages/kunde_design` есть; кандидаты — identity/session и локализация). Предпосылка выполнена (PR F1): замыкание Executor 42, Admin 43 файла. Дальше: (1) вынести общий identity/localization/theme в пакеты; (2) создать проекты `apps/executor`, `apps/admin` с копией `android/` и фиксированным applicationId; (3) обновить ~30 workflow/скриптов (пути `mobile/`), `release_targets.py`; (4) проверять каждый шаг `flutter analyze/test` и ручным запуском `android-apk.yml` на ветке (APK-сборки в обычный PR CI не входят). Команды: `cd mobile && flutter analyze --fatal-infos && flutter test`; `cd backend && ./gradlew build`.
+Сейчас два проекта: `apps/consumer` (Consumer; Executor и Admin — точки входа `executor_main.dart`, `admin_rides_main.dart` и env-флаги `KUNDE_EXECUTOR_BUILD`/`KUNDE_ADMIN_BUILD` в `mobile/android/app/build.gradle.kts`) и `apps/partner`. Цель — `apps/{consumer,partner,executor,admin}`, у каждого свой `pubspec.yaml`, entrypoint, навигация, тесты, CI/релиз, прежние application ID (`com.example.kunde_mobile`, `com.kunde.executor`, `com.kunde.admin`, `com.kunde.kunde_partner`) и подпись; общий код — только реально общий (`packages/kunde_design` есть; кандидаты — identity/session и локализация). Предпосылка выполнена (PR F1): замыкание Executor 42, Admin 43 файла. Дальше: (1) вынести общий identity/localization/theme в пакеты; (2) создать проекты `apps/executor`, `apps/admin` с копией `android/` и фиксированным applicationId; (3) обновить ~30 workflow/скриптов (пути `apps/consumer`), `release_targets.py`; (4) проверять каждый шаг `flutter analyze/test` и ручным запуском `android-apk.yml` на ветке (APK-сборки в обычный PR CI не входят). Команды: `cd apps/consumer && flutter analyze --fatal-infos && flutter test`; `cd backend && ./gradlew build`.
 
 ## KUNDE Beauty & Care 1.0
 
-Consumer, Partner-обзор, Executor и Admin-аналитика готовы ([beauty-care.md](docs/product/beauty-care.md)). Дальше: Partner CRUD услуг/акций/расписания и модерация отзывов, Admin модерация и жалобы, перенос записи, hold и онлайн-оплата (провайдер), уведомления, нативные Android E2E, DEV-деплой и Release APK. Команды: `cd backend && ./gradlew test --tests '*Beauty*' --tests '*Booking*'`; `cd mobile && flutter test test/features/beauty test/features/booking`.
+Consumer, Partner-обзор, Executor и Admin-аналитика готовы ([beauty-care.md](docs/product/beauty-care.md)). Дальше: Partner CRUD услуг/акций/расписания и модерация отзывов, Admin модерация и жалобы, перенос записи, hold и онлайн-оплата (провайдер), уведомления, нативные Android E2E, DEV-деплой и Release APK. Команды: `cd backend && ./gradlew test --tests '*Beauty*' --tests '*Booking*'`; `cd apps/consumer && flutter test test/features/beauty test/features/booking`.
 
 ## KUNDE Delivery 1.0
 
@@ -14,7 +14,7 @@ Consumer, Partner-обзор, Executor и Admin-аналитика готовы 
 
 ## KUNDE Home Services 1.0
 
-Связать [справочник V60](docs/product/home-services.md) с модерируемыми предложениями на существующих `booking_services`. Критерии: каталог возвращает только опубликованные предложения, выдача постраничная, Partner видит данные только своей организации, смена состояния требует гранта и записывается в аудит. Проверки текущего флага: `cd backend && mvn -Dtest=HomeServicesSettingsTest,PlatformControllerTest,BookingApiIntegrationTest test` и `cd mobile && flutter test test/features/booking/booking_flow_test.dart`.
+Связать [справочник V60](docs/product/home-services.md) с модерируемыми предложениями на существующих `booking_services`. Критерии: каталог возвращает только опубликованные предложения, выдача постраничная, Partner видит данные только своей организации, смена состояния требует гранта и записывается в аудит. Проверки текущего флага: `cd backend && mvn -Dtest=HomeServicesSettingsTest,PlatformControllerTest,BookingApiIntegrationTest test` и `cd apps/consumer && flutter test test/features/booking/booking_flow_test.dart`.
 
 ## KUNDE Events & Tickets
 
@@ -26,7 +26,7 @@ Consumer, Partner-обзор, Executor и Admin-аналитика готовы 
 1. Собрать четыре подписанных DEV Release APK из одного `main` SHA (`android-release.yml`: Consumer, `executor=true`, `admin=true`; `partner-release.yml`), проверить подпись, package ID, DEV URL, SHA-256; установить на эмулятор.
 2. Нативный Android E2E Consumer (каталог → товар → корзина → checkout → заказ) и реальные скриншоты Consumer/Partner/Executor/Admin; сверка с референсом.
 3. Открыто: корректировка суммы по фактическому весу, уведомления, лояльность (нужно решение владельца), карта и ETA (нужны координаты магазинов).
-4. Команды: `cd backend && ./gradlew test --tests '*Groceries*' --tests '*FoodPartnerAdmin*'`; `cd mobile && flutter test test/features/groceries test/features/executor test/features/food_admin`.
+4. Команды: `cd backend && ./gradlew test --tests '*Groceries*' --tests '*FoodPartnerAdmin*'`; `cd apps/consumer && flutter test test/features/groceries test/features/executor test/features/food_admin`.
 
 ## KUNDE Education
 
@@ -37,13 +37,13 @@ Consumer, Partner-обзор, Executor и Admin-аналитика готовы 
 1. DEV на `fd1fbb6` (V43) проверен смоуком; осталось выдать `FOOD_OPERATIONS` синтетическому сотруднику и вручную проверить Admin-экран.
 2. Partner: экран аналитики (`GET …/food/summary`), CRUD секций и модификаторов меню, удаление/архив блюд; Admin: выдача `FOOD_OPERATIONS` синтетическому сотруднику на DEV и ручная проверка экрана.
 3. Нативный Android E2E Food (вход → ресторан → блюдо → корзина → самовывоз/доставка → промокод → TEST_CARD → статус → отзыв), скриншоты Consumer/Partner/Admin для сравнения с референсом.
-4. Команды: `cd backend && ./gradlew test --tests '*Food*'`; `cd mobile && flutter test test/features/food`.
+4. Команды: `cd backend && ./gradlew test --tests '*Food*'`; `cd apps/consumer && flutter test test/features/food`.
 
 ## KUNDE Leisure
 
 1. Установить подписанные DEV APK из [PROJECT_STATE](PROJECT_STATE.md) на устройство, пройти Consumer-сценарий (Досуг → места → TEST_CARD → QR) и Partner/Executor/Admin; сверить скриншоты с референсом (`reports/leisure-native` в артефакте E2E).
 2. Выяснить, почему эмулятор CI теряется при запуске приложения против выключенного `LEISURE_ENABLED`, и вернуть шаг `ui_flag_off` в блокирующие.
-3. Команды: `python3 scripts/dev/leisure_smoke.py https://kunde-backend-ty81.onrender.com`; `cd backend && ./gradlew test --tests '*Leisure*'`; `cd mobile && flutter test test/features/leisure`.
+3. Команды: `python3 scripts/dev/leisure_smoke.py https://kunde-backend-ty81.onrender.com`; `cd backend && ./gradlew test --tests '*Leisure*'`; `cd apps/consumer && flutter test test/features/leisure`.
 
 ## Health & Wellness
 

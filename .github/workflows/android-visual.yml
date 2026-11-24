@@ -101,7 +101,7 @@ jobs:
           )
           build "$RUNNER_TEMP/kunde-before" before
           build "$GITHUB_WORKSPACE" after
-          (cd mobile/android && bash gradlew --stop)
+          (cd apps/consumer/android && bash gradlew --stop)
           jps -l | awk '$2 == "org.jetbrains.kotlin.daemon.KotlinCompileDaemon" {print $1}' | xargs -r kill
       - uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
         with:

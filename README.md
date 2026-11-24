@@ -5,7 +5,7 @@ KUNDE is being built as a modular platform. This repository currently contains t
 ## Project areas
 
 - `backend/` — Java 21, Spring Boot modular monolith, PostgreSQL/Flyway foundation.
-- `mobile/` — Flutter consumer foundation and RU/KK/EN localization scaffolding.
+- `apps/` — четыре независимых Flutter-приложения (consumer, partner, executor, admin); `packages/` — общие Flutter-пакеты.
 - `docs/` — Product, architecture, design, business, delivery roadmap and engineering foundation records.
 - `compose.yaml` — local-only PostgreSQL and backend container setup.
 

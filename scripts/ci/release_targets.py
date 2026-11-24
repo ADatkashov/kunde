@@ -5,7 +5,7 @@ Reads changed file paths (one per line) from stdin and prints a JSON object such
 {"consumer": true, "executor": true, "admin": true, "partner": false}.
 
 Rules (conservative: when unsure, build):
-  * mobile/ is Consumer, apps/executor/ Executor, apps/admin/ Admin, partner_app/ Partner (independent Flutter projects);
+  * apps/consumer/, apps/executor/, apps/admin/ and apps/partner/ are the four independent Flutter projects (independent Flutter projects);
   * packages/kunde_operator is used only by Executor and Admin; any other shared package, the release workflows and
     this script affect every app;
   * backend, docs and other files build nothing.
@@ -22,10 +22,10 @@ ALL_PREFIXES = (
     "scripts/ci/release_targets.py",
 )
 APP_PREFIXES = (
-    ("mobile/", ("consumer",)),
+    ("apps/consumer/", ("consumer",)),
     ("apps/executor/", ("executor",)),
     ("apps/admin/", ("admin",)),
-    ("partner_app/", ("partner",)),
+    ("apps/partner/", ("partner",)),
     ("packages/kunde_operator/", ("executor", "admin")),
 )
 

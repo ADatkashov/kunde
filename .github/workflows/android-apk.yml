@@ -57,7 +57,7 @@ jobs:
           gradle-version: '9.3.1'
           cache-disabled: true
       - name: Resolve Flutter plugins and local SDK paths
-        working-directory: mobile
+        working-directory: apps/consumer
         run: |
           flutter pub get --enforce-lockfile
           python3 - <<'PY'
@@ -68,21 +68,21 @@ jobs:
         run: python3 scripts/ci/verify_native_artifacts.py
       - name: Gradle configuration and actual resolved versions
         id: graph
-        working-directory: mobile/android
+        working-directory: apps/consumer/android
         run: |
           gradle --version
-          gradle --no-daemon --max-workers=2 help > ../../reports/gradle-help.txt 2>&1 || { cat ../../reports/gradle-help.txt; exit 1; }
-          gradle --no-daemon --max-workers=2 -I ../../scripts/ci/android_graph.init.gradle kundeResolvedGraph
+          gradle --no-daemon --max-workers=2 help > ../../../../reports/gradle-help.txt 2>&1 || { cat ../../../../reports/gradle-help.txt; exit 1; }
+          gradle --no-daemon --max-workers=2 -I ../../../../scripts/ci/android_graph.init.gradle kundeResolvedGraph
       - name: Build debug APK (universal for manual phone builds)
         id: apk_build
-        working-directory: mobile
+        working-directory: apps/consumer
         env:
           APK_PLATFORMS: ${{ inputs.phone-apk && 'android-arm,android-arm64,android-x64' || 'android-x64' }}
         run: |
           flutter pub get --enforce-lockfile
           flutter build apk --debug --target-platform "$APK_PLATFORMS"
           test -s build/app/outputs/flutter-apk/app-debug.apk
-          sha256sum build/app/outputs/flutter-apk/app-debug.apk > ../reports/apk.sha256
+          sha256sum build/app/outputs/flutter-apk/app-debug.apk > ../../reports/apk.sha256
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose build/app/outputs/flutter-apk/app-debug.apk
       - name: Inspect debug APK package presence
         if: steps.apk_build.outcome == 'success'
@@ -97,7 +97,7 @@ jobs:
         if: always() && steps.apk_build.outcome == 'success'
         with:
           name: consumer-debug-${{ inputs.phone-apk && 'universal' || 'x64' }}
-          path: mobile/build/app/outputs/flutter-apk/app-debug.apk
+          path: apps/consumer/build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 7
   android-dependencies:
     concurrency:
