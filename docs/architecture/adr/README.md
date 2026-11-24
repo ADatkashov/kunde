@@ -12,4 +12,4 @@ Outbox (2026-11-23): [ADR-022](ADR-022-transactional-outbox.md) (PROPOSED) adds 
 
 Partner directory (2026-11-23): [ADR-021](ADR-021-partner-directory-contract.md) (PROPOSED) turns the "approved partner / active staff" joins into a platform contract with a tested FOR SHARE invariant.
 
-Structure & build (2026-11-24): [ADR-023](ADR-023-build-system-and-module-structure.md) (PROPOSED) предлагает multi-module Gradle (Kotlin DSL) для backend с `services/<domain>`; ждёт подтверждения владельца. Аудит: [project-structure-audit](../project-structure-audit.md).
+Structure & build (2026-11-24): [ADR-023](ADR-023-build-system-and-module-structure.md) (ACCEPTED 2026-11-24) утверждает multi-module Gradle (Kotlin DSL) для backend с `services/<domain>` при gate эквивалентности. Аудит: [project-structure-audit](../project-structure-audit.md).

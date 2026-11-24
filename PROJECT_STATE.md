@@ -2,7 +2,7 @@
 
 ## Структура проекта и сборка, PR A (2026-11-24, ветка `ccr-644cd8f5-n0pkbu`)
 
-- Аудит и реестр доменов: [project-structure-audit](docs/architecture/project-structure-audit.md); решение по Gradle/Maven и границам модулей: [ADR-023](docs/architecture/adr/ADR-023-build-system-and-module-structure.md) (**PROPOSED**, ждёт владельца). Только документы: код, API, миграции и CI не менялись. Следующие шаги (B0 `platform → delivery, rides`, выделение `beauty`/`homeservices` из `booking`) не требуют смены сборщика.
+- Аудит и реестр доменов: [project-structure-audit](docs/architecture/project-structure-audit.md); решение по Gradle/Maven и границам модулей: [ADR-023](docs/architecture/adr/ADR-023-build-system-and-module-structure.md) (**ACCEPTED** владельцем 2026-11-24). Только документы: код, API, миграции и CI не менялись. Следующие шаги (B0 `platform → delivery, rides`, выделение `beauty`/`homeservices` из `booking`) не требуют смены сборщика.
 
 ## KUNDE Beauty & Care 1.0 (2026-11-23, ветка `ccr-247e6e41-upaipi`)
 
