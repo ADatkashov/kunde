@@ -1,4 +1,4 @@
-package kz.kunde.booking;
+package kz.kunde.homeservices;
 
 import kz.kunde.platform.FeatureGate;
 import kz.kunde.platform.FeatureToggles;

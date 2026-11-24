@@ -34,6 +34,8 @@ class ArchitectureBoundariesTest {
     private static final Path MIGRATIONS = Path.of("src/main/resources/db/migration");
     private static final String BASELINE = "/architecture/cross-module-baseline.txt";
     private static final String OWNERS = "/architecture/table-owners.txt";
+    /** Module edges the target architecture records on purpose (ADR-023): a vertical product on its engine's public API and tables. */
+    private static final String ALLOWED_EDGES = "/architecture/allowed-module-edges.txt";
 
     /** Shared kernel: infrastructure and consumer identity that every domain may import freely. */
     private static final Set<String> IMPORT_KERNEL = Set.of("platform", "identity");
@@ -51,6 +53,7 @@ class ArchitectureBoundariesTest {
         Set<String> actual = new TreeSet<>();
         actual.addAll(importCoupling());
         actual.addAll(sqlCoupling());
+        actual.removeIf(ArchitectureBoundariesTest::isRecordedEdge);
         if (Boolean.getBoolean("kunde.architecture.updateBaseline")) {
             writeBaseline(actual);
         }
@@ -145,6 +148,15 @@ class ArchitectureBoundariesTest {
     }
 
     // ---------------------------------------------------------------- helpers
+
+    private static boolean isRecordedEdge(String coupling) {
+        Matcher m = Pattern.compile("^(?:IMPORT|SQL) (\\w+)/\\S+ -> (?:(\\w+)\\.\\w+$|.* \\(owner (\\w+)\\)$)").matcher(coupling);
+        if (!m.find()) {
+            return false;
+        }
+        String target = m.group(2) != null ? m.group(2) : m.group(3);
+        return resource(ALLOWED_EDGES).stream().map(String::trim).anyMatch(l -> l.equals(m.group(1) + " -> " + target));
+    }
 
     private static String topLevelType(String name) {
         // kz.kunde.<module>.<Type>[.Nested] -> <Type>

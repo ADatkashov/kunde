@@ -12,9 +12,9 @@
 | delivery | Доставка | `delivery` | `deliveries`, `executor/deliveries`, `admin/deliveries`, `partner/…/deliveries` | `delivery`, `delivery_admin`, `executor/delivery_work` | `deliver*` | partners, platform |
 | rides | Такси | `rides` | `rides`, `executor/rides`, `admin/rides`, `partner/…/rides/fleet` | `rides`, `rides_admin`, `executor/driver_*` | `ride*` | partners, platform |
 | maps | (карты, внешний сервис `kunde-maps`) | `maps` | — | `maps` | — | platform.geo |
-| booking | Движок записи | `booking` | `booking`, `booking/bookings`, `partner/…/booking` | `booking` | `booking_*`, `bookings` | partners |
-| beauty | Красота | `booking` → **`beauty`** | `beauty`, `beauty/favorites`, `executor/beauty`, `partner/…/beauty`, `admin/beauty` | `beauty` | `marketplace.beauty_*` → beauty | booking |
-| homeservices | Услуги на дом | `booking` → **`homeservices`** | `home-services`, `admin/home-services/categories` | `home`, `home_services_admin` | `home_service*` → homeservices | booking |
+| booking | Движок записи | `booking` (контракт для вертикалей — `BookingCategory`, `BookingSlots`, `BookingService`) | `booking`, `booking/bookings`, `partner/…/booking` | `booking` | `booking_*`, `bookings` | partners |
+| beauty | Красота | `beauty` (вертикаль Booking; готов к модулю) | `beauty`, `beauty/favorites`, `executor/beauty`, `partner/…/beauty`, `admin/beauty` | `beauty` | `marketplace.beauty_*` | booking |
+| homeservices | Услуги на дом | `homeservices` (вертикаль Booking; готов к модулю) | `home-services`, `admin/home-services/categories` | `home`, `home_services_admin` | `home_service*` | booking |
 | health | Здоровье | `health` | `booking/health/favorites`, `admin/health` | `health` | `health_*` | booking, partners |
 | auto | Авто | `auto` | `auto`, `admin/auto` | `auto`, `auto_admin`, `executor/auto_work` | `auto_*`, `customer_vehicles` | booking |
 | leisure | Досуг | `leisure` | `leisure`, `executor/leisure`, `partner/…/leisure`, `admin/leisure` | `leisure`, `leisure_admin`, `executor/gate_scan` | `leisure_*` | partners, auth |

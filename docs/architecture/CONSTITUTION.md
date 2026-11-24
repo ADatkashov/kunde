@@ -62,5 +62,6 @@ TARGET: `apps/{consumer,partner,executor,admin}` — каждое со свои�
 | §1 реестр доменов | MUST: [domain-registry.md](domain-registry.md) создан |
 | §3 Gradle multi-module | TARGET: сейчас один Maven-модуль; план — ADR-023, PR B0…E |
 | §3.5 ратчет границ | MUST: действует (159 связей в baseline: 44 импорта, 115 SQL) |
-| §4 platform без бизнеса | TARGET: остаётся `platform → delivery, rides` (V1); заготовки `order/fulfillment` ещё вне `food` |
+| §4 platform без бизнеса | MUST: доменных импортов в `platform` нет (V1 закрыт); TARGET: заготовки `order/fulfillment/notification/analytics` ещё не разнесены |
+| §1/§3 beauty, homeservices | MUST: выделены пакетами из `booking`; движок знает вертикали только через `BookingCategory`; разрешённые рёбра — `allowed-module-edges.txt` |
 | §11 четыре приложения | TARGET: сейчас `mobile/` (Consumer + режимы Executor/Admin-rides) и `partner_app/` |

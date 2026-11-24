@@ -1,5 +1,6 @@
-package kz.kunde.booking;
+package kz.kunde.health;
 
+import kz.kunde.booking.BookingSlots;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.util.List;

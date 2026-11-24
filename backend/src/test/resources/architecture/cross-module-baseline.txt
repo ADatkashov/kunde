@@ -19,11 +19,8 @@ IMPORT admin/AdminLeisureController.java -> partner.PartnerAccessPolicy
 IMPORT admin/AdminPartnerController.java -> partner.PartnerAccessPolicy
 IMPORT admin/AdminPartnerController.java -> partner.PartnerService
 IMPORT admin/AdminPartnerController.java -> partner.PartnerVerification
-IMPORT auto/AutoCatalogController.java -> booking.BookingSlots
-IMPORT auto/AutoDemoSeeder.java -> booking.BookingDemoSeeder
-IMPORT auto/AutoService.java -> booking.BookingSlots
-IMPORT booking/BeautyPartnerController.java -> partner.PartnerAccessPolicy
-IMPORT booking/BeautyPartnerController.java -> partner.PartnerService
+IMPORT beauty/BeautyPartnerController.java -> partner.PartnerAccessPolicy
+IMPORT beauty/BeautyPartnerController.java -> partner.PartnerService
 IMPORT booking/BookingPartnerController.java -> partner.PartnerAccessPolicy
 IMPORT booking/BookingPartnerService.java -> partner.PartnerService
 IMPORT delivery/DeliveryPartnerController.java -> partner.PartnerAccessPolicy
@@ -36,7 +33,6 @@ IMPORT food/FoodPartnerController.java -> partner.PartnerAccessPolicy
 IMPORT food/FoodPartnerService.java -> partner.PartnerService
 IMPORT groceries/GroceriesAccountController.java -> food.FoodOrderService
 IMPORT health/HealthAdminController.java -> partner.PartnerAccessPolicy
-IMPORT health/HealthDemoSeeder.java -> booking.BookingDemoSeeder
 IMPORT leisure/LeisureDemoSeeder.java -> auth.PhoneAuthProperties
 IMPORT leisure/LeisureDemoSeeder.java -> partner.PartnerOpsDemoSeeder
 IMPORT leisure/LeisureExecutorService.java -> partner.PartnerService
@@ -50,8 +46,8 @@ SQL admin/AdminAutoController.java -> marketplace.booking_venues (owner booking)
 SQL admin/AdminAutoController.java -> transactions.auto_jobs (owner auto)
 SQL admin/AdminAutoController.java -> transactions.auto_specialists (owner auto)
 SQL admin/AdminAutoController.java -> transactions.bookings (owner booking)
-SQL admin/AdminBeautyController.java -> marketplace.beauty_salon_profiles (owner booking)
-SQL admin/AdminBeautyController.java -> marketplace.beauty_service_profiles (owner booking)
+SQL admin/AdminBeautyController.java -> marketplace.beauty_salon_profiles (owner beauty)
+SQL admin/AdminBeautyController.java -> marketplace.beauty_service_profiles (owner beauty)
 SQL admin/AdminBeautyController.java -> marketplace.booking_venues (owner booking)
 SQL admin/AdminBeautyController.java -> profile.consumer_profiles (owner identity)
 SQL admin/AdminBeautyController.java -> transactions.bookings (owner booking)
@@ -74,8 +70,8 @@ SQL admin/AdminGroceriesController.java -> marketplace.partners (owner partner)
 SQL admin/AdminGroceriesController.java -> transactions.food_courier_tasks (owner food)
 SQL admin/AdminGroceriesController.java -> transactions.food_order_items (owner food)
 SQL admin/AdminGroceriesController.java -> transactions.food_orders (owner food)
-SQL admin/AdminHomeServicesCategoriesController.java -> marketplace.home_service_categories (owner booking)
-SQL admin/AdminHomeServicesCategoriesController.java -> marketplace.home_service_category_events (owner booking)
+SQL admin/AdminHomeServicesCategoriesController.java -> marketplace.home_service_categories (owner homeservices)
+SQL admin/AdminHomeServicesCategoriesController.java -> marketplace.home_service_category_events (owner homeservices)
 SQL admin/AdminLeisureController.java -> marketplace.leisure_audit (owner leisure)
 SQL admin/AdminLeisureController.java -> marketplace.leisure_categories (owner leisure)
 SQL admin/AdminLeisureController.java -> marketplace.leisure_events (owner leisure)
@@ -93,22 +89,12 @@ SQL auth/PhoneAuthService.java -> identity.external_bindings (owner identity)
 SQL auth/PhoneAuthService.java -> identity.users (owner identity)
 SQL auth/PhoneAuthService.java -> marketplace.partner_staff (owner partner)
 SQL auth/PhoneAuthService.java -> profile.consumer_profiles (owner identity)
-SQL auto/AutoCatalogController.java -> marketplace.booking_services (owner booking)
-SQL auto/AutoCatalogController.java -> marketplace.booking_venues (owner booking)
-SQL auto/AutoFeedbackService.java -> transactions.bookings (owner booking)
-SQL auto/AutoPayments.java -> transactions.bookings (owner booking)
-SQL auto/AutoService.java -> marketplace.booking_masters (owner booking)
-SQL auto/AutoService.java -> marketplace.booking_services (owner booking)
-SQL auto/AutoService.java -> marketplace.booking_venues (owner booking)
-SQL auto/AutoService.java -> transactions.booking_events (owner booking)
-SQL auto/AutoService.java -> transactions.bookings (owner booking)
-SQL booking/BeautyExecutorController.java -> profile.consumer_profiles (owner identity)
+SQL beauty/BeautyExecutorController.java -> profile.consumer_profiles (owner identity)
 SQL booking/BookingCatalogController.java -> marketplace.health_categories (owner health)
 SQL booking/BookingPartnerService.java -> marketplace.auto_service_categories (owner auto)
 SQL booking/BookingPartnerService.java -> marketplace.health_categories (owner health)
 SQL booking/BookingPartnerService.java -> marketplace.partner_catalog_events (owner partner)
 SQL booking/BookingService.java -> transactions.auto_payments (owner auto)
-SQL booking/HealthFavoritesController.java -> transactions.health_favorites (owner health)
 SQL catalog/CatalogController.java -> marketplace.partners (owner partner)
 SQL delivery/DeliveryDispatch.java -> identity.users (owner identity)
 SQL delivery/DeliveryDispatch.java -> transactions.rides (owner rides)
@@ -135,9 +121,6 @@ SQL groceries/GroceriesCatalogController.java -> marketplace.food_options (owner
 SQL groceries/GroceriesCatalogController.java -> marketplace.food_restaurants (owner food)
 SQL groceries/GroceriesCatalogController.java -> transactions.food_order_items (owner food)
 SQL groceries/GroceriesCatalogController.java -> transactions.food_orders (owner food)
-SQL health/HealthAdminController.java -> marketplace.booking_venues (owner booking)
-SQL health/HealthAdminController.java -> transactions.bookings (owner booking)
-SQL health/HealthDemoSeeder.java -> marketplace.booking_venues (owner booking)
 SQL leisure/LeisureCatalogService.java -> marketplace.partners (owner partner)
 SQL leisure/LeisureDemoSeeder.java -> marketplace.partners (owner partner)
 SQL leisure/LeisureExecutorService.java -> identity.phone_identities (owner auth)

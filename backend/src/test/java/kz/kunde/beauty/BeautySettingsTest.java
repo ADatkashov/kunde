@@ -1,4 +1,4 @@
-package kz.kunde.booking;
+package kz.kunde.beauty;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

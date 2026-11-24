@@ -41,9 +41,12 @@ public class BookingSlots {
 
     private final FeatureToggles toggles;
 
-    public BookingSlots(JdbcTemplate db, FeatureToggles toggles) {
+    private final BookingCategories categories;
+
+    public BookingSlots(JdbcTemplate db, FeatureToggles toggles, BookingCategories categories) {
         this.db = db;
         this.toggles = toggles;
+        this.categories = categories;
     }
 
     boolean healthEnabled() {
@@ -51,18 +54,14 @@ public class BookingSlots {
     }
 
     void requireHomeServices() {
-        if (!toggles.enabled(FeatureToggles.Feature.HOME_SERVICES)) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "HOME_SERVICES_DISABLED", "Home Services is unavailable");
-        }
+        categories.requireAvailable("CLEANING");
     }
 
     void requireBeauty() {
-        if (!toggles.enabled(FeatureToggles.Feature.BEAUTY)) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "BEAUTY_DISABLED", "Beauty is unavailable");
-        }
+        categories.requireAvailable("BARBER");
     }
 
-    void requireHealthCatalog() {
+    public void requireHealthCatalog() {
         if (!healthEnabled()) {
             throw new ApiException(HttpStatus.NOT_FOUND, "HEALTH_DISABLED", "Health catalog is unavailable");
         }
