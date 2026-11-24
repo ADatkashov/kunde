@@ -1,5 +1,9 @@
 # Следующие проверки
 
+## Архитектура: четыре независимых Flutter-приложения (ADR-023, решение 5)
+
+Сейчас два проекта: `mobile/` (Consumer; Executor и Admin — точки входа `executor_main.dart`, `admin_rides_main.dart` и env-флаги `KUNDE_EXECUTOR_BUILD`/`KUNDE_ADMIN_BUILD` в `mobile/android/app/build.gradle.kts`) и `partner_app/`. Цель — `apps/{consumer,partner,executor,admin}`, у каждого свой `pubspec.yaml`, entrypoint, навигация, тесты, CI/релиз, прежние application ID (`com.example.kunde_mobile`, `com.kunde.executor`, `com.kunde.admin`, `com.kunde.kunde_partner`) и подпись; общий код — только реально общий (`packages/kunde_design` есть; кандидаты — identity/session и локализация). Предпосылка выполнена (PR F1): замыкание Executor 42, Admin 43 файла. Дальше: (1) вынести общий identity/localization/theme в пакеты; (2) создать проекты `apps/executor`, `apps/admin` с копией `android/` и фиксированным applicationId; (3) обновить ~30 workflow/скриптов (пути `mobile/`), `release_targets.py`; (4) проверять каждый шаг `flutter analyze/test` и ручным запуском `android-apk.yml` на ветке (APK-сборки в обычный PR CI не входят). Команды: `cd mobile && flutter analyze --fatal-infos && flutter test`; `cd backend && ./gradlew build`.
+
 ## KUNDE Beauty & Care 1.0
 
 Consumer, Partner-обзор, Executor и Admin-аналитика готовы ([beauty-care.md](docs/product/beauty-care.md)). Дальше: Partner CRUD услуг/акций/расписания и модерация отзывов, Admin модерация и жалобы, перенос записи, hold и онлайн-оплата (провайдер), уведомления, нативные Android E2E, DEV-деплой и Release APK. Команды: `cd backend && ./gradlew test --tests '*Beauty*' --tests '*Booking*'`; `cd mobile && flutter test test/features/beauty test/features/booking`.

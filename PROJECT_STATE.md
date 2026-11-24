@@ -1,8 +1,11 @@
 # KUNDE project state
 
-## Структура проекта и сборка, PR A (2026-11-24, ветка `ccr-644cd8f5-n0pkbu`)
+## Структура проекта и сборка (2026-11-24, ADR-023 ACCEPTED)
 
-- Аудит и реестр доменов: [project-structure-audit](docs/architecture/project-structure-audit.md); решение по Gradle/Maven и границам модулей: [ADR-023](docs/architecture/adr/ADR-023-build-system-and-module-structure.md) (**ACCEPTED** владельцем 2026-11-24). Только документы: код, API, миграции и CI не менялись. Следующие шаги (B0 `platform → delivery, rides`, выделение `beauty`/`homeservices` из `booking`) не требуют смены сборщика.
+- **Backend — Gradle Kotlin DSL multi-module, Maven удалён.** `backend/platform` (ядро без доменных импортов), `backend/app` (composition root, Flyway, Spring/БД-тесты), 17 модулей `backend/services/*` (identity, partners, food, groceries, booking, beauty, homeservices, health, auto, rides, maps, delivery, leisure, events, education, support, admin). Общая настройка — `backend/gradle/kunde-module.gradle.kts`; wrapper 8.14.3 с pinned checksum; jar по-прежнему `backend/build/libs/kunde-api-0.1.0-SNAPSHOT.jar`. Локально и в CI: 506 тестов, 0 падений. Docker-образ через pinned wrapper — **локально не собирался** (нет демона), проверяется на Render/CI.
+- Конституция [CONSTITUTION.md](docs/architecture/CONSTITUTION.md), [реестр доменов](docs/architecture/domain-registry.md), [Developer Guide](docs/architecture/DEVELOPER_GUIDE.md), решение [ADR-023](docs/architecture/adr/ADR-023-build-system-and-module-structure.md), аудит [project-structure-audit](docs/architecture/project-structure-audit.md).
+- Границы: `platform` без доменных импортов; `beauty`/`homeservices` отделены от `booking` через `BookingCategory`; платёжный порт `BookingPayments` (вместо цикла `booking → auto`); `ArchitectureBoundariesTest` видит обращения по полному имени класса (4 прежде невидимые связи `admin → auto/leisure` внесены в baseline), записанные рёбра — `allowed-module-edges.txt`. Baseline: 161 → 144 строк (161 до серии PR; +4 после уточнения детектора).
+- Flutter: Executor/Admin отвязаны от потребительской оболочки (`OperatorGate`, замыкание 137→42 / 140→43 файла). **Не сделано:** отдельные проекты `apps/{consumer,partner,executor,admin}`, общие пакеты, независимый CI/релиз (см. NEXT_TASK).
 
 ## KUNDE Beauty & Care 1.0 (2026-11-23, ветка `ccr-247e6e41-upaipi`)
 
