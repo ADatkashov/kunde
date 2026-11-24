@@ -1,0 +1,2 @@
+backend/gradlew.bat whitespace=cr-at-eol
+backend/gradlew text eol=lf
