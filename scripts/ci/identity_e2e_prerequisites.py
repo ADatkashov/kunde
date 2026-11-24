@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 REQUIRED = (
-    "backend/src/main/java/kz/kunde/identity/ConsumerIdentityController.java",
+    "backend/services/identity/src/main/java/kz/kunde/identity/ConsumerIdentityController.java",
     "scripts/ci/start_identity_test_stack.sh",
     "scripts/ci/run_consumer_identity_e2e.sh",
     "scripts/ci/stop_identity_test_stack.sh",
