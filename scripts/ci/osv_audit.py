@@ -66,8 +66,7 @@ def main():
         if a.gradle_catalog:
             # Build-root plugins of the backend: [versions] entry of the plugin -> artifact that hosts it.
             text=a.gradle_catalog.read_text()
-            for key,name in [("springBoot","org.springframework.boot:spring-boot-gradle-plugin"),
-                             ("dependencyManagement","io.spring.gradle:dependency-management-plugin")]:
+            for key,name in [("springBoot","org.springframework.boot:spring-boot-gradle-plugin")]:
                 match=re.search(r'^'+key+r'\s*=\s*"([^"]+)"',text,re.M)
                 if not match or "$" in match[1]: raise ValueError("Unresolved Gradle plugin version")
                 coordinates.add(("Maven",name,match[1]))

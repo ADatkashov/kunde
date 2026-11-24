@@ -5,7 +5,10 @@ pluginManagement {
     }
 }
 
-// Gradle build of the KUNDE backend (ADR-023). Step 1: the existing single module built by Gradle, equivalent to pom.xml.
-// Domain modules (services/*) and platform are carved out of it in later PRs; Maven stays the source of truth for CI until
-// the equivalence gate in ADR-023 passes.
+// KUNDE backend (ADR-023): one Spring Boot application (:app) assembled from library modules.
+//   :platform  technical kernel (security filters, errors, feature gates, geo/placement/events contracts)
+//   :app       composition root, Flyway migrations and the business domains not yet carved into modules
+// Business domains move to services/<domain> in small steps; the executable stays :app.
 rootProject.name = "kunde-api"
+
+include(":platform", ":app")

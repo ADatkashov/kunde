@@ -76,6 +76,6 @@ jobs:
         with:
           name: backend-reports
           path: |
-            backend/build/test-results/test/*.xml
+            backend/*/build/test-results/test/*.xml
             reports/backend-smoke.json
           retention-days: 3
