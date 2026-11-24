@@ -46,11 +46,11 @@ public class BookingService {
 
     private final JdbcTemplate db;
     private final BookingSlots slots;
-    private final kz.kunde.auto.AutoPayments payments;
+    private final BookingPayments payments;
 
     private final BookingCategories categories;
 
-    public BookingService(JdbcTemplate db, BookingSlots slots, kz.kunde.auto.AutoPayments payments, BookingCategories categories) {
+    public BookingService(JdbcTemplate db, BookingSlots slots, BookingPayments payments, BookingCategories categories) {
         this.categories = categories;
         this.db = db;
         this.slots = slots;
@@ -76,7 +76,7 @@ public class BookingService {
                     previous[3].equals(request.venueId()) && previous[4].equals(request.serviceId())
                     && previous[6].equals(request.expectedPriceMinor()) && Boolean.TRUE.equals(request.acceptsTerms())
                     && request.comment() == null && request.addressText() == null && request.areaSqm() == null
-                    && payments.ofBooking((UUID) previous[0]).method().equals(payments.method(request.paymentMethod())));
+                    && payments.methodOfBooking((UUID) previous[0]).equals(payments.method(request.paymentMethod())));
             if (!previous[1].equals(request.masterId()) || !previous[2].equals(start) || !sameHealthRequest) {
                 throw new ApiException(HttpStatus.CONFLICT, "IDEMPOTENCY_KEY_REUSED",
                         "Idempotency-Key was already used for a different booking");

@@ -55,9 +55,9 @@ public class BookingPartnerService {
     private final BookingService bookings;
     private final PartnerService partners;
     private final BookingSlots slots;
-    private final kz.kunde.auto.AutoPayments payments;
+    private final BookingPayments payments;
 
-    public BookingPartnerService(JdbcTemplate db, BookingService bookings, PartnerService partners, kz.kunde.auto.AutoPayments payments, BookingSlots slots) {
+    public BookingPartnerService(JdbcTemplate db, BookingService bookings, PartnerService partners, BookingPayments payments, BookingSlots slots) {
         this.db = db;
         this.bookings = bookings;
         this.partners = partners;

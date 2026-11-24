@@ -31,7 +31,12 @@ jobs:
         run: |
           mkdir -p reports
           cd backend
-          ./gradlew --no-daemon -q dependencyTreeJson -PtreeOutput=../reports/maven.json
+          # Maven Central rate-limits shared runner IPs (HTTP 429): retry dependency resolution only, never the audit itself.
+          for attempt in 1 2 3; do
+            ./gradlew --no-daemon -q dependencyTreeJson -PtreeOutput=../reports/maven.json && break
+            test "$attempt" -lt 3 || exit 1
+            sleep $((attempt * 30))
+          done
           cd ../mobile
           flutter pub get --enforce-lockfile
           flutter pub deps --json > ../reports/pub.json

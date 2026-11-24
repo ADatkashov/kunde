@@ -44,6 +44,7 @@ class ArchitectureBoundariesTest {
     private static final Set<String> SQL_EXEMPT_SOURCES = Set.of("config");
 
     private static final Pattern IMPORT = Pattern.compile("^import\\s+(?:static\\s+)?kz\\.kunde\\.(\\w+)\\.([\\w.]+);");
+    private static final Pattern QUALIFIED = Pattern.compile("\\bkz\\.kunde\\.([a-z]\\w*)\\.([A-Z][\\w.]*)");
     private static final Pattern CREATE_TABLE =
             Pattern.compile("create\\s+table\\s+(?:if\\s+not\\s+exists\\s+)?(\\w+\\.\\w+)", Pattern.CASE_INSENSITIVE);
 
@@ -110,17 +111,27 @@ class ArchitectureBoundariesTest {
             }
             for (String line : lines(file)) {
                 Matcher m = IMPORT.matcher(line);
-                if (!m.find()) {
+                if (m.find()) {
+                    addImportEdge(edges, module, file, m.group(1), m.group(2));
                     continue;
                 }
-                String target = m.group(1);
-                if (target.equals(module) || (IMPORT_KERNEL.contains(target) && !module.equals("platform"))) {
-                    continue;
+                // A fully qualified name in code (no import) is the same compile-time dependency.
+                if (!line.startsWith("package ")) {
+                    Matcher q = QUALIFIED.matcher(line);
+                    while (q.find()) {
+                        addImportEdge(edges, module, file, q.group(1), q.group(2));
+                    }
                 }
-                edges.add("IMPORT " + module + "/" + file.getFileName() + " -> " + target + "." + topLevelType(m.group(2)));
             }
         }
         return edges;
+    }
+
+    private static void addImportEdge(Set<String> edges, String module, Path file, String target, String type) {
+        if (target.equals(module) || (IMPORT_KERNEL.contains(target) && !module.equals("platform"))) {
+            return;
+        }
+        edges.add("IMPORT " + module + "/" + file.getFileName() + " -> " + target + "." + topLevelType(type));
     }
 
     private static Set<String> sqlCoupling() {

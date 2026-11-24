@@ -2,6 +2,10 @@
 # docs/architecture/microservice-readiness.md. Remove lines as the debt is paid; add lines only on purpose.
 # IMPORT <module>/<File> -> <targetModule>.<Type>   compile-time dependency on another business module
 # SQL <module>/<File> -> <schema.table> (owner <m>)  query against a table owned by another module
+# Detector note (PR D3): fully qualified class names in code now count as IMPORT; admin -> auto/leisure lines below existed before and were invisible.
+IMPORT admin/AdminAutoController.java -> auto.AutoFeedbackService
+IMPORT admin/AdminAutoController.java -> auto.AutoJobService
+IMPORT admin/AdminAutoController.java -> auto.AutoPayments
 IMPORT admin/AdminAutoController.java -> partner.PartnerAccessPolicy
 IMPORT admin/AdminBeautyController.java -> partner.PartnerAccessPolicy
 IMPORT admin/AdminCapabilitiesController.java -> delivery.DeliveryOperations
@@ -15,6 +19,7 @@ IMPORT admin/AdminGroceriesController.java -> partner.PartnerAccessPolicy
 IMPORT admin/AdminHomeServicesCategoriesController.java -> partner.PartnerAccessPolicy
 IMPORT admin/AdminLeisureController.java -> leisure.LeisureOrderService
 IMPORT admin/AdminLeisureController.java -> leisure.LeisurePayments
+IMPORT admin/AdminLeisureController.java -> leisure.LeisureTime
 IMPORT admin/AdminLeisureController.java -> partner.PartnerAccessPolicy
 IMPORT admin/AdminPartnerController.java -> partner.PartnerAccessPolicy
 IMPORT admin/AdminPartnerController.java -> partner.PartnerService
