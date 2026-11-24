@@ -3,7 +3,7 @@
 Дата аудита: 2026-11-23, `main` @ `614033a`. Основание — исходный код `backend/` (175 Java-файлов, 62 миграции Flyway, 133 таблицы), а не ADR.
 Решение остаётся прежним: **единый Spring Boot backend + PostgreSQL** ([ADR-001](adr/ADR-001-backend-architecture-style.md), [29-service-extraction-roadmap](29-service-extraction-roadmap.md)). Этот документ ничего не переводит на микросервисы, а фиксирует, где границы уже чистые, где нет, и как не дать связности вырасти.
 
-Как воспроизвести цифры: `cd backend && mvn test -Dtest=ArchitectureBoundariesTest`; полный список связей — [`cross-module-baseline.txt`](../../backend/src/test/resources/architecture/cross-module-baseline.txt); владельцы таблиц — [`table-owners.txt`](../../backend/src/test/resources/architecture/table-owners.txt).
+Как воспроизвести цифры: `cd backend && ./gradlew test --tests '*ArchitectureBoundariesTest'`; полный список связей — [`cross-module-baseline.txt`](../../backend/src/test/resources/architecture/cross-module-baseline.txt); владельцы таблиц — [`table-owners.txt`](../../backend/src/test/resources/architecture/table-owners.txt).
 
 См. также: [database-sharding-readiness](database-sharding-readiness.md) — размещение данных по городам.
 
@@ -143,4 +143,4 @@ platform ──► auto, booking, delivery, education, events, groceries, health
 - новая таблица без владельца в `table-owners.txt` — падение;
 - `platform` не может обрастать новыми зависимостями от доменов (кроме замороженного `FeatureToggles`, V1).
 
-Как осознанно добавить связь: строка в `cross-module-baseline.txt` в том же PR с обоснованием. Пересоздать baseline: `mvn test -Dtest=ArchitectureBoundariesTest -Dkunde.architecture.updateBaseline=true` (проверить diff вручную).
+Как осознанно добавить связь: строка в `cross-module-baseline.txt` в том же PR с обоснованием. Пересоздать baseline: `./gradlew test --tests '*ArchitectureBoundariesTest' -Dkunde.architecture.updateBaseline=true` (проверить diff вручную).

@@ -2,7 +2,7 @@
 
 ## KUNDE Beauty & Care 1.0
 
-Consumer, Partner-обзор, Executor и Admin-аналитика готовы ([beauty-care.md](docs/product/beauty-care.md)). Дальше: Partner CRUD услуг/акций/расписания и модерация отзывов, Admin модерация и жалобы, перенос записи, hold и онлайн-оплата (провайдер), уведомления, нативные Android E2E, DEV-деплой и Release APK. Команды: `cd backend && mvn test -Dtest='Beauty*,Booking*'`; `cd mobile && flutter test test/features/beauty test/features/booking`.
+Consumer, Partner-обзор, Executor и Admin-аналитика готовы ([beauty-care.md](docs/product/beauty-care.md)). Дальше: Partner CRUD услуг/акций/расписания и модерация отзывов, Admin модерация и жалобы, перенос записи, hold и онлайн-оплата (провайдер), уведомления, нативные Android E2E, DEV-деплой и Release APK. Команды: `cd backend && ./gradlew test --tests '*Beauty*' --tests '*Booking*'`; `cd mobile && flutter test test/features/beauty test/features/booking`.
 
 ## KUNDE Delivery 1.0
 
@@ -15,14 +15,14 @@ Consumer, Partner-обзор, Executor и Admin-аналитика готовы 
 ## KUNDE Events & Tickets
 
 1. Нативные Android E2E Partner/Admin/Executor для Events (создание события и сеансов, модерация с `EVENTS_OPERATIONS`, скан GATE внутри окна входа), стабилизация эмулятора CI (шаги потери сети и выключенного флага сейчас `UNVERIFIED`).
-2. Partner: редактор схемы зала (сейчас схема задаётся при создании сеансов); Admin: промо отдельно по продукту. Затем установка четырёх APK на устройство, TalkBack, RU/KK/EN, сравнение скриншотов с референсами и синхронизация Linear. Команды: `python3 scripts/dev/events_smoke.py https://kunde-backend-ty81.onrender.com`, `python3 scripts/dev/leisure_smoke.py …`; `cd backend && mvn test -Dtest='Events*,Leisure*'`. [Матрица](docs/product/events.md).
+2. Partner: редактор схемы зала (сейчас схема задаётся при создании сеансов); Admin: промо отдельно по продукту. Затем установка четырёх APK на устройство, TalkBack, RU/KK/EN, сравнение скриншотов с референсами и синхронизация Linear. Команды: `python3 scripts/dev/events_smoke.py https://kunde-backend-ty81.onrender.com`, `python3 scripts/dev/leisure_smoke.py …`; `cd backend && ./gradlew test --tests '*Events*' --tests '*Leisure*'`. [Матрица](docs/product/events.md).
 
 ## KUNDE Groceries 1.0
 
 1. Собрать четыре подписанных DEV Release APK из одного `main` SHA (`android-release.yml`: Consumer, `executor=true`, `admin=true`; `partner-release.yml`), проверить подпись, package ID, DEV URL, SHA-256; установить на эмулятор.
 2. Нативный Android E2E Consumer (каталог → товар → корзина → checkout → заказ) и реальные скриншоты Consumer/Partner/Executor/Admin; сверка с референсом.
 3. Открыто: корректировка суммы по фактическому весу, уведомления, лояльность (нужно решение владельца), карта и ETA (нужны координаты магазинов).
-4. Команды: `cd backend && mvn test -Dtest='Groceries*,FoodPartnerAdmin*'`; `cd mobile && flutter test test/features/groceries test/features/executor test/features/food_admin`.
+4. Команды: `cd backend && ./gradlew test --tests '*Groceries*' --tests '*FoodPartnerAdmin*'`; `cd mobile && flutter test test/features/groceries test/features/executor test/features/food_admin`.
 
 ## KUNDE Education
 
@@ -33,13 +33,13 @@ Consumer, Partner-обзор, Executor и Admin-аналитика готовы 
 1. DEV на `fd1fbb6` (V43) проверен смоуком; осталось выдать `FOOD_OPERATIONS` синтетическому сотруднику и вручную проверить Admin-экран.
 2. Partner: экран аналитики (`GET …/food/summary`), CRUD секций и модификаторов меню, удаление/архив блюд; Admin: выдача `FOOD_OPERATIONS` синтетическому сотруднику на DEV и ручная проверка экрана.
 3. Нативный Android E2E Food (вход → ресторан → блюдо → корзина → самовывоз/доставка → промокод → TEST_CARD → статус → отзыв), скриншоты Consumer/Partner/Admin для сравнения с референсом.
-4. Команды: `cd backend && mvn test -Dtest='Food*'`; `cd mobile && flutter test test/features/food`.
+4. Команды: `cd backend && ./gradlew test --tests '*Food*'`; `cd mobile && flutter test test/features/food`.
 
 ## KUNDE Leisure
 
 1. Установить подписанные DEV APK из [PROJECT_STATE](PROJECT_STATE.md) на устройство, пройти Consumer-сценарий (Досуг → места → TEST_CARD → QR) и Partner/Executor/Admin; сверить скриншоты с референсом (`reports/leisure-native` в артефакте E2E).
 2. Выяснить, почему эмулятор CI теряется при запуске приложения против выключенного `LEISURE_ENABLED`, и вернуть шаг `ui_flag_off` в блокирующие.
-3. Команды: `python3 scripts/dev/leisure_smoke.py https://kunde-backend-ty81.onrender.com`; `cd backend && mvn test -Dtest='Leisure*'`; `cd mobile && flutter test test/features/leisure`.
+3. Команды: `python3 scripts/dev/leisure_smoke.py https://kunde-backend-ty81.onrender.com`; `cd backend && ./gradlew test --tests '*Leisure*'`; `cd mobile && flutter test test/features/leisure`.
 
 ## Health & Wellness
 

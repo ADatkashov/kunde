@@ -15,7 +15,7 @@
 | Тесты backend | 13 интеграционных тестов лежат в корне `src/test/java/kz/kunde/`, остальные — по пакетам доменов; `architecture/` — `ArchitectureBoundariesTest` (ратчет по `cross-module-baseline.txt`), `PlacementRegistryTest` |
 | Flutter | **Два проекта, а не четыре**: `mobile/` (Consumer; плюс точки входа `executor_main.dart` и `admin_rides_main.dart`, т.е. Executor и часть Admin — это режимы того же приложения) и `partner_app/` (Partner). Общий пакет — `packages/kunde_design`. Отдельный Admin: `scripts/admin-web` (Node-обёртка) |
 | Flutter-структура | `mobile/lib/features/<x>` — плоский список из 26 папок, где админские и исполнительские экраны лежат рядом с потребительскими (`rides` / `rides_admin`, `delivery` / `delivery_admin`, `executor/*_work_screen.dart`); `partner_app/lib/features/*` организован по *функциям* (`orders`, `bookings`, `business`), а не по доменам |
-| CI | 30 workflow; `backend.yml` собирает Maven (`mvn clean verify`, кэш по `backend/pom.xml`); Maven/`backend/target` упоминают 14 workflow и 7 скриптов `scripts/ci`; `backend/Dockerfile` ставит Apache Maven 3.10.0 с проверкой SHA-256 и вызывает `mvn package` |
+| CI | 30 workflow; `backend.yml` (на момент аудита собирал Maven `mvn clean verify`, теперь Gradle); Maven/`backend/target` упоминают 14 workflow и 7 скриптов `scripts/ci`; `backend/Dockerfile` ставит Apache Maven 3.10.0 с проверкой SHA-256 и вызывает `mvn package` |
 
 ## 2. Реестр доменов
 

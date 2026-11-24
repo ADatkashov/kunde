@@ -37,7 +37,7 @@
 | `multi_app` | delivery, rides, education-roles, groceries-roles |
 | `emulator` | Android identity E2E |
 | `visual` | before/after скриншоты (база — `merge-base` с `origin/main` или поле `base-sha`) |
-| `backend` | полный `Backend CI` (mvn verify + smoke) |
+| `backend` | полный `Backend CI` (`./gradlew build` + smoke) |
 | `all` | всё перечисленное |
 
 Те же workflow можно запускать по одному (`workflow_dispatch`) или вызывать через `workflow_call`; у всех есть вход `ref`.
