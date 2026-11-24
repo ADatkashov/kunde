@@ -24,7 +24,7 @@
 | admin | Админ-панель | `admin` | `admin/*` (auto, beauty, features, food, groceries, home-services, leisure, partners) | `admin_*`, `*_admin` | `identity.admin_*` | домены (однонаправленно) |
 | platform | (техническое ядро) | `platform`, `config` → `platform`, `app` | `health`, `poc` | — | `platform.*`, `identity.feature_toggle*` | — |
 
-Заготовки `order`, `fulfillment` (→ `food`), `notification`, `analytics` (→ `platform`) — решение в ADR-023 «Судьба заготовок».
+Бывшие заготовки (ADR-023 «Судьба заготовок»), перенесены: `food.order` (жизненный цикл заказа Food), `food.fulfillment` (самовывоз), `platform.notifications` (цепочка доставки, допустимость каналов), `platform.analytics` (каталог событий и шлюз минимизации). Ни одна из них пока не вызывается из кода; отдельные домены появятся при реальной бизнес-ответственности.
 
 **Feature flags:** `FOOD_*`, `GROCERIES_*`, `DELIVERY_*`, `RIDES_*`, `MAPS_ENABLED`, `BEAUTY_ENABLED`, `BOOKING_*`, … + runtime-переключатели `identity.feature_toggles`; точный перечень выводится из `FeatureGate`-бинов (`platform.FeatureToggles`).
 **Расположение тестов:** сейчас `backend/src/test/java/kz/kunde/<pkg>`, `mobile/test/features/<feature>`; целевое — в модуле/приложении домена.

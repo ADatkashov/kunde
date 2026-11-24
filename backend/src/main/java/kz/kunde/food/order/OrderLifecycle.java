@@ -1,4 +1,4 @@
-package kz.kunde.order;
+package kz.kunde.food.order;
 
 import java.time.Instant;
 import java.util.ArrayList;

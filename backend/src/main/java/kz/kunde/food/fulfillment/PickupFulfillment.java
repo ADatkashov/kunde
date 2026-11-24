@@ -1,4 +1,4 @@
-package kz.kunde.fulfillment;
+package kz.kunde.food.fulfillment;
 
 import java.time.Instant;
 import java.util.ArrayList;

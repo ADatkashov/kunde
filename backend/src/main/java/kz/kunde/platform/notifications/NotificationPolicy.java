@@ -1,4 +1,4 @@
-package kz.kunde.notification;
+package kz.kunde.platform.notifications;
 
 import java.util.EnumSet;
 import java.util.Set;

@@ -1,4 +1,4 @@
-package kz.kunde.analytics;
+package kz.kunde.platform.analytics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

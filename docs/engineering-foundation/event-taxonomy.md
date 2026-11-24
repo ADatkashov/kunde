@@ -1,7 +1,7 @@
 # Event taxonomy and minimization (TASK-041)
 
 Source of truth for event meaning: [PRD 1.1 §19](../product/PRD-1.1/19-analytics-and-events.md).
-Code contract: `backend/src/main/java/kz/kunde/analytics/EventCatalog.java`, tested by `EventCatalogTest`.
+Code contract: `backend/src/main/java/kz/kunde/platform/analytics/EventCatalog.java`, tested by `EventCatalogTest`.
 
 ## What exists
 
