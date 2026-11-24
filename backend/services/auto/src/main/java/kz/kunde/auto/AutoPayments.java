@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Component
 @ConditionalOnProperty(name = "app.booking.enabled", havingValue = "true")
-public class AutoPayments {
+public class AutoPayments implements kz.kunde.booking.BookingPayments {
     public static final String PAY_ON_SITE = "PAY_ON_SITE";
     public static final String TEST_CARD = "TEST_CARD";
 
@@ -38,6 +38,7 @@ public class AutoPayments {
     }
 
     /** Validates the requested method (null means pay on site). */
+    @Override
     public String method(String requested) {
         if (requested == null || requested.isBlank() || PAY_ON_SITE.equals(requested)) { return PAY_ON_SITE; }
         if (!TEST_CARD.equals(requested)) {
@@ -51,6 +52,7 @@ public class AutoPayments {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
+    @Override
     public void open(UUID user, UUID bookingId, UUID jobId, String method, long amountMinor) {
         String status = TEST_CARD.equals(method) ? "TEST_HELD" : PAY_ON_SITE;
         long held = TEST_CARD.equals(method) ? amountMinor : 0;
@@ -61,6 +63,7 @@ public class AutoPayments {
 
     /** Captures the final amount of a held payment (booking or job completed). No-op for pay on site and repeats. */
     @Transactional(propagation = Propagation.MANDATORY)
+    @Override
     public void capture(UUID bookingId, UUID jobId, long amountMinor, String actorType, UUID actor) {
         var p = lock(bookingId, jobId);
         if (p == null || !"TEST_HELD".equals(p.status)) { return; }
@@ -70,6 +73,7 @@ public class AutoPayments {
 
     /** Releases a hold (cancellation, rejection, no-show). Nothing is captured, so nothing is owed. */
     @Transactional(propagation = Propagation.MANDATORY)
+    @Override
     public void voidHold(UUID bookingId, UUID jobId, String actorType, UUID actor, String reason) {
         var p = lock(bookingId, jobId);
         if (p == null || !"TEST_HELD".equals(p.status)) { return; }
@@ -103,6 +107,11 @@ public class AutoPayments {
     }
 
     @Transactional(readOnly = true)
+    @Override
+    public String methodOfBooking(UUID bookingId) {
+        return ofBooking(bookingId).method();
+    }
+
     public PaymentView ofBooking(UUID bookingId) {
         return db.query("select method, status, held_minor, captured_minor, refunded_minor from transactions.auto_payments where booking_id = ?",
                 (rs, n) -> map(rs.getString(1), rs.getString(2), rs.getLong(3), rs.getLong(4), rs.getLong(5)), bookingId).stream().findFirst().orElse(null);
