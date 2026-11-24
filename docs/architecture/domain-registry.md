@@ -7,16 +7,16 @@
 | identity | Профиль, адреса, согласия | `identity` → `services/identity` ✔ | `me`, `me/addresses`, `me/consents` | `identity` | `identity.users`, `profile.*`, `serviceability.*` | platform |
 | auth | Вход по телефону | `auth` → `services/identity` ✔ | `auth` | `identity` | `identity.auth_/otp_/refresh_` | platform |
 | partners | Партнёры, персонал, каталог | `partner`, `catalog` → `services/partners` ✔ | `partner`, `categories`/offerings | `partner`, `partner_app` | `marketplace.partner*`, `offering*`, `categories` | auth |
-| food | Еда | `food` | `food`, `executor/food`, `partner/…/food` | `food`, `food_admin`, `executor/food_work` | `food_*` | partners |
-| groceries | Продукты | `groceries` | `groceries` | `groceries` | `grocery_*` | food |
+| food | Еда | `food` → `services/food` ✔ | `food`, `executor/food`, `partner/…/food` | `food`, `food_admin`, `executor/food_work` | `food_*` | partners |
+| groceries | Продукты | `groceries` → `services/groceries` ✔ | `groceries` | `groceries` | `grocery_*` | food |
 | delivery | Доставка | `delivery` | `deliveries`, `executor/deliveries`, `admin/deliveries`, `partner/…/deliveries` | `delivery`, `delivery_admin`, `executor/delivery_work` | `deliver*` | partners, platform |
 | rides | Такси | `rides` | `rides`, `executor/rides`, `admin/rides`, `partner/…/rides/fleet` | `rides`, `rides_admin`, `executor/driver_*` | `ride*` | partners, platform |
 | maps | (карты, внешний сервис `kunde-maps`) | `maps` | — | `maps` | — | platform.geo |
-| booking | Движок записи | `booking` (контракт для вертикалей — `BookingCategory`, `BookingSlots`, `BookingService`) | `booking`, `booking/bookings`, `partner/…/booking` | `booking` | `booking_*`, `bookings` | partners |
-| beauty | Красота | `beauty` (вертикаль Booking; готов к модулю) | `beauty`, `beauty/favorites`, `executor/beauty`, `partner/…/beauty`, `admin/beauty` | `beauty` | `marketplace.beauty_*` | booking |
-| homeservices | Услуги на дом | `homeservices` (вертикаль Booking; готов к модулю) | `home-services`, `admin/home-services/categories` | `home`, `home_services_admin` | `home_service*` | booking |
-| health | Здоровье | `health` | `booking/health/favorites`, `admin/health` | `health` | `health_*` | booking, partners |
-| auto | Авто | `auto` | `auto`, `admin/auto` | `auto`, `auto_admin`, `executor/auto_work` | `auto_*`, `customer_vehicles` | booking |
+| booking | Движок записи | `booking` → `services/booking` ✔ (контракт для вертикалей — `BookingCategory`, `BookingSlots`, `BookingService`) | `booking`, `booking/bookings`, `partner/…/booking` | `booking` | `booking_*`, `bookings` | partners |
+| beauty | Красота | `beauty` → `services/beauty` ✔ (вертикаль Booking; готов к модулю) | `beauty`, `beauty/favorites`, `executor/beauty`, `partner/…/beauty`, `admin/beauty` | `beauty` | `marketplace.beauty_*` | booking |
+| homeservices | Услуги на дом | `homeservices` → `services/homeservices` ✔ (вертикаль Booking; готов к модулю) | `home-services`, `admin/home-services/categories` | `home`, `home_services_admin` | `home_service*` | booking |
+| health | Здоровье | `health` → `services/health` ✔ | `booking/health/favorites`, `admin/health` | `health` | `health_*` | booking, partners |
+| auto | Авто | `auto` → `services/auto` ✔ | `auto`, `admin/auto` | `auto`, `auto_admin`, `executor/auto_work` | `auto_*`, `customer_vehicles` | booking |
 | leisure | Досуг | `leisure` | `leisure`, `executor/leisure`, `partner/…/leisure`, `admin/leisure` | `leisure`, `leisure_admin`, `executor/gate_scan` | `leisure_*` | partners, auth |
 | events | Мероприятия | `events` | `events`, `search` | — (UI в `leisure`) | (`leisure_*`) | leisure |
 | education | Образование | `education` | `education`, `education/enrollments` | `education` | `education_*` | partners |
