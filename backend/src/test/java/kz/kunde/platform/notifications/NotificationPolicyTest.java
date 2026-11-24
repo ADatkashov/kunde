@@ -1,4 +1,4 @@
-package kz.kunde.notification;
+package kz.kunde.platform.notifications;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -9,9 +9,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
-import kz.kunde.notification.NotificationPolicy.Channel;
-import kz.kunde.notification.NotificationPolicy.Kind;
-import kz.kunde.notification.NotificationPolicy.Preferences;
+import kz.kunde.platform.notifications.NotificationPolicy.Channel;
+import kz.kunde.platform.notifications.NotificationPolicy.Kind;
+import kz.kunde.platform.notifications.NotificationPolicy.Preferences;
 import org.junit.jupiter.api.Test;
 
 class NotificationPolicyTest {

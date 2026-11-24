@@ -1,4 +1,4 @@
-package kz.kunde.analytics;
+package kz.kunde.platform.analytics;
 
 import java.util.ArrayList;
 import java.util.List;

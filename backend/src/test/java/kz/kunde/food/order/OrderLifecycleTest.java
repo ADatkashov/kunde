@@ -1,4 +1,4 @@
-package kz.kunde.order;
+package kz.kunde.food.order;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -8,12 +8,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
-import kz.kunde.order.OrderLifecycle.Actor;
-import kz.kunde.order.OrderLifecycle.Command;
-import kz.kunde.order.OrderLifecycle.DeadlinePassedException;
-import kz.kunde.order.OrderLifecycle.IllegalTransitionException;
-import kz.kunde.order.OrderLifecycle.Status;
-import kz.kunde.order.OrderLifecycle.VersionConflictException;
+import kz.kunde.food.order.OrderLifecycle.Actor;
+import kz.kunde.food.order.OrderLifecycle.Command;
+import kz.kunde.food.order.OrderLifecycle.DeadlinePassedException;
+import kz.kunde.food.order.OrderLifecycle.IllegalTransitionException;
+import kz.kunde.food.order.OrderLifecycle.Status;
+import kz.kunde.food.order.OrderLifecycle.VersionConflictException;
 import org.junit.jupiter.api.Test;
 
 class OrderLifecycleTest {

@@ -1,4 +1,4 @@
-package kz.kunde.fulfillment;
+package kz.kunde.food.fulfillment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -8,11 +8,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
 import java.util.Set;
-import kz.kunde.fulfillment.PickupFulfillment.Actor;
-import kz.kunde.fulfillment.PickupFulfillment.Command;
-import kz.kunde.fulfillment.PickupFulfillment.IllegalTransitionException;
-import kz.kunde.fulfillment.PickupFulfillment.Status;
-import kz.kunde.fulfillment.PickupFulfillment.VersionConflictException;
+import kz.kunde.food.fulfillment.PickupFulfillment.Actor;
+import kz.kunde.food.fulfillment.PickupFulfillment.Command;
+import kz.kunde.food.fulfillment.PickupFulfillment.IllegalTransitionException;
+import kz.kunde.food.fulfillment.PickupFulfillment.Status;
+import kz.kunde.food.fulfillment.PickupFulfillment.VersionConflictException;
 import org.junit.jupiter.api.Test;
 
 class PickupFulfillmentTest {
