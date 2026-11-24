@@ -60,7 +60,7 @@ TARGET: `apps/{consumer,partner,executor,admin}` — каждое со свои�
 | Раздел | Статус на 2026-11-24 |
 |---|---|
 | §1 реестр доменов | MUST: [domain-registry.md](domain-registry.md) создан |
-| §3 Gradle multi-module | Gradle Kotlin DSL — единственная сборка (PR C–E); `backend/platform` и `backend/app` выделены (PR D1); TARGET: домены переезжают в `backend/services/*` по группам |
+| §3 Gradle multi-module | Gradle Kotlin DSL — единственная сборка (PR C–E); `backend/platform`, `backend/app` и 17 модулей `backend/services/*` (PR D1–D4); TARGET: отдельный `testing`-модуль и перенос Spring-тестов в модули доменов |
 | §3.5 ратчет границ | MUST: действует (159 связей в baseline: 44 импорта, 115 SQL) |
 | §4 platform без бизнеса | MUST: доменных импортов в `platform` нет (V1 закрыт); TARGET: заготовки `order/fulfillment/notification/analytics` ещё не разнесены |
 | §1/§3 beauty, homeservices | MUST: выделены пакетами из `booking`; движок знает вертикали только через `BookingCategory`; разрешённые рёбра — `allowed-module-edges.txt` |
