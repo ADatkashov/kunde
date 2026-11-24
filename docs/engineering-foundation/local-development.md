@@ -16,7 +16,7 @@ DB_PASSWORD=replace-with-a-random-local-password
 
 ## Run backend outside Docker
 
-Install Java 21, Maven 3.9+ and PostgreSQL 16. Set `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` and optional `PORT` in the current shell, then run `mvn --batch-mode --no-transfer-progress verify` from `backend/` to compile, test and package; run `mvn spring-boot:run` to start the service. Tests require the configured database, so use an isolated local/test database. Flyway applies a non-destructive namespace migration at startup. Startup fails if the database is unavailable so readiness does not misrepresent state.
+Install Java 21 and PostgreSQL 16 (the Gradle wrapper downloads Gradle). Set `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` and optional `PORT` in the current shell, then run `mvn --batch-mode --no-transfer-progress verify` from `backend/` to compile, test and package; run `mvn spring-boot:run` to start the service. Tests require the configured database, so use an isolated local/test database. Flyway applies a non-destructive namespace migration at startup. Startup fails if the database is unavailable so readiness does not misrepresent state.
 
 To enable JWT verification, set both `OIDC_ISSUER_URI` and `OIDC_AUDIENCE` from the approved provider. Never use a placeholder. With no issuer, protected routes are denied; an issuer without an audience fails startup. No live provider has been approved or verified. Do not put production credentials or personal data in local environments.
 

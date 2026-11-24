@@ -29,7 +29,7 @@ A screen shows map UI only when `mapsEnabled` is true; with it off, every flow i
 
 ## Verification
 - Backend: contract tests over real HTTP replaying DEV responses (`KundeMapsRideRoutingTest`), `RideQuoteMapsIntegrationTest`
-  (PostgreSQL, full Rides stack), `KUNDE_MAPS_LIVE=true mvn test -Dtest=KundeMapsLiveTest` against the real DEV platform.
+  (PostgreSQL, full Rides stack), `KUNDE_MAPS_LIVE=true ./gradlew test --tests '*KundeMapsLiveTest'` against the real DEV platform.
 - Flutter: widget tests with the real SDK services over captured DEV responses (`test/features/rides/rides_maps_test.dart`,
   `delivery/delivery_maps_test.dart`, `executor/driver_navigation_test.dart`); the native map is replaced only in widget tests.
 - Android emulator, nothing mocked: `scripts/ci/maps_native_e2e.py` (workflow "Taxi with KUNDE Maps Android E2E").

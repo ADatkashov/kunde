@@ -76,7 +76,7 @@ Workflow `Auto Android E2E` запускается на PR, затрагиваю
 ## Проверка
 
 ```bash
-cd backend && DB_USERNAME=… DB_PASSWORD=… mvn verify   # PostgreSQL 16; POC JWT-тест требует БД на :5544
+cd backend && DB_USERNAME=… DB_PASSWORD=… ./gradlew build   # PostgreSQL 16; POC JWT-тест требует БД на :5544
 ```
 
 Локальный результат на этом коммите: 316 тестов, 0 ошибок (включая `AutoApiIntegrationTest`, `AutoFlagOffIntegrationTest`, `AutoConfigurationTest`). DEV: `AUTO_ENABLED=true`, `AUTO_SEED_DEMO=true` (+ `BOOKING_ENABLED`) создают два синтетических заведения.
