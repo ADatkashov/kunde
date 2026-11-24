@@ -226,7 +226,8 @@ def main():
         android.adb("emu", "geo", "fix", "76.92", "43.24")
         launch(EXECUTOR)
         login("7000000002", "На линии", "Online", "Желіде")
-        android.tap("На линии", "Online", "Желіде")
+        # The driver screen shows a Switch (#243); tap it only once it is enabled (it is disabled while the screen loads).
+        android.tap("На линии", "Online", "Желіде", node_class="android.widget.Switch", enabled=True)
         for _ in range(3):
             android.adb("emu", "geo", "fix", "76.92", "43.24")
             time.sleep(2)

@@ -227,7 +227,8 @@ def main():
         geo(DRIVER_START)
         base.launch(base.EXECUTOR)
         base.login("7000000002", "На линии", "Online", "Желіде")
-        android.tap("На линии", "Online", "Желіде")
+        # The driver screen shows a Switch (#243); tap it only once it is enabled (it is disabled while the screen loads).
+        android.tap("На линии", "Online", "Желіде", node_class="android.widget.Switch", enabled=True)
         for _ in range(3):
             geo(DRIVER_START)
             time.sleep(2)
