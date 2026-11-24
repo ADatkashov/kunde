@@ -30,4 +30,3 @@
 **Расположение тестов:** сейчас `backend/src/test/java/kz/kunde/<pkg>`, `apps/consumer/test/features/<feature>`; целевое — в модуле/приложении домена.
 
 **Готовность к выделению и связи:** [microservice-readiness](microservice-readiness.md) · [оценки](domain-readiness-scores.md) · [матрица зависимостей](domain-dependency-matrix.md) · [владение данными](database-ownership-matrix.md) · [события](event-catalog.md) · [ADR-025](adr/ADR-025-gradual-service-extraction.md).
-

@@ -41,4 +41,3 @@ Extract only for independent scaling, team ownership, security/regulatory bounda
 | — | Identity, Partners, Admin, Platform, Support | Остаются в монолите |
 
 Notifications, Payments и Analytics из таблицы выше сейчас **не существуют в коде**; выделять нечего, это новые компоненты после решений ADR-006/010.
-
