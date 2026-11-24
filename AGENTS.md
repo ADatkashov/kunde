@@ -4,13 +4,17 @@
 
 Before every new or resumed task, read [`PROJECT_STATE.md`](PROJECT_STATE.md) and [`NEXT_TASK.md`](NEXT_TASK.md), then check the relevant source docs and ADRs they link to. Treat them as a compact index, not authority over current code.
 
+## Architecture Constitution
+
+Перед изменением кода прочитай [`docs/architecture/CONSTITUTION.md`](docs/architecture/CONSTITUTION.md) и [реестр доменов](docs/architecture/domain-registry.md): структура проекта, имена, границы модулей, четыре приложения. Изменение Конституции — только по отдельному согласованию с владельцем.
+
 ## Язык общения
 
 - Общайся с владельцем репозитория на русском языке: ответы, отчёты, вопросы и описания PR. Код, идентификаторы, имена коммитов и технические термины остаются как принято в репозитории.
 
 ## Stack and layout
 
-- `backend/`: Java 21, Spring Boot 4.0.9, Maven, modular-monolith API, PostgreSQL/Flyway.
+- `backend/`: Java 21, Spring Boot 4.0.9, Maven (переход на Gradle multi-module — [ADR-023](docs/architecture/adr/ADR-023-build-system-and-module-structure.md), в процессе), modular-monolith API, PostgreSQL/Flyway.
 - `mobile/`: Flutter/Dart consumer app, feature-oriented `lib/`, RU/KK/EN localization scaffolding.
 - `docs/`: product, architecture/ADR, design, business, identity, engineering foundation and roadmap/backlog.
 - Root `compose.yaml`: local API and PostgreSQL; identity provider POCs are separately isolated under `docs/identity/poc/`.
