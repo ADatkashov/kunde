@@ -7,7 +7,8 @@ import 'package:kunde_operator/operator_gate.dart';
 import 'package:kunde_auth/phone_auth_gateway.dart';
 import 'package:kunde_design/kunde_theme.dart';
 
-void runRideOperations(String title, Widget Function(AuthRepository) home,
+void runRideOperations(
+    String title, String role, Widget Function(AuthRepository) home,
     {bool sameOriginWeb = false}) {
   WidgetsFlutterBinding.ensureInitialized();
   const endpoint = String.fromEnvironment('API_BASE_URL');
@@ -29,7 +30,9 @@ void runRideOperations(String title, Widget Function(AuthRepository) home,
   final auth = AuthRepository(
     gateway: PhoneAuthGateway(apiBase: base),
     vault:
-        kIsWeb && sameOriginWeb ? _BrowserSessionVault() : SecureTokenVault(),
+        kIsWeb && sameOriginWeb
+        ? _BrowserSessionVault()
+        : SecureTokenVault.role(role),
     apiBase: base,
   );
   runApp(RideOperationsApp(auth: auth, title: title, home: home));

@@ -27,20 +27,45 @@ abstract interface class TokenVault {
 }
 
 class SecureTokenVault implements TokenVault {
-  /// [key] isolates the session of an app role. The default is the key every installed Consumer, Executor and
-  /// Admin build already uses, so existing sessions keep working.
-  const SecureTokenVault({this.key = defaultKey});
+  /// [key] isolates the session of an app role. The default is the Consumer key.
+  const SecureTokenVault({this.key = defaultKey, this.legacyKey});
+
+  /// Session store of an operator app with its own key space (`kunde.<role>.session.v1`). Builds that predate the
+  /// split kept the session under the Consumer key, so the first read moves it to the role key (copy, then delete the
+  /// old entry: a failed write never loses the session).
+  const SecureTokenVault.role(String role)
+      : key = 'kunde.$role.session.v1',
+        legacyKey = defaultKey;
+
   static const defaultKey = 'kunde.consumer.session.v1';
   static const _storage = FlutterSecureStorage(
       iOptions: IOSOptions(
           accessibility: KeychainAccessibility.unlocked_this_device));
   final String key;
+
+  /// Previous location of the same session, migrated on first read; null when there is nothing to migrate.
+  final String? legacyKey;
+
   @override
-  Future<String?> read() => _storage.read(key: key);
+  Future<String?> read() async {
+    final current = await _storage.read(key: key);
+    final legacy = legacyKey;
+    if (current != null || legacy == null || legacy == key) return current;
+    final old = await _storage.read(key: legacy);
+    if (old == null) return null;
+    await _storage.write(key: key, value: old);
+    await _storage.delete(key: legacy);
+    return old;
+  }
+
   @override
   Future<void> write(String value) => _storage.write(key: key, value: value);
   @override
-  Future<void> clear() => _storage.delete(key: key);
+  Future<void> clear() async {
+    await _storage.delete(key: key);
+    final legacy = legacyKey;
+    if (legacy != null && legacy != key) await _storage.delete(key: legacy);
+  }
 }
 
 /// Gateways that end the server-side session with the refresh token (phone OTP).
