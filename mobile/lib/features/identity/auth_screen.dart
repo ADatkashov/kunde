@@ -38,11 +38,9 @@ class AuthScreen extends StatefulWidget {
     this.booking,
     this.auto,
     this.leisure,
-    this.authorizedHome,
     super.key,
   });
   final AuthRepository auth;
-  final WidgetBuilder? authorizedHome;
   final KundeApi api;
   final ValueChanged<Locale> onLocale;
   final ValueChanged<ThemeMode>? onTheme;
@@ -281,64 +279,61 @@ class _AuthScreenState extends State<AuthScreen> with WidgetsBindingObserver {
                                   child: Text(s.retry),
                                 ),
                               )
-                            : widget.authorizedHome?.call(context) ??
-                                switch (_tab) {
-                                  KundeTab.profile => _profileView(s),
-                                  KundeTab.search => SearchTab(
-                                      api: widget.api,
-                                      food: widget.food,
-                                      booking: widget.booking,
-                                      leisure: widget.leisure,
-                                    ),
-                                  KundeTab.assistant => const AssistantScreen(),
-                                  KundeTab.orders => widget.food != null &&
-                                          widget.booking != null
-                                      ? OrdersHubTab(
-                                          food: widget.food!,
-                                          booking: widget.booking!,
-                                        )
-                                      : widget.food != null
-                                          ? FoodOrdersTab(
-                                              services: widget.food!)
-                                          : const OrdersTab(),
-                                  KundeTab.home => HomeScreen(
-                                      api: widget.api,
-                                      rides: RideApi(widget.auth),
-                                      delivery: DeliveryApi(widget.auth),
-                                      food: widget.food,
-                                      booking: widget.booking,
-                                      auto: widget.auto,
-                                      leisure: widget.leisure,
-                                      educationAuth: widget.auth,
-                                      onOpenAssistant: () => setState(
-                                          () => _tab = KundeTab.assistant),
-                                      onOpenSearch: () => setState(
-                                          () => _tab = KundeTab.search),
-                                      onOpenOrders: () => setState(
-                                          () => _tab = KundeTab.orders),
-                                    ),
-                                },
+                            : switch (_tab) {
+                                KundeTab.profile => _profileView(s),
+                                KundeTab.search => SearchTab(
+                                    api: widget.api,
+                                    food: widget.food,
+                                    booking: widget.booking,
+                                    leisure: widget.leisure,
+                                  ),
+                                KundeTab.assistant => const AssistantScreen(),
+                                KundeTab.orders => widget.food != null &&
+                                        widget.booking != null
+                                    ? OrdersHubTab(
+                                        food: widget.food!,
+                                        booking: widget.booking!,
+                                      )
+                                    : widget.food != null
+                                        ? FoodOrdersTab(services: widget.food!)
+                                        : const OrdersTab(),
+                                KundeTab.home => HomeScreen(
+                                    api: widget.api,
+                                    rides: RideApi(widget.auth),
+                                    delivery: DeliveryApi(widget.auth),
+                                    food: widget.food,
+                                    booking: widget.booking,
+                                    auto: widget.auto,
+                                    leisure: widget.leisure,
+                                    educationAuth: widget.auth,
+                                    onOpenAssistant: () => setState(
+                                        () => _tab = KundeTab.assistant),
+                                    onOpenSearch: () =>
+                                        setState(() => _tab = KundeTab.search),
+                                    onOpenOrders: () =>
+                                        setState(() => _tab = KundeTab.orders),
+                                  ),
+                              },
               ),
             ],
           ),
         ),
-        bottomNavigationBar:
-            signedIn && _profile != null && widget.authorizedHome == null
-                ? KundeNavigationBar(
-                    selected: _tab,
-                    onSelected: _busy
-                        ? null
-                        : (tab) async {
-                            if (!await _mayLeave() || !mounted) return;
-                            setState(() {
-                              _tab = tab;
-                              _editing = false;
-                              _error = null;
-                              _notice = null;
-                            });
-                          },
-                  )
-                : null,
+        bottomNavigationBar: signedIn && _profile != null
+            ? KundeNavigationBar(
+                selected: _tab,
+                onSelected: _busy
+                    ? null
+                    : (tab) async {
+                        if (!await _mayLeave() || !mounted) return;
+                        setState(() {
+                          _tab = tab;
+                          _editing = false;
+                          _error = null;
+                          _notice = null;
+                        });
+                      },
+              )
+            : null,
       ),
     );
   }
