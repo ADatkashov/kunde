@@ -43,8 +43,6 @@ IMPORT leisure/LeisureExecutorService.java -> partner.PartnerService
 IMPORT leisure/LeisurePartnerController.java -> partner.PartnerAccessPolicy
 IMPORT leisure/LeisurePartnerService.java -> partner.PartnerService
 IMPORT partner/PartnerOpsDemoSeeder.java -> auth.PhoneAuthProperties
-IMPORT platform/FeatureToggles.java -> delivery.DeliveryProperties
-IMPORT platform/FeatureToggles.java -> rides.RidesFlags
 IMPORT rides/RideFleetService.java -> partner.PartnerService
 SQL admin/AdminAutoController.java -> marketplace.auto_admin_events (owner auto)
 SQL admin/AdminAutoController.java -> marketplace.auto_service_categories (owner auto)

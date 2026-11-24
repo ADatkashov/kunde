@@ -29,7 +29,7 @@ public class RideQuoteService {
     }
 
     public Quote issue(UUID customer, RideClass rideClass, Coordinates pickup, Coordinates destination) {
-        if (!toggles.rides().consumerAvailable()) {
+        if (!RidesFlags.live(toggles).consumerAvailable()) {
             throw new ApiException(HttpStatus.NOT_FOUND, "RIDES_UNAVAILABLE", "New rides are currently unavailable");
         }
         var tariff = pricing.tariffs().get(rideClass);

@@ -37,13 +37,11 @@ public class PlatformController {
 
     @GetMapping("/capabilities")
     public PlatformCapabilities capabilities() {
-        var rides = toggles.rides();
-        var delivery = toggles.delivery();
-        return new PlatformCapabilities("FOUNDATION", foodEnabled, oidcConfigured, false, bookingEnabled, rides.consumerAvailable(),
-                rides.partnerAvailable(), delivery.consumerAvailable(),
-                delivery.enabled() && delivery.partnerEnabled(),
-                delivery.enabled() && delivery.syntheticRoutingEnabled(),
-                delivery.enabled() && delivery.executorEnabled(), autoCeiling && toggles.enabled(FeatureToggles.Feature.AUTO), toggles.enabled(FeatureToggles.Feature.LEISURE),
+        var rides = toggles.capabilities(FeatureToggles.Feature.RIDES);
+        var delivery = toggles.capabilities(FeatureToggles.Feature.DELIVERY);
+        return new PlatformCapabilities("FOUNDATION", foodEnabled, oidcConfigured, false, bookingEnabled, rides.get("consumer"),
+                rides.get("partner"), delivery.get("consumer"), delivery.get("partner"), delivery.get("syntheticRouting"),
+                delivery.get("executor"), autoCeiling && toggles.enabled(FeatureToggles.Feature.AUTO), toggles.enabled(FeatureToggles.Feature.LEISURE),
                 toggles.enabled(FeatureToggles.Feature.HEALTH), toggles.enabled(FeatureToggles.Feature.EDUCATION),
                 toggles.enabled(FeatureToggles.Feature.GROCERIES), toggles.enabled(FeatureToggles.Feature.EVENTS),
                 bookingEnabled && toggles.enabled(FeatureToggles.Feature.HOME_SERVICES), mapsEnabled,

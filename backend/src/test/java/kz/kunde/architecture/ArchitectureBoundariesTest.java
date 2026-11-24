@@ -87,11 +87,10 @@ class ArchitectureBoundariesTest {
 
     @Test
     void platformKernelDoesNotDependOnBusinessDomains() {
-        // FeatureToggles imports nine domain settings classes; that inversion is frozen in the baseline and tracked
-        // in docs/architecture/microservice-readiness.md. Nothing else in platform may start depending on a domain.
+        // platform is the technical kernel: no import of a business domain is allowed (microservice-readiness V1).
         Set<String> offenders = new TreeSet<>();
         for (String edge : importCoupling()) {
-            if (edge.startsWith("IMPORT platform/") && !edge.startsWith("IMPORT platform/FeatureToggles.java ")) {
+            if (edge.startsWith("IMPORT platform/")) {
                 offenders.add(edge);
             }
         }

@@ -102,7 +102,7 @@ public class DeliveryCouriers {
     }
 
     private void requireEnrollment() {
-        if (!toggles.delivery().enabled() || !toggles.delivery().executorEnabled()) {
+        if (!DeliveryProperties.live(toggles).enabled() || !DeliveryProperties.live(toggles).executorEnabled()) {
             throw new ApiException(HttpStatus.NOT_FOUND, "DELIVERY_EXECUTOR_UNAVAILABLE", "Courier enrollment unavailable");
         }
     }

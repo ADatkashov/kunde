@@ -28,7 +28,7 @@ class DeliveryMaintenance {
 
     @Scheduled(fixedDelay = 5000)
     void updateSearches() {
-        if (!toggles.delivery().dispatchAvailable()) {
+        if (!DeliveryProperties.live(toggles).dispatchAvailable()) {
             return;
         }
         var pending = db.query("""

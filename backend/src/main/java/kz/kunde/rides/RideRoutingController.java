@@ -67,7 +67,7 @@ public class RideRoutingController {
     }
 
     private <T> T withRouting(Function<RoutingProvider, T> operation) {
-        if (!toggles.rides().consumerAvailable()) {
+        if (!RidesFlags.live(toggles).consumerAvailable()) {
             throw new ApiException(HttpStatus.NOT_FOUND, "RIDES_UNAVAILABLE", "Rides is currently unavailable");
         }
         var provider = routing.getIfAvailable();

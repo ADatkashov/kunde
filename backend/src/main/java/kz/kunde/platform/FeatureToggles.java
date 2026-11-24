@@ -6,8 +6,6 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import kz.kunde.delivery.DeliveryProperties;
-import kz.kunde.rides.RidesFlags;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -31,17 +29,15 @@ public class FeatureToggles {
 
     private final JdbcTemplate db;
     private final Map<Feature, FeatureGate> gates = new EnumMap<>(Feature.class);
-    private final RidesFlags rides;
-    private final DeliveryProperties delivery;
     private final Clock clock;
     private volatile Map<Feature, Toggle> cache;
     private volatile long loadedAt;
 
     /**
      * Every {@link Feature} must be backed by exactly one {@link FeatureGate} supplied by its own domain, otherwise the
-     * application does not start (fail closed). {@code rides}/{@code delivery} are only used for the master-switch views.
+     * application does not start (fail closed). The platform kernel knows no domain settings class.
      */
-    public FeatureToggles(JdbcTemplate db, List<FeatureGate> featureGates, RidesFlags rides, DeliveryProperties delivery) {
+    public FeatureToggles(JdbcTemplate db, List<FeatureGate> featureGates) {
         this.db = db;
         for (FeatureGate gate : featureGates) {
             if (gates.put(gate.feature(), gate) != null) {
@@ -53,8 +49,6 @@ public class FeatureToggles {
                 throw new IllegalStateException("No FeatureGate for " + feature);
             }
         }
-        this.rides = rides;
-        this.delivery = delivery;
         this.clock = Clock.systemUTC();
     }
 
@@ -71,14 +65,14 @@ public class FeatureToggles {
         return toggle == null || toggle.enabled();
     }
 
-    /** Rides flags with the master switch applied; sub-flags keep their environment values. */
-    public RidesFlags rides() {
-        return rides.withEnabled(enabled(Feature.RIDES));
+    /** The product's own settings with the master switch applied, e.g. {@code live(Feature.RIDES, RidesFlags.class)}. */
+    public <T extends FeatureGate> T live(Feature feature, Class<T> type) {
+        return type.cast(gates.get(feature).withEnabled(enabled(feature)));
     }
 
-    /** Delivery settings with the master switch applied; everything else keeps its environment value. */
-    public DeliveryProperties delivery() {
-        return delivery.withEnabled(enabled(Feature.DELIVERY));
+    /** Client-visible capability flags of a product (master switch applied); empty when the product defines none. */
+    public java.util.Map<String, Boolean> capabilities(Feature feature) {
+        return gates.get(feature).withEnabled(enabled(feature)).capabilities();
     }
 
     public List<FeatureView> views() {
