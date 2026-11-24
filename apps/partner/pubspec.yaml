@@ -12,6 +12,8 @@ dependencies:
       path: packages/kunde_maps_sdk
   kunde_design:
     path: ../../packages/kunde_design
+  kunde_session:
+    path: ../../packages/kunde_session
   flutter:
     sdk: flutter
   flutter_localizations:

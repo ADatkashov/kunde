@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:kunde_session/kunde_session.dart';
 
 class SessionExpired implements Exception {}
 
@@ -26,16 +27,20 @@ abstract interface class TokenVault {
 }
 
 class SecureTokenVault implements TokenVault {
+  /// [key] isolates the session of an app role. The default is the key every installed Consumer, Executor and
+  /// Admin build already uses, so existing sessions keep working.
+  const SecureTokenVault({this.key = defaultKey});
+  static const defaultKey = 'kunde.consumer.session.v1';
   static const _storage = FlutterSecureStorage(
       iOptions: IOSOptions(
           accessibility: KeychainAccessibility.unlocked_this_device));
-  static const _key = 'kunde.consumer.session.v1';
+  final String key;
   @override
-  Future<String?> read() => _storage.read(key: _key);
+  Future<String?> read() => _storage.read(key: key);
   @override
-  Future<void> write(String value) => _storage.write(key: _key, value: value);
+  Future<void> write(String value) => _storage.write(key: key, value: value);
   @override
-  Future<void> clear() => _storage.delete(key: _key);
+  Future<void> clear() => _storage.delete(key: key);
 }
 
 /// Gateways that end the server-side session with the refresh token (phone OTP).
@@ -170,6 +175,65 @@ class AppAuthGateway implements OAuthGateway {
   }
 }
 
+/// The Consumer/operator adapter of the shared token-session core: it keeps the stored format
+/// (`issuerVersion`, `context`, `refresh`, `id`) of the installed apps and fails closed on anything foreign.
+class _VaultPersistence implements SessionPersistence {
+  _VaultPersistence(this.vault, this.context);
+  final TokenVault vault;
+  final String context;
+
+  @override
+  Future<StoredSession?> load() async {
+    final saved = await vault.read();
+    if (saved == null) return null;
+    try {
+      final value = jsonDecode(saved) as Map<String, dynamic>;
+      final refresh = value['refresh'];
+      if (value['issuerVersion'] != 2 ||
+          value['context'] != context ||
+          refresh is! String ||
+          refresh.isEmpty) {
+        throw const SessionRejected();
+      }
+      final id = value['id'];
+      return StoredSession(refresh, {if (id is String) 'id': id});
+    } on SessionRejected {
+      rethrow;
+    } catch (_) {
+      throw const SessionRejected();
+    }
+  }
+
+  @override
+  Future<void> save(StoredSession session) => vault.write(
+        jsonEncode({
+          'issuerVersion': 2,
+          'context': context,
+          'refresh': session.refresh,
+          'id': session.extras['id'],
+        }),
+      );
+
+  @override
+  Future<void> clear() => vault.clear();
+}
+
+class _GatewayRefresher implements TokenRefresher {
+  _GatewayRefresher(this.gateway);
+  final OAuthGateway gateway;
+
+  @override
+  Future<IssuedTokens> refresh(String refreshToken) async {
+    try {
+      return AuthRepository._issued(await gateway.refresh(refreshToken));
+    } on IdentityUnavailable {
+      throw const SessionUnavailable();
+    } catch (_) {
+      throw const SessionRejected();
+    }
+  }
+}
+
 class AuthRepository extends ChangeNotifier {
   AuthRepository({
     required this.gateway,
@@ -187,112 +251,63 @@ class AuthRepository extends ChangeNotifier {
         !apiBase.path.endsWith('/')) {
       throw IdentityUnavailable();
     }
+    _session = TokenSession(
+      persistence: _VaultPersistence(vault, _context),
+      refresher: _GatewayRefresher(gateway),
+    )..addListener(notifyListeners);
   }
   final OAuthGateway gateway;
   final TokenVault vault;
   final Uri apiBase;
   final http.Client _client;
-  Future<void> _tail = Future.value();
-  AuthTokens? _tokens;
-  bool expired = false;
-  bool get authenticated => _tokens != null;
+  late final TokenSession _session;
+  bool get expired => _session.expired;
+  bool get authenticated => _session.authenticated;
   bool get usesPhoneOtp => gateway is SessionRevoker;
   String get _context => gateway is AppAuthGateway
       ? '${(gateway as AppAuthGateway).issuer}|${(gateway as AppAuthGateway).clientId}|$apiBase'
       : apiBase.toString();
 
-  Future<T> _exclusive<T>(Future<T> Function() operation) {
-    final result = _tail.then((_) => operation());
-    _tail = result.then<void>((_) {}, onError: (Object _, StackTrace __) {});
-    return result;
+  static IssuedTokens _issued(AuthTokens tokens) => IssuedTokens(
+        access: tokens.access,
+        refresh: tokens.refresh,
+        expires: tokens.expires,
+        extras: {if (tokens.id != null) 'id': tokens.id!},
+      );
+
+  Future<void> restore() async {
+    try {
+      await _session.restore();
+    } on SessionUnavailable {
+      throw IdentityUnavailable();
+    }
   }
 
-  Future<void> _replace(AuthTokens tokens) async {
-    await vault.write(
-      jsonEncode({
-        'issuerVersion': 2,
-        'context': _context,
-        'refresh': tokens.refresh,
-        'id': tokens.id,
-      }),
-    );
-    _tokens = tokens;
-    expired = false;
-    notifyListeners();
+  Future<void> login({bool register = false}) async {
+    try {
+      await _session.signIn(_issued(await gateway.login(register: register)));
+    } catch (_) {
+      await _session.discard();
+      rethrow;
+    }
   }
-
-  Future<void> _invalidate({bool sessionExpired = true}) async {
-    _tokens = null;
-    expired = sessionExpired;
-    notifyListeners();
-    await vault.clear();
-  }
-
-  Future<void> restore() => _exclusive(() async {
-        try {
-          final saved = await vault.read();
-          if (saved == null) return;
-          final value = jsonDecode(saved) as Map<String, dynamic>;
-          if (value['issuerVersion'] != 2 || value['context'] != _context) {
-            throw SessionExpired();
-          }
-          final refresh = value['refresh'] as String;
-          if (refresh.isEmpty) throw SessionExpired();
-          final refreshed = await gateway.refresh(refresh);
-          await _replace(AuthTokens(refreshed.access, refreshed.refresh,
-              refreshed.id ?? value['id'] as String?, refreshed.expires));
-        } on IdentityUnavailable {
-          rethrow;
-        } catch (_) {
-          await _invalidate();
-        }
-      });
-
-  Future<void> login({bool register = false}) => _exclusive(() async {
-        try {
-          final tokens = await gateway.login(register: register);
-          await _replace(tokens);
-        } catch (_) {
-          await _invalidate(sessionExpired: false);
-          rethrow;
-        }
-      });
 
   /// Stores tokens obtained by an interactive gateway step (phone OTP verification).
-  Future<void> signIn(AuthTokens tokens) => _exclusive(() => _replace(tokens));
+  Future<void> signIn(AuthTokens tokens) => _session.signIn(_issued(tokens));
 
-  Future<String> accessToken() => _exclusive(() async {
-        final current = _tokens;
-        if (current == null) throw SessionExpired();
-        if (current.expires.isAfter(
-          DateTime.now().add(const Duration(seconds: 30)),
-        )) {
-          return current.access;
-        }
-        await _refreshLocked(current);
-        return _tokens!.access;
-      });
-
-  /// Forces a token refresh now. The partner scope is derived on the server at
-  /// token issue, so a new applicant needs a fresh token before partner calls.
-  Future<void> refreshTokens() => _exclusive(() async {
-        final current = _tokens;
-        if (current == null) throw SessionExpired();
-        await _refreshLocked(current);
-      });
-
-  Future<void> _refreshLocked(AuthTokens current) async {
+  Future<String> accessToken({bool force = false}) async {
     try {
-      final refreshed = await gateway.refresh(current.refresh);
-      await _replace(AuthTokens(refreshed.access, refreshed.refresh,
-          refreshed.id ?? current.id, refreshed.expires));
-    } on IdentityUnavailable {
-      rethrow;
-    } catch (_) {
-      await _invalidate();
+      return await _session.accessToken(force: force);
+    } on SessionUnavailable {
+      throw IdentityUnavailable();
+    } on SessionFailure {
       throw SessionExpired();
     }
   }
+
+  /// Forces a token refresh now. The partner scope is derived on the server at
+  /// token issue, so a new applicant needs a fresh token before partner calls.
+  Future<void> refreshTokens() => accessToken(force: true);
 
   Future<Map<String, dynamic>> profile() => _request('GET');
   Future<Map<String, dynamic>> updateProfile(
@@ -558,8 +573,15 @@ class AuthRepository extends ChangeNotifier {
     Set<int> expected = const {200},
     Map<String, String>? extraHeaders,
   ]) async {
+    final target = apiBase.resolve(path);
+    // The bearer token belongs to this API only: never send it to another origin or outside the API path.
+    if (target.origin != apiBase.origin ||
+        !target.path.startsWith(apiBase.path) ||
+        target.userInfo.isNotEmpty) {
+      throw ArgumentError.value(path, 'path', 'Not an API path');
+    }
     final access = await accessToken();
-    final request = http.Request(method, apiBase.resolve(path));
+    final request = http.Request(method, target);
     request.headers.addAll({
       'Authorization': 'Bearer $access',
       'Accept': 'application/json',
@@ -580,9 +602,7 @@ class AuthRepository extends ChangeNotifier {
       throw IdentityUnavailable();
     }
     if (response.statusCode == 401) {
-      await _exclusive(() async {
-        if (_tokens?.access == access) await _invalidate();
-      });
+      await _session.rejectIfCurrent(access);
       throw SessionExpired();
     }
     if (!expected.contains(response.statusCode)) {
@@ -599,28 +619,16 @@ class AuthRepository extends ChangeNotifier {
     return jsonDecode(response.body);
   }
 
-  Future<bool> logout() => _exclusive(() async {
-        final id = _tokens?.id;
-        final refresh = _tokens?.refresh;
-        _tokens = null;
-        expired = false;
-        notifyListeners();
-        await vault.clear();
-        try {
-          if (usesPhoneOtp) {
-            if (refresh == null) return true;
-            await (gateway as SessionRevoker).revoke(refresh);
-          } else {
-            await gateway.logout(id);
-          }
-          return true;
-        } catch (_) {
-          return false;
-        }
-      });
+  Future<bool> logout() => _session.signOut(
+        revoke: (stored) => usesPhoneOtp
+            ? (gateway as SessionRevoker).revoke(stored.refresh)
+            : gateway.logout(stored.extras['id']),
+      );
 
   @override
   void dispose() {
+    _session.removeListener(notifyListeners);
+    _session.dispose();
     _client.close();
     super.dispose();
   }

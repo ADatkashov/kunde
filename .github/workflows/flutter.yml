@@ -30,7 +30,7 @@ jobs:
           flutter pub get --enforce-lockfile
           flutter analyze --fatal-infos
           for package in ../../packages/*/; do
-            (cd "$package" && flutter pub get && flutter analyze --fatal-infos)
+            (cd "$package" && flutter pub get && flutter analyze --fatal-infos && { [ ! -d test ] || flutter test; })
           done
           dart format --output=none --set-exit-if-changed lib test
           flutter test --machine > flutter-tests.json

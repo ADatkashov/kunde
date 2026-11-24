@@ -439,6 +439,13 @@ packages:
       relative: true
     source: path
     version: "0.1.0"
+  kunde_session:
+    dependency: transitive
+    description:
+      path: "../../packages/kunde_session"
+      relative: true
+    source: path
+    version: "0.1.0"
   kunde_ui:
     dependency: "direct main"
     description:
