@@ -84,7 +84,7 @@ jobs:
         working-directory: backend
         run: ./gradlew --no-daemon -q bootJar
       - name: Build the local-fixture debug Consumer APK
-        working-directory: mobile
+        working-directory: apps/consumer
         run: |
           flutter pub get --enforce-lockfile
           mkdir -p "$RUNNER_TEMP/health-apk"

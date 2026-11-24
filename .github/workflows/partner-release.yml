@@ -71,13 +71,13 @@ jobs:
           channel: stable
           cache: false
       - name: Analyze and test
-        working-directory: partner_app
+        working-directory: apps/partner
         run: |
           flutter pub get
           flutter analyze --fatal-infos
           flutter test
       - name: Build signed release APK (arm64)
-        working-directory: partner_app
+        working-directory: apps/partner
         run: |
           printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/partner-release.jks"
           export KUNDE_KEYSTORE_PATH="$RUNNER_TEMP/partner-release.jks"
@@ -85,12 +85,12 @@ jobs:
             --dart-define=API_BASE_URL="$API_BASE_URL" \
             --dart-define=API_TIMEOUT_SECONDS=90 \
             --dart-define=DEV_OTP_HINT="$DEV_OTP_HINT"
-          mkdir -p ../dist
-          cp build/app/outputs/flutter-apk/app-release.apk ../dist/KUNDE-Partner-dev-release.apk
+          mkdir -p "$GITHUB_WORKSPACE/dist"
+          cp build/app/outputs/flutter-apk/app-release.apk "$GITHUB_WORKSPACE/dist/KUNDE-Partner-dev-release.apk"
           rm -f "$RUNNER_TEMP/partner-release.jks"
       - name: Verify signature and package identity
         run: |
-          apk=dist/KUNDE-Partner-dev-release.apk
+          apk=dist/KUNDE-Partner-dev-release.apk"
           bt="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
           test -s "$apk"
           "$bt/apksigner" verify --verbose --print-certs "$apk" | tee dist/signing.txt
@@ -117,7 +117,7 @@ jobs:
         with:
           name: KUNDE-Partner-dev-release
           path: |
-            dist/KUNDE-Partner-dev-release.apk
+            dist/KUNDE-Partner-dev-release.apk"
             dist/KUNDE-Partner-dev-release.apk.sha256
             dist/signing.txt
             dist/commit.txt

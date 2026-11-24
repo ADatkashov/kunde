@@ -37,15 +37,15 @@ jobs:
             test "$attempt" -lt 3 || exit 1
             sleep $((attempt * 30))
           done
-          cd ../mobile
+          cd ../apps/consumer
           flutter pub get --enforce-lockfile
-          flutter pub deps --json > ../reports/pub.json
+          flutter pub deps --json > ../../reports/pub.json
       - name: OSV graph and declared build-root audits (retain both exit codes)
         run: |
           set +e
           python3 scripts/ci/osv_audit.py --maven reports/maven.json --pub reports/pub.json --python-requirements scripts/ci/native-e2e-requirements.txt --output reports/dependencies-osv.json
           dependencies_code=$?
-          python3 scripts/ci/osv_audit.py --gradle-catalog backend/gradle/libs.versions.toml --settings mobile/android/settings.gradle.kts --output reports/build-roots-osv.json
+          python3 scripts/ci/osv_audit.py --gradle-catalog backend/gradle/libs.versions.toml --settings apps/consumer/android/settings.gradle.kts --output reports/build-roots-osv.json
           roots_code=$?
           printf '{"dependencies":%s,"buildRoots":%s}\n' "$dependencies_code" "$roots_code" > reports/osv-exit-codes.json
           if [ "$dependencies_code" -eq 2 ] || [ "$roots_code" -eq 2 ]; then exit 2; fi

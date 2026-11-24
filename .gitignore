@@ -8,7 +8,7 @@ build/
 coverage/
 backend/target/
 backend/.mvn/wrapper/maven-wrapper.jar
-mobile/ios/Flutter/ephemeral/
+apps/consumer/ios/Flutter/ephemeral/
 *.log
 .env
 .env.*
@@ -29,6 +29,6 @@ crash.log
 
 backend.hcl
 *.tfplan
-partner_app/pubspec.lock
+apps/partner/pubspec.lock
 backend/.gradle/
 packages/*/pubspec.lock

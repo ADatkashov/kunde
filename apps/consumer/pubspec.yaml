@@ -6,21 +6,21 @@ environment:
   sdk: '>=3.4.0 <4.0.0'
 dependencies:
   kunde_design:
-    path: ../packages/kunde_design
+    path: ../../packages/kunde_design
   kunde_api:
-    path: ../packages/kunde_api
+    path: ../../packages/kunde_api
   kunde_auth:
-    path: ../packages/kunde_auth
+    path: ../../packages/kunde_auth
   kunde_localization:
-    path: ../packages/kunde_localization
+    path: ../../packages/kunde_localization
   kunde_maps:
-    path: ../packages/kunde_maps
+    path: ../../packages/kunde_maps
   kunde_models:
-    path: ../packages/kunde_models
+    path: ../../packages/kunde_models
   kunde_operator:
-    path: ../packages/kunde_operator
+    path: ../../packages/kunde_operator
   kunde_ui:
-    path: ../packages/kunde_ui
+    path: ../../packages/kunde_ui
   kunde_maps_sdk:
     # KUNDE Maps SDK 0.2.1, pinned to the immutable release commit of kunde-maps (release tags cannot be created from CI-less agent sessions).
     git:

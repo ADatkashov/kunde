@@ -8,6 +8,6 @@ if os.environ.get("GITHUB_EVENT_NAME")=="pull_request" and os.environ.get("EVENT
         relevant={"scripts/ci/android_graph.init.gradle","scripts/ci/inspect_apk_dependencies.py",
                   "scripts/ci/osv_audit.py","scripts/ci/runner_resources.py","scripts/ci/native_changes.py","scripts/ci/verify_native_artifacts.py",
                   ".github/workflows/android-apk.yml"}
-        run=any(p.startswith("mobile/") or p in relevant for p in files)
+        run=any(p.startswith("apps/consumer/") or p in relevant for p in files)
 with open(os.environ["GITHUB_OUTPUT"],"a") as out: out.write("run="+str(run).lower()+"\n")
 print(json.dumps({"nativeInputsChanged":run,"files":files,"status":"VERIFY_NATIVE" if run else "UNCHANGED_NATIVE_INPUTS_NOT_RETESTED"}))

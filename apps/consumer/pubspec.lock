@@ -384,35 +384,35 @@ packages:
   kunde_api:
     dependency: "direct main"
     description:
-      path: "../packages/kunde_api"
+      path: "../../packages/kunde_api"
       relative: true
     source: path
     version: "0.1.0"
   kunde_auth:
     dependency: "direct main"
     description:
-      path: "../packages/kunde_auth"
+      path: "../../packages/kunde_auth"
       relative: true
     source: path
     version: "0.1.0"
   kunde_design:
     dependency: "direct main"
     description:
-      path: "../packages/kunde_design"
+      path: "../../packages/kunde_design"
       relative: true
     source: path
     version: "0.1.0"
   kunde_localization:
     dependency: "direct main"
     description:
-      path: "../packages/kunde_localization"
+      path: "../../packages/kunde_localization"
       relative: true
     source: path
     version: "0.1.0"
   kunde_maps:
     dependency: "direct main"
     description:
-      path: "../packages/kunde_maps"
+      path: "../../packages/kunde_maps"
       relative: true
     source: path
     version: "0.1.0"
@@ -428,21 +428,21 @@ packages:
   kunde_models:
     dependency: "direct main"
     description:
-      path: "../packages/kunde_models"
+      path: "../../packages/kunde_models"
       relative: true
     source: path
     version: "0.1.0"
   kunde_operator:
     dependency: "direct main"
     description:
-      path: "../packages/kunde_operator"
+      path: "../../packages/kunde_operator"
       relative: true
     source: path
     version: "0.1.0"
   kunde_ui:
     dependency: "direct main"
     description:
-      path: "../packages/kunde_ui"
+      path: "../../packages/kunde_ui"
       relative: true
     source: path
     version: "0.1.0"

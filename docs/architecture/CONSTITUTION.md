@@ -64,4 +64,4 @@ TARGET: `apps/{consumer,partner,executor,admin}` — каждое со свои�
 | §3.5 ратчет границ | MUST: действует (159 связей в baseline: 44 импорта, 115 SQL) |
 | §4 platform без бизнеса | MUST: доменных импортов в `platform` нет (V1 закрыт); TARGET: заготовки `order/fulfillment/notification/analytics` ещё не разнесены |
 | §1/§3 beauty, homeservices | MUST: выделены пакетами из `booking`; движок знает вертикали только через `BookingCategory`; разрешённые рёбра — `allowed-module-edges.txt` |
-| §11 четыре приложения | TARGET: сейчас `mobile/` (Consumer + режимы Executor/Admin-rides) и `partner_app/` |
+| §11 четыре приложения | MUST: `apps/{consumer,partner,executor,admin}` — независимые проекты с прежними application ID; общий код — `packages/*` (ADR-023, PR G1–G2b). TARGET: Partner переиспользует общие пакеты auth/api (сейчас своя реализация) |

@@ -15,7 +15,7 @@ Before every new or resumed task, read [`PROJECT_STATE.md`](PROJECT_STATE.md) an
 ## Stack and layout
 
 - `backend/`: Java 21, Spring Boot 4.0.9, Gradle Kotlin DSL (`./gradlew`; решение и план модулей — [ADR-023](docs/architecture/adr/ADR-023-build-system-and-module-structure.md)), modular-monolith API, PostgreSQL/Flyway.
-- `mobile/`: Flutter/Dart consumer app, feature-oriented `lib/`, RU/KK/EN localization scaffolding.
+- `apps/{consumer,partner,executor,admin}`: four independent Flutter apps (own `pubspec.yaml`, `android/`, application ID, CI); `packages/*`: shared Flutter packages (auth, api, models, ui, localization, design, maps, operator). RU/KK/EN localization.
 - `docs/`: product, architecture/ADR, design, business, identity, engineering foundation and roadmap/backlog.
 - Root `compose.yaml`: local API and PostgreSQL; identity provider POCs are separately isolated under `docs/identity/poc/`.
 

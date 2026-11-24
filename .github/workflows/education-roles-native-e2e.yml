@@ -79,20 +79,20 @@ jobs:
         working-directory: backend
         run: ./gradlew --no-daemon -q bootJar
       - name: Build local-fixture debug APKs
-        working-directory: mobile
+        working-directory: apps/consumer
         run: |
           flutter pub get --enforce-lockfile
           mkdir -p "$RUNNER_TEMP/education-role-apk"
           fixture_url=http://localhost:8081/api/v1/
           build_role() {
-            (cd "../apps/$1" && flutter pub get --enforce-lockfile && flutter build apk --debug --target-platform android-x64 \
+            (cd "../$1" && flutter pub get --enforce-lockfile && flutter build apk --debug --target-platform android-x64 \
               --dart-define=API_BASE_URL="$fixture_url" --dart-define=PHONE_AUTH_ENABLED=true \
               && cp build/app/outputs/flutter-apk/app-debug.apk "$RUNNER_TEMP/education-role-apk/$1.apk")
           }
           build_role admin
           build_role executor
       - name: Build local-fixture debug Partner APK
-        working-directory: partner_app
+        working-directory: apps/partner
         run: |
           flutter pub get
           flutter build apk --debug --target-platform android-x64 \

@@ -2,9 +2,9 @@ name: Partner Flutter CI
 on:
   push:
     branches: [main]
-    paths: ['partner_app/**', 'packages/**', '.github/workflows/partner-flutter.yml']
+    paths: ['apps/partner/**', 'packages/**', '.github/workflows/partner-flutter.yml']
   pull_request:
-    paths: ['partner_app/**', 'packages/**', '.github/workflows/partner-flutter.yml']
+    paths: ['apps/partner/**', 'packages/**', '.github/workflows/partner-flutter.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -25,7 +25,7 @@ jobs:
           channel: stable
           cache: true
       - name: Resolve, analyze and test standalone Partner
-        working-directory: partner_app
+        working-directory: apps/partner
         run: |
           flutter pub get
           flutter analyze --fatal-infos

@@ -11,7 +11,7 @@ dependencies:
       ref: 3a6134736d27e073e8d98e878a0ffc5c5bf375b8
       path: packages/kunde_maps_sdk
   kunde_design:
-    path: ../packages/kunde_design
+    path: ../../packages/kunde_design
   flutter:
     sdk: flutter
   flutter_localizations:

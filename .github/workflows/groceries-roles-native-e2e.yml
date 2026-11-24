@@ -82,7 +82,7 @@ jobs:
       - name: Prepare the APK directory
         run: mkdir -p "$RUNNER_TEMP/groceries-role-apk"
       - name: Build local-fixture debug Partner APK
-        working-directory: partner_app
+        working-directory: apps/partner
         run: |
           flutter pub get
           flutter build apk --debug --target-platform android-x64 \
