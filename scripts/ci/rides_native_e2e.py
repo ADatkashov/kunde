@@ -257,10 +257,12 @@ def main():
 
         phase = "complete"
         launch(EXECUTOR)
-        android.tap("Выехать", "Depart", "Жолға шығу")
-        android.tap("Я на месте", "I have arrived", "Келдім")
-        android.tap("Начать поездку", "Start ride", "Сапарды бастау")
-        android.tap("Завершить", "Complete", "Аяқтау")
+        # Trip actions are disabled while the driver screen reloads; tap each one only when enabled and wait for the next step.
+        android.tap("Выехать", "Depart", "Жолға шығу", enabled=True)
+        android.tap("Я на месте", "I have arrived", "Келдім", enabled=True)
+        android.tap("Начать поездку", "Start ride", "Сапарды бастау", enabled=True)
+        android.find("Завершить", "Complete", "Аяқтау", enabled=True, timeout=60)
+        android.tap("Завершить", "Complete", "Аяқтау", enabled=True)
         find_completed()
         android.screenshot("executor-history")
         completed.append("executor_arrival_start_complete_history")
