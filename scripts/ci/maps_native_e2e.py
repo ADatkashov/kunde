@@ -104,7 +104,7 @@ def start_backend_with_maps(routing_url=MAPS_ROUTING):
     env["MAPS_SEARCH_URL"] = MAPS_SEARCH
     env["MAPS_TIMEOUT_SECONDS"] = "60"
     env["AUTH_PHONE_SECRET"] = base.FIXTURE_AUTH_KEY
-    args = ["java", "-jar", "backend/target/kunde-api-0.1.0-SNAPSHOT.jar", "--server.address=127.0.0.1", "--server.port=8081"]
+    args = ["java", "-jar", "backend/build/libs/kunde-api-0.1.0-SNAPSHOT.jar", "--server.address=127.0.0.1", "--server.port=8081"]
     tariff = {"version": "maps-e2e-1", "base-kzt": 100, "per-kilometer-kzt": 100, "per-minute-kzt": 10, "minimum-kzt": 300, "fixed-fee-kzt": 0}
     args.extend(f"--app.rides.pricing.tariffs.economy.{key}={value}" for key, value in tariff.items())
     with Path(os.environ["RUNNER_TEMP"], "maps-backend.log").open("wb") as log:

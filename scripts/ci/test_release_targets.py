@@ -9,7 +9,7 @@ def only(*apps):
 
 class ReleaseTargetsTest(unittest.TestCase):
     def test_backend_and_docs_build_nothing(self):
-        self.assertEqual(targets(["backend/pom.xml", "docs/a.md"]), only())
+        self.assertEqual(targets(["backend/build.gradle.kts", "docs/a.md"]), only())
 
     def test_shared_mobile_change_builds_three_apps(self):
         self.assertEqual(targets(["mobile/lib/features/rides/a.dart"]), only("consumer", "executor", "admin"))

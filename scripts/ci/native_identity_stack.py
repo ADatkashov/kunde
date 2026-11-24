@@ -120,15 +120,15 @@ def start():
         env = dict(os.environ, DB_URL="jdbc:postgresql://127.0.0.1:15432/kunde", DB_USERNAME="kunde_ci",
                    DB_PASSWORD=state["dbPassword"], OIDC_ISSUER_URI="", OIDC_AUDIENCE="",
                    SPRING_PROFILES_ACTIVE="", CONSUMER_IDENTITY_ENABLED="false")
-        phase = "maven-verify"
-        with open(state_dir / "maven.log", "w") as log:
-            subprocess.run(["mvn", "--batch-mode", "--no-transfer-progress", "clean", "verify"],
+        phase = "gradle-build"
+        with open(state_dir / "gradle.log", "w") as log:
+            subprocess.run(["./gradlew", "--no-daemon", "clean", "build"],
                            cwd=ROOT / "backend", env=env, stdout=log, stderr=subprocess.STDOUT, check=True)
         phase = "backend"
         env.update(PORT="8081", CONSUMER_IDENTITY_ENABLED="true", OIDC_ISSUER_URI=ISSUER,
                    OIDC_AUDIENCE="kunde-api", SPRING_PROFILES_ACTIVE="identity-poc", POC_ALLOW_HTTP_ISSUER="true")
         with open(state_dir / "backend.log", "w") as log:
-            app = subprocess.Popen(["java", "-Xmx512m", "-jar", str(ROOT / "backend/target/kunde-api-0.1.0-SNAPSHOT.jar"),
+            app = subprocess.Popen(["java", "-Xmx512m", "-jar", str(ROOT / "backend/build/libs/kunde-api-0.1.0-SNAPSHOT.jar"),
                                     "--server.address=127.0.0.1", "--kunde.fixture.id=" + marker],
                                    env=env, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
                                    start_new_session=True)

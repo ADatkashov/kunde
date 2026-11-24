@@ -72,7 +72,7 @@ def start_backend(enabled):
         env["RIDES_SYNTHETIC_ROUTING_ENABLED"] = "false"
     env["AUTH_PHONE_SECRET"] = FIXTURE_AUTH_KEY
     args = [
-        "java", "-jar", "backend/target/kunde-api-0.1.0-SNAPSHOT.jar",
+        "java", "-jar", "backend/build/libs/kunde-api-0.1.0-SNAPSHOT.jar",
         "--server.address=127.0.0.1", "--server.port=8081",
     ]
     tariff = {

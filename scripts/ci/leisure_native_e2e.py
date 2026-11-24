@@ -78,7 +78,7 @@ def start_backend(enabled):
     env["EVENTS_ENABLED"] = "true" if enabled else "false"
     env["LEISURE_SEED_DEMO"] = "true" if enabled else "false"
     env["AUTH_PHONE_SECRET"] = fixture.FIXTURE_AUTH_KEY
-    args = ["java", "-Xms128m", "-Xmx640m", "-XX:+UseSerialGC", "-jar", "backend/target/kunde-api-0.1.0-SNAPSHOT.jar", "--server.address=127.0.0.1", "--server.port=8081"]
+    args = ["java", "-Xms128m", "-Xmx640m", "-XX:+UseSerialGC", "-jar", "backend/build/libs/kunde-api-0.1.0-SNAPSHOT.jar", "--server.address=127.0.0.1", "--server.port=8081"]
     log_path = Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "leisure-backend.log"
     offset = log_path.stat().st_size if log_path.exists() else 0
     with log_path.open("ab") as log:

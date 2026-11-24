@@ -21,8 +21,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-          cache: maven
-          cache-dependency-path: backend/pom.xml
+          cache: gradle
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
         with:
           flutter-version: '3.47.9'
@@ -32,8 +31,7 @@ jobs:
         run: |
           mkdir -p reports
           cd backend
-          mvn -B -ntp org.apache.maven.plugins:maven-dependency-plugin:3.8.1:tree -DoutputType=json -DoutputFile=../reports/maven.json
-          mvn -B -ntp org.apache.maven.plugins:maven-help-plugin:3.5.1:effective-pom -Doutput=../reports/effective-pom.xml
+          ./gradlew --no-daemon -q dependencyTreeJson -PtreeOutput=../reports/maven.json
           cd ../mobile
           flutter pub get --enforce-lockfile
           flutter pub deps --json > ../reports/pub.json
@@ -42,7 +40,7 @@ jobs:
           set +e
           python3 scripts/ci/osv_audit.py --maven reports/maven.json --pub reports/pub.json --python-requirements scripts/ci/native-e2e-requirements.txt --output reports/dependencies-osv.json
           dependencies_code=$?
-          python3 scripts/ci/osv_audit.py --effective reports/effective-pom.xml --settings mobile/android/settings.gradle.kts --output reports/build-roots-osv.json
+          python3 scripts/ci/osv_audit.py --gradle-catalog backend/gradle/libs.versions.toml --settings mobile/android/settings.gradle.kts --output reports/build-roots-osv.json
           roots_code=$?
           printf '{"dependencies":%s,"buildRoots":%s}\n' "$dependencies_code" "$roots_code" > reports/osv-exit-codes.json
           if [ "$dependencies_code" -eq 2 ] || [ "$roots_code" -eq 2 ]; then exit 2; fi

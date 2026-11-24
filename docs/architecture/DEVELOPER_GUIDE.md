@@ -8,4 +8,4 @@
 
 **Нужны данные чужого домена.** Не SQL и не импорт внутренностей: контракт владельца (пример — `platform.partner.PartnerDirectory`, ADR-021). Новая связь без записи в baseline роняет `ArchitectureBoundariesTest`.
 
-**Проверки перед PR.** `cd backend && mvn test -Dtest='ArchitectureBoundariesTest,PlacementRegistryTest'` (после перехода — эквивалентная Gradle-задача); для Flutter — `flutter analyze` и тесты затронутой фичи.
+**Проверки перед PR.** `cd backend && ./gradlew test --tests 'kz.kunde.architecture.*'`; для Flutter — `flutter analyze` и тесты затронутой фичи.

@@ -4,7 +4,7 @@ Spring Boot 4.0.9 / Java 21 modular-monolith foundation. Current routes and acce
 
 ## Local run
 
-Requires Java 21, Maven 3.9+ and PostgreSQL 16. Set `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`; then run `mvn spring-boot:run`. Flyway applies a schema-only migration. For PostgreSQL and the backend container, use root-level `docker compose up --build` after creating the ignored root `.env` as described in `docs/engineering-foundation/local-development.md`.
+Requires Java 21 and PostgreSQL 16 (Gradle is fetched by the wrapper). Set `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`; then run `./gradlew bootRun`. Flyway applies a schema-only migration. For PostgreSQL and the backend container, use root-level `docker compose up --build` after creating the ignored root `.env` as described in `docs/engineering-foundation/local-development.md`.
 
 ## Security behavior
 
@@ -35,7 +35,7 @@ JSON envelope. CORS and empty health probes retain their behavior. This bounds
 the current synchronous JSON API; upload/form/nonblocking endpoints and ingress
 upload/idle timeouts require separate review before enabling those capabilities.
 
-Run `mvn verify`. Local database is required for full application startup; unit tests do not need vendor credentials.
+Run `./gradlew build` (tests, Boot jar in `build/libs/`). Local database is required for full application startup; unit tests do not need vendor credentials.
 
 ## Consumer Identity and Profile
 

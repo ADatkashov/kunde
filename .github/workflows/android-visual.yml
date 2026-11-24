@@ -74,8 +74,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-          cache: maven
-          cache-dependency-path: backend/pom.xml
+          cache: gradle
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
         with:
           flutter-version: '3.47.9'
@@ -83,7 +82,7 @@ jobs:
           cache: false
       - name: Package isolated visual backend
         working-directory: backend
-        run: mvn -B -ntp -DskipTests package
+        run: ./gradlew --no-daemon -q bootJar
       - name: Build before and after x86_64 debug APKs
         run: |
           BASE_SHA="${BASE_SHA:-$(git merge-base origin/main HEAD)}"
