@@ -6,8 +6,6 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:kunde_localization/kunde_localizations.dart';
 import 'package:kunde_ui/beauty_theme.dart';
-import 'package:kunde_mobile/features/beauty/presentation/beauty_admin_screen.dart';
-import 'package:kunde_mobile/features/beauty/presentation/beauty_executor_screen.dart';
 import 'package:kunde_mobile/features/beauty/presentation/beauty_partner_screen.dart';
 import 'package:kunde_auth/auth_repository.dart';
 
@@ -238,71 +236,5 @@ void main() {
     await tester.tap(find.text('Сотрудники'));
     await tester.pumpAndSettle();
     expect(find.text('DEMO-ALIYA'), findsOneWidget);
-  });
-
-  testWidgets(
-      'a master links with an invite code, goes offline and starts a visit',
-      (tester) async {
-    final server = _Server();
-    final auth = await _auth(server);
-    await _show(tester, BeautyExecutorScreen(auth: auth));
-
-    expect(find.text('Подключение к салону'), findsOneWidget);
-    await tester.enterText(find.byType(TextField), 'WRONG-CODE');
-    await tester.tap(find.text('Подключиться'));
-    await tester.pumpAndSettle();
-    expect(find.text('Код неверный или уже использован.'), findsOneWidget);
-
-    await tester.enterText(find.byType(TextField), 'DEMO-ALIYA');
-    await tester.tap(find.text('Подключиться'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('KUNDE Executor'), findsOneWidget);
-    expect(find.text('Онлайн'), findsOneWidget);
-    expect(find.text('3 записей'), findsOneWidget);
-    expect(find.text('Окрашивание волос'), findsOneWidget);
-    expect(find.text('Клиент: Айгерим Т.'), findsOneWidget);
-    expect(find.text('Следующие записи'), findsOneWidget);
-    expect(find.text('Маникюр'), findsOneWidget);
-
-    await tester.tap(find.byType(Switch));
-    await tester.pumpAndSettle();
-    expect(server.online, isFalse);
-    expect(find.textContaining('Вы не в сети'), findsOneWidget);
-
-    await tester.tap(find.text('Начать приём'));
-    await tester.pumpAndSettle();
-    expect(
-        server.calls, contains('POST executor/beauty/appointments/a1/start'));
-    expect(find.text('Завершить приём'), findsOneWidget);
-
-    await tester.tap(find.text('Доход'));
-    await tester.pumpAndSettle();
-    expect(find.text('90 000 ₸'), findsOneWidget);
-    expect(find.textContaining('Выручка салона здесь не показывается'),
-        findsOneWidget);
-  });
-
-  testWidgets('admin analytics show KPI, chart legend and recent bookings',
-      (tester) async {
-    final auth = await _auth(_Server());
-    await _show(tester, BeautyAdminScreen(auth: auth));
-
-    expect(find.textContaining('Аналитика'), findsWidgets);
-    expect(find.text('Салоны'), findsOneWidget);
-    expect(find.text('48'), findsOneWidget);
-    expect(find.text('+22%'), findsOneWidget);
-    expect(find.text('612 400 ₸'), findsOneWidget);
-    expect(find.text('Волосы'), findsOneWidget);
-    expect(find.text('62%'), findsOneWidget);
-    expect(find.textContaining('KND-772431'), findsOneWidget);
-    expect(find.text('Завершена'), findsOneWidget);
-  });
-
-  testWidgets('admin analytics render in English', (tester) async {
-    final auth = await _auth(_Server());
-    await _show(tester, BeautyAdminScreen(auth: auth), language: 'en');
-    expect(find.text('Average check'), findsOneWidget);
-    expect(find.text('Hair'), findsOneWidget);
   });
 }

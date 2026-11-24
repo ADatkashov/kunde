@@ -75,6 +75,7 @@ jobs:
       KUNDE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       KUNDE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       KUNDE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      APP_DIR: ${{ inputs.admin && 'apps/admin' || inputs.executor && 'apps/executor' || 'mobile' }}
       KUNDE_ADMIN_BUILD: ${{ inputs.admin && 'true' || 'false' }}
       KUNDE_EXECUTOR_BUILD: ${{ inputs.executor && 'true' || 'false' }}
       APK_BASENAME: ${{ inputs.admin && 'KUNDE-admin-dev-release' || inputs.executor && 'KUNDE-executor-dev-release' || 'KUNDE-dev-release' }}
@@ -112,28 +113,25 @@ jobs:
           gradle-version: '9.3.1'
           cache-disabled: true
       - name: Analyze and test
-        working-directory: mobile
+        working-directory: ${{ env.APP_DIR }}
         run: |
           flutter pub get --enforce-lockfile
           flutter analyze
           flutter test
       - name: Build signed release APK (arm64)
-        working-directory: mobile
+        working-directory: ${{ env.APP_DIR }}
         run: |
           printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
           export KUNDE_KEYSTORE_PATH="$RUNNER_TEMP/release.jks"
-          target=lib/main.dart
-          if [ "$KUNDE_EXECUTOR_BUILD" = true ]; then target=lib/executor_main.dart; fi
-          if [ "$KUNDE_ADMIN_BUILD" = true ]; then target=lib/admin_rides_main.dart; fi
-          flutter build apk --release --target-platform android-arm64 --target "$target" \
+          flutter build apk --release --target-platform android-arm64 --target lib/main.dart \
             --dart-define=API_BASE_URL="$API_BASE_URL" \
             --dart-define=API_TIMEOUT_SECONDS=90 \
             --dart-define=PHONE_AUTH_ENABLED=true \
             --dart-define=DEV_OTP_HINT="$DEV_OTP_HINT" \
             --dart-define=PARTNER_FEATURES_ENABLED="$PARTNER_FEATURES" \
             --dart-define=PARTNER_APPLY_ENABLED="$PARTNER_APPLY"
-          mkdir -p ../dist
-          cp build/app/outputs/flutter-apk/app-release.apk ../dist/"$APK_BASENAME.apk"
+          mkdir -p "$GITHUB_WORKSPACE/dist"
+          cp build/app/outputs/flutter-apk/app-release.apk "$GITHUB_WORKSPACE/dist/$APK_BASENAME.apk"
           rm -f "$RUNNER_TEMP/release.jks"
       - name: Verify APK
         run: |

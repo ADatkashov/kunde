@@ -12,8 +12,8 @@
 
 `release-apk-on-merge.yml` определяет, что собирать, по изменённым файлам (`scripts/ci/release_targets.py`, покрыт тестами):
 
-- `mobile/**` — общий код Consumer/Executor/Admin → собираются все три; изменение только `executor_main.dart` / `admin_rides_main.dart` / `main.dart` → только этот клиент;
-- `partner_app/**` → Partner; `packages/kunde_design/**` и сами release-workflow → все четыре;
+- `mobile/**` → Consumer; `apps/executor/**` → Executor; `apps/admin/**` → Admin; `partner_app/**` → Partner (четыре независимых Flutter-проекта, у каждого свой `pubspec.yaml`, `android/`, application ID и Flutter CI: `flutter.yml`, `executor-flutter.yml`, `admin-flutter.yml`, `partner-flutter.yml`);
+- `packages/kunde_operator/**` → Executor и Admin; любой другой общий пакет `packages/**` и сами release-workflow → все четыре;
 - backend/docs → APK не собирается.
 
 Каждый APK собирает существующий `android-release.yml` (Partner — `partner-release.yml`): подписанный Release (не Debug), секреты

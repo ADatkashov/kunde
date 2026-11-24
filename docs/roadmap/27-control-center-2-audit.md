@@ -9,7 +9,7 @@
 | Область | Статус | Что найдено и чего не хватает |
 | --- | --- | --- |
 | Identity | EXISTS | Общий телефонный OTP, JWT `kunde.admin`, активная учётная запись, повторная проверка конкретного незакрытого гранта в БД на запрос. Источники: ADR-018, AdminAccessPolicy, AdminGrants. |
-| Flutter Admin | REUSABLE | `mobile/lib/admin_rides_main.dart`, общий AuthRepository, светлая и тёмная KundeTheme, RU/KK/EN, страницы Rides, Delivery, Auto. Нужны адаптивная навигация и серверный перечень возможностей. |
+| Flutter Admin | REUSABLE | `apps/admin/lib/main.dart`, общий AuthRepository, светлая и тёмная KundeTheme, RU/KK/EN, страницы Rides, Delivery, Auto. Нужны адаптивная навигация и серверный перечень возможностей. |
 | Сотрудники, роли и scope | PARTIAL | V12 и AdminGrants поддерживают отдельные плоские разрешения. Требуются роли, срок действия, область продукта, региона, организации и ресурса, управляемый жизненный цикл и отзыв сессий. |
 | Rides | PARTIAL | RideAdminController и RideOperationsController дают очереди водителей, автопарков, поездок и жалоб. Требуются агрегаты, обзоры и рабочее место по полномочиям. |
 | Delivery | PARTIAL | DeliveryAdminController и DeliveryAdminScreen дают проверку курьеров, отправления, возврат доставки, аудит и жалобы. Требуются метрики, SLA и общая очередь. |

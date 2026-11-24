@@ -7,3 +7,19 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+flutter:
+  assets:
+    - assets/fonts/LICENSE.txt
+  fonts:
+    - family: KundeSans
+      fonts:
+        - asset: assets/fonts/NotoSans-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/NotoSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/NotoSans-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/NotoSans-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/NotoSans-Black.ttf
+          weight: 900

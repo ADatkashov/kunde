@@ -5,7 +5,7 @@ import { stat } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root = fileURLToPath(new URL('../../mobile/build/web', import.meta.url));
+const root = fileURLToPath(new URL('../../apps/admin/build/web', import.meta.url));
 const api = new URL('https://kunde-backend-ty81.onrender.com');
 const apiMethods = {
   GET: /^\/api\/v1\/(capabilities|me|admin\/(employees|me\/capabilities|auto\/(bookings|categories|complaints|jobs|specialists|venues)|(rides|deliveries)(\/[^/?]+)*))$/,

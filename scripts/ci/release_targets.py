@@ -5,10 +5,9 @@ Reads changed file paths (one per line) from stdin and prints a JSON object such
 {"consumer": true, "executor": true, "admin": true, "partner": false}.
 
 Rules (conservative: when unsure, build):
-  * packages/ (shared Flutter packages), the release workflows and this script affect every app;
-  * partner_app/** affects only Partner;
-  * mobile/** is one shared Flutter codebase for Consumer, Executor and Admin, so a shared change builds all three;
-    a change confined to one entry point (executor_main.dart / admin_rides_main.dart / main.dart) builds only that app;
+  * mobile/ is Consumer, apps/executor/ Executor, apps/admin/ Admin, partner_app/ Partner (independent Flutter projects);
+  * packages/kunde_operator is used only by Executor and Admin; any other shared package, the release workflows and
+    this script affect every app;
   * backend, docs and other files build nothing.
 """
 import json
@@ -22,11 +21,13 @@ ALL_PREFIXES = (
     ".github/workflows/release-apk-on-merge.yml",
     "scripts/ci/release_targets.py",
 )
-ENTRYPOINTS = {
-    "mobile/lib/executor_main.dart": "executor",
-    "mobile/lib/admin_rides_main.dart": "admin",
-    "mobile/lib/main.dart": "consumer",
-}
+APP_PREFIXES = (
+    ("mobile/", ("consumer",)),
+    ("apps/executor/", ("executor",)),
+    ("apps/admin/", ("admin",)),
+    ("partner_app/", ("partner",)),
+    ("packages/kunde_operator/", ("executor", "admin")),
+)
 
 
 def targets(paths):
@@ -34,15 +35,12 @@ def targets(paths):
     for path in (p.strip() for p in paths):
         if not path:
             continue
-        if path.startswith(ALL_PREFIXES):
-            return dict.fromkeys(APPS, True)
-        if path.startswith("partner_app/"):
-            out["partner"] = True
-        elif path in ENTRYPOINTS:
-            out[ENTRYPOINTS[path]] = True
-        elif path.startswith("mobile/"):
-            for app in ("consumer", "executor", "admin"):
+        specific = next((apps for prefix, apps in APP_PREFIXES if path.startswith(prefix)), None)
+        if specific is not None:
+            for app in specific:
                 out[app] = True
+        elif path.startswith(ALL_PREFIXES):
+            return dict.fromkeys(APPS, True)
     return out
 
 

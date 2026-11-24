@@ -85,12 +85,12 @@ jobs:
           mkdir -p "$RUNNER_TEMP/education-role-apk"
           fixture_url=http://localhost:8081/api/v1/
           build_role() {
-            flutter build apk --debug --target-platform android-x64 --target "$2" \
-              --dart-define=API_BASE_URL="$fixture_url" --dart-define=PHONE_AUTH_ENABLED=true
-            cp build/app/outputs/flutter-apk/app-debug.apk "$RUNNER_TEMP/education-role-apk/$1.apk"
+            (cd "../apps/$1" && flutter pub get --enforce-lockfile && flutter build apk --debug --target-platform android-x64 \
+              --dart-define=API_BASE_URL="$fixture_url" --dart-define=PHONE_AUTH_ENABLED=true \
+              && cp build/app/outputs/flutter-apk/app-debug.apk "$RUNNER_TEMP/education-role-apk/$1.apk")
           }
-          KUNDE_ADMIN_BUILD=true build_role admin lib/admin_rides_main.dart
-          KUNDE_EXECUTOR_BUILD=true build_role executor lib/executor_main.dart
+          build_role admin
+          build_role executor
       - name: Build local-fixture debug Partner APK
         working-directory: partner_app
         run: |
