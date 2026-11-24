@@ -30,3 +30,4 @@ crash.log
 backend.hcl
 *.tfplan
 partner_app/pubspec.lock
+backend/.gradle/

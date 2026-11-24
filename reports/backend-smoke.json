@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "health": 200,
+  "protectedWithoutIssuer": 503,
+  "openapi": 200,
+  "bodyBoundary": 200,
+  "bodyOversize": 413,
+  "chunkedOversize": 413,
+  "scope": "packaged JAR, synthetic DB, no native/provider E2E"
+}

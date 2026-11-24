@@ -70,3 +70,7 @@
 2. Подтвердить выделение `beauty` и `homeservices` из `booking` (меняет FQCN и владельцев таблиц `marketplace.beauty_`, `marketplace.home_service`; API и данные не меняются).
 3. Подтвердить, что `fulfillment/order/notification/analytics` переезжают в `platform`.
 4. Подтвердить, что API-маршруты остаются прежними (изменение публичных API в этом плане не требуется; переименование маршрутов только ради единообразия не предлагается).
+
+## Статус реализации
+- **PR C (Gradle foundation)** — `backend/build.gradle.kts`, `settings.gradle.kts`, version catalog `gradle/libs.versions.toml`, wrapper 8.14.3 с `distributionSha256Sum` и хэшем `gradle-wrapper.jar`; workflow `backend-gradle.yml` идёт рядом с Maven. Локальная проверка эквивалентности (PostgreSQL 16): `mvn verify` и `./gradlew build` — по 506 тестов, 0 ошибок, 2 пропущено; набор `BOOT-INF/lib` (80 jar) и число классов (842) совпадают; packaged-JAR smoke на Gradle-jar — PASS. Maven остаётся источником истины для CI и Docker до PR E.
+- Ограничение окружения: Maven Central через прокси отвечает 429 при параллельной загрузке; локально использовался `mavenLocal()` через init-скрипт вне репозитория. В CI (GitHub-hosted) ограничения нет.
