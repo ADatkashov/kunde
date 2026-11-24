@@ -1,146 +1,103 @@
 # Microservice readiness (аудит фактического кода)
 
-Дата аудита: 2026-11-23, `main` @ `614033a`. Основание — исходный код `backend/` (175 Java-файлов, 62 миграции Flyway, 133 таблицы), а не ADR.
-Решение остаётся прежним: **единый Spring Boot backend + PostgreSQL** ([ADR-001](adr/ADR-001-backend-architecture-style.md), [29-service-extraction-roadmap](29-service-extraction-roadmap.md)). Этот документ ничего не переводит на микросервисы, а фиксирует, где границы уже чистые, где нет, и как не дать связности вырасти.
+Дата аудита: 2026-11-24, `main` @ `cab484f` (после ADR-023/ADR-024). Основание — исходный код `backend/` (Gradle: `platform`, `app`, 17 модулей `services/*`; 68 миграций Flyway, 142 таблицы), а не документация. Заменяет аудит от 2026-11-23 (`@ 614033a`): часть его нарушений (V1–V4, V9 частично, V12) закрыта, список ниже актуален.
 
-Как воспроизвести цифры: `cd backend && ./gradlew test --tests '*ArchitectureBoundariesTest'`; полный список связей — [`cross-module-baseline.txt`](../../backend/src/test/resources/architecture/cross-module-baseline.txt); владельцы таблиц — [`table-owners.txt`](../../backend/src/test/resources/architecture/table-owners.txt).
+Решение прежнее: **единый Spring Boot backend + PostgreSQL** ([ADR-001](adr/ADR-001-backend-architecture-style.md), [Конституция §3.2](CONSTITUTION.md)). Документ ничего не переводит на микросервисы: он фиксирует, где границы уже честные, где нет, и в каком порядке и по какому критерию их можно будет применить ([ADR-025](adr/ADR-025-gradual-service-extraction.md)).
 
-См. также: [database-sharding-readiness](database-sharding-readiness.md) — размещение данных по городам.
+Связанные документы (не дублируются здесь): [domain-registry](domain-registry.md) · [domain-dependency-matrix](domain-dependency-matrix.md) · [database-ownership-matrix](database-ownership-matrix.md) · [domain-readiness-scores](domain-readiness-scores.md) · [event-catalog](event-catalog.md) · [fitness-functions](fitness-functions.md) · [29 roadmap](29-service-extraction-roadmap.md) · [30 риски](30-architecture-risks.md) · [диаграмма компонентов](diagrams/14-domain-components.md) · [database-sharding-readiness](database-sharding-readiness.md).
 
-## 1. Текущая фактическая архитектура
+Воспроизвести цифры: `cd backend && ./gradlew :app:test --tests 'kz.kunde.architecture.*'`; таблицы — `python3 scripts/dev/architecture_matrix.py {matrix|ownership|readiness}`.
 
-- Один деплой `kunde-api`, плоские пакеты `kz.kunde.<module>` (подпакетов нет): `auth, identity, partner, admin, catalog, platform, config, auto, booking, health, food, groceries, delivery, rides, maps, leisure, events, education, support, fulfillment, order, notification, analytics`.
-- Одна БД PostgreSQL, шесть схем (`identity, profile, marketplace, transactions, payments, support`; плюс `serviceability`). **Схемы разделены по типу данных, а не по домену**: таблицы food, rides, leisure лежат в одних и тех же `marketplace`/`transactions`. Владелец таблицы определяется только префиксом имени (реестр `table-owners.txt`).
-- Доступ к данным — `JdbcTemplate` с SQL-строками прямо в контроллерах и сервисах; ORM и репозиторного слоя нет. Поэтому «чужая таблица» = «чужой SQL».
-- Событий и outbox **нет**: `notification` и `analytics` — контракты без хранения и отправки (`Delivery`, `EventCatalog`); единственный фоновый код — два `@Scheduled` в `delivery/DeliveryMaintenance`. Модули общаются прямыми вызовами Java и общими таблицами. ~280 `@Transactional`; транзакции открывает владелец данных, но вызовы между модулями (например `groceries → FoodOrderService`) выполняются в одном процессе и одной БД-транзакции, поэтому при выделении станут распределёнными — это учтено в п.8.
-- Feature flags: свойства окружения (`FOOD_ENABLED`, `RIDES_*`, `DELIVERY_*`, `MAPS_ENABLED` …) плюс runtime-переключатели `identity.feature_toggles` (`platform/FeatureToggles`) для девяти продуктов.
-- Maps — уже **отдельный сервис** (репозиторий `kunde-maps`, ADR-020): в backend только HTTP-адаптер `maps/KundeMapsRideRouting` к порту `rides/RideRouting`.
+## 1. Фактическое состояние
 
-## 2. Граф зависимостей (импорты между модулями, без `platform`/`identity`/`config`)
+- Один деплой `kunde-api` (`:app` собирает `platform` + 17 библиотечных модулей). Зависимости Gradle: `platform` не зависит ни от кого; `services/*` → `platform` (+ `identity`, `partners`, `booking`, `food`, `leisure` по записанным рёбрам); циклов между Gradle-модулями нет (тест `gradleModuleGraphIsLayeredAndAcyclic`).
+- Одна БД, 142 таблицы, 18 владельцев ([матрица](database-ownership-matrix.md)). Доступ — `JdbcTemplate` с SQL в контроллерах и сервисах, ORM и репозиториев нет; поэтому «чужая таблица» = «чужой SQL».
+- Связи между пакетами: 42 импорта и 102 SQL в baseline (144), плюс 36 намеренных рёбер «вертикаль → Booking». Из них 20 рёбер лежат на циклах и образуют **один узел из 10 пакетов** ([матрица зависимостей](domain-dependency-matrix.md)).
+- 123 внешних ключа между таблицами **разных владельцев** (79 из них на `identity.users`): физическое разделение БД невозможно без их замены.
+- События: инфраструктура есть ([ADR-022](adr/ADR-022-transactional-outbox.md): `platform.outbox_events/inbox_events`, `OutboxWriter` с `MANDATORY`, `OutboxRelay` с `SKIP LOCKED`, порядок по агрегату, DLQ-статус `DEAD`, версия схемы, метрики `kunde.outbox.*`), relay выключен, **ни один домен не публикует события**; средства разбора мёртвых писем и retention не построены.
+- Идемпотентность HTTP — по ключу в таблицах 8 доменов (auto, booking, delivery, education, food, leisure, rides, support).
+- Кэширования нет (`@Cacheable`/Redis отсутствуют) — и это правильно на текущей нагрузке.
+- Наблюдаемость: Actuator, `X-Correlation-ID` → MDC (`RequestCorrelationFilter`), метрики outbox. Распределённой трассировки нет; корреляция не передаётся в исходящие HTTP (только `maps`).
+- Единственный внешний сервис — KUNDE Maps (отдельный репозиторий, порт `RideRouting`, ADR-020).
 
-```text
-admin ──► partner(11) food(2) leisure(2) delivery(1)
-auto ──► booking(3)         health ──► booking, admin, partner
-booking ──► partner(2)      groceries ──► food(1)
-delivery ◄──► rides         (delivery→rides 8, rides→delivery 1)  ← цикл
-delivery ──► admin, partner   rides ──► admin(2), partner
-education ──► admin(2), partner(2)   food ──► partner(2)
-events ──► leisure(2)       leisure ──► partner(4), auth(1)
-maps ──► rides(3)  (адаптер порта RideRouting; направление верное)
-support ──► delivery, rides
-platform ──► auto, booking, delivery, education, events, groceries, health, leisure, rides (9)  ← инверсия
-```
+## 2. Паспорта доменов
 
-Числа — количество импортирующих файлов/типов в baseline. `platform` и `identity` тест считает общим ядром (все могут импортировать), поэтому обратное направление `platform → домены` отслеживается отдельным правилом.
+Колонки: **Назначение · Владелец данных (таблицы) · Публичный контракт · Входящие / исходящие зависимости · Взаимодействия · Выделяемость**. Количества — из матриц; подробные оценки и блокеры — [domain-readiness-scores](domain-readiness-scores.md).
 
-## 3. Нарушения границ (доказанные, с местом и минимальным исправлением)
+| Домен (пакет → модуль) | Назначение | Данные | Публичный контракт | Входящие / исходящие | Sync / async | Выделяемость |
+|---|---|---|---|---|---|---|
+| identity, auth (`services/identity`) | Профиль, адреса, согласия; вход по телефону, JWT | 15 (`identity.users`, `profile.*`, `serviceability.*`, `auth_*`) | HTTP `/me`, `/auth`; ядро для всех | Входящих: все (79 FK); исходящие: `auth → partner_staff` (роль в токене) | sync | Последним; остаётся в монолите |
+| partners, catalog (`services/partners`) | Организации, персонал, каталог | 9 | `PartnerDirectory` (platform, ADR-021), `PartnerAccessPolicy` | Входящих 18 SQL; исходящие — демо-сид (`food`, `booking`, `auth`) | sync | Ядро; сначала убрать обратные рёбра |
+| admin (`services/admin`) | Единое окно оператора, права (`identity.admin_*`) | 4 | `AdminGrants` (platform.authz) | Исходящие: 44 SQL + 9 импортов в 8 доменов | sync | Не выделяется; см. §4 |
+| support | Обращения, события обращений | 2 | `SupportCaseDirectory`, `CaseSubjectOwnership` (platform) | Исходящих нет; FK на `deliveries/rides` | sync | Хорошая |
+| food (`services/food`) | Еда: рестораны, заказы, самовывоз, курьер | 16 | HTTP `/food`, `FoodPromotionService`, `FoodOrderService` | Входящих 26 SQL (groceries 11, admin 14); исходящие: `grocery_categories`, `delivery_couriers` | sync | С Groceries как «food family» |
+| groceries | Продукты на таблицах Food | 6 | HTTP `/groceries` | Исходящих 11 SQL в `food_*` | sync | Только с food |
+| delivery | Доставка: курьеры, диспетчеризация | 9 | `ActiveWork`, HTTP `/deliveries` | `delivery ↔ rides` по SQL | sync + `@Scheduled` | В «mobility» с rides |
+| rides | Такси: заказы, водители, парк | 10 | `RideRouting` (порт), `ActiveWork` | Исходящие: `deliveries`, партнёры | sync | С delivery (пока цикл) |
+| maps (`services/maps`) | Адаптер к внешнему KUNDE Maps | 0 | `RideRouting`-реализация | Исходящих HTTP 1 | sync (HTTP) | **Выделен** |
+| booking (`services/booking`) | Движок записи (слоты, брони) | 8 | `BookingCategory`, `BookingSlots`, `BookingService`, `BookingPayments` | Входящих 30 SQL; FK 19 внутрь; исходящие: `auto_*`, `health_categories` | sync | Семьёй (booking+beauty+homeservices+health+auto) |
+| beauty, homeservices, health, auto | Вертикали Booking | 6 / 3 / 3 / 14 | HTTP по продуктам | `→ booking` (намеренно); `booking → auto/health` (обратно) | sync | Только с движком |
+| leisure, events | Досуг, билеты; события поверх досуга | 19 / 0 | HTTP | `admin → leisure` 11 SQL; `leisure → auth/partner` | sync | Хорошая, после переноса админ-SQL |
+| education | Курсы, записи, сертификаты | 14 | HTTP `/education` | Входящих 0; исходящие — ядро | sync | **Лучшая** (первый кандидат) |
+| platform (`backend/platform`) | Техническое ядро: ошибки, rate limit, correlation, events, geo, placement, feature toggles | 4 | всё перечисленное | Бизнес-импортов нет | — | Остаётся |
 
-Исчерпывающий список (файл → цель) — в baseline; ниже — значимые группы. Номера строк не фиксируем (они плавают), ищутся по имени файла и таблице.
+## 3. Значимые нарушения (состояние на 2026-11-24)
 
-| # | Нарушение | Где | Почему плохо | Минимальное исправление | Статус |
-|---|---|---|---|---|---|
-| V1 | `platform` импортирует настройки 9 доменов | `platform/FeatureToggles.java` (импорты `*Properties/*Settings/*Flags`) | Ядро зависит от всех продуктов: любой домен нельзя вынести без `platform` + остальных восьми | Интерфейс `FeatureGate { Feature feature(); boolean allowedByEnvironment(); }` в `platform`, каждый домен реализует его своим bean-ом; `FeatureToggles` получает `List<FeatureGate>`. Публичные методы и JSON не меняются | **Выполнено частично** (PR V1): `platform.FeatureGate`, 8 доменов реализуют его сами, `FeatureToggles` собирает `List<FeatureGate>` и падает при старте, если у продукта нет gate или он задвоен. **Выполнено** (PR B0): `FeatureGate.withEnabled/capabilities`, `FeatureToggles.live(...)`/`capabilities(...)`; `rides()`/`delivery()` из ядра убраны (`RidesFlags.live(toggles)`, `DeliveryProperties.live(toggles)`), импортов `platform → домен` больше нет, правило в `ArchitectureBoundariesTest` без исключений |
-| V2 | Цикл `delivery ↔ rides`; Delivery берёт DTO у контроллера Rides | `delivery/DeliveryController, DeliveryExecutorController, DeliveryService, DeliveryCouriers, DeliveryTracking` → `rides.RideRoutingController.Coordinates`; `DeliveryDispatch` → `rides.RideMatching`; обратно `rides/RideDispatchService` → `delivery.DeliveryDispatch.ACTIVE_DELIVERY_STATES` и SQL к `transactions.deliveries`; `delivery/DeliveryDispatch` SQL к `transactions.rides` | Оба модуля нельзя разнести: каждый компилируется только вместе с другим; типы живут во внутреннем DTO контроллера | Вынести `Coordinates`/`Point` и порт `RideRouting` в нейтральный пакет (`platform.geo`), «занятость водителя» — через маленький интерфейс `ExecutorBusyness` в `platform`, реализуемый обоими модулями | **Предложение** (меняет FQCN, затрагивает Maps-адаптер и тесты; без изменения JSON) <br>**Частично выполнено** (PR V2a): `Coordinates` и `Point` перенесены в `platform.geo`, −6 импортов (5 `delivery → RideRoutingController`, `maps → RideMatching`). **Выполнено** (PR V2b): `RideRouting`→`platform.geo.RoutingProvider`, `SyntheticRouting`, `Geo.distanceMeters`, `platform.dispatch.ActiveWork`; импортов между `delivery`/`rides`/`maps` нет. Остаётся только SQL взаимного исключения водитель↔курьер (`transactions.rides`/`deliveries`), заменить сервисом доступности исполнителей |
-| V3 | Прямые SQL-записи в `support.cases`/`case_events` из delivery и rides | `delivery/DeliveryOperations`, `rides/RideOperationsService` | Support — владелец таблиц, но два других домена пишут в них своим SQL | Интерфейс `SupportCases` (создать/добавить событие) в Support, домены вызывают его | **Выполнено** (PR V3): контракт `platform.support.SupportCaseDirectory` (list/find/resolve/events по субъекту RIDE/DELIVERY), адаптер `support.JdbcSupportCaseDirectory`; −4 SQL-связи. Авторизация осталась в доменах |
-| V4 | `support` вызывает сервисы `rides` и `delivery` | `support/SupportCaseService` → `RideRequestService`, `DeliveryService` | Support зависит от двух доменов, дальше цикл по V3 | Интерфейс `CaseSubject` (проверка владения заказом) на стороне доменов | **Выполнено** (PR V4): `platform.support.CaseSubjectOwnership`, адаптеры `rides.RideCaseSubject` и `delivery.DeliveryCaseSubject` вызывают прежние `get(owner, id)` (тот же 404); Support не импортирует домены, старт падает без проверки для любого `Subject`. Цикл `support ↔ rides/delivery` закрыт |
-| V5 | `auto` работает напрямую с таблицами `booking` | `auto/AutoService, AutoPayments, AutoFeedbackService, AutoCatalogController` → `marketplace.booking_services/masters/venues`, `transactions.bookings/booking_events` (≈32 ссылки); обратное: `booking/BookingService` → `transactions.auto_payments`, `BookingPartnerService` → `auto_service_categories` | Auto по факту — вертикаль Booking на общих таблицах; отдельно их не разделить | Принять как один сервис «booking+auto+health» (см. п.5); убрать только обратные ссылки `booking → auto/health` через интерфейс категорий | Принято как ограничение. **Выполнено** (PR B): обратные ссылки `booking → beauty` убраны через `BookingCategory` (Beauty и Home Services — отдельные пакеты), рёбра `auto/health/beauty/homeservices → booking` записаны в `allowed-module-edges.txt` |
-| V6 | `health` — тонкая вертикаль Booking | `health/HealthAdminController, HealthDemoSeeder` → `booking_venues`, `bookings`; `booking/HealthFavoritesController`, `BookingCatalogController` → `health_categories/health_favorites` | То же | То же: один сервис | Принято |
-| V7 | `groceries` — вертикаль Food на чужих таблицах | `groceries/GroceriesAccountController, GroceriesCatalogController` (≈31 ссылка на `food_*`), `GroceriesAccountController` → `food.FoodOrderService` | Нет собственного хранилища продуктов/заказов | Принять как часть сервиса Food | Принято |
-| V8 | `events` построен на `leisure` | `events/EventsCatalogController, SearchRouteController` → `LeisureCatalogService` | V56 разделил продукты, но код общий | Принять как один сервис «leisure+events» | Принято |
-| V9 | Организации партнёров читаются чужим SQL | `education`, `rides`, `leisure`, `food`, `catalog`, `auth` → `marketplace.partners / partner_staff` (≈20 ссылок) | `partner` — общее ядро B2B, но доступ не через контракт | Единый интерфейс `PartnerDirectory` (`staffRole(user, partner)`, `partnerName`) в `partner`; домены вместо SQL | **Частично выполнено** (PR V9a, [ADR-021](adr/ADR-021-partner-directory-contract.md)): `platform.partner.PartnerDirectory` + тест конкурентной смены статуса; Education (instructor-проверки) переведён, −1 SQL-связь. Остальные точки — отдельными PR |
-| V10 | Пользователи читаются чужим SQL | `delivery/DeliveryDispatch`, `rides/RideDispatchService, RideFleetService`, `education/*`, `partner/PartnerService` → `identity.users`, `profile.consumer_profiles` | Ядро идентичности — общее | Допустимо до выделения Identity; затем — `UserDirectory` | Принято (общее ядро) |
-| V11 | Admin читает и пишет данные 9 доменов своим SQL | `admin/Admin*Controller` (≈40 ссылок на `food_*`, `leisure_*`, `auto_*`, `booking_*`) и импорты сервисов доменов | Админ — единое окно, но не через контракты доменов | Админ-API каждого домена в самом домене (частично уже так: `HealthAdminController`, `RideAdminController`, `DeliveryAdminController`) | Тенденция верная, остальное — по мере выделения |
-| V12 | Общие DTO-типы в контроллере | `RideRoutingController.Coordinates`, `PartnerService.Role/PartnerView`, `AdminGrants` в `admin` используется 5 доменами | Пакет `admin` стал ядром прав | Вынести `AdminGrants` в `platform.authz` (переименование пакета, без изменения таблицы) | **Выполнено** (PR V12): `platform.authz.AdminGrants`, −6 междоменных импортов, таблицы и поведение не менялись |
+| # | Нарушение | Где | Статус | Следующий шаг |
+|---|---|---|---|---|
+| V1 | `platform` импортировал настройки доменов | — | **Закрыто** (PR #260) | — |
+| V2 | Цикл `delivery ↔ rides` по импортам | — | **Закрыто по импортам** (#253); остаётся по SQL (`delivery → rides`, `rides → deliveries`) | порт «доступность исполнителя» в `platform.dispatch` |
+| V3/V4 | Support пишет/читает чужие домены | — | **Закрыто** (#254, #255) | убрать FK `support → deliveries/rides` |
+| V5 | `booking → auto/health` по SQL | `BookingService`, `BookingCatalogController` | Открыто (4 SQL) | расширить `BookingCategory` данными категории |
+| V7 | `groceries` целиком на `food_*` | `GroceriesAccountController`, `GroceriesCatalogController` | Принято: одна «food family»; открыто для продуктовых данных | собственные таблицы Groceries — только по решению владельца |
+| V9 | Партнёры читаются чужим SQL | education, rides, leisure, food, auth | Частично (`PartnerDirectory`, #256); остаток — 18 SQL | перевести потребителей на `PartnerDirectory` по одному домену за PR |
+| V11 | Admin читает/пишет данные 8 доменов | `Admin*Controller` | **Открыто, главная проблема** | §4 |
+| **V13** | **Демо-сиды — SQL в чужие таблицы из продуктовых модулей** | `PartnerOpsDemoSeeder`, `LeisureDemoSeeder` | **Новое, открыто** | перенос сидов в `backend/app` (разрывает узел циклов вокруг `partner`); чинить отдельным PR с интеграционными тестами (нужен PostgreSQL) |
+| **V14** | **123 FK между владельцами** | миграции V1–V68 | **Новое, зафиксировано** (`noNewCrossOwnerForeignKeys`) | политика: новые таблицы не ссылаются FK на чужую таблицу, кроме `identity.users`/`partners`/`cities` (ядро) |
+| **V15** | **Нет корреляции и трассировки между модулями/сервисами** | `RequestCorrelationFilter` кладёт id в MDC, исходящие HTTP его не передают; контекст outbox — `correlation_id` в envelope | Открыто | §6, шаг 3 |
+| V16 | `OutboxRelay` без инструмента разбора DLQ и retention | `platform.events` | Открыто (описано в ADR-022) | операторская команда повторной отправки + job очистки до первого продюсера |
 
-Что **не** нарушено (проверено): Flyway-миграции создают таблицы только в известных схемах; межсхемные FK — это ссылки на `identity.users`/`marketplace.partners` и внутри одной вертикали (проверяет существующий `DomainSchemaOwnershipIntegrationTest`); истории не каскадируются; внешних вызовов между доменами по HTTP нет; публичные API не зависят от внутренних пакетов (путь `/api/v1/...` определяют контроллеры, `OpenApiController` — отдельный контракт).
+## 4. Admin: как не связать все домены
 
-## 4. Владельцы данных
+Сейчас Admin — единственный модуль с исходящими зависимостями почти от всех бизнес-доменов: `admin → food` (14 SQL + 2 импорта), `leisure` (11 + 3), `auto` (4 + 3), `booking` (4), `beauty` (2), `homeservices` (2), `groceries` (1), `delivery` (1 импорт), плюс ядро. Это 44 из 102 SQL-связей baseline. При выделении любого из этих доменов Admin сломался бы по SQL, а не по контракту.
 
-Реестр префиксов → модуль: `backend/src/test/resources/architecture/table-owners.txt` (тест падает на таблице без владельца). Кратко:
+Рекомендация (в духе «без моды»), по возрастанию стоимости:
 
-| Модуль | Таблицы |
-|---|---|
-| identity | `identity.users`, `external_bindings`, `account_events`, `profile.*`, `serviceability.*` |
-| auth | `identity.otp_challenges`, `auth_sessions`, `refresh_tokens`, `phone_identities`, `auth_events` |
-| platform / admin | `identity.feature_toggle*` / `identity.admin_*` (грант-модель) |
-| partner, catalog | `marketplace.partners, partner_staff, partner_*_events` / `offerings, categories` |
-| food (+groceries) | `food_*`, `grocery_*`, `transactions.food_*` |
-| booking (+health, auto) | `booking_*`, `home_service_*`, `bookings`; `health_*`; `auto_*`, `customer_vehicles` |
-| rides / delivery | `ride_*`, `rides` / `deliver*` |
-| leisure (+events) | `leisure_*` |
-| education | `education_*` |
-| support | `support.cases`, `case_events` |
+1. **Админ-контракт внутри домена (делать сейчас, малыми PR).** Каждый домен публикует в своём модуле узкий интерфейс `<Domain>AdminApi` (`list`, `moderate`, `complaints`, `summary`) со своими DTO; SQL переезжает из `Admin*Controller` в домен; контроллер Admin остаётся тонкой маршрутизацией и проверкой `AdminGrants`. Направление зависимости `admin → domain` остаётся (Конституция допускает), но по контракту, а не по таблицам; каждый перенос уменьшает baseline. Начать с `leisure` и `food` (25 из 44), HTTP-контракты не меняются.
+2. **Права остаются общими.** `AdminGrants` уже в `platform.authz`; новые домены не добавляют собственных таблиц прав в Admin.
+3. **Read model / CQRS — только там, где оправдано.** Сводки, сквозные дашборды и поиск по нескольким доменам (например, обзор оператора) — единственный случай, где проекция в `admin` из событий окупается: она убирает N синхронных запросов к N доменам. CRUD и модерация проекций **не** требуют. Проекции появятся не раньше, чем домены начнут публиковать события (§6, шаг 2), и только для конкретного экрана с измеренной проблемой.
+4. **При выделении домена** реализация `<Domain>AdminApi` подменяется удалённым адаптером без правки Admin.
 
-Замечание: схемы `payments` создана, но таблиц нет; платежи — DEV-заглушки внутри доменов (`auto_payments`, `leisure_payments`, `education_payment_events`), отдельного Payments-домена в коде **нет**.
+## 5. Сквозной аудит
 
-## 5. Рекомендуемые границы будущих сервисов
+| Область | Факт (проверено) | Риск | Действие |
+|---|---|---|---|
+| Транзакции | `@Transactional` в 52 классах 14 модулей; транзакция одного HTTP-запроса может охватывать SQL нескольких доменов (например, `groceries → food_orders`) | При выделении граница транзакции превращается в сагу/согласованность в конечном счёте | `PartnerDirectory.lock…` уже документирует замену; для остальных — описывать при выделении (ADR-025) |
+| Domain events / outbox | Инфраструктура готова, продюсеров нет, relay выключен | Первый продюсер — финансовый поток, нужна отдельная проверка корректности (ADR-022) | Первый продюсер — нефинансовый (§6 / [event-catalog](event-catalog.md)) |
+| API-контракты | Маршруты — публичный контракт (Конституция §8); OpenAPI в `platform.OpenApiController`; контрактных тестов потребитель↔поставщик нет | Изменение DTO ломает установленные APK | Контрактный тест: снимок OpenAPI + проверка совместимости (§ fitness, TARGET) |
+| Identity/RBAC | Fail-closed JWT/OIDC, роли `kunde.partner/executor/admin`, гранты `admin_*`; Admin App — не граница безопасности | — | Без изменений |
+| Кэширование | Нет | Нет | Не добавлять до измеренного триггера |
+| Observability | Actuator, correlation в MDC, метрики outbox | Нет trace id между сервисами | OpenTelemetry — **только** при первом вынесенном сервисе (ADR-025), до этого `correlation_id` в envelope |
+| Масштабирование | Состояние не в памяти процесса (Конституция §7), `SKIP LOCKED`, placement registry | Одна БД и одна JVM | Горизонтальные копии монолита — первый шаг масштабирования |
+| Отказоустойчивость | Render Free (1 экземпляр), health-пробы | Холодный старт ≈ 1 мин | Не PROD-конфигурация |
+| Безопасность | `check_secrets.py`, security baseline, OSV-аудит в CI | — | Без изменений |
+| CI/CD | `backend.yml` (архитектура → тесты → jar → smoke), независимые CI на приложения, E2E вручную; **сборка Docker-образа добавлена в этом PR** (раньше не проверялась) | — | — |
+| IaC | `infrastructure/terraform` (modules `render`, `neon`, `country-cell`; environments `dev`, `prod`), `helm/kunde-backend`; `terraform-dev.yml` | Не проверялось применением (запрещено условиями) | Только чтение |
+| DR | `restore_drill.sh` (локально, синтетика), [23-reliability](23-reliability-and-disaster-recovery.md) | Нет доказательства PROD-бэкапа; doc `restore-drill.md` ссылается на старый путь миграций | Обновить путь при следующем касании |
 
-Границы выбраны по реальным связям (общим таблицам), а не по названиям пакетов:
+## 6. План подготовки (без физического разделения)
 
-1. **Maps** — уже отдельный (kunde-maps). Backend знает только порт `RideRouting`.
-2. **Mobility = rides + delivery (+ maps adapter)** — после устранения V2; общий dispatch/геопозиции.
-3. **Food + Groceries** — общие таблицы `food_*`; один сервис.
-4. **Booking + Health + Auto + Home services** — общие `booking_*`/`bookings`; один сервис.
-5. **Leisure + Events** — общий каталог и билеты.
-6. **Education** — самый самостоятельный по данным (`education_*`), зависит только от `partner`, `identity`, `admin`-грантов.
-7. **Ядро (остаётся в монолите)**: identity+auth, partner+catalog, admin+platform (гранты, toggles), support.
-8. **Notifications / Payments / Analytics** — сейчас в коде отсутствуют (контракты без реализации); выделять нечего, это новые компоненты после решения владельца (ADR-006/010).
+1. **Границы честные** (идёт): ратчеты baseline, циклов, FK, слоёв — [fitness-functions](fitness-functions.md). Каждый PR уменьшает числа.
+2. **Контракты вместо SQL**: `<Domain>AdminApi`; демо-сиды в `app`; расширение `BookingCategory`; `PartnerDirectory` для остатка V9.
+3. **События**: первые нефинансовые продюсеры (`kunde.partner.approved`, `kunde.catalog.offering_published` — потребитель: поисковая проекция/уведомления), relay на DEV, инструмент DLQ и retention; `X-Correlation-ID` → `correlation_id`.
+4. **Контрактные тесты** потребитель↔поставщик для каждого порта (`PartnerDirectory`, `SupportCaseDirectory`, `RideRouting`) и снимок OpenAPI.
+5. **Независимые миграции**: правило «expand → migrate → contract» + префикс владельца; каталог `db/migration` остаётся один до решения о разделении БД (политика уже в [database-and-migrations](../engineering-foundation/database-and-migrations.md)).
+6. **Первый кандидат на реальное выделение** — только при выполнении критерия ADR-025; по данным — `education`, затем `leisure+events`.
 
-## 6. Порядок безопасного выделения
+## 7. Что можно оставить общим без риска
 
-Готовность (по фактическим связям из baseline):
+Общая БД на ранних стадиях (с запретом нового чужого SQL), `platform`, `identity`/`auth`, `partner`/`catalog`, один артефакт и один набор миграций, общий поставщик идентичности (ADR-013/015).
 
-| Домен | Зависимости (код) | Владение данными | Связность | Готовность | Что нужно |
-|---|---|---|---|---|---|
-| Maps | порт `RideRouting` | своих таблиц нет, свой репозиторий | низкая | **Выделен** | — |
-| Education | partner, admin-гранты, identity | `education_*` свои | низкая (≈11 SQL к partner/identity) | **Высокая** | V9, V12 (`PartnerDirectory`, `AdminGrants` в ядро) |
-| Leisure+Events | partner, auth(1) | `leisure_*` свои; admin пишет туда (≈30) | средняя | Средняя | V9, перенос админ-SQL в домен, убрать `leisure → auth` (`phone_identities`) |
-| Food+Groceries | partner, identity, delivery(1) | свои; admin читает (≈15) | средняя (groceries целиком на food) | Средняя | V9, `food → delivery_couriers` через интерфейс, админ-SQL в домен |
-| Booking+Health+Auto | partner, admin | общие таблицы между тремя | высокая внутри, средняя наружу | Средняя/низкая | V5 обратные ссылки, V9 |
-| Rides+Delivery | partner, admin, support, identity | свои, но перекрёстные SQL (`rides`↔`deliveries`) | **высокая (цикл)** | Низкая | V2, V3, V4 обязательны |
-| Support | rides, delivery | `support.*`, в них пишут другие | высокая | Низкая | V3, V4 |
-| Partner/Catalog/Identity/Auth/Admin/Platform | — | ядро | — | Остаются в монолите | V1, V12 |
+## Автоматическая защита
 
-Порядок: **(0)** держать baseline (сделано) → **(1)** V9/V12/V1 — общие контракты ядра, самые массовые и безопасные → **(2)** Education как пробный первый сервис (теневое чтение, см. п.8) → **(3)** V2+V3+V4, затем Mobility → **(4)** Food, Leisure → **(5)** Booking-кластер последним.
-
-## 7. Когда разделение действительно необходимо
-
-Делить только при измеримом основании ([29-service-extraction-roadmap](29-service-extraction-roadmap.md)): (а) независимое масштабирование/ресурсы (например GPS-поток Mobility вытесняет API Food на одной JVM/БД; p95 > SLO при нагрузке одного домена); (б) отдельная команда с собственным релизным циклом; (в) регуляторная/безопасностная граница (платёжные данные, мед-данные Health); (г) изоляция отказов (падение Delivery не должно ронять заказы). «Архитектурная эстетика» и число пакетов — не основание. Пока ни одного из условий нет: пилотный DEV, один backend-сервис, одна команда.
-
-## 8. План миграции без остановки системы
-
-Для каждого кандидата (повторяемый шаблон):
-
-1. **Контракт в процессе**: домен получает интерфейс (`PartnerDirectory`, `SupportCases`…), потребители переходят с SQL/импортов на него; baseline сокращается. Внешний API не меняется.
-2. **Изоляция данных**: таблицы домена остаются в той же БД; все остальные коды обращаются только через контракт; добавить FK-аудит (существующий `DomainSchemaOwnershipIntegrationTest`).
-3. **Outbox/inbox** (появляется впервые, отдельное решение владельца по ADR-006) для событий, которые раньше были прямым вызовом; идемпотентность и DLQ.
-4. **Деплой второго экземпляра** того же артефакта с включённым только нужным модулем (feature flags уже есть), трафик по маршруту через gateway/Render service — **без** смены кода; чтение с теневой сверкой.
-5. **Один писатель**: переключение записи по флагу домена; чтение продолжает работать из общей БД.
-6. **Разделение БД** (если нужно) — последним, через логическую репликацию таблиц модуля; старые таблицы сохраняются до конца окна отката.
-
-Ничего из этого не выполняется сейчас; `terraform apply`, PROD, новые инфраструктурные сервисы вне задачи.
-
-## 9. Стратегия отката
-
-- Каждый шаг п.8 за флагом (`<DOMAIN>_ENABLED` / runtime-toggle) — откат = переключить флаг и маршрут обратно на монолит.
-- До шага 6 данные остаются в общей БД, откат трафика не требует миграции данных.
-- Миграции Flyway только вперёд и обратно совместимые (expand → migrate → contract); таблицы старой схемы удаляются отдельным релизом после окна наблюдения.
-- Контракты и baseline версионируются в git; откат кода = откат PR.
-
-## 10. Что можно оставить общим без риска
-
-- Общая БД PostgreSQL на ранних стадиях (с запретом чужого SQL по baseline).
-- Ядро: `platform` (ошибки, rate limit, correlation), `identity`/`auth` (JWT, пользователи), `partner`/`catalog`, `admin` (гранты), `fulfillment`/`order` (чистые политики без хранилища).
-- Один артефакт сборки и один Flyway-набор миграций, одна CI-конвейерная цепочка.
-- Общие токены/поставщик идентичности (ADR-013/015) — они и должны быть общими.
-
-## Автоматическая защита (что внедрено)
-
-`backend/src/test/java/kz/kunde/architecture/ArchitectureBoundariesTest.java` — быстрый тест без БД и Spring, шаг `Architecture boundaries (fast, no database)` в `.github/workflows/backend.yml` запускается до полной сборки:
-
-- новая межмодульная связь (**IMPORT** класса другого модуля или **SQL** к чужой таблице) — падение с подсказкой;
-- устранённая связь, оставшаяся в baseline, — тоже падение (долг только уменьшается);
-- новая таблица без владельца в `table-owners.txt` — падение;
-- `platform` не может обрастать новыми зависимостями от доменов (кроме замороженного `FeatureToggles`, V1).
-
-Как осознанно добавить связь: строка в `cross-module-baseline.txt` в том же PR с обоснованием. Пересоздать baseline: `./gradlew test --tests '*ArchitectureBoundariesTest' -Dkunde.architecture.updateBaseline=true` (проверить diff вручную).
+`backend/app/src/test/java/kz/kunde/architecture/` — `ArchitectureBoundariesTest` (ратчет рёбер и владельцев таблиц) и `ArchitectureFitnessTest` (форма графа). Запускаются в `backend.yml` первым шагом, без БД и Spring. Правило снижения: baseline только уменьшается; регенерация — `-Dkunde.architecture.updateBaseline=true` / `-Dkunde.architecture.updateKnown=true` с ручной проверкой diff.

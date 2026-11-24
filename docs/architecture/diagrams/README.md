@@ -17,3 +17,4 @@ Mermaid source diagrams are maintained here as standalone views. All are concept
 | 11-deployment-architecture.md | Regional deployment boundary |
 | 12-security-boundaries.md | Trust boundaries and controls |
 | 13-data-architecture.md | Canonical and derived data stores |
+| 14-domain-components.md | Фактические зависимости модулей (C4 L3, на 2026-11-24) |

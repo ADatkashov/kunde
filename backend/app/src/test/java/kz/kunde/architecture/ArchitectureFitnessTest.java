@@ -96,6 +96,34 @@ class ArchitectureFitnessTest {
                 .isEmpty();
     }
 
+    /**
+     * Writes the real coupling (count of imports/SQL references per module pair, allowed vertical edges included) to
+     * {@code build/architecture/coupling.tsv}; {@code scripts/dev/architecture_matrix.py} turns it into the matrices in
+     * docs/architecture. Always passes: it documents, the other tests enforce.
+     */
+    @Test
+    void writesCouplingReportForDocs() throws IOException {
+        Map<String, int[]> counts = new TreeMap<>();
+        for (String edge : ArchitectureBoundariesTest.importCoupling()) {
+            Matcher m = IMPORT_EDGE.matcher(edge);
+            if (m.find()) {
+                counts.computeIfAbsent(m.group(1) + "\t" + m.group(2), k -> new int[2])[0]++;
+            }
+        }
+        for (String edge : ArchitectureBoundariesTest.sqlCoupling()) {
+            Matcher m = SQL_EDGE.matcher(edge);
+            if (m.find()) {
+                counts.computeIfAbsent(m.group(1) + "\t" + m.group(2), k -> new int[2])[1]++;
+            }
+        }
+        List<String> out = new ArrayList<>();
+        out.add("from\tto\timports\tsql");
+        counts.forEach((k, v) -> out.add(k + "\t" + v[0] + "\t" + v[1]));
+        Path target = Path.of("build/architecture/coupling.tsv");
+        Files.createDirectories(target.getParent());
+        Files.write(target, out);
+    }
+
     // ------------------------------------------------------------------ public-contract hygiene
 
     @Test

@@ -15,3 +15,5 @@ Partner directory (2026-11-23): [ADR-021](ADR-021-partner-directory-contract.md)
 Structure & build (2026-11-24): [ADR-023](ADR-023-build-system-and-module-structure.md) (ACCEPTED 2026-11-24) утверждает multi-module Gradle (Kotlin DSL) для backend с `services/<domain>` при gate эквивалентности. Аудит: [project-structure-audit](../project-structure-audit.md).
 
 Token session (2026-11-24): [ADR-024](ADR-024-shared-token-session-core.md) (ACCEPTED) — общее ядро токен-сессии `packages/kunde_session` и отдельные адаптеры Consumer/Operator (`AuthRepository`) и Partner (`PartnerSession`).
+
+Extraction (2026-11-24): [ADR-025](ADR-025-gradual-service-extraction.md) (PROPOSED) fixes the conditions, gates and order for extracting services from the modular monolith; until the owner accepts it, nothing is split.
