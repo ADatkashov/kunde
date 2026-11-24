@@ -175,12 +175,20 @@ def create_ride():
 
 
 def find_completed():
-    android.find(
+    labels = (
         "Поездка завершена", "Ride complete", "Сапар аяқталды",
         "Тестовый маршрут · Поездка завершена",
         "Test route · Ride complete",
         "Сынақ бағыты · Сапар аяқталды",
     )
+    # On the driver home screen the history is below the menu (#243): scroll down until the row is visible.
+    for _ in range(5):
+        try:
+            android.find(*labels, timeout=6)
+            return
+        except RuntimeError:
+            android.adb("shell", "input", "swipe", 195, 700, 195, 250, 300)
+    android.find(*labels)
 
 
 def open_history(back_first=False):
@@ -226,7 +234,8 @@ def main():
         android.adb("emu", "geo", "fix", "76.92", "43.24")
         launch(EXECUTOR)
         login("7000000002", "На линии", "Online", "Желіде")
-        android.tap("На линии", "Online", "Желіде")
+        # The driver screen shows a Switch (#243); tap it only once it is enabled (it is disabled while the screen loads).
+        android.tap("На линии", "Online", "Желіде", node_class="android.widget.Switch", enabled=True, anchor="right")
         for _ in range(3):
             android.adb("emu", "geo", "fix", "76.92", "43.24")
             time.sleep(2)
@@ -256,10 +265,12 @@ def main():
 
         phase = "complete"
         launch(EXECUTOR)
-        android.tap("Выехать", "Depart", "Жолға шығу")
-        android.tap("Я на месте", "I have arrived", "Келдім")
-        android.tap("Начать поездку", "Start ride", "Сапарды бастау")
-        android.tap("Завершить", "Complete", "Аяқтау")
+        # Trip actions are disabled while the driver screen reloads; tap each one only when enabled and wait for the next step.
+        android.tap("Выехать", "Depart", "Жолға шығу", enabled=True)
+        android.tap("Я на месте", "I have arrived", "Келдім", enabled=True)
+        android.tap("Начать поездку", "Start ride", "Сапарды бастау", enabled=True)
+        android.find("Завершить", "Complete", "Аяқтау", enabled=True, timeout=60)
+        android.tap("Завершить", "Complete", "Аяқтау", enabled=True)
         find_completed()
         android.screenshot("executor-history")
         completed.append("executor_arrival_start_complete_history")
