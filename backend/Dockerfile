@@ -6,6 +6,7 @@ WORKDIR /workspace
 COPY settings.gradle.kts build.gradle.kts ./
 COPY gradle ./gradle
 COPY platform ./platform
+COPY services ./services
 COPY app ./app
 RUN java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain --no-daemon -q bootJar
 

@@ -11,4 +11,4 @@ pluginManagement {
 // Business domains move to services/<domain> in small steps; the executable stays :app.
 rootProject.name = "kunde-api"
 
-include(":platform", ":app")
+include(":platform", ":app", ":services:identity", ":services:partners")
