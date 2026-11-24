@@ -1,8 +1,8 @@
 # Следующие проверки
 
-## Архитектура: четыре независимых Flutter-приложения (ADR-023, решение 5)
+## Архитектура: готовность к микросервисам (комплексный аудит)
 
-Сейчас два проекта: `apps/consumer` (Consumer; Executor и Admin — точки входа `executor_main.dart`, `admin_rides_main.dart` и env-флаги `KUNDE_EXECUTOR_BUILD`/`KUNDE_ADMIN_BUILD` в `mobile/android/app/build.gradle.kts`) и `apps/partner`. Цель — `apps/{consumer,partner,executor,admin}`, у каждого свой `pubspec.yaml`, entrypoint, навигация, тесты, CI/релиз, прежние application ID (`com.example.kunde_mobile`, `com.kunde.executor`, `com.kunde.admin`, `com.kunde.kunde_partner`) и подпись; общий код — только реально общий (`packages/kunde_design` есть; кандидаты — identity/session и локализация). Предпосылка выполнена (PR F1): замыкание Executor 42, Admin 43 файла. Дальше: (1) вынести общий identity/localization/theme в пакеты; (2) создать проекты `apps/executor`, `apps/admin` с копией `android/` и фиксированным applicationId; (3) обновить ~30 workflow/скриптов (пути `apps/consumer`), `release_targets.py`; (4) проверять каждый шаг `flutter analyze/test` и ручным запуском `android-apk.yml` на ветке (APK-сборки в обычный PR CI не входят). Команды: `cd apps/consumer && flutter analyze --fatal-infos && flutter test`; `cd backend && ./gradlew build`.
+Реструктуризация и авторизация завершены (ADR-023, ADR-024). Следующий шаг — комплексный аудит готовности KUNDE к микросервисной архитектуре **без физического разделения backend**: по доменам (реестр `docs/architecture/domain-registry.md`) проверить владение данными (115 SQL-связей в baseline, прежде всего `admin`), публичные контракты между модулями, события/outbox (ADR-022), готовность к выделению каждого модуля и порядок. Проверки: `cd backend && ./gradlew build`; `cd apps/<app> && flutter analyze --fatal-infos && flutter test`.
 
 ## KUNDE Beauty & Care 1.0
 

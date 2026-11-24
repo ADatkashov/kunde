@@ -1,0 +1,13 @@
+name: kunde_session
+description: Shared token-session core (storage, refresh, single-flight, lifecycle) for the KUNDE apps
+version: 0.1.0
+publish_to: none
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_secure_storage: 11.2.0
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

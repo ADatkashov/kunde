@@ -3,37 +3,21 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:kunde_session/kunde_session.dart';
 
 import '../data/errors.dart';
 
 export '../data/errors.dart' show PartnerAuthException, SessionExpiredException;
+export 'package:kunde_session/kunde_session.dart'
+    show SecureKeyValue, FlutterSecureKeyValue;
 
-/// Minimal key/value contract so the token store can be faked in tests.
-abstract interface class SecureKeyValue {
-  Future<String?> read(String key);
-  Future<void> write(String key, String value);
-  Future<void> delete(String key);
-}
-
-class FlutterSecureKeyValue implements SecureKeyValue {
-  const FlutterSecureKeyValue([this._s = const FlutterSecureStorage()]);
-  final FlutterSecureStorage _s;
-  @override
-  Future<String?> read(String key) => _s.read(key: key);
-  @override
-  Future<void> write(String key, String value) =>
-      _s.write(key: key, value: value);
-  @override
-  Future<void> delete(String key) => _s.delete(key: key);
-}
-
-/// Isolated Partner session storage; never shares the Consumer token key.
+/// The Partner adapter of the shared token-session core (ADR-024): its own storage key and format
+/// (`base`, `refresh`, `partnerId`), its own OTP and refresh endpoints and its own error types.
 ///
-/// The refresh token (and the chosen partner) live in platform secure storage.
-/// The short-lived access token is kept in memory only. Refresh is single
-/// flight so concurrent requests never spend a rotating refresh token twice.
+/// The refresh token (and the chosen partner) live in platform secure storage under a Partner-only key, never the
+/// Consumer one. The short-lived access token is kept in memory only. Refresh is single flight (in the core), so
+/// concurrent requests never spend a rotating refresh token twice.
 class PartnerSession {
   PartnerSession({
     required this.apiBase,
@@ -41,20 +25,24 @@ class PartnerSession {
     SecureKeyValue? storage,
     this.timeout = const Duration(seconds: 20),
   })  : _client = client ?? http.Client(),
-        _storage = storage ?? const FlutterSecureKeyValue();
+        _storage = storage ?? const FlutterSecureKeyValue() {
+    _core = TokenSession(
+      persistence: _PartnerPersistence(_storage, apiBase.toString()),
+      refresher: _PartnerRefresher(this),
+      carryExtrasAcrossSignIn: true,
+    );
+  }
 
   final Uri apiBase;
   final http.Client _client;
   final SecureKeyValue _storage;
   final Duration timeout;
   static const _key = 'kunde.partner.session.v1';
+  late final TokenSession _core;
 
   /// Called once when the server rejects the stored refresh token.
-  void Function()? onExpired;
-
-  String? _access;
-  DateTime? _expires;
-  Future<String?>? _refreshing;
+  void Function()? get onExpired => _core.onExpired;
+  set onExpired(void Function()? callback) => _core.onExpired = callback;
 
   // The isolated Android CI fixture uses an ADB reverse tunnel to loopback.
   bool get _localFixture =>
@@ -120,19 +108,19 @@ class PartnerSession {
     try {
       data = await _post('auth/otp/verify', {'phone': phone, 'code': code});
     } on PartnerAuthException catch (e) {
-      if (e.code == 'HTTP_400' ||
-          e.code == 'HTTP_401' ||
-          e.code == 'HTTP_403') {
+      if (_rejects(e)) {
         throw const PartnerAuthException(PartnerAuthException.wrongCode);
       }
       rethrow;
     }
-    await _accept(data);
-    await _writeStored(refresh: data['refreshToken'] as String);
+    await _core.signIn(_issue(data));
   }
 
-  /// Validates a token response and keeps the access token in memory.
-  Future<String> _accept(Map<String, dynamic> data) async {
+  static bool _rejects(PartnerAuthException e) =>
+      e.code == 'HTTP_400' || e.code == 'HTTP_401' || e.code == 'HTTP_403';
+
+  /// Validates a token response (access, rotating refresh, lifetime).
+  static IssuedTokens _issue(Map<String, dynamic> data) {
     final access = data['accessToken'];
     final refresh = data['refreshToken'];
     final expiresIn = data['expiresIn'];
@@ -144,108 +132,108 @@ class PartnerSession {
         expiresIn <= 0) {
       throw const PartnerAuthException(PartnerAuthException.invalidResponse);
     }
-    _access = access;
-    _expires = DateTime.now().add(Duration(seconds: expiresIn.toInt()));
-    return access;
+    return IssuedTokens(
+        access: access,
+        refresh: refresh,
+        expires: DateTime.now().add(Duration(seconds: expiresIn.toInt())));
   }
-
-  Future<Map<String, dynamic>?> _readStored() async {
-    final raw = await _storage.read(_key);
-    if (raw == null) return null;
-    try {
-      final saved = jsonDecode(raw);
-      if (saved is Map<String, dynamic> &&
-          saved['base'] == apiBase.toString() &&
-          saved['refresh'] is String &&
-          (saved['refresh'] as String).isNotEmpty) {
-        return saved;
-      }
-    } on FormatException {
-      // fall through: unreadable state is discarded
-    }
-    await _storage.delete(_key);
-    return null;
-  }
-
-  Future<void> _writeStored(
-      {String? refresh, Object? partnerId = _keep}) async {
-    final current = await _readStored();
-    final Object? previous = current == null ? null : current['partnerId'];
-    final Object? chosen = identical(partnerId, _keep) ? previous : partnerId;
-    final next = <String, dynamic>{
-      'base': apiBase.toString(),
-      'refresh': refresh ?? current?['refresh'],
-      if (chosen != null) 'partnerId': chosen,
-    };
-    await _storage.write(_key, jsonEncode(next));
-  }
-
-  static const Object _keep = Object();
 
   /// Whether a refresh token for this API base is stored (no network).
-  Future<bool> hasStoredSession() async => await _readStored() != null;
+  Future<bool> hasStoredSession() async => await _core.peek() != null;
 
   Future<String?> storedPartnerId() async =>
-      (await _readStored())?['partnerId'] as String?;
+      (await _core.peek())?.extras['partnerId'];
 
-  Future<void> rememberPartner(String? partnerId) async {
-    if (await _readStored() == null) return;
-    await _writeStored(partnerId: partnerId);
-  }
+  Future<void> rememberPartner(String? partnerId) =>
+      _core.updateExtras({'partnerId': partnerId});
 
   /// A valid access token, refreshing if needed. Returns null when there is no
   /// stored session. Throws [SessionExpiredException] when the server rejects
   /// the refresh token (the session is cleared) and [PartnerAuthException]
   /// (network/timeout) on a transient failure (the session is kept).
-  Future<String?> accessToken({bool force = false}) {
-    if (!force &&
-        _access != null &&
-        _expires != null &&
-        _expires!.isAfter(DateTime.now().add(const Duration(seconds: 30)))) {
-      return Future.value(_access);
-    }
-    return _refreshing ??= _refresh().whenComplete(() => _refreshing = null);
-  }
-
-  Future<String?> _refresh() async {
-    final saved = await _readStored();
-    if (saved == null) return null;
+  Future<String?> accessToken({bool force = false}) async {
     try {
-      final refreshed =
-          await _post('auth/token/refresh', {'refreshToken': saved['refresh']});
-      final access = await _accept(refreshed);
-      await _writeStored(refresh: refreshed['refreshToken'] as String);
-      return access;
-    } on PartnerAuthException catch (e) {
-      final rejected =
-          e.code == 'HTTP_400' || e.code == 'HTTP_401' || e.code == 'HTTP_403';
-      if (rejected) {
-        await clear();
-        onExpired?.call();
-        throw const SessionExpiredException();
-      }
-      rethrow;
+      return await _core.accessToken(force: force);
+    } on SessionMissing {
+      return null;
+    } on SessionRejected {
+      throw const SessionExpiredException();
+    } on SessionUnavailable catch (e) {
+      final cause = e.cause;
+      throw cause is PartnerAuthException
+          ? cause
+          : const PartnerAuthException(PartnerAuthException.network);
     }
   }
 
-  Future<void> clear() async {
-    _access = null;
-    _expires = null;
-    await _storage.delete(_key);
-  }
+  Future<void> clear() => _core.discard();
 
   Future<void> logout() async {
-    final saved = await _readStored();
-    try {
-      if (saved != null) {
-        await _post('auth/logout', {'refreshToken': saved['refresh']});
-      }
-    } on Object {
-      // The local session is always cleared, even when the server is offline.
-    } finally {
-      await clear();
-    }
+    await _core.signOut(
+        revoke: (stored) =>
+            _post('auth/logout', {'refreshToken': stored.refresh}));
   }
 
-  void dispose() => _client.close();
+  void dispose() {
+    _core.dispose();
+    _client.close();
+  }
+}
+
+class _PartnerRefresher implements TokenRefresher {
+  _PartnerRefresher(this._session);
+  final PartnerSession _session;
+
+  @override
+  Future<IssuedTokens> refresh(String refreshToken) async {
+    try {
+      return PartnerSession._issue(await _session
+          ._post('auth/token/refresh', {'refreshToken': refreshToken}));
+    } on PartnerAuthException catch (e) {
+      if (PartnerSession._rejects(e)) throw SessionRejected(e);
+      throw SessionUnavailable(e);
+    }
+  }
+}
+
+/// Stored format of installed Partner apps: `{base, refresh, partnerId?}`. State for another API base or
+/// unreadable state is discarded silently (no expiry), as before.
+class _PartnerPersistence implements SessionPersistence {
+  _PartnerPersistence(this._storage, this._base);
+  final SecureKeyValue _storage;
+  final String _base;
+
+  @override
+  Future<StoredSession?> load() async {
+    final raw = await _storage.read(PartnerSession._key);
+    if (raw == null) return null;
+    try {
+      final saved = jsonDecode(raw);
+      if (saved is Map<String, dynamic> &&
+          saved['base'] == _base &&
+          saved['refresh'] is String &&
+          (saved['refresh'] as String).isNotEmpty) {
+        final partnerId = saved['partnerId'];
+        return StoredSession(saved['refresh'] as String,
+            {if (partnerId is String) 'partnerId': partnerId});
+      }
+    } on FormatException {
+      // fall through: unreadable state is discarded
+    }
+    await _storage.delete(PartnerSession._key);
+    return null;
+  }
+
+  @override
+  Future<void> save(StoredSession session) => _storage.write(
+      PartnerSession._key,
+      jsonEncode({
+        'base': _base,
+        'refresh': session.refresh,
+        if (session.extras['partnerId'] != null)
+          'partnerId': session.extras['partnerId'],
+      }));
+
+  @override
+  Future<void> clear() => _storage.delete(PartnerSession._key);
 }
