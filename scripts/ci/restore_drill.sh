@@ -8,7 +8,7 @@ set -euo pipefail
 
 PG_BIN="${PG_BIN:-$(ls -d /usr/lib/postgresql/*/bin 2>/dev/null | sort -V | tail -1)}"
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-MIGRATIONS="$REPO/backend/src/main/resources/db/migration"
+MIGRATIONS="$REPO/backend/app/src/main/resources/db/migration"
 if [ "$(id -u)" = "0" ]; then
   echo "Run as a non-root user (initdb refuses root); e.g. runuser -u postgres -- $0" >&2
   exit 2

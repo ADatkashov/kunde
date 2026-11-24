@@ -14,7 +14,7 @@ import '../../support/fake_kunde_maps.dart';
 
 // A real route response captured from the deployed DEV Maps Platform.
 final _route = File(
-  '../backend/src/test/resources/maps/routes-200.json',
+  '../backend/app/src/test/resources/maps/routes-200.json',
 ).readAsBytesSync();
 
 class _Auth implements AuthRepository {

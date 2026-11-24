@@ -16,7 +16,7 @@ import 'package:kunde_mobile/features/maps/kunde_maps.dart';
 
 // A real route response captured from the deployed DEV Maps Platform.
 final _route = File(
-  '../backend/src/test/resources/maps/routes-200.json',
+  '../backend/app/src/test/resources/maps/routes-200.json',
 ).readAsBytesSync();
 
 class _Gps implements LocationSource {
