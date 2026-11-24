@@ -2,9 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/localization/kunde_localizations.dart';
-import '../home/data/kunde_api.dart';
 import 'auth_repository.dart';
-import 'auth_screen.dart';
+import 'operator_gate.dart';
 import 'phone_auth_gateway.dart';
 import '../../shared/theme/kunde_theme.dart';
 
@@ -33,8 +32,7 @@ void runRideOperations(String title, Widget Function(AuthRepository) home,
         kIsWeb && sameOriginWeb ? _BrowserSessionVault() : SecureTokenVault(),
     apiBase: base,
   );
-  runApp(RideOperationsApp(
-      auth: auth, api: KundeApi(baseUri: base), title: title, home: home));
+  runApp(RideOperationsApp(auth: auth, title: title, home: home));
 }
 
 class _BrowserSessionVault implements TokenVault {
@@ -56,14 +54,9 @@ class _BrowserSessionVault implements TokenVault {
 
 class RideOperationsApp extends StatefulWidget {
   const RideOperationsApp(
-      {required this.auth,
-      required this.api,
-      required this.title,
-      required this.home,
-      super.key});
+      {required this.auth, required this.title, required this.home, super.key});
 
   final AuthRepository auth;
-  final KundeApi api;
   final String title;
   final Widget Function(AuthRepository) home;
 
@@ -83,10 +76,8 @@ class _RideOperationsAppState extends State<RideOperationsApp> {
         locale: _locale,
         supportedLocales: KundeLocalizations.supportedLocales,
         localizationsDelegates: KundeLocalizations.localizationsDelegates,
-        home: AuthScreen(
+        home: OperatorGate(
           auth: widget.auth,
-          api: widget.api,
-          partnerApplyEnabled: false,
           onLocale: (locale) => setState(() => _locale = locale),
           authorizedHome: (_) => widget.home(widget.auth),
         ),
