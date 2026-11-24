@@ -3,5 +3,6 @@ import 'package:kunde_operator/ride_operations_app.dart';
 
 void main() => runRideOperations(
       'KUNDE Executor',
+      'executor',
       (auth) => ExecutorScreen(auth: auth, checkDeliveryMode: true),
     );

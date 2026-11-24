@@ -226,7 +226,17 @@ def main():
                      "DEV/TEST · кодты алушыға беріңіз")
         code = read_code()
         fixture.launch(fixture.EXECUTOR)
-        tap("Подтвердить вручение", "Confirm handoff", "Тапсыруды растау")
+        # The Executor screen polls every 7 s and disables its buttons while a poll is in flight (`_busy`), so a single
+        # tap can land on a disabled button and silently do nothing (seen as a flake in the full suite on a loaded runner,
+        # never when the workflow runs alone). Repeat the tap until the code dialog appears.
+        for attempt in range(1, 6):
+            tap("Подтвердить вручение", "Confirm handoff", "Тапсыруды растау")
+            try:
+                android.find(node_class="android.widget.EditText", timeout=12)
+                break
+            except RuntimeError:
+                if attempt == 5:
+                    raise
         try:
             fixture.type_text(code)
         except subprocess.SubprocessError:

@@ -42,4 +42,6 @@ tasks.withType<Test>().configureEach {
     }
     // The architecture ratchet rewrites its baseline on request (-Dkunde.architecture.updateBaseline=true).
     systemProperty("kunde.architecture.updateBaseline", System.getProperty("kunde.architecture.updateBaseline") ?: "false")
+    // Same for the fitness-function ratchets (known coupling cycles, cross-owner foreign keys).
+    systemProperty("kunde.architecture.updateKnown", System.getProperty("kunde.architecture.updateKnown") ?: "false")
 }

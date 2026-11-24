@@ -25,3 +25,19 @@ Identity/user, partner/catalog, pricing, orders, bookings, finance/payment coord
 6. Retire old code only after evidence and audit.
 
 Extract only for independent scaling, team ownership, security/regulatory boundary or reliability isolation—not for architecture aesthetics. Avoid shared DB writes after extraction.
+
+## Фактическая очередь по данным аудита (2026-11-24)
+
+Обновление к таблице выше: порядок по реальным связям кода, а не по продуктовым названиям; решает [ADR-025](adr/ADR-025-gradual-service-extraction.md), оценки — [domain-readiness-scores](domain-readiness-scores.md), блокеры — [microservice-readiness](microservice-readiness.md).
+
+| Очередь | Кандидат | Условие входа (минимум) |
+|---|---|---|
+| 0 | Maps | Уже отдельный сервис |
+| 1 | Education | Только контракты ядра (`PartnerDirectory`, пользователи), `EducationAdminApi` |
+| 2 | Leisure + Events | `LeisureAdminApi` (убирает 11 SQL admin), отвязка `leisure → auth/partner` |
+| 3 | Food + Groceries | Семья; `FoodAdminApi` (14 SQL), `food → delivery_couriers` через порт |
+| 4 | Mobility (Rides + Delivery) | Порт «активная работа/доступность» вместо SQL-цикла; продюсеры `ride.completed`, `delivery.completed` |
+| 5 | Booking family | Убрать `booking → auto/health`, FK вертикалей и 30 входящих SQL; последняя |
+| — | Identity, Partners, Admin, Platform, Support | Остаются в монолите |
+
+Notifications, Payments и Analytics из таблицы выше сейчас **не существуют в коде**; выделять нечего, это новые компоненты после решений ADR-006/010.

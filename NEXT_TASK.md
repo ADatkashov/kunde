@@ -1,5 +1,14 @@
 # Следующие проверки
 
+## Микросервисная готовность: следующие PR
+
+1. Вынести демо-сиды (`PartnerOpsDemoSeeder`, `LeisureDemoSeeder`) в `backend/app` — рвёт узел циклов вокруг `partner`; нужен PostgreSQL для интеграционных тестов.
+2. `LeisureAdminApi`/`FoodAdminApi` вместо SQL в `Admin*Controller` (25 из 44 SQL Admin); HTTP-контракты без изменений.
+3. Расширить `BookingCategory`, убрать `booking → auto/health`; порт доступности для `rides ↔ delivery`.
+4. Первые нефинансовые продюсеры (`partner.*`, `offering.*`), инструмент DLQ и retention до включения relay; `correlation_id` в событиях.
+5. Принять или изменить ADR-025; по разрешению — деплой DEV из `main` (Flyway, health/readiness, вход четырёх ролей, контракты с актуальными APK).
+
+
 ## Архитектура: готовность к микросервисам (комплексный аудит)
 
 Реструктуризация и авторизация завершены (ADR-023, ADR-024). Следующий шаг — комплексный аудит готовности KUNDE к микросервисной архитектуре **без физического разделения backend**: по доменам (реестр `docs/architecture/domain-registry.md`) проверить владение данными (115 SQL-связей в baseline, прежде всего `admin`), публичные контракты между модулями, события/outbox (ADR-022), готовность к выделению каждого модуля и порядок. Проверки: `cd backend && ./gradlew build`; `cd apps/<app> && flutter analyze --fatal-infos && flutter test`.

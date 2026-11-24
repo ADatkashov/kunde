@@ -1,0 +1,21 @@
+# Module-level coupling edges that lie on a dependency cycle (ratchet, ArchitectureFitnessTest). Format: <module> -> <module>. Delete a line when the edge stops being part of a cycle.
+auth -> partner
+auto -> booking
+booking -> auto
+booking -> health
+booking -> partner
+catalog -> partner
+delivery -> partner
+delivery -> rides
+food -> delivery
+food -> groceries
+food -> partner
+groceries -> food
+health -> booking
+health -> partner
+partner -> auth
+partner -> booking
+partner -> catalog
+partner -> food
+rides -> delivery
+rides -> partner
