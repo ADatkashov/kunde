@@ -37,7 +37,10 @@ jobs:
           from collections import defaultdict
 
           versions = defaultdict(list)
-          for path in pathlib.Path('backend/src/main/resources/db/migration').glob('V*__*.sql'):
+          migrations = sorted(pathlib.Path('backend/app/src/main/resources/db/migration').glob('V*__*.sql'))
+          if not migrations:
+              raise SystemExit('No Flyway migrations found: the check would pass vacuously')
+          for path in migrations:
               version = path.name.split('__', 1)[0][1:]
               parts = [int(part) for part in re.split(r'[._]', version)]
               while len(parts) > 1 and parts[-1] == 0:
