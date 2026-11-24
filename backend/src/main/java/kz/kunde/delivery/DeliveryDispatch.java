@@ -44,7 +44,7 @@ public class DeliveryDispatch {
         this.db = db;
         this.toggles = toggles;
         this.handoffKey = handoffKey.getBytes(StandardCharsets.UTF_8);
-        if (toggles.delivery().dispatchAvailable() && this.handoffKey.length < 32) {
+        if (DeliveryProperties.live(toggles).dispatchAvailable() && this.handoffKey.length < 32) {
             throw new IllegalStateException("Delivery dispatch requires a configured handoff secret");
         }
     }
@@ -105,7 +105,7 @@ public class DeliveryDispatch {
     }
 
     public List<Offer> offers(UUID courier) {
-        if (!toggles.delivery().dispatchAvailable()) {
+        if (!DeliveryProperties.live(toggles).dispatchAvailable()) {
             return List.of();
         }
         return db.query("""
@@ -333,7 +333,7 @@ public class DeliveryDispatch {
     }
 
     private void requireDispatch() {
-        if (!toggles.delivery().dispatchAvailable()) {
+        if (!DeliveryProperties.live(toggles).dispatchAvailable()) {
             throw missing();
         }
     }

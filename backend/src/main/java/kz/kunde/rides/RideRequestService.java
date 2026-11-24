@@ -57,7 +57,7 @@ public class RideRequestService {
             }
             return new Requested(previous.get(), false);
         }
-        if (!toggles.rides().consumerAvailable()) {
+        if (!RidesFlags.live(toggles).consumerAvailable()) {
             throw new ApiException(HttpStatus.NOT_FOUND, "RIDES_UNAVAILABLE", "New rides are currently unavailable");
         }
         if (Boolean.TRUE.equals(db.queryForObject("""
@@ -71,7 +71,7 @@ public class RideRequestService {
                 select user_id, id, ?, 'REQUESTED' from transactions.ride_fare_quotes
                 where user_id = ? and id = ? and expires_at > statement_timestamp() and (not synthetic or ?)
                 on conflict (quote_id) do nothing returning id
-                """, (rs, row) -> rs.getObject("id", UUID.class), requestKey, customer, quoteId, toggles.rides().syntheticRoutingEnabled())
+                """, (rs, row) -> rs.getObject("id", UUID.class), requestKey, customer, quoteId, RidesFlags.live(toggles).syntheticRoutingEnabled())
                 .stream().findFirst().orElseThrow(() -> conflict("RIDE_QUOTE_UNAVAILABLE", "Ride quote is unavailable"));
         event(rideId, RideState.REQUESTED);
         return new Requested(get(customer, rideId), true);

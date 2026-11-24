@@ -151,7 +151,7 @@ public class RideDriverService {
     }
 
     private void requireExecutor() {
-        if (!toggles.rides().executorAvailable()) {
+        if (!RidesFlags.live(toggles).executorAvailable()) {
             throw notFound("RIDES_EXECUTOR_UNAVAILABLE", "Rides executor is unavailable");
         }
     }

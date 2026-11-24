@@ -246,7 +246,7 @@ public class DeliveryService {
     }
 
     private void requireIntake(UUID partner) {
-        var live = toggles.delivery();
+        var live = DeliveryProperties.live(toggles);
         if (!live.enabled() || (partner == null ? !live.consumerEnabled() : !live.partnerEnabled())) {
             throw new ApiException(HttpStatus.NOT_FOUND, "DELIVERY_UNAVAILABLE", "New deliveries are unavailable");
         }

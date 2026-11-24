@@ -31,7 +31,7 @@ class FeatureGateWiringTest {
     void missingGateFailsStartup() {
         List<FeatureGate> gates = all(true);
         gates.removeIf(g -> g.feature() == Feature.BEAUTY);
-        assertThatThrownBy(() -> new FeatureToggles(mock(JdbcTemplate.class), gates, null, null))
+        assertThatThrownBy(() -> new FeatureToggles(mock(JdbcTemplate.class), gates))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("BEAUTY");
     }
 
@@ -39,7 +39,7 @@ class FeatureGateWiringTest {
     void duplicateGateFailsStartup() {
         List<FeatureGate> gates = all(true);
         gates.add(gate(Feature.AUTO, false));
-        assertThatThrownBy(() -> new FeatureToggles(mock(JdbcTemplate.class), gates, null, null))
+        assertThatThrownBy(() -> new FeatureToggles(mock(JdbcTemplate.class), gates))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("AUTO");
     }
 
@@ -47,8 +47,23 @@ class FeatureGateWiringTest {
     void environmentCeilingComesFromTheDomainGate() {
         List<FeatureGate> gates = all(true);
         gates.replaceAll(g -> g.feature() == Feature.EVENTS ? gate(Feature.EVENTS, false) : g);
-        FeatureToggles toggles = new FeatureToggles(mock(JdbcTemplate.class), gates, null, null);
+        FeatureToggles toggles = new FeatureToggles(mock(JdbcTemplate.class), gates);
         assertThat(toggles.allowedByEnvironment(Feature.EVENTS)).isFalse();
         assertThat(toggles.allowedByEnvironment(Feature.AUTO)).isTrue();
+    }
+
+    @Test
+    void liveViewAppliesTheMasterSwitchWithoutTheKernelKnowingTheDomain() {
+        FeatureGate delegating = new FeatureGate() {
+            public Feature feature() { return Feature.AUTO; }
+            public boolean allowedByEnvironment() { return true; }
+            public FeatureGate withEnabled(boolean master) { return this; }
+            public java.util.Map<String, Boolean> capabilities() { return java.util.Map.of("x", true); }
+        };
+        List<FeatureGate> gates = all(true);
+        gates.replaceAll(g -> g.feature() == Feature.AUTO ? delegating : g);
+        FeatureToggles toggles = new FeatureToggles(mock(JdbcTemplate.class), gates);
+        assertThat(toggles.capabilities(Feature.AUTO)).containsEntry("x", true);
+        assertThat(toggles.capabilities(Feature.EVENTS)).isEmpty();
     }
 }

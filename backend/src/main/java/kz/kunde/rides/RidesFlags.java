@@ -33,6 +33,16 @@ public record RidesFlags(boolean enabled, boolean consumerEnabled, boolean execu
                 syntheticRoutingEnabled);
     }
 
+    /** The live view (master switch from the runtime feature switches applied). */
+    public static RidesFlags live(kz.kunde.platform.FeatureToggles toggles) {
+        return toggles.live(kz.kunde.platform.FeatureToggles.Feature.RIDES, RidesFlags.class);
+    }
+
+    @Override
+    public java.util.Map<String, Boolean> capabilities() {
+        return java.util.Map.of("consumer", consumerAvailable(), "partner", partnerAvailable());
+    }
+
     public boolean consumerAvailable() {
         return enabled && consumerEnabled;
     }

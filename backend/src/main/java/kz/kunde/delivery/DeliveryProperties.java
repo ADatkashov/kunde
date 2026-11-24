@@ -39,6 +39,17 @@ public record DeliveryProperties(boolean enabled, boolean consumerEnabled, boole
                 partnerEnabled, quoteLifetimeSeconds, maxWeightGrams, maxSideCm, tariffVersion, baseKzt, perKmKzt, perKgKzt, minimumKzt);
     }
 
+    /** The live view (master switch from the runtime feature switches applied). */
+    public static DeliveryProperties live(kz.kunde.platform.FeatureToggles toggles) {
+        return toggles.live(kz.kunde.platform.FeatureToggles.Feature.DELIVERY, DeliveryProperties.class);
+    }
+
+    @Override
+    public java.util.Map<String, Boolean> capabilities() {
+        return java.util.Map.of("consumer", consumerAvailable(), "partner", enabled && partnerEnabled,
+                "syntheticRouting", enabled && syntheticRoutingEnabled, "executor", enabled && executorEnabled);
+    }
+
     public boolean dispatchAvailable() {
         return enabled && executorEnabled && dispatchEnabled;
     }

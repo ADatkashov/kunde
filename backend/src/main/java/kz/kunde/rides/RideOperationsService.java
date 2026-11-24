@@ -98,7 +98,7 @@ public class RideOperationsService {
     }
 
     private void requireEnabled() {
-        if (!toggles.rides().enabled()) {
+        if (!RidesFlags.live(toggles).enabled()) {
             throw new ApiException(HttpStatus.NOT_FOUND, "RIDES_UNAVAILABLE", "Rides operations are unavailable");
         }
     }

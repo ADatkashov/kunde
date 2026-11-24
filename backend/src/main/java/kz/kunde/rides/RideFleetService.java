@@ -152,7 +152,7 @@ public class RideFleetService {
     }
 
     private void requireEnabled() {
-        if (!toggles.rides().partnerAvailable()) {
+        if (!RidesFlags.live(toggles).partnerAvailable()) {
             throw new ApiException(HttpStatus.NOT_FOUND, "RIDES_PARTNER_UNAVAILABLE", "Fleet service is unavailable");
         }
     }
