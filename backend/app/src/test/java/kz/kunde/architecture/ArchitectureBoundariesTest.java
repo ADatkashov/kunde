@@ -102,7 +102,7 @@ class ArchitectureBoundariesTest {
 
     // ---------------------------------------------------------------- coupling extraction
 
-    private static Set<String> importCoupling() {
+    static Set<String> importCoupling() {
         Set<String> edges = new TreeSet<>();
         for (Path file : javaFiles()) {
             String module = moduleOf(file);
@@ -134,7 +134,7 @@ class ArchitectureBoundariesTest {
         edges.add("IMPORT " + module + "/" + file.getFileName() + " -> " + target + "." + topLevelType(type));
     }
 
-    private static Set<String> sqlCoupling() {
+    static Set<String> sqlCoupling() {
         Set<String> tables = migratedTables();
         Pattern ref = Pattern.compile("\\b((?:identity|profile|marketplace|transactions|payments|support|serviceability|platform)\\.\\w+)\\b");
         Set<String> edges = new TreeSet<>();
@@ -190,7 +190,7 @@ class ArchitectureBoundariesTest {
         }
     }
 
-    private static Set<String> migratedTables() {
+    static Set<String> migratedTables() {
         Set<String> tables = new TreeSet<>();
         try (Stream<Path> walk = Files.list(MIGRATIONS)) {
             for (Path sql : walk.filter(p -> p.toString().endsWith(".sql")).toList()) {
@@ -205,7 +205,7 @@ class ArchitectureBoundariesTest {
         return tables;
     }
 
-    private static String ownerOf(String table) {
+    static String ownerOf(String table) {
         TreeMap<Integer, String> ordered = new TreeMap<>();
         int order = 0;
         for (String line : resource(OWNERS)) {
