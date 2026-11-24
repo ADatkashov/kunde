@@ -90,7 +90,8 @@ jobs:
           git worktree add --detach "$RUNNER_TEMP/kunde-before" "$BASE_SHA"
           mkdir -p "$RUNNER_TEMP/visual-apk" reports/visual
           build() (
-            cd "$1/mobile"
+            # The baseline commit may predate the apps/ layout.
+            if [ -d "$1/apps/consumer" ]; then cd "$1/apps/consumer"; else cd "$1/mobile"; fi
             flutter pub get --enforce-lockfile
             flutter build apk --debug --target-platform android-x64 \
               --dart-define=API_BASE_URL=http://localhost:8081/api/v1/ \
