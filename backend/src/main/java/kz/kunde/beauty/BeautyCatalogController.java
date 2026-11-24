@@ -1,4 +1,4 @@
-package kz.kunde.booking;
+package kz.kunde.beauty;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

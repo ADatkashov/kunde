@@ -48,7 +48,10 @@ public class BookingService {
     private final BookingSlots slots;
     private final kz.kunde.auto.AutoPayments payments;
 
-    public BookingService(JdbcTemplate db, BookingSlots slots, kz.kunde.auto.AutoPayments payments) {
+    private final BookingCategories categories;
+
+    public BookingService(JdbcTemplate db, BookingSlots slots, kz.kunde.auto.AutoPayments payments, BookingCategories categories) {
+        this.categories = categories;
         this.db = db;
         this.slots = slots;
         this.payments = payments;
@@ -123,10 +126,7 @@ public class BookingService {
         // The price is always computed here; the app only previews it.
         long price = service.priceMinor() + service.pricePerSqmMinor() * (area == null ? 0 : area);
         // A Beauty promotion (the venue's or platform-wide) active right now is applied to the list price.
-        Integer discount = "BARBER".equals(venue.category()) ? db.queryForObject("""
-                select max(percent) from marketplace.beauty_promotions
-                where active and now() >= starts_at and now() < ends_at and (venue_id = ? or venue_id is null)
-                """, Integer.class, venue.id()) : null;
+        Integer discount = categories.discountPercent(venue.category(), venue.id());
         long listPrice = price;
         if (discount != null) {
             price = listPrice - Math.round(listPrice * discount / 100.0);
@@ -159,8 +159,8 @@ public class BookingService {
         // Shared lock: a partner changing this master's schedule (FOR UPDATE) cannot interleave with this booking.
         String master = db.queryForObject("select name from marketplace.booking_masters where id = ? for share", String.class, request.masterId());
         // Beauty salons confirm instantly (the customer sees «Запись подтверждена»); other partner venues answer requests.
-        boolean partnerManaged = db.queryForObject("select v.partner_id is not null and not exists (select 1 from marketplace.beauty_salon_profiles p where p.venue_id = v.id) "
-                + "from marketplace.booking_venues v where v.id = ?", Boolean.class, venue.id());
+        boolean partnerManaged = Boolean.TRUE.equals(db.queryForObject("select partner_id is not null from marketplace.booking_venues where id = ?",
+                Boolean.class, venue.id())) && !categories.confirmsInstantly(venue.category(), venue.id());
         String comment = request.comment() == null || request.comment().isBlank() ? null : request.comment().strip();
         try {
             UUID id = db.queryForObject("""
@@ -285,7 +285,7 @@ public class BookingService {
     }
 
     /** Lazy transitions on read: finished confirmed visits are COMPLETED; a request nobody answered before the start expires. */
-    void completeDue(String scope, Object arg) {
+    public void completeDue(String scope, Object arg) {
         for (UUID id : db.queryForList("select id from transactions.bookings where " + scope
                 + " and status = 'CONFIRMED' and (category not in ('AUTO', 'HEALTH') or (category = 'HEALTH' and confirmation = 'DEV_MOCK')) and ends_at <= now() for update", UUID.class, arg)) {
             db.update("update transactions.bookings set status = 'COMPLETED', updated_at = now(), version = version + 1 where id = ?", id);
@@ -308,7 +308,7 @@ public class BookingService {
         }
     }
 
-    void event(UUID bookingId, String status, String actorType, UUID actor, String reason) {
+    public void event(UUID bookingId, String status, String actorType, UUID actor, String reason) {
         db.update("""
                 insert into transactions.booking_events (booking_id, status, actor_type, actor_user_id, reason)
                 values (?, ?, ?, ?, ?)

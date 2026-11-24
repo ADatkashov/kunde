@@ -1,5 +1,6 @@
-package kz.kunde.booking;
+package kz.kunde.beauty;
 
+import kz.kunde.booking.BookingService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

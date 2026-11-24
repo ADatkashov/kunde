@@ -1,4 +1,4 @@
-package kz.kunde.booking;
+package kz.kunde.beauty;
 
 import java.util.List;
 import java.util.UUID;

@@ -1,5 +1,6 @@
-package kz.kunde.booking;
+package kz.kunde.beauty;
 
+import kz.kunde.booking.BookingDemoSeeder;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.InputStream;

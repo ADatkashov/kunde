@@ -1,4 +1,4 @@
-package kz.kunde.booking;
+package kz.kunde.beauty;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;

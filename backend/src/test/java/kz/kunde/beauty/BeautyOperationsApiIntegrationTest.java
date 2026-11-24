@@ -1,4 +1,4 @@
-package kz.kunde.booking;
+package kz.kunde.beauty;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -12,6 +12,7 @@ import com.jayway.jsonpath.JsonPath;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.UUID;
+import kz.kunde.booking.BookingDemoSeeder;
 import kz.kunde.auth.PhoneAuthProperties;
 import kz.kunde.food.FoodDemoSeeder;
 import kz.kunde.partner.PartnerOpsDemoSeeder;

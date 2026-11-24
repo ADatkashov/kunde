@@ -1,0 +1,8 @@
+# Module edges recorded on purpose by the target architecture (ADR-023, Constitution section 3).
+# Format: <source module> -> <target module>. Every IMPORT and SQL coupling from source to a thing OWNED by target is accepted;
+# anything else (including source -> other modules) stays subject to cross-module-baseline.txt.
+# A vertical product depends on the booking engine; the engine never depends on a vertical (it uses BookingCategory).
+beauty -> booking
+homeservices -> booking
+health -> booking
+auto -> booking
