@@ -90,7 +90,7 @@ jobs:
           rm -f "$RUNNER_TEMP/partner-release.jks"
       - name: Verify signature and package identity
         run: |
-          apk=dist/KUNDE-Partner-dev-release.apk"
+          apk=dist/KUNDE-Partner-dev-release.apk
           bt="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
           test -s "$apk"
           "$bt/apksigner" verify --verbose --print-certs "$apk" | tee dist/signing.txt
@@ -117,7 +117,7 @@ jobs:
         with:
           name: KUNDE-Partner-dev-release
           path: |
-            dist/KUNDE-Partner-dev-release.apk"
+            dist/KUNDE-Partner-dev-release.apk
             dist/KUNDE-Partner-dev-release.apk.sha256
             dist/signing.txt
             dist/commit.txt

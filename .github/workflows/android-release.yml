@@ -75,7 +75,7 @@ jobs:
       KUNDE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       KUNDE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       KUNDE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-      APP_DIR: ${{ inputs.admin && 'apps/admin' || inputs.executor && 'apps/executor' || 'mobile' }}
+      APP_DIR: ${{ inputs.admin && 'apps/admin' || inputs.executor && 'apps/executor' || 'apps/consumer' }}
       KUNDE_ADMIN_BUILD: ${{ inputs.admin && 'true' || 'false' }}
       KUNDE_EXECUTOR_BUILD: ${{ inputs.executor && 'true' || 'false' }}
       APK_BASENAME: ${{ inputs.admin && 'KUNDE-admin-dev-release' || inputs.executor && 'KUNDE-executor-dev-release' || 'KUNDE-dev-release' }}
