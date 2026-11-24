@@ -16,7 +16,7 @@ def adb(*args):
     return subprocess.check_output(["adb", *map(str, args)], timeout=30)
 
 
-def find(*labels, node_class=None, clickable=False, enabled=False, resource_id=None, timeout=45):
+def find(*labels, node_class=None, clickable=False, enabled=False, resource_id=None, timeout=45, anchor="center"):
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         try:
@@ -45,6 +45,8 @@ def find(*labels, node_class=None, clickable=False, enabled=False, resource_id=N
             if len(bounds) == 4:
                 x1, y1, x2, y2 = bounds
                 if x2 > x1 and y2 > y1:
+                    if anchor == "right":  # a Switch row: only the track near the right edge toggles
+                        return x2 - 48, (y1 + y2) // 2
                     return (x1 + x2) // 2, (y1 + y2) // 2
     raise RuntimeError(f"Could not locate UI element {labels or node_class}")
 
