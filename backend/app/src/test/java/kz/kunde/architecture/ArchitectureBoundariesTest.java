@@ -30,7 +30,6 @@ import org.junit.jupiter.api.Test;
  * can only shrink. To add a dependency on purpose, put it in the baseline in the same PR and explain it there.
  */
 class ArchitectureBoundariesTest {
-    private static final Path SOURCES = Path.of("src/main/java/kz/kunde");
     private static final Path MIGRATIONS = Path.of("src/main/resources/db/migration");
     private static final String BASELINE = "/architecture/cross-module-baseline.txt";
     private static final String OWNERS = "/architecture/table-owners.txt";
@@ -165,15 +164,11 @@ class ArchitectureBoundariesTest {
     }
 
     private static String moduleOf(Path file) {
-        return SOURCES.relativize(file).getName(0).toString();
+        return ModuleSources.moduleOf(file);
     }
 
     private static List<Path> javaFiles() {
-        try (Stream<Path> walk = Files.walk(SOURCES)) {
-            return walk.filter(p -> p.toString().endsWith(".java")).sorted().toList();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        return ModuleSources.javaFiles();
     }
 
     private static List<String> lines(Path file) {

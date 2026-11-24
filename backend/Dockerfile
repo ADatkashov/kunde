@@ -5,7 +5,8 @@ FROM eclipse-temurin:21-jdk-ubi10-minimal@sha256:d349d0bbdc1483f90977f5e6298bab4
 WORKDIR /workspace
 COPY settings.gradle.kts build.gradle.kts ./
 COPY gradle ./gradle
-COPY src ./src
+COPY platform ./platform
+COPY app ./app
 RUN java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain --no-daemon -q bootJar
 
 FROM eclipse-temurin:21-jre-ubi10-minimal@sha256:b031b9d49d16229b6d49a354fee4d6ab936d973ee2a0ce13d00167f11bce4ccc

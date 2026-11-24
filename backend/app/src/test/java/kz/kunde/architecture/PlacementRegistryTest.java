@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
  */
 class PlacementRegistryTest {
     private static final Path MIGRATIONS = Path.of("src/main/resources/db/migration");
-    private static final Path SOURCES = Path.of("src/main/java/kz/kunde");
     private static final String REGISTRY = "/architecture/placement-registry.txt";
 
     private static final Pattern CREATE_TABLE =
@@ -171,11 +170,7 @@ class PlacementRegistryTest {
     }
 
     private static List<Path> javaFiles() {
-        try (Stream<Path> walk = Files.walk(SOURCES)) {
-            return walk.filter(p -> p.toString().endsWith(".java")).sorted().toList();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        return ModuleSources.javaFiles();
     }
 
     private static String read(Path file) {
