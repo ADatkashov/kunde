@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'auth_repository.dart';
+import 'package:kunde_auth/auth_repository.dart';
 
 class AddressPanel extends StatefulWidget {
   const AddressPanel({required this.auth, super.key});

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../food/presentation/food_widgets.dart';
 import '../../home/presentation/home_strings.dart';
 import '../booking_services.dart';
-import 'booking_strings.dart';
+import 'package:kunde_ui/booking_strings.dart';
 import 'category_screens.dart';
 
 /// «Все сервисы»: the common catalog of KUNDE services grouped by user-facing category (not a business category).

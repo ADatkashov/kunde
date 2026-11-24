@@ -1,4 +1,4 @@
-import '../identity/auth_repository.dart';
+import 'package:kunde_auth/auth_repository.dart';
 import 'data/leisure_api.dart';
 
 /// Everything the Leisure and Events screens need, created once by the app and passed down explicitly. Events reuse the Leisure screens:

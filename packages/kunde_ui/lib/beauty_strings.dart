@@ -1,5 +1,5 @@
-import '../../core/localization/kunde_formats.dart';
-import '../../core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_formats.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 
 /// Strings of Beauty & Care (RU/KK/EN) and locale-aware formatting of money, durations and dates.
 extension BeautyStrings on KundeLocalizations {

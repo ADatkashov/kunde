@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../identity/auth_repository.dart';
-import '../rides/ride_strings.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_ui/ride_strings.dart';
 
 /// One switchable feature as the server reports it. The environment is the ceiling: a feature it does not allow cannot be switched here.
 class FeatureSwitch {

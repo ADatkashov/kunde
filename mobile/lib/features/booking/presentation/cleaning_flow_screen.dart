@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../food/data/food_models.dart' show toneColors;
+import 'package:kunde_models/food_models.dart' show toneColors;
 import '../../food/presentation/food_widgets.dart';
 import '../booking_services.dart';
-import '../data/booking_api.dart';
-import '../data/booking_models.dart';
+import 'package:kunde_api/booking_api.dart';
+import 'package:kunde_models/booking_models.dart';
 import 'booking_detail_screen.dart';
-import 'booking_strings.dart';
+import 'package:kunde_ui/booking_strings.dart';
 
 /// Home services → Cleaning. Reuses the shared booking mechanism: cleaning type → address → area → estimated price →
 /// date and free time → request. Cleaning crews are synthetic in DEV; prices are demo prices, not real offers.

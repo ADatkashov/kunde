@@ -5,20 +5,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:kunde_mobile/features/booking/booking_services.dart';
-import 'package:kunde_mobile/features/booking/data/booking_api.dart';
-import 'package:kunde_mobile/features/booking/data/booking_models.dart';
+import 'package:kunde_api/booking_api.dart';
+import 'package:kunde_models/booking_models.dart';
 import 'package:kunde_mobile/features/booking/presentation/bookings_list.dart';
 import 'package:kunde_mobile/features/booking/presentation/category_screens.dart';
 import 'package:kunde_mobile/features/booking/presentation/services_home_screen.dart';
 import 'package:kunde_mobile/features/booking/presentation/venue_screen.dart';
 import 'package:kunde_mobile/features/health/health_favorites_screen.dart';
-import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import 'package:kunde_mobile/features/health/health_home_screen.dart';
 import 'package:kunde_mobile/features/home/data/kunde_api.dart';
 import 'package:kunde_mobile/features/home/data/platform_snapshot.dart';
 import 'package:kunde_mobile/features/home/presentation/home_screen.dart';
 import 'package:kunde_mobile/features/home/presentation/super_app_widgets.dart';
-import 'package:kunde_mobile/features/identity/auth_repository.dart';
+import 'package:kunde_auth/auth_repository.dart';
 
 class _Vault implements TokenVault {
   @override

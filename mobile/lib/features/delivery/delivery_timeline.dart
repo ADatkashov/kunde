@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'delivery_api.dart';
-import 'delivery_strings.dart';
+import 'package:kunde_ui/delivery_strings.dart';
 
 class DeliveryTimeline extends StatefulWidget {
   const DeliveryTimeline({required this.api, required this.order, super.key});

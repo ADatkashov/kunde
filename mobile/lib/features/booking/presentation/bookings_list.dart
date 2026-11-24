@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import 'booking_strings.dart';
+import 'package:kunde_ui/booking_strings.dart';
 
 import '../../food/presentation/food_widgets.dart';
 import '../booking_services.dart';
-import '../data/booking_api.dart';
-import '../data/booking_models.dart';
+import 'package:kunde_api/booking_api.dart';
+import 'package:kunde_models/booking_models.dart';
 import 'booking_detail_screen.dart';
 import 'services_home_screen.dart';
 

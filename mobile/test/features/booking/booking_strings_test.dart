@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
-import 'package:kunde_mobile/features/booking/data/booking_api.dart';
-import 'package:kunde_mobile/features/booking/presentation/booking_strings.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
+import 'package:kunde_api/booking_api.dart';
+import 'package:kunde_ui/booking_strings.dart';
 import 'package:kunde_mobile/features/home/presentation/home_strings.dart';
 
 void main() {

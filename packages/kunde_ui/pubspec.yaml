@@ -1,0 +1,20 @@
+name: kunde_ui
+description: Shared domain presentation helpers (strings, themes, widgets)
+version: 0.1.0
+publish_to: none
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  kunde_api:
+    path: ../kunde_api
+  kunde_design:
+    path: ../kunde_design
+  kunde_localization:
+    path: ../kunde_localization
+  kunde_models:
+    path: ../kunde_models
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

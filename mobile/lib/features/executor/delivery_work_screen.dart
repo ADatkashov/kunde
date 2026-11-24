@@ -5,9 +5,9 @@ import 'package:geolocator/geolocator.dart';
 
 import 'package:kunde_maps_sdk/kunde_maps_sdk.dart';
 
-import '../delivery/delivery_strings.dart';
-import '../identity/auth_repository.dart';
-import '../maps/kunde_maps.dart';
+import 'package:kunde_ui/delivery_strings.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_maps/kunde_maps.dart';
 import 'driver_navigation_screen.dart';
 
 class DeliveryWorkScreen extends StatefulWidget {

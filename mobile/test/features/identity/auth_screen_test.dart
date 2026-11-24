@@ -13,7 +13,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:kunde_mobile/main.dart';
 import 'package:kunde_mobile/features/home/data/kunde_api.dart';
-import 'package:kunde_mobile/features/identity/auth_repository.dart';
+import 'package:kunde_auth/auth_repository.dart';
 
 class MemoryVault implements TokenVault {
   String? value;

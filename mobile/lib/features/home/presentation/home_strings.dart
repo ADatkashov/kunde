@@ -1,4 +1,4 @@
-import '../../../core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 
 /// Strings of the Super App home screen (RU/KK/EN). Kept next to the screen so
 /// the shared localization file stays small.

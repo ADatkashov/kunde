@@ -5,13 +5,13 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:kunde_design/kunde_design.dart';
 
-import '../identity/auth_repository.dart';
+import 'package:kunde_auth/auth_repository.dart';
 import '../identity/support_panel.dart';
-import '../maps/kunde_maps.dart';
-import '../rides/ride_api.dart';
+import 'package:kunde_maps/kunde_maps.dart';
+import 'package:kunde_api/ride_api.dart';
 import '../rides/ride_map_panels.dart';
 import 'delivery_api.dart';
-import 'delivery_strings.dart';
+import 'package:kunde_ui/delivery_strings.dart';
 import 'delivery_timeline.dart';
 
 class DeliveryScreen extends StatefulWidget {

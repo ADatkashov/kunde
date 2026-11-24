@@ -1,0 +1,17 @@
+name: kunde_api
+description: Shared KUNDE API clients
+version: 0.1.0
+publish_to: none
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.2
+  kunde_auth:
+    path: ../kunde_auth
+  kunde_models:
+    path: ../kunde_models
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

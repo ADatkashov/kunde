@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-import 'booking_strings.dart';
+import 'package:kunde_ui/booking_strings.dart';
 
-import '../../food/data/food_models.dart' show toneColors;
+import 'package:kunde_models/food_models.dart' show toneColors;
 import '../../food/presentation/food_widgets.dart';
 import '../booking_services.dart';
-import '../data/booking_api.dart';
-import '../data/booking_models.dart';
+import 'package:kunde_api/booking_api.dart';
+import 'package:kunde_models/booking_models.dart';
 import 'booking_detail_screen.dart';
 
 /// Booking flow for one service: master (or any) → date → free slot → confirmation.

@@ -1,0 +1,20 @@
+name: kunde_operator
+description: Shared operator (Executor and Admin) app shell and screens
+version: 0.1.0
+publish_to: none
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  kunde_auth:
+    path: ../kunde_auth
+  kunde_design:
+    path: ../kunde_design
+  kunde_localization:
+    path: ../kunde_localization
+  kunde_ui:
+    path: ../kunde_ui
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

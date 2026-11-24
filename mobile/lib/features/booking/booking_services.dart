@@ -1,6 +1,6 @@
-import '../beauty/data/beauty_api.dart';
-import '../identity/auth_repository.dart';
-import 'data/booking_api.dart';
+import 'package:kunde_api/beauty_api.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_api/booking_api.dart';
 
 /// Everything the booking screens need, created once by the app and passed down explicitly.
 class BookingServices {

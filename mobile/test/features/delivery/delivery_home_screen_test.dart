@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import 'package:kunde_mobile/features/delivery/delivery_api.dart';
 import 'package:kunde_mobile/features/delivery/delivery_home_screen.dart';
-import 'package:kunde_mobile/features/identity/auth_repository.dart';
-import 'package:kunde_mobile/shared/theme/kunde_theme.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_design/kunde_theme.dart';
 
 import '../../support/premium_goldens.dart';
 

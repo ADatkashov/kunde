@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'auth_repository.dart';
+import 'package:kunde_auth/auth_repository.dart';
 import 'consent_presentation.dart';
 
 /// Approved policies only. The server is authoritative for consent state.

@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../../food/data/cart_controller.dart';
-import '../../food/data/food_models.dart';
+import 'package:kunde_models/food_models.dart';
 import '../../food/food_services.dart';
 import 'groceries_api.dart';
 

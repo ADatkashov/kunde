@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import 'auth_repository.dart';
-import 'auth_strings.dart';
-import 'phone_auth_gateway.dart';
-import 'phone_login_flow.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_auth/auth_strings.dart';
+import 'package:kunde_auth/phone_auth_gateway.dart';
+import 'package:kunde_auth/phone_login_flow.dart';
 
 /// Authentication boundary of the operator apps (Executor, Admin): phone login, session restore, profile check and
 /// session expiry. It knows nothing about the consumer shell, so those apps do not compile consumer features.

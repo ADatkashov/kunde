@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import 'package:kunde_mobile/features/assistant/assistant_screen.dart';
-import 'package:kunde_mobile/shared/theme/kunde_theme.dart';
+import 'package:kunde_design/kunde_theme.dart';
 
 import '../../support/premium_goldens.dart';
 

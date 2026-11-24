@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import '../../home/presentation/home_strings.dart';
 import '../../shell/shell_strings.dart';
 import '../data/food_api.dart';
-import '../data/food_models.dart';
+import 'package:kunde_models/food_models.dart';
 import '../food_services.dart';
 import 'food_widgets.dart';
 import 'order_screen.dart';

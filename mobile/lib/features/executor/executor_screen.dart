@@ -1,16 +1,16 @@
-import '../education/education_operations_screen.dart';
+import 'package:kunde_operator/education_operations_screen.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
-import '../beauty/beauty_theme.dart';
+import 'package:kunde_ui/beauty_theme.dart';
 import '../beauty/presentation/beauty_executor_screen.dart';
-import '../identity/auth_repository.dart';
-import '../maps/kunde_maps.dart';
-import '../rides/ride_strings.dart';
-import '../rides/ride_widgets.dart' show rideFare;
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_maps/kunde_maps.dart';
+import 'package:kunde_ui/ride_strings.dart';
+import 'package:kunde_ui/ride_widgets.dart' show rideFare;
 import 'auto_work_screen.dart';
 import 'gate_scan_screen.dart';
 import 'leisure_work_screen.dart';

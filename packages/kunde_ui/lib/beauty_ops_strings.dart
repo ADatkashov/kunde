@@ -1,4 +1,4 @@
-import '../../core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 
 /// Strings of the Beauty Partner, Executor and Admin screens (RU/KK/EN).
 extension BeautyOpsStrings on KundeLocalizations {

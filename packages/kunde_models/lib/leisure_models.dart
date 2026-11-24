@@ -1,4 +1,4 @@
-export '../../food/data/food_models.dart' show formatTenge;
+export 'package:kunde_models/food_models.dart' show formatTenge;
 
 String _s(Map<String, dynamic> j, String k) {
   final v = j[k];

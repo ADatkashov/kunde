@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import '../../booking/booking_services.dart';
-import '../beauty_strings.dart';
-import '../beauty_theme.dart';
-import '../data/beauty_models.dart';
+import 'package:kunde_ui/beauty_strings.dart';
+import 'package:kunde_ui/beauty_theme.dart';
+import 'package:kunde_models/beauty_models.dart';
 import 'beauty_salon_screen.dart';
-import 'beauty_support.dart';
-import 'beauty_widgets.dart';
+import 'package:kunde_ui/beauty_support.dart';
+import 'package:kunde_ui/beauty_widgets.dart';
 
 /// The customer's favorite salons.
 class BeautyFavoritesScreen extends StatelessWidget {

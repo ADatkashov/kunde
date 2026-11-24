@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:kunde_maps_sdk/kunde_maps_sdk.dart';
 
-import '../maps/kunde_maps.dart';
-import '../rides/ride_strings.dart';
+import 'package:kunde_maps/kunde_maps.dart';
+import 'package:kunde_ui/ride_strings.dart';
 
 /// Guides the driver from the current position to [target] with the KUNDE
 /// Maps SDK: route, voice, rerouting. The trip status, orders and payments

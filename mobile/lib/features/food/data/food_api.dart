@@ -4,8 +4,8 @@ import 'dart:math';
 
 import 'package:http/http.dart' as http;
 
-import '../../identity/auth_repository.dart';
-import 'food_models.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_models/food_models.dart';
 
 /// Why a Food call failed, in terms the UI can explain in Russian.
 enum FoodFailure {

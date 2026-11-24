@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../booking/booking_services.dart';
-import '../booking/data/booking_models.dart';
+import 'package:kunde_models/booking_models.dart';
 import '../booking/presentation/booking_flow_screen.dart';
-import '../booking/presentation/booking_strings.dart';
+import 'package:kunde_ui/booking_strings.dart';
 
 class HealthSpecialistScreen extends StatelessWidget {
   const HealthSpecialistScreen({

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import '../home/presentation/home_strings.dart';
 import '../home/presentation/super_app_widgets.dart';
 

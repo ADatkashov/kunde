@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../identity/auth_repository.dart';
-import '../rides/ride_strings.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_ui/ride_strings.dart';
 
 /// Executor mode for Leisure events that really need a person (guide, host, instructor, animator, organiser): offers made by a partner,
 /// accept or decline, start within the work window, complete, cancel before the start, and history. The server decides every step.

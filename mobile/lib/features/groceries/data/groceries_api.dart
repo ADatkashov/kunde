@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import '../../identity/auth_repository.dart';
+import 'package:kunde_auth/auth_repository.dart';
 import 'groceries_models.dart';
 
 enum GroceriesFailure {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:kunde_maps_sdk/kunde_maps_sdk.dart';
-import 'package:kunde_mobile/features/maps/kunde_maps.dart';
+import 'package:kunde_maps/kunde_maps.dart';
 
 /// A [KundeMaps] for widget tests: real SDK routing and search over the
 /// given HTTP client, but no native map. Maps are drawn as text so tests can

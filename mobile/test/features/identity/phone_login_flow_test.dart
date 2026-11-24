@@ -5,10 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:kunde_mobile/features/home/data/kunde_api.dart';
-import 'package:kunde_mobile/features/identity/auth_repository.dart';
+import 'package:kunde_auth/auth_repository.dart';
 import 'package:kunde_mobile/features/identity/consent_panel.dart';
-import 'package:kunde_mobile/features/identity/phone_auth_gateway.dart';
-import 'package:kunde_mobile/features/identity/phone_login_flow.dart';
+import 'package:kunde_auth/phone_auth_gateway.dart';
+import 'package:kunde_auth/phone_login_flow.dart';
 import 'package:kunde_mobile/main.dart';
 
 class _Vault implements TokenVault {

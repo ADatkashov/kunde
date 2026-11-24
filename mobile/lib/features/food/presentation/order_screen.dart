@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../home/presentation/home_strings.dart';
-import '../../../core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import '../data/cart_controller.dart';
 import '../data/food_api.dart';
-import '../data/food_models.dart';
+import 'package:kunde_models/food_models.dart';
 import '../food_services.dart';
 import 'cart_screen.dart';
 import 'food_widgets.dart';

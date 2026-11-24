@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:kunde_design/kunde_design.dart';
 
-import '../data/leisure_models.dart';
+import 'package:kunde_models/leisure_models.dart';
 import '../leisure_services.dart';
 import 'leisure_payment_screen.dart';
 import 'leisure_strings.dart';

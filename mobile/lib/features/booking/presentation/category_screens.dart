@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../beauty/beauty_strings.dart';
+import 'package:kunde_ui/beauty_strings.dart';
 import '../../beauty/presentation/beauty_home_screen.dart';
 import '../booking_services.dart';
-import 'booking_strings.dart';
+import 'package:kunde_ui/booking_strings.dart';
 import 'cleaning_flow_screen.dart';
 import 'services_home_screen.dart';
 import 'venue_list_screen.dart';

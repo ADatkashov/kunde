@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/cart_controller.dart';
 import '../data/food_api.dart';
-import '../data/food_models.dart';
+import 'package:kunde_models/food_models.dart';
 import '../food_services.dart';
 import 'checkout_screen.dart';
 import 'food_widgets.dart';

@@ -5,7 +5,7 @@ Reads changed file paths (one per line) from stdin and prints a JSON object such
 {"consumer": true, "executor": true, "admin": true, "partner": false}.
 
 Rules (conservative: when unsure, build):
-  * packages/kunde_design, the release workflows and this script affect every app;
+  * packages/ (shared Flutter packages), the release workflows and this script affect every app;
   * partner_app/** affects only Partner;
   * mobile/** is one shared Flutter codebase for Consumer, Executor and Admin, so a shared change builds all three;
     a change confined to one entry point (executor_main.dart / admin_rides_main.dart / main.dart) builds only that app;
@@ -16,7 +16,7 @@ import sys
 
 APPS = ("consumer", "executor", "admin", "partner")
 ALL_PREFIXES = (
-    "packages/kunde_design/",
+    "packages/",
     ".github/workflows/android-release.yml",
     ".github/workflows/partner-release.yml",
     ".github/workflows/release-apk-on-merge.yml",

@@ -2,7 +2,7 @@
 /// pieces, or grams for weighed goods (unit `KG`, price per kg, step 100 g).
 library;
 
-import '../../food/data/food_models.dart';
+import 'package:kunde_models/food_models.dart';
 
 class GroceryCategory {
   const GroceryCategory({

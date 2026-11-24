@@ -381,10 +381,38 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.0"
+  kunde_api:
+    dependency: "direct main"
+    description:
+      path: "../packages/kunde_api"
+      relative: true
+    source: path
+    version: "0.1.0"
+  kunde_auth:
+    dependency: "direct main"
+    description:
+      path: "../packages/kunde_auth"
+      relative: true
+    source: path
+    version: "0.1.0"
   kunde_design:
     dependency: "direct main"
     description:
       path: "../packages/kunde_design"
+      relative: true
+    source: path
+    version: "0.1.0"
+  kunde_localization:
+    dependency: "direct main"
+    description:
+      path: "../packages/kunde_localization"
+      relative: true
+    source: path
+    version: "0.1.0"
+  kunde_maps:
+    dependency: "direct main"
+    description:
+      path: "../packages/kunde_maps"
       relative: true
     source: path
     version: "0.1.0"
@@ -397,6 +425,27 @@ packages:
       url: "https://github.com/ADatkashov/kunde-maps.git"
     source: git
     version: "0.2.1"
+  kunde_models:
+    dependency: "direct main"
+    description:
+      path: "../packages/kunde_models"
+      relative: true
+    source: path
+    version: "0.1.0"
+  kunde_operator:
+    dependency: "direct main"
+    description:
+      path: "../packages/kunde_operator"
+      relative: true
+    source: path
+    version: "0.1.0"
+  kunde_ui:
+    dependency: "direct main"
+    description:
+      path: "../packages/kunde_ui"
+      relative: true
+    source: path
+    version: "0.1.0"
   leak_tracker:
     dependency: transitive
     description:

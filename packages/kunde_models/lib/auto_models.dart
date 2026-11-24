@@ -1,9 +1,9 @@
 /// Models of the KUNDE Auto API (`/api/v1/auto`): categories, venues, services, slots, vehicles, quotes and bookings.
 library;
 
-import '../../booking/data/booking_models.dart' show parseVenueTime;
+import 'package:kunde_models/booking_models.dart' show parseVenueTime;
 
-export '../../booking/data/booking_models.dart'
+export 'package:kunde_models/booking_models.dart'
     show formatClock, formatDay, formatDuration, formatTenge, parseVenueTime;
 
 String _str(Map<String, dynamic> j, String k) {

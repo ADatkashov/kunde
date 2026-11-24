@@ -5,10 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import 'package:kunde_mobile/features/food/data/cart_controller.dart';
 import 'package:kunde_mobile/features/food/data/food_api.dart';
-import 'package:kunde_mobile/features/food/data/food_models.dart';
+import 'package:kunde_models/food_models.dart';
 import 'package:kunde_mobile/features/food/food_services.dart';
 import 'package:kunde_mobile/features/groceries/data/groceries_api.dart';
 import 'package:kunde_mobile/features/groceries/data/groceries_models.dart';
@@ -17,8 +17,8 @@ import 'package:kunde_mobile/features/groceries/presentation/catalog_screen.dart
 import 'package:kunde_mobile/features/groceries/presentation/groceries_home_screen.dart';
 import 'package:kunde_mobile/features/groceries/presentation/lists_screen.dart';
 import 'package:kunde_mobile/features/groceries/presentation/product_screen.dart';
-import 'package:kunde_mobile/features/identity/auth_repository.dart';
-import 'package:kunde_mobile/shared/theme/kunde_theme.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_design/kunde_theme.dart';
 
 import '../../support/premium_goldens.dart';
 

@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:kunde_mobile/core/localization/kunde_formats.dart';
-import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_formats.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import 'package:kunde_mobile/features/home/data/kunde_api.dart';
 import 'package:kunde_mobile/features/home/presentation/catalog_search_panel.dart';
 import 'package:kunde_mobile/features/home/presentation/home_screen.dart';
-import 'package:kunde_mobile/shared/theme/kunde_theme.dart';
+import 'package:kunde_design/kunde_theme.dart';
 
 Widget _app(Widget home, {String locale = 'ru'}) => MaterialApp(
       theme: KundeTheme.light,

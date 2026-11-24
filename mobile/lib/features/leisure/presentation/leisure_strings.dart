@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import '../../../core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import '../data/leisure_api.dart';
 
 /// Strings of KUNDE Leisure (RU/KK/EN) plus locale-aware date helpers (the shared helpers are Russian only).

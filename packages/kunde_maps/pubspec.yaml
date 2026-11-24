@@ -1,0 +1,19 @@
+name: kunde_maps
+description: KUNDE Maps adapter over the KUNDE Maps SDK
+version: 0.1.0
+publish_to: none
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.2
+  kunde_maps_sdk:
+    # KUNDE Maps SDK 0.2.1, pinned to the immutable release commit of kunde-maps (release tags cannot be created from CI-less agent sessions).
+    git:
+      url: https://github.com/ADatkashov/kunde-maps.git
+      path: packages/kunde_maps_sdk
+      ref: 3a6134736d27e073e8d98e878a0ffc5c5bf375b8
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

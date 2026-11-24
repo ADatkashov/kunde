@@ -2,9 +2,9 @@ name: Flutter CI
 on:
   push:
     branches: [main]
-    paths: ['mobile/**', 'packages/kunde_design/**', '.github/workflows/flutter.yml']
+    paths: ['mobile/**', 'packages/**', '.github/workflows/flutter.yml']
   pull_request:
-    paths: ['mobile/**', 'packages/kunde_design/**', '.github/workflows/flutter.yml']
+    paths: ['mobile/**', 'packages/**', '.github/workflows/flutter.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -29,6 +29,9 @@ jobs:
         run: |
           flutter pub get --enforce-lockfile
           flutter analyze --fatal-infos
+          for package in ../packages/*/; do
+            (cd "$package" && flutter pub get && flutter analyze --fatal-infos)
+          done
           dart format --output=none --set-exit-if-changed lib test
           flutter test --machine > flutter-tests.json
           python3 -c 'import json; e=[json.loads(s) for s in open("flutter-tests.json") if s.lstrip().startswith("{")]; assert any(x.get("type")=="done" and x.get("success") is True for x in e), "Missing successful test completion event"; t=[x for x in e if x.get("type")=="testDone" and not x.get("hidden",False)]; print("FLUTTER_TEST_SUMMARY",json.dumps({"tests":len(t),"success":sum(x.get("result")=="success" for x in t),"skipped":sum(x.get("skipped",False) for x in t)}))'

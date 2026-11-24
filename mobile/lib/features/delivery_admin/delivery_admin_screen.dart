@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../delivery/delivery_strings.dart';
-import '../identity/auth_repository.dart';
-import '../rides/ride_strings.dart';
+import 'package:kunde_ui/delivery_strings.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_ui/ride_strings.dart';
 
 enum DeliveryAdminArea { couriers, shipments, complaints }
 

@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-import '../identity/auth_repository.dart';
-import '../rides/ride_strings.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_ui/ride_strings.dart';
 
 /// Gate control of KUNDE Events for an executor assigned by the organiser as GATE controller. The camera only reads the code: the server
 /// decides (assignment, ticket, session, status, repeat, time window) and admits a ticket exactly once. Nothing is decided on the device and

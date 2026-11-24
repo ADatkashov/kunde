@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../auto/data/auto_models.dart' show formatTenge;
-import '../identity/auth_repository.dart';
-import '../rides/ride_strings.dart';
+import 'package:kunde_models/auto_models.dart' show formatTenge;
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_ui/ride_strings.dart';
 
 enum AutoAdminArea {
   specialists,

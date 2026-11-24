@@ -1,4 +1,4 @@
-import '../identity/auth_repository.dart';
+import 'package:kunde_auth/auth_repository.dart';
 
 /// Partner operations client (orders, bookings, availability). Every call goes through the authenticated repository
 /// (same token handling and 401 behavior as the rest of the app); the server decides what the caller may see or change.

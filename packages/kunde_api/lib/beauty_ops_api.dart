@@ -1,5 +1,5 @@
-import '../../identity/auth_repository.dart';
-import 'beauty_models.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_models/beauty_models.dart';
 
 /// Beauty operations for KUNDE Partner (salon), Executor (master) and Admin. Own-data endpoints only.
 class BeautyOpsApi {

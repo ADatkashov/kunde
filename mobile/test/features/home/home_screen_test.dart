@@ -6,11 +6,11 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import 'package:kunde_mobile/features/home/data/kunde_api.dart';
 import 'package:kunde_mobile/features/home/presentation/home_screen.dart';
 import 'package:kunde_mobile/features/home/presentation/super_app_widgets.dart';
-import 'package:kunde_mobile/shared/theme/kunde_theme.dart';
+import 'package:kunde_design/kunde_theme.dart';
 
 KundeApi _api({bool marketplace = false, bool fail = false}) => KundeApi(
     baseUri: Uri.parse('https://api.example.test/api/v1/'),

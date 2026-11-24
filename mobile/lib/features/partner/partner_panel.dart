@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../core/localization/kunde_formats.dart';
-import '../identity/auth_repository.dart';
+import 'package:kunde_localization/kunde_formats.dart';
+import 'package:kunde_auth/auth_repository.dart';
 import 'partner_hub.dart';
 
 /// Parses a KZT amount typed by a partner into tiyn (minor units, D-04: one

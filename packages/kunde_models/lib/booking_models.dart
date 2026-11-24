@@ -1,7 +1,7 @@
 /// Models of the KUNDE booking API (`/api/v1/booking`): barbershops, services, masters, slots and bookings.
 library;
 
-export '../../food/data/food_models.dart' show formatTenge;
+export 'package:kunde_models/food_models.dart' show formatTenge;
 
 /// `45 мин`, `1 ч`, `1 ч 15 мин`.
 String formatDuration(int minutes) {

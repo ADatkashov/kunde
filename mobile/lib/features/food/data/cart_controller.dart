@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-import 'food_models.dart';
+import 'package:kunde_models/food_models.dart';
 
 /// One cart line: a dish with a fixed option selection. Prices here are only a preview; the server
 /// recomputes everything in `cart/quote` and at checkout.

@@ -1,4 +1,4 @@
-import '../identity/auth_repository.dart';
+import 'package:kunde_auth/auth_repository.dart';
 
 class RideApi {
   const RideApi(this.auth);

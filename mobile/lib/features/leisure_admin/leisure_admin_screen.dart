@@ -2,9 +2,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../identity/auth_repository.dart';
-import '../leisure/data/leisure_models.dart' show formatTenge;
-import '../rides/ride_strings.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_models/leisure_models.dart' show formatTenge;
+import 'package:kunde_ui/ride_strings.dart';
 
 /// Leisure Control Center for administrators: analytics, moderation of venues and events, bookings and tickets, refunds, complaints, categories
 /// and the audit journal. Everything goes through `/api/v1/admin/leisure/**`, where the LEISURE_OPERATIONS grant is checked on every request;

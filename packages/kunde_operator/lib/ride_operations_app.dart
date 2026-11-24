@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import '../../core/localization/kunde_localizations.dart';
-import 'auth_repository.dart';
-import 'operator_gate.dart';
-import 'phone_auth_gateway.dart';
-import '../../shared/theme/kunde_theme.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_operator/operator_gate.dart';
+import 'package:kunde_auth/phone_auth_gateway.dart';
+import 'package:kunde_design/kunde_theme.dart';
 
 void runRideOperations(String title, Widget Function(AuthRepository) home,
     {bool sameOriginWeb = false}) {

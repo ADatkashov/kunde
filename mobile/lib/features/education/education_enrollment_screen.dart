@@ -5,9 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../home/data/kunde_api.dart';
-import '../identity/auth_repository.dart';
-import 'education_labels.dart';
-import 'education_text_dialog.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_ui/education_labels.dart';
+import 'package:kunde_ui/education_text_dialog.dart';
 
 class EducationEnrollmentScreen extends StatefulWidget {
   const EducationEnrollmentScreen({

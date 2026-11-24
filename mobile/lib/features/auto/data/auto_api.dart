@@ -4,8 +4,8 @@ import 'dart:math';
 
 import 'package:http/http.dart' as http;
 
-import '../../identity/auth_repository.dart';
-import 'auto_models.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_models/auto_models.dart';
 
 enum AutoFailure {
   offline,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'booking_strings.dart';
-import '../../../core/localization/kunde_localizations.dart';
+import 'package:kunde_ui/booking_strings.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import '../../home/presentation/home_strings.dart';
 
 import '../../food/food_services.dart';

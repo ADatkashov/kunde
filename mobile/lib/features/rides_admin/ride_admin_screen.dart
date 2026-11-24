@@ -1,5 +1,5 @@
 import '../beauty/presentation/beauty_admin_screen.dart';
-import '../education/education_operations_screen.dart';
+import 'package:kunde_operator/education_operations_screen.dart';
 import 'package:flutter/material.dart';
 
 import '../admin_employees/admin_employee_screen.dart';
@@ -8,10 +8,10 @@ import '../auto_admin/auto_admin_screen.dart';
 import '../food_admin/food_admin_screen.dart';
 import '../leisure_admin/leisure_admin_screen.dart';
 import '../delivery_admin/delivery_admin_screen.dart';
-import '../identity/auth_repository.dart';
+import 'package:kunde_auth/auth_repository.dart';
 import '../health/health_admin_screen.dart';
 import '../home_services_admin/home_services_categories_screen.dart';
-import '../rides/ride_strings.dart';
+import 'package:kunde_ui/ride_strings.dart';
 import 'ride_admin_dashboard.dart';
 import 'ride_driver_access_screen.dart';
 

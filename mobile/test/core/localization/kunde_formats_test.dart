@@ -1,7 +1,7 @@
 import 'dart:ui' show Locale;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kunde_mobile/core/localization/kunde_formats.dart';
+import 'package:kunde_localization/kunde_formats.dart';
 
 const _ru = Locale('ru');
 const _kk = Locale('kk');

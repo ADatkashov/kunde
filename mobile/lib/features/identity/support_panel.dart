@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'auth_repository.dart';
+import 'package:kunde_auth/auth_repository.dart';
 
 /// Consumer support cases (SUP-001). Cases are not linked to orders yet and no
 /// response time is promised: the server records the request, nothing more.
