@@ -7,6 +7,8 @@ apply(from = rootProject.file("gradle/kunde-module.gradle.kts"))
 
 dependencies {
     implementation(project(":platform"))
+    implementation(project(":services:partners"))
+    implementation(project(":services:identity"))
     implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.flywaydb:flyway-database-postgresql")
     runtimeOnly("org.postgresql:postgresql")

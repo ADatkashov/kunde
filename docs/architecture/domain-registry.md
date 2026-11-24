@@ -4,9 +4,9 @@
 
 | Канон | Продукт для пользователя | Пакет сейчас → модуль | Маршруты `/api/v1/…` | Flutter features (сейчас) | Таблицы (префикс) | Зависит от |
 |---|---|---|---|---|---|---|
-| identity | Профиль, адреса, согласия | `identity` | `me`, `me/addresses`, `me/consents` | `identity` | `identity.users`, `profile.*`, `serviceability.*` | platform |
-| auth | Вход по телефону | `auth` → `identity` | `auth` | `identity` | `identity.auth_/otp_/refresh_` | platform |
-| partners | Партнёры, персонал, каталог | `partner`, `catalog` → `partners` | `partner`, `categories`/offerings | `partner`, `partner_app` | `marketplace.partner*`, `offering*`, `categories` | auth |
+| identity | Профиль, адреса, согласия | `identity` → `services/identity` ✔ | `me`, `me/addresses`, `me/consents` | `identity` | `identity.users`, `profile.*`, `serviceability.*` | platform |
+| auth | Вход по телефону | `auth` → `services/identity` ✔ | `auth` | `identity` | `identity.auth_/otp_/refresh_` | platform |
+| partners | Партнёры, персонал, каталог | `partner`, `catalog` → `services/partners` ✔ | `partner`, `categories`/offerings | `partner`, `partner_app` | `marketplace.partner*`, `offering*`, `categories` | auth |
 | food | Еда | `food` | `food`, `executor/food`, `partner/…/food` | `food`, `food_admin`, `executor/food_work` | `food_*` | partners |
 | groceries | Продукты | `groceries` | `groceries` | `groceries` | `grocery_*` | food |
 | delivery | Доставка | `delivery` | `deliveries`, `executor/deliveries`, `admin/deliveries`, `partner/…/deliveries` | `delivery`, `delivery_admin`, `executor/delivery_work` | `deliver*` | partners, platform |
