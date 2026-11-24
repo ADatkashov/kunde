@@ -175,12 +175,20 @@ def create_ride():
 
 
 def find_completed():
-    android.find(
+    labels = (
         "Поездка завершена", "Ride complete", "Сапар аяқталды",
         "Тестовый маршрут · Поездка завершена",
         "Test route · Ride complete",
         "Сынақ бағыты · Сапар аяқталды",
     )
+    # On the driver home screen the history is below the menu (#243): scroll down until the row is visible.
+    for _ in range(5):
+        try:
+            android.find(*labels, timeout=6)
+            return
+        except RuntimeError:
+            android.adb("shell", "input", "swipe", 195, 700, 195, 250, 300)
+    android.find(*labels)
 
 
 def open_history(back_first=False):
