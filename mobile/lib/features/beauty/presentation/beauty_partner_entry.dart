@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../../core/localization/kunde_localizations.dart';
-import '../../identity/auth_repository.dart';
-import '../beauty_ops_strings.dart';
-import '../beauty_theme.dart';
-import '../data/beauty_ops_api.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_ui/beauty_ops_strings.dart';
+import 'package:kunde_ui/beauty_theme.dart';
+import 'package:kunde_api/beauty_ops_api.dart';
 import 'beauty_partner_screen.dart';
 
 /// App-bar button of the partner hub, shown only when the organization owns a beauty salon and Beauty is enabled.

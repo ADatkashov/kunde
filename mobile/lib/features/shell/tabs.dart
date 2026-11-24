@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import '../food/food_services.dart';
 import '../food/presentation/food_home_screen.dart';
 import '../home/data/kunde_api.dart';
@@ -11,7 +11,7 @@ import '../home/presentation/super_app_widgets.dart';
 import 'shell_strings.dart';
 import '../booking/booking_services.dart';
 import '../leisure/data/leisure_api.dart';
-import '../leisure/data/leisure_models.dart';
+import 'package:kunde_models/leisure_models.dart';
 import '../leisure/leisure_services.dart';
 import '../leisure/presentation/leisure_list_screen.dart';
 import '../leisure/presentation/leisure_strings.dart';

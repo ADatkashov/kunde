@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../home/data/kunde_api.dart';
-import '../identity/auth_repository.dart';
+import 'package:kunde_auth/auth_repository.dart';
 import 'education_enrollment_screen.dart';
-import 'education_labels.dart';
+import 'package:kunde_ui/education_labels.dart';
 
 class EducationScreen extends StatefulWidget {
   const EducationScreen({required this.api, this.auth, super.key});

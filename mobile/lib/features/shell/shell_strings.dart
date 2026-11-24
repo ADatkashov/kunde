@@ -1,4 +1,4 @@
-import '../../core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 
 /// Strings of the bottom navigation and its not-yet-built tabs (RU/KK/EN).
 extension ShellStrings on KundeLocalizations {

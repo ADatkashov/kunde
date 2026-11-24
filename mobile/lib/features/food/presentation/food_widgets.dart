@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../data/food_models.dart';
+import 'package:kunde_models/food_models.dart';
 import '../food_services.dart';
 import 'cart_screen.dart';
 import '../../../shared/theme/kunde_art.dart';

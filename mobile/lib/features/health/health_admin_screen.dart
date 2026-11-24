@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../identity/auth_repository.dart';
-import '../rides/ride_strings.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_ui/ride_strings.dart';
 
 class HealthAdminScreen extends StatefulWidget {
   const HealthAdminScreen({required this.auth, super.key});

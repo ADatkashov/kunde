@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../food/data/food_models.dart';
+import 'package:kunde_models/food_models.dart';
 import '../../food/presentation/food_widgets.dart';
 import '../data/groceries_api.dart';
 import '../data/groceries_models.dart';

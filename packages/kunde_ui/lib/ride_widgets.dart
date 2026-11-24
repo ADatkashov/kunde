@@ -3,8 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:kunde_design/kunde_design.dart';
 
-import 'ride_api.dart';
-import 'ride_strings.dart';
+import 'package:kunde_api/ride_api.dart';
+import 'package:kunde_ui/ride_strings.dart';
 
 /// A server fare as the reference shows it: `1 200 ₸`. Whole tenge have no
 /// decimals; a fractional estimate keeps two so nothing is rounded silently.

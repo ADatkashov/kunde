@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../auto_services.dart';
 import '../data/auto_api.dart';
-import '../data/auto_models.dart';
+import 'package:kunde_models/auto_models.dart';
 import 'auto_booking_detail_screen.dart';
 import 'auto_strings.dart';
 import 'auto_widgets.dart';

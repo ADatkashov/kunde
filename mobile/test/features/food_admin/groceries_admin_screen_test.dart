@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import 'package:kunde_mobile/features/food_admin/food_admin_screen.dart';
-import 'package:kunde_mobile/features/identity/auth_repository.dart';
+import 'package:kunde_auth/auth_repository.dart';
 
 /// Answers like `/api/v1/admin/groceries`; an empty database yields zeros and empty lists.
 class _AdminSession implements AuthRepository {

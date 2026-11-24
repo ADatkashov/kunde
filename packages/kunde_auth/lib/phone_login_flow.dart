@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'auth_repository.dart';
-import 'phone_auth_gateway.dart';
-import 'phone_auth_strings.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_auth/phone_auth_gateway.dart';
+import 'package:kunde_auth/phone_auth_strings.dart';
 
 /// Formats up to ten national digits as `XXX XXX XX XX` (the `+7` prefix is fixed).
 class NationalPhoneFormatter extends TextInputFormatter {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kunde_mobile/features/home_services_admin/home_services_categories_screen.dart';
-import 'package:kunde_mobile/features/identity/auth_repository.dart';
+import 'package:kunde_auth/auth_repository.dart';
 
 class _Session implements AuthRepository {
   Map<String, dynamic>? saved;

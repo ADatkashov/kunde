@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/localization/kunde_localizations.dart';
-import '../../identity/auth_repository.dart';
-import '../beauty_ops_strings.dart';
-import '../beauty_strings.dart';
-import '../beauty_theme.dart';
-import '../data/beauty_ops_api.dart';
-import 'beauty_support.dart';
-import 'beauty_widgets.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_ui/beauty_ops_strings.dart';
+import 'package:kunde_ui/beauty_strings.dart';
+import 'package:kunde_ui/beauty_theme.dart';
+import 'package:kunde_api/beauty_ops_api.dart';
+import 'package:kunde_ui/beauty_support.dart';
+import 'package:kunde_ui/beauty_widgets.dart';
 
 /// KUNDE Executor for a beauty master: online switch, today's appointments, start/finish/no-show, schedule and income.
 class BeautyExecutorScreen extends StatefulWidget {

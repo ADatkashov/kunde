@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/cart_controller.dart';
 import '../data/food_api.dart';
-import '../data/food_models.dart';
+import 'package:kunde_models/food_models.dart';
 import 'food_widgets.dart';
 
 /// Product card: description, option groups, quantity (pieces, or grams for weighed goods), stock hint and, in

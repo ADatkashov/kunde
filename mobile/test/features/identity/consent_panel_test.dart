@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
-import 'package:kunde_mobile/features/identity/auth_repository.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
+import 'package:kunde_auth/auth_repository.dart';
 import 'package:kunde_mobile/features/identity/consent_panel.dart';
 
 class _Vault implements TokenVault {

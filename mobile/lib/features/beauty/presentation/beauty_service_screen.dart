@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../../../core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import '../../booking/booking_services.dart';
-import '../beauty_strings.dart';
-import '../beauty_theme.dart';
-import '../data/beauty_models.dart';
+import 'package:kunde_ui/beauty_strings.dart';
+import 'package:kunde_ui/beauty_theme.dart';
+import 'package:kunde_models/beauty_models.dart';
 import 'beauty_master_screen.dart';
-import 'beauty_support.dart';
-import 'beauty_widgets.dart';
+import 'package:kunde_ui/beauty_support.dart';
+import 'package:kunde_ui/beauty_widgets.dart';
 
 /// Service card («Окрашивание волос»): photo area, rating, tags, price, duration, description and «Записаться».
 class BeautyServiceScreen extends StatelessWidget {

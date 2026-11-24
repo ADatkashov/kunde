@@ -2,8 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../identity/auth_repository.dart';
-import '../rides/ride_strings.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_ui/ride_strings.dart';
 
 /// Figures from `admin/rides/summary` plus the latest rows of `admin/rides/trips`.
 /// Money is the quoted tariff fare of completed, non-synthetic rides: no payment

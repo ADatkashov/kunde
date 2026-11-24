@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/localization/kunde_formats.dart';
-import '../../../core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_formats.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import '../data/catalog_category.dart';
 import '../data/catalog_offering.dart';
 import '../data/kunde_api.dart';

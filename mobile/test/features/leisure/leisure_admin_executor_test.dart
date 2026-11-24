@@ -5,11 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import 'package:kunde_mobile/features/executor/gate_scan_screen.dart';
 import 'package:kunde_mobile/features/executor/leisure_work_screen.dart';
-import 'package:kunde_mobile/features/identity/auth_repository.dart';
-import 'package:kunde_mobile/features/leisure/data/leisure_models.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_models/leisure_models.dart';
 import 'package:kunde_mobile/features/leisure_admin/leisure_admin_screen.dart';
 
 class _Vault implements TokenVault {

@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../identity/auth_repository.dart';
-import '../rides/ride_strings.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_ui/ride_strings.dart';
 
 /// A driver as the admin sees it: profile plus the one registered vehicle.
 class DriverAccessRow {

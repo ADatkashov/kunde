@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import '../../booking/data/booking_api.dart';
-import 'beauty_models.dart';
+import 'package:kunde_api/booking_api.dart';
+import 'package:kunde_models/beauty_models.dart';
 
 /// Beauty & Care discovery client. Shares transport, authorization and error mapping with [BookingApi];
 /// bookings themselves still go through [BookingApi.book].

@@ -4,15 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
-import 'package:kunde_mobile/features/beauty/beauty_strings.dart';
-import 'package:kunde_mobile/features/beauty/beauty_theme.dart';
-import 'package:kunde_mobile/features/beauty/data/beauty_models.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
+import 'package:kunde_ui/beauty_strings.dart';
+import 'package:kunde_ui/beauty_theme.dart';
+import 'package:kunde_models/beauty_models.dart';
 import 'package:kunde_mobile/features/beauty/presentation/beauty_home_screen.dart';
-import 'package:kunde_mobile/features/beauty/presentation/beauty_widgets.dart';
+import 'package:kunde_ui/beauty_widgets.dart';
 import 'package:kunde_mobile/features/booking/booking_services.dart';
-import 'package:kunde_mobile/features/booking/data/booking_api.dart';
-import 'package:kunde_mobile/features/identity/auth_repository.dart';
+import 'package:kunde_api/booking_api.dart';
+import 'package:kunde_auth/auth_repository.dart';
 
 class _Vault implements TokenVault {
   @override

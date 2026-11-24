@@ -1,6 +1,6 @@
 import 'package:kunde_maps_sdk/kunde_maps_sdk.dart';
 
-import '../identity/auth_repository.dart';
+import 'package:kunde_auth/auth_repository.dart';
 
 class ExecutorApi {
   const ExecutorApi(this.auth);

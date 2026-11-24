@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/localization/kunde_localizations.dart';
-import '../beauty_strings.dart';
-import '../beauty_theme.dart';
-import '../data/beauty_models.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
+import 'package:kunde_ui/beauty_strings.dart';
+import 'package:kunde_ui/beauty_theme.dart';
+import 'package:kunde_models/beauty_models.dart';
 
 /// Material icon for a category icon code sent by the server.
 IconData beautyIcon(String code) => switch (code) {

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../identity/auth_repository.dart';
-import 'education_labels.dart';
-import 'education_text_dialog.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_ui/education_labels.dart';
+import 'package:kunde_ui/education_text_dialog.dart';
 
 class EducationOperationsScreen extends StatefulWidget {
   const EducationOperationsScreen({

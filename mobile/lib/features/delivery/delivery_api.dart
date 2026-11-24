@@ -1,5 +1,5 @@
-import '../identity/auth_repository.dart';
-import '../rides/ride_api.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_api/ride_api.dart';
 
 class DeliveryApi {
   const DeliveryApi(this.auth);

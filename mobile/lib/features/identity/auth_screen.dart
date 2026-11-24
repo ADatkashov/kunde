@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import '../home/presentation/home_strings.dart';
 import '../auto/auto_services.dart';
 import '../leisure/leisure_services.dart';
@@ -13,13 +13,13 @@ import '../home/data/kunde_api.dart';
 import '../home/presentation/home_screen.dart';
 import '../shell/tabs.dart';
 import '../assistant/assistant_screen.dart';
-import 'auth_repository.dart';
-import 'auth_strings.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_auth/auth_strings.dart';
 import 'consent_panel.dart';
 import '../delivery/delivery_api.dart';
-import '../rides/ride_api.dart';
-import 'phone_auth_gateway.dart';
-import 'phone_login_flow.dart';
+import 'package:kunde_api/ride_api.dart';
+import 'package:kunde_auth/phone_auth_gateway.dart';
+import 'package:kunde_auth/phone_login_flow.dart';
 import '../partner/partner_panel.dart';
 import 'support_panel.dart';
 import 'address_panel.dart';

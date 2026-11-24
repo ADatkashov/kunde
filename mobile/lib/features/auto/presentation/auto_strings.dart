@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import '../../../core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import '../data/auto_api.dart';
 
 /// Strings of the KUNDE Auto section (RU/KK/EN).

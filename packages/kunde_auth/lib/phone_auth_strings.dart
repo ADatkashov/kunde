@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import 'phone_auth_gateway.dart';
+import 'package:kunde_auth/phone_auth_gateway.dart';
 
 class PhoneAuthStrings {
   PhoneAuthStrings(BuildContext context)

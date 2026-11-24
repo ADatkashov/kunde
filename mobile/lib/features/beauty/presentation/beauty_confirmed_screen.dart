@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import '../../booking/booking_services.dart';
-import '../../booking/data/booking_models.dart';
+import 'package:kunde_models/booking_models.dart';
 import '../../booking/presentation/bookings_list.dart';
-import '../beauty_strings.dart';
-import '../beauty_theme.dart';
-import '../data/beauty_models.dart';
+import 'package:kunde_ui/beauty_strings.dart';
+import 'package:kunde_ui/beauty_theme.dart';
+import 'package:kunde_models/beauty_models.dart';
 import 'beauty_home_screen.dart';
-import 'beauty_widgets.dart';
+import 'package:kunde_ui/beauty_widgets.dart';
 
 /// «Запись подтверждена!»: shown only after the server has confirmed the booking.
 class BeautyConfirmedScreen extends StatelessWidget {

@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import 'auth_repository.dart';
+import 'package:kunde_auth/auth_repository.dart';
 
 enum PhoneAuthFailure {
   invalidPhone,

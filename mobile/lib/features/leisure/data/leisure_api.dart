@@ -4,8 +4,8 @@ import 'dart:math';
 
 import 'package:http/http.dart' as http;
 
-import '../../identity/auth_repository.dart';
-import 'leisure_models.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_models/leisure_models.dart';
 
 /// The two products on the one ticketing engine: Events (dated tickets) and Leisure (bookable activities). They differ only in the
 /// public catalogue paths; seats, holds, orders and tickets are shared (`leisure/...`).

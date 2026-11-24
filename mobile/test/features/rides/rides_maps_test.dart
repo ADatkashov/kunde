@@ -6,12 +6,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:kunde_maps_sdk/kunde_maps_sdk.dart';
-import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import 'package:kunde_mobile/features/home/data/platform_snapshot.dart';
-import 'package:kunde_mobile/features/identity/auth_repository.dart';
-import 'package:kunde_mobile/features/rides/ride_api.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_api/ride_api.dart';
 import 'package:kunde_mobile/features/rides/ride_map_panels.dart';
-import 'package:kunde_mobile/features/rides/ride_widgets.dart' show rideFare;
+import 'package:kunde_ui/ride_widgets.dart' show rideFare;
 import 'package:kunde_mobile/features/rides/rides_screen.dart';
 
 import '../../support/fake_kunde_maps.dart';

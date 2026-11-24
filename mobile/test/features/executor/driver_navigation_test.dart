@@ -7,12 +7,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:kunde_maps_sdk/kunde_maps_sdk.dart';
-import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import 'package:kunde_mobile/features/executor/driver_navigation_screen.dart';
 import 'package:kunde_mobile/features/executor/executor_api.dart';
 import 'package:kunde_mobile/features/executor/executor_screen.dart';
-import 'package:kunde_mobile/features/identity/auth_repository.dart';
-import 'package:kunde_mobile/features/maps/kunde_maps.dart';
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_maps/kunde_maps.dart';
 
 // A real route response captured from the deployed DEV Maps Platform.
 final _route = File(

@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'package:kunde_mobile/features/home/presentation/home_screen.dart';
 import 'package:kunde_mobile/features/home/data/kunde_api.dart';
 import 'package:kunde_mobile/features/shell/tabs.dart';
-import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import '../../support/premium_goldens.dart';
-import 'package:kunde_mobile/shared/theme/kunde_theme.dart';
+import 'package:kunde_design/kunde_theme.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,13 +12,13 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:kunde_mobile/features/food/data/cart_controller.dart';
 import 'package:kunde_mobile/features/food/data/food_api.dart';
-import 'package:kunde_mobile/features/food/data/food_models.dart';
+import 'package:kunde_models/food_models.dart';
 import 'package:kunde_mobile/features/food/food_services.dart';
 import 'package:kunde_mobile/features/food/presentation/food_home_screen.dart';
 import 'package:kunde_mobile/features/food/presentation/checkout_screen.dart';
 import 'package:kunde_mobile/features/food/presentation/order_screen.dart';
 import 'package:kunde_mobile/features/food/presentation/orders_tab.dart';
-import 'package:kunde_mobile/features/identity/auth_repository.dart';
+import 'package:kunde_auth/auth_repository.dart';
 
 class _Vault implements TokenVault {
   @override

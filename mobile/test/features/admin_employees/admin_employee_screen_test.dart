@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import 'package:kunde_mobile/features/admin_employees/admin_employee_screen.dart';
-import 'package:kunde_mobile/features/identity/auth_repository.dart';
+import 'package:kunde_auth/auth_repository.dart';
 
 class _Session implements AuthRepository {
   final paths = <String>[];

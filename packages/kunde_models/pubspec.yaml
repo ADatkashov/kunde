@@ -1,0 +1,12 @@
+name: kunde_models
+description: Shared KUNDE DTOs and models
+version: 0.1.0
+publish_to: none
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

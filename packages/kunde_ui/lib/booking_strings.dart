@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 
-import '../../../core/localization/kunde_localizations.dart';
-import '../data/booking_api.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
+import 'package:kunde_api/booking_api.dart';
 
 /// Strings of the Beauty / Home services categories and the shared booking mechanism (RU/KK/EN).
 extension BookingStrings on KundeLocalizations {

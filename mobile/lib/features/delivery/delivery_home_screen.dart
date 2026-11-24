@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:kunde_design/kunde_design.dart';
 
 import '../identity/address_panel.dart';
-import '../maps/kunde_maps.dart';
+import 'package:kunde_maps/kunde_maps.dart';
 import 'delivery_api.dart';
 import 'delivery_screen.dart';
-import 'delivery_strings.dart';
+import 'package:kunde_ui/delivery_strings.dart';
 
 class DeliveryHomeScreen extends StatelessWidget {
   const DeliveryHomeScreen({

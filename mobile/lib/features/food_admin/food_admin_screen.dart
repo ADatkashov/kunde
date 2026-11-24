@@ -2,9 +2,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../food/data/food_models.dart' show formatTenge;
-import '../identity/auth_repository.dart';
-import '../rides/ride_strings.dart';
+import 'package:kunde_models/food_models.dart' show formatTenge;
+import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_ui/ride_strings.dart';
 
 part 'groceries_admin_screen.dart';
 

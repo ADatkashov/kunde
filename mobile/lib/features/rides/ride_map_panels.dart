@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:kunde_maps_sdk/kunde_maps_sdk.dart';
 
-import '../maps/kunde_maps.dart';
-import 'ride_api.dart';
-import 'ride_strings.dart';
+import 'package:kunde_maps/kunde_maps.dart';
+import 'package:kunde_api/ride_api.dart';
+import 'package:kunde_ui/ride_strings.dart';
 
 GeoPoint pointOf(RideAddress address) => GeoPoint.parse(
       address.point['latitude'],

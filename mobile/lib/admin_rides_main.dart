@@ -1,4 +1,4 @@
-import 'features/identity/ride_operations_app.dart';
+import 'package:kunde_operator/ride_operations_app.dart';
 import 'features/rides_admin/ride_admin_screen.dart';
 
 void main() => runRideOperations(

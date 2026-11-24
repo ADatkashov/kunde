@@ -6,13 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:kunde_design/kunde_design.dart';
 import 'package:kunde_maps_sdk/kunde_maps_sdk.dart';
 
-import '../identity/auth_repository.dart';
+import 'package:kunde_auth/auth_repository.dart';
 import '../identity/support_panel.dart';
-import '../maps/kunde_maps.dart';
-import 'ride_api.dart';
+import 'package:kunde_maps/kunde_maps.dart';
+import 'package:kunde_api/ride_api.dart';
 import 'ride_map_panels.dart';
-import 'ride_strings.dart';
-import 'ride_widgets.dart';
+import 'package:kunde_ui/ride_strings.dart';
+import 'package:kunde_ui/ride_widgets.dart';
 
 class RidesScreen extends StatefulWidget {
   const RidesScreen({required this.api, this.maps, super.key});

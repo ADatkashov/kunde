@@ -13,19 +13,19 @@ import '../../delivery/delivery_api.dart';
 import '../../delivery/delivery_home_screen.dart';
 import '../../delivery/delivery_screen.dart';
 import '../../education/education_screen.dart';
-import '../../identity/auth_repository.dart';
+import 'package:kunde_auth/auth_repository.dart';
 import '../../food/food_services.dart';
 import '../../food/presentation/food_home_screen.dart';
 import '../../groceries/presentation/groceries_home_screen.dart';
 import '../../health/health_home_screen.dart';
-import '../../rides/ride_api.dart';
+import 'package:kunde_api/ride_api.dart';
 import '../../rides/rides_hub_screen.dart';
 
 import 'package:flutter/material.dart';
 
-import '../../../core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import '../data/kunde_api.dart';
-import '../../maps/kunde_maps.dart';
+import 'package:kunde_maps/kunde_maps.dart';
 import '../data/platform_snapshot.dart';
 import 'catalog_search_panel.dart';
 import 'home_strings.dart';

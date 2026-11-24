@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../../core/localization/kunde_localizations.dart';
-import '../../booking/data/booking_api.dart';
-import '../../booking/presentation/booking_strings.dart';
-import '../beauty_strings.dart';
-import '../beauty_theme.dart';
-import '../data/beauty_api.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
+import 'package:kunde_api/booking_api.dart';
+import 'package:kunde_ui/booking_strings.dart';
+import 'package:kunde_ui/beauty_strings.dart';
+import 'package:kunde_ui/beauty_theme.dart';
+import 'package:kunde_api/beauty_api.dart';
 
 /// Loads once, shows a skeleton while waiting and an error with retry when the request fails.
 class BeautyAsync<T> extends StatefulWidget {

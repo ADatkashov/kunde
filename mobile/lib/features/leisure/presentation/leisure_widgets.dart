@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kunde_design/kunde_design.dart';
 
 import '../data/leisure_api.dart';
-import '../data/leisure_models.dart';
+import 'package:kunde_models/leisure_models.dart';
 import 'leisure_strings.dart';
 
 /// Icon of a Leisure category (the 16 codes of the backend); unknown codes fall back to a ticket.

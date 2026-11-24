@@ -23,7 +23,7 @@ class ReleaseTargetsTest(unittest.TestCase):
 
     def test_design_package_and_workflow_build_all(self):
         everything = only("consumer", "executor", "admin", "partner")
-        self.assertEqual(targets(["packages/kunde_design/lib/a.dart"]), everything)
+        self.assertEqual(targets(["packages/kunde_auth/lib/a.dart"]), everything)
         self.assertEqual(targets(["docs/x.md", ".github/workflows/android-release.yml"]), everything)
 
 

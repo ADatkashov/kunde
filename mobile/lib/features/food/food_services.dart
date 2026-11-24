@@ -2,7 +2,7 @@ import 'data/cart_controller.dart';
 import 'data/food_api.dart';
 import '../groceries/data/groceries_api.dart';
 import '../groceries/data/groceries_services.dart';
-import '../identity/auth_repository.dart';
+import 'package:kunde_auth/auth_repository.dart';
 
 /// Everything the Food screens need, created once by the app and passed down explicitly.
 class FoodServices {

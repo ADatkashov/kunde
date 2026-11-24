@@ -4,9 +4,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../core/localization/kunde_formats.dart';
-import '../booking/data/booking_models.dart';
-import '../identity/auth_repository.dart';
+import 'package:kunde_localization/kunde_formats.dart';
+import 'package:kunde_models/booking_models.dart';
+import 'package:kunde_auth/auth_repository.dart';
 import 'partner_ops_api.dart';
 import 'partner_panel.dart' show parseKztToTiyn, invalidPrice;
 

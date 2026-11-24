@@ -1,4 +1,4 @@
-import '../../booking/data/booking_models.dart' show parseVenueTime;
+import 'package:kunde_models/booking_models.dart' show parseVenueTime;
 
 List<String> _strings(Object? value) =>
     ((value as List<dynamic>?) ?? const []).cast<String>();

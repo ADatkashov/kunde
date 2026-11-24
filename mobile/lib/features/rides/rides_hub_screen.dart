@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:kunde_design/kunde_design.dart';
 
-import '../maps/kunde_maps.dart';
-import 'ride_api.dart';
-import 'ride_strings.dart';
+import 'package:kunde_maps/kunde_maps.dart';
+import 'package:kunde_api/ride_api.dart';
+import 'package:kunde_ui/ride_strings.dart';
 import 'rides_screen.dart';
 
 /// Entry point of the Rides product: the category hub. Only city rides have a

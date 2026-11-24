@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../rides/ride_strings.dart';
-import '../rides/ride_widgets.dart' show rideFare;
+import 'package:kunde_ui/ride_strings.dart';
+import 'package:kunde_ui/ride_widgets.dart' show rideFare;
 import 'executor_api.dart';
 
 /// Real figures for the driver's home card. Nothing here is estimated beyond

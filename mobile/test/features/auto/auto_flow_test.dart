@@ -4,14 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:kunde_mobile/core/localization/kunde_localizations.dart';
+import 'package:kunde_localization/kunde_localizations.dart';
 import 'package:kunde_mobile/features/auto/auto_services.dart';
 import 'package:kunde_mobile/features/auto/data/auto_api.dart';
 import 'package:kunde_mobile/features/auto/presentation/auto_bookings_screen.dart';
 import 'package:kunde_mobile/features/auto/presentation/auto_home_screen.dart';
 import 'package:kunde_mobile/features/auto/presentation/vehicles_screen.dart';
 import 'package:kunde_mobile/features/home/data/platform_snapshot.dart';
-import 'package:kunde_mobile/features/identity/auth_repository.dart';
+import 'package:kunde_auth/auth_repository.dart';
 
 class _Vault implements TokenVault {
   @override
