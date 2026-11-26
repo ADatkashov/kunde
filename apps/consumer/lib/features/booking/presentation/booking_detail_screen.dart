@@ -1,3 +1,4 @@
+import '../../home_services/presentation/home_service_visit_card.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -205,6 +206,16 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                           ),
                         ),
                       _StatusBanner(booking: b),
+                      if (b.isCleaning &&
+                          (b.status == 'CONFIRMED' ||
+                              b.status == 'IN_PROGRESS'))
+                        HomeServiceVisitCard(
+                          key: ValueKey('visit-${b.id}-${b.status}'),
+                          load: () async => (await widget.services.auth
+                                  .authorizedJson('GET',
+                                      'home-services/bookings/${b.id}/visit'))
+                              as Map<String, dynamic>,
+                        ),
                       if (b.isHealth)
                         SelectableText(b.id, style: theme.textTheme.bodySmall),
                       const SizedBox(height: 12),
