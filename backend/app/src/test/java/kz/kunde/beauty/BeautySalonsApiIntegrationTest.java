@@ -144,7 +144,10 @@ class BeautySalonsApiIntegrationTest {
         String token = login("+77000000311");
         String venue = salonId("beauty-luna");
         String service = db.queryForObject("select s.id from marketplace.booking_services s where s.venue_id = ?::uuid and s.name = 'Окрашивание волос'", String.class, venue);
-        String day = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Almaty")).plusDays(2).toString();
+        // The demo masters do not work on Sunday: skip it so the test does not depend on the weekday it runs on.
+        var date = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Almaty")).plusDays(2);
+        if (date.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) { date = date.plusDays(1); }
+        String day = date.toString();
         String slots = body(http.perform(get("/api/v1/booking/slots?venueId=" + venue + "&serviceId=" + service + "&date=" + day)).andExpect(status().isOk()));
         String request = "{\"venueId\":\"" + venue + "\",\"serviceId\":\"" + service + "\",\"masterId\":\""
                 + JsonPath.read(slots, "$[0].masterId") + "\",\"startsAt\":\"" + JsonPath.read(slots, "$[0].startsAt") + "\"";

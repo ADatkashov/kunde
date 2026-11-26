@@ -108,8 +108,17 @@ class BeautyOperationsApiIntegrationTest {
     }
 
     /** Books «Окрашивание волос» with the only qualified master on the given day offset and returns the booking id. */
+    /**
+     * The first working day of the demo masters (Monday to Saturday) on or after today + {@code dayOffset}. The demo schedule
+     * has no Sunday, so a fixed "today + N" offset would fail on the weekdays whose offset lands on a Sunday.
+     */
+    private static LocalDate workingDay(int dayOffset) {
+        LocalDate day = LocalDate.now(ALMATY).plusDays(dayOffset);
+        return day.getDayOfWeek() == java.time.DayOfWeek.SUNDAY ? day.plusDays(1) : day;
+    }
+
     private String book(int dayOffset, String key) throws Exception {
-        String day = LocalDate.now(ALMATY).plusDays(dayOffset).toString();
+        String day = workingDay(dayOffset).toString();
         String slots = body(call("GET", "/api/v1/booking/slots?venueId=" + luna + "&serviceId=" + service + "&date=" + day, null, null).andExpect(status().isOk()));
         String request = "{\"venueId\":\"" + luna + "\",\"serviceId\":\"" + service + "\",\"masterId\":\"" + JsonPath.read(slots, "$[0].masterId")
                 + "\",\"startsAt\":\"" + JsonPath.read(slots, "$[0].startsAt") + "\"}";
@@ -207,7 +216,7 @@ class BeautyOperationsApiIntegrationTest {
         call("PUT", "/api/v1/executor/beauty/availability", master, "{\"online\":false}").andExpect(status().isNoContent());
         call("GET", "/api/v1/executor/beauty/today", master, null).andExpect(jsonPath("$.online").value(false)).andExpect(jsonPath("$.appointments.length()").value(1));
         call("GET", "/api/v1/booking/bookings/" + id, customer, null).andExpect(jsonPath("$.status").value("CONFIRMED"));
-        String day = LocalDate.now(ALMATY).plusDays(3).toString();
+        String day = workingDay(3).toString();
         call("GET", "/api/v1/booking/slots?venueId=" + luna + "&serviceId=" + service + "&date=" + day, null, null)
                 .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
         call("PUT", "/api/v1/executor/beauty/availability", master, "{\"online\":true}").andExpect(status().isNoContent());

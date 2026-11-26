@@ -39,12 +39,14 @@ Home Services использует общий Booking Engine. Новый спр�
 | Метод и путь | Доступ | Назначение |
 | --- | --- | --- |
 | `GET /api/v1/home-services/offers?category=&definition=&limit=&offset=` | публично, при включённом флаге | Только `PUBLISHED` предложения открытых площадок и доступных услуг; `limit` 1–50 |
-| `GET/POST /api/v1/partner/partners/{partnerId}/home-services/offers` | участник одобренного партнёра | Список своих предложений; создание (`DRAFT`) только для услуги собственной площадки партнёра |
+| `GET/POST /api/v1/partner/partners/{partnerId}/home-services/offers` | список — активный сотрудник одобренного партнёра; запись — `OWNER`/`MANAGER` | Список своих предложений; создание (`DRAFT`) только для услуги собственной площадки партнёра |
 | `POST …/offers/{offerId}/transition` | то же | `SUBMIT` или `WITHDRAW` с `expectedVersion`; чужое предложение даёт `404 OFFER_NOT_FOUND` |
 | `GET /api/v1/admin/home-services/offers?status=` | грант `HOME_SERVICES_CATALOG` | Очередь модерации, работает при выключенном флаге |
 | `POST /api/v1/admin/home-services/offers/{offerId}/decision` | тот же грант | `APPROVE`, `REJECT`, `SUSPEND`, `RESTORE` с `expectedVersion` и причиной от 3 символов |
 
-Коды ошибок: `VERSION_CONFLICT` и `INVALID_TRANSITION` (409), `OFFER_EXISTS` (409), `SERVICE_NOT_FOUND` и `OFFER_NOT_FOUND` (404), `DEFINITION_INACTIVE` (422), `REASON_REQUIRED` и `PRICING_MODEL_INVALID` (400).
+Права партнёра проверяются через публичный технический порт `kz.kunde.platform.partner.PartnerDirectory` (ADR-021, Конституция §4), а не импортом `partner.*`: список — `isActiveStaffOfApprovedPartner`, запись — `lockCatalogManager` внутри транзакции записи (общая блокировка партнёра и членства: приостановка партнёра или отзыв сотрудника ждёт и не теряется). Какие роли управляют предложениями (`OWNER`, `MANAGER`; `OPERATOR` только читает) решает Partner в `JdbcPartnerDirectory`. Принадлежность площадки партнёру — данные Booking (`booking_venues.partner_id`) и читается по записанному ребру `homeservices → booking`. Не участник одобренного партнёра получает `404 PARTNER_NOT_FOUND`, участник без полномочия — `403 PARTNER_ROLE_FORBIDDEN`. Baseline границ не расширялся.
+
+Коды ошибок: `PARTNER_NOT_FOUND` (404), `PARTNER_ROLE_FORBIDDEN` (403), `VERSION_CONFLICT` и `INVALID_TRANSITION` (409), `OFFER_EXISTS` (409), `SERVICE_NOT_FOUND` и `OFFER_NOT_FOUND` (404), `DEFINITION_INACTIVE` (422), `REASON_REQUIRED` и `PRICING_MODEL_INVALID` (400).
 
 Ограничения: смена цены или доступности уже опубликованной услуги идёт через существующий Booking API партнёра и повторную модерацию не запускает; фотографии, районы обслуживания, мастера и коммерческая модель комиссии пока не входят. Экраны Consumer, Partner и Admin для предложений не реализованы (в среде работы не было Flutter SDK).
 
