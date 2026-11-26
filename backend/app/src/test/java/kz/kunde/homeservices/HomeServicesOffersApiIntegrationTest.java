@@ -193,6 +193,21 @@ class HomeServicesOffersApiIntegrationTest {
     }
 
     @Test
+    void publicCatalogHidesOffersOfNonApprovedPartners() throws Exception {
+        String offer = createOffer(service, owner);
+        partnerAct(offer, "SUBMIT", 1, owner).andExpect(status().isOk());
+        staffAct(offer, "APPROVE", 2, "checked documents", staff).andExpect(status().isOk());
+        call("GET", "/api/v1/home-services/offers", null, null).andExpect(jsonPath("$.length()").value(1));
+
+        db.update("update marketplace.partners set verification_status = 'SUSPENDED' where id = ?", partnerA);
+        call("GET", "/api/v1/home-services/offers", null, null).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+        assertThat(db.queryForObject("select status from marketplace.home_service_offers where id = ?::uuid", String.class, offer)).isEqualTo("PUBLISHED");
+
+        db.update("update marketplace.partners set verification_status = 'APPROVED' where id = ?", partnerA);
+        call("GET", "/api/v1/home-services/offers", null, null).andExpect(jsonPath("$.length()").value(1)).andExpect(jsonPath("$[0].id").value(offer));
+    }
+
+    @Test
     void offerAuthorityBelongsToPartnerRolesAndStatus() throws Exception {
         String offer = createOffer(service, owner);
         // An operator may read the organisation's offers but not manage them: Partner decides which roles carry the authority.
