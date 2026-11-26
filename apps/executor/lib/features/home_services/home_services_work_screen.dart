@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 
 import 'package:kunde_auth/auth_repository.dart';
 import 'package:kunde_ui/ride_strings.dart';
@@ -8,9 +9,14 @@ const _root = 'executor/home-services';
 /// KUNDE Executor for a Home Services master: link by invite code, then walk each visit in order —
 /// on the way (with an ETA), arrived, started, finished. The server enforces the order and who may do it.
 class HomeServicesWorkScreen extends StatefulWidget {
-  const HomeServicesWorkScreen({required this.auth, super.key});
+  const HomeServicesWorkScreen(
+      {required this.auth, this.readPosition, super.key});
 
   final AuthRepository auth;
+
+  /// The master's position when leaving, so the server can measure the road ETA; injected in tests. A failure here only
+  /// means the ETA typed by the master is used instead.
+  final Future<({double latitude, double longitude})> Function()? readPosition;
 
   /// The one next action a job offers, from its booking [status] and visit [stage].
   static String? nextAction(String status, String? stage) =>
@@ -71,6 +77,28 @@ class _HomeServicesWorkScreenState extends State<HomeServicesWorkScreen> {
     }
   }
 
+  Future<({double latitude, double longitude})?> _position() async {
+    try {
+      if (widget.readPosition != null) return await widget.readPosition!();
+      if (!await Geolocator.isLocationServiceEnabled()) return null;
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission != LocationPermission.whileInUse &&
+          permission != LocationPermission.always) {
+        return null;
+      }
+      final p = await Geolocator.getCurrentPosition(
+        locationSettings:
+            const LocationSettings(timeLimit: Duration(seconds: 12)),
+      );
+      return (latitude: p.latitude, longitude: p.longitude);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> _link() => _run(() async {
         await widget.auth.authorizedJson('POST', '$_root/link',
             body: {'code': _code.text.trim()}, expected: const {200, 204});
@@ -80,11 +108,14 @@ class _HomeServicesWorkScreenState extends State<HomeServicesWorkScreen> {
         final id = job['id'];
         switch (action) {
           case 'EN_ROUTE':
+            final here = await _position();
             await widget.auth
                 .authorizedJson('PUT', '$_root/jobs/$id/stage', body: {
               'stage': 'EN_ROUTE',
               if (int.tryParse(_eta.text.trim()) != null)
                 'etaMinutes': int.parse(_eta.text.trim()),
+              if (here != null) 'latitude': here.latitude,
+              if (here != null) 'longitude': here.longitude,
             });
           case 'ARRIVED':
             await widget.auth.authorizedJson('PUT', '$_root/jobs/$id/stage',

@@ -56,6 +56,7 @@ class _Session implements AuthRepository {
 }
 
 void main() {
+  gpsFailureTest();
   test('the next action follows the booking status and visit stage', () {
     final next = HomeServicesWorkScreen.nextAction;
     expect(next('CONFIRMED', null), 'EN_ROUTE');
@@ -75,7 +76,9 @@ void main() {
     await tester.pumpWidget(MaterialApp(
       locale: const Locale('en'),
       supportedLocales: const [Locale('en')],
-      home: HomeServicesWorkScreen(auth: auth),
+      home: HomeServicesWorkScreen(
+          auth: auth,
+          readPosition: () async => (latitude: 43.238, longitude: 76.945)),
     ));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const ValueKey('code')), 'HOME-0001');
@@ -86,7 +89,12 @@ void main() {
     await tester.enterText(find.byKey(const ValueKey('eta')), '15');
     await tester.tap(find.byKey(const ValueKey('en_route-j1')));
     await tester.pumpAndSettle();
-    expect(auth.stageBody, {'stage': 'EN_ROUTE', 'etaMinutes': 15});
+    expect(auth.stageBody, {
+      'stage': 'EN_ROUTE',
+      'etaMinutes': 15,
+      'latitude': 43.238,
+      'longitude': 76.945,
+    });
 
     await tester.tap(find.byKey(const ValueKey('arrived-j1')));
     await tester.pumpAndSettle();
@@ -97,5 +105,23 @@ void main() {
     await tester.pumpAndSettle();
     expect(auth.status, 'COMPLETED');
     expect(find.text('No upcoming jobs'), findsOneWidget);
+  });
+}
+
+class _NoGps extends _Session {}
+
+void gpsFailureTest() {
+  testWidgets('without a position the typed ETA is still sent', (tester) async {
+    final auth = _NoGps()..linked = true;
+    await tester.pumpWidget(MaterialApp(
+      locale: const Locale('en'),
+      supportedLocales: const [Locale('en')],
+      home: HomeServicesWorkScreen(
+          auth: auth, readPosition: () async => throw Exception('no gps')),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('en_route-j1')));
+    await tester.pumpAndSettle();
+    expect(auth.stageBody, {'stage': 'EN_ROUTE', 'etaMinutes': 20});
   });
 }
