@@ -53,17 +53,22 @@ public class HomeServicesVisitController {
 
     public record LinkRequest(@NotBlank @Pattern(regexp = "[A-Za-z0-9-]{6,24}") String code) {}
 
+    /** {@code latitude}/{@code longitude} are the master's position when leaving: with them the ETA comes from KUNDE Maps. */
     public record StageRequest(@NotNull @Pattern(regexp = "EN_ROUTE|ARRIVED") String stage,
-            @Min(0) @Max(600) Integer etaMinutes) {}
+            @Min(0) @Max(600) Integer etaMinutes,
+            @jakarta.validation.constraints.DecimalMin("-90") @jakarta.validation.constraints.DecimalMax("90") Double latitude,
+            @jakarta.validation.constraints.DecimalMin("-180") @jakarta.validation.constraints.DecimalMax("180") Double longitude) {}
 
     private final JdbcTemplate db;
     private final FeatureToggles toggles;
     private final BookingService bookings;
+    private final HomeServiceEta eta;
 
-    public HomeServicesVisitController(JdbcTemplate db, FeatureToggles toggles, BookingService bookings) {
+    public HomeServicesVisitController(JdbcTemplate db, FeatureToggles toggles, BookingService bookings, HomeServiceEta eta) {
         this.db = db;
         this.toggles = toggles;
         this.bookings = bookings;
+        this.eta = eta;
     }
 
     private UUID user(Jwt principal) {
@@ -151,10 +156,18 @@ public class HomeServicesVisitController {
             if ("ARRIVED".equals(current)) {
                 throw stateInvalid();
             }
+            Integer minutes = request.etaMinutes();
+            if (request.latitude() != null && request.longitude() != null) {
+                String address = db.queryForObject("select address_text from transactions.bookings where id = ?", String.class, id);
+                var measured = eta.minutes(address, new kz.kunde.platform.geo.Point(request.latitude(), request.longitude()));
+                if (measured.isPresent()) {
+                    minutes = Math.min(600, measured.getAsInt());
+                }
+            }
             db.update("""
                     insert into marketplace.home_service_visits (booking_id, stage, eta_minutes) values (?, 'EN_ROUTE', ?)
                     on conflict (booking_id) do update set eta_minutes = excluded.eta_minutes, updated_at = now()
-                    """, id, request.etaMinutes());
+                    """, id, minutes);
         } else {
             if (!"EN_ROUTE".equals(current)) {
                 throw stateInvalid();
