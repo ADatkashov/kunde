@@ -200,8 +200,7 @@ class _HomeServiceOfferScreenState extends State<HomeServiceOfferScreen> {
   void _requote() {
     final area = int.tryParse(_area.text.trim());
     _quote = widget.api.quote(widget.offer.id,
-        areaSqm: widget.offer.pricingModel == 'PER_SQM' ? area : null,
-        urgent: _urgent);
+        areaSqm: widget.offer.areaBased ? area : null, urgent: _urgent);
   }
 
   @override
@@ -223,7 +222,7 @@ class _HomeServiceOfferScreenState extends State<HomeServiceOfferScreen> {
               Text(
                   '${s.t('Гарантия', 'Кепілдік', 'Warranty')}: ${offer.warrantyDays} ${s.t('дн.', 'күн', 'd')}'),
             const SizedBox(height: 16),
-            if (offer.pricingModel == 'PER_SQM')
+            if (offer.areaBased)
               TextField(
                 key: const ValueKey('area'),
                 controller: _area,

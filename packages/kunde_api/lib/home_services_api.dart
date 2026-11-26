@@ -19,6 +19,7 @@ class HomeServiceOffer {
     required this.durationMinutes,
     required this.homeVisit,
     required this.warrantyDays,
+    this.pricePerSqmMinor = 0,
   });
 
   factory HomeServiceOffer.fromJson(Map<String, dynamic> json) =>
@@ -37,6 +38,7 @@ class HomeServiceOffer {
         durationMinutes: (json['durationMinutes'] as num).toInt(),
         homeVisit: json['homeVisit'] as bool,
         warrantyDays: (json['warrantyDays'] as num).toInt(),
+        pricePerSqmMinor: (json['pricePerSqmMinor'] as num?)?.toInt() ?? 0,
       );
 
   final String id;
@@ -53,6 +55,11 @@ class HomeServiceOffer {
   final int durationMinutes;
   final bool homeVisit;
   final int warrantyDays;
+
+  /// Above zero when the service is priced by area: the customer must give the area and the quote depends on it.
+  final int pricePerSqmMinor;
+
+  bool get areaBased => pricePerSqmMinor > 0;
 
   String name(String language) => switch (language) {
         'kk' => nameKk,

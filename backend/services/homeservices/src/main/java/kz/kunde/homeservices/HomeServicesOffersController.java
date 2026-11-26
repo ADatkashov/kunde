@@ -54,7 +54,7 @@ public class HomeServicesOffersController {
 
     public record OfferCard(String id, String serviceId, String venueId, String venueName, String definitionCode,
             String categoryCode, String nameRu, String nameKk, String nameEn, String serviceName, long priceMinor,
-            String pricingModel, int durationMinutes, boolean homeVisit, int warrantyDays) {}
+            String pricingModel, int durationMinutes, boolean homeVisit, int warrantyDays, long pricePerSqmMinor) {}
 
     @GetMapping
     public ResponseEntity<List<OfferCard>> offers(
@@ -68,7 +68,7 @@ public class HomeServicesOffersController {
         var cards = db.query("""
                 select o.id, o.service_id, v.id as venue_id, v.name as venue_name, d.code, d.category_code,
                        d.name_ru, d.name_kk, d.name_en, s.name as service_name, s.price_minor, o.pricing_model,
-                       s.duration_minutes, o.home_visit, o.warranty_days
+                       s.duration_minutes, o.home_visit, o.warranty_days, s.price_per_sqm_minor
                 from marketplace.home_service_offers o
                 join marketplace.home_service_definitions d on d.code = o.definition_code
                 join marketplace.home_service_categories c on c.code = d.category_code
@@ -82,7 +82,7 @@ public class HomeServicesOffersController {
                 rs.getString("venue_name"), rs.getString("code"), rs.getString("category_code"), rs.getString("name_ru"),
                 rs.getString("name_kk"), rs.getString("name_en"), rs.getString("service_name"), rs.getLong("price_minor"),
                 rs.getString("pricing_model"), rs.getInt("duration_minutes"), rs.getBoolean("home_visit"),
-                rs.getInt("warranty_days")), arrayLiteral(partners.approvedPartnerIds()), category, category, definition, definition, limit, offset);
+                rs.getInt("warranty_days"), rs.getLong("price_per_sqm_minor")), arrayLiteral(partners.approvedPartnerIds()), category, category, definition, definition, limit, offset);
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(cards);
     }
 

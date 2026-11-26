@@ -164,6 +164,7 @@ class HomeServicesOffersApiIntegrationTest {
                 .andExpect(jsonPath("$[0].nameKk").exists()).andExpect(jsonPath("$[0].nameEn").value("Deep cleaning"))
                 .andExpect(jsonPath("$[0].pricingModel").value("FROM"))
                 .andExpect(jsonPath("$[0].warrantyDays").value(14))
+                .andExpect(jsonPath("$[0].pricePerSqmMinor").isNumber())
                 .andExpect(jsonPath("$[0].priceMinor").value(org.hamcrest.Matchers.greaterThan(0)));
         call("GET", "/api/v1/home-services/offers?category=PLUMBING", null, null).andExpect(jsonPath("$.length()").value(0));
         call("GET", "/api/v1/home-services/offers?category=CLEANING&limit=1&offset=1", null, null).andExpect(jsonPath("$.length()").value(0));

@@ -101,7 +101,8 @@ class _Services implements BookingServices {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-HomeServiceOffer get _offer => HomeServiceOffer.fromJson({
+HomeServiceOffer _offerWith([int perSqm = 0]) => HomeServiceOffer.fromJson({
+      'pricePerSqmMinor': perSqm,
       'id': 'o1',
       'serviceId': 's1',
       'venueId': 'v1',
@@ -118,7 +119,8 @@ HomeServiceOffer get _offer => HomeServiceOffer.fromJson({
       'warrantyDays': 14,
     });
 
-Future<void> _open(WidgetTester tester, _Auth auth, _Catalog catalog) async {
+Future<void> _open(WidgetTester tester, _Auth auth, _Catalog catalog,
+    [int perSqm = 0]) async {
   tester.view.physicalSize = const Size(1080, 2600);
   tester.view.devicePixelRatio = 2.75;
   addTearDown(tester.view.reset);
@@ -126,12 +128,33 @@ Future<void> _open(WidgetTester tester, _Auth auth, _Catalog catalog) async {
     locale: const Locale('en'),
     supportedLocales: const [Locale('en')],
     home: HomeServiceOrderScreen(
-        offer: _offer, services: _Services(auth), api: catalog),
+        offer: _offerWith(perSqm), services: _Services(auth), api: catalog),
   ));
   await tester.pumpAndSettle();
 }
 
 void main() {
+  testWidgets('an area-priced service asks for the area before ordering',
+      (tester) async {
+    final auth = _Auth();
+    await _open(tester, auth, _Catalog(), 450000);
+    await tester.tap(find.byKey(const ValueKey('slot-$_startsAt')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const ValueKey('address')), 'Abay 150');
+    await tester.pump();
+    await tester.ensureVisible(find.byKey(const ValueKey('submit')));
+    await tester.tap(find.byKey(const ValueKey('submit')));
+    await tester.pumpAndSettle();
+    expect(find.text('Enter the area'), findsOneWidget);
+    expect(auth.posts, isEmpty);
+    await tester.enterText(find.byKey(const ValueKey('area')), '50');
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const ValueKey('submit')));
+    await tester.tap(find.byKey(const ValueKey('submit')));
+    await tester.pumpAndSettle();
+    expect(auth.posts.single['areaSqm'], 50);
+  });
+
   testWidgets(
       'order sends the quoted total and urgency; one chip per start time',
       (tester) async {

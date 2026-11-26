@@ -49,7 +49,7 @@ class _HomeServiceOrderScreenState extends State<HomeServiceOrderScreen> {
         16, (_) => r.nextInt(256).toRadixString(16).padLeft(2, '0')).join();
   }
 
-  bool get _perSqm => widget.offer.pricingModel == 'PER_SQM';
+  bool get _perSqm => widget.offer.areaBased;
   int? get _areaValue => int.tryParse(_area.text.trim());
   bool get _addressOk => _address.text.trim().length >= 5;
 
