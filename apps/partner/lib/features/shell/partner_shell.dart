@@ -11,6 +11,7 @@ import '../business/business_screen.dart';
 import '../business/fleet_screen.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../delivery/business_delivery_screen.dart';
+import '../home_services/home_services_offers_screen.dart';
 import '../leisure/leisure_ops.dart';
 import '../leisure/leisure_screen.dart';
 import '../leisure/leisure_strings.dart';
@@ -154,6 +155,26 @@ class _PartnerShellState extends State<PartnerShell>
                                   widget.controller.partner?.canManage ?? false,
                             ),
                           )),
+                        ),
+                      if (flags?['homeServicesEnabled'] == true)
+                        IconButton(
+                          tooltip: switch (locale) {
+                            'ru' => 'Дом и быт',
+                            'kk' => 'Үй және тұрмыс',
+                            _ => 'Home services',
+                          },
+                          icon: const Icon(Icons.home_repair_service_outlined),
+                          onPressed: () => Navigator.of(context).push<void>(
+                            MaterialPageRoute(
+                              builder: (_) => HomeServicesOffersScreen(
+                                api: _store.ops.api,
+                                partnerId: _store.ops.partnerId,
+                                canManage:
+                                    widget.controller.partner?.canManage ??
+                                        false,
+                              ),
+                            ),
+                          ),
                         ),
                       if (flags?['eventsEnabled'] == true)
                         IconButton(
