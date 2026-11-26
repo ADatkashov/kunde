@@ -65,3 +65,17 @@ Home Services использует общий Booking Engine. Новый спр�
 | `PUT /api/v1/partner/partners/{partnerId}/home-services/offers/{offerId}/tariff` | `OWNER`/`MANAGER` | Тариф; `expectedVersion` 0 создаёт, иначе версия должна совпасть |
 
 Коды: `LOCATION_REQUIRED` и `OUT_OF_ZONE` (422), `LOCATION_INVALID` (400), `ZONE_NOT_FOUND`, `VENUE_NOT_FOUND`, `OFFER_NOT_FOUND` (404), `VERSION_CONFLICT` (409). Публичный каталог и котировка показывают только предложения партнёров со статусом `APPROVED` (`PartnerDirectory.approvedPartnerIds`); приостановка партнёра скрывает их сразу, восстановление возвращает. Открыто: мастера и графики используют существующие `booking_masters`/`booking_working_hours` без изменений; полигональные зоны и районы — позже.
+
+## Визит мастера (V71)
+
+Мастер (Executor) ведёт визит; клиент видит ход работ. Статусы брони остаются статусами Booking Engine (`CONFIRMED → IN_PROGRESS → COMPLETED`); «в пути» и «на месте» уточняют `CONFIRMED` и хранятся в `home_service_visits` (владелец — Home Services). Мастер — запись `booking_masters`, привязанная к аккаунту по одноразовому коду-приглашению; чужую бронь он видит как `404 JOB_NOT_FOUND`.
+
+| Метод и путь | Доступ | Назначение |
+| --- | --- | --- |
+| `POST /api/v1/executor/home-services/link` `{code}` | аккаунт | Привязка к мастеру по коду; `404 INVITE_INVALID` |
+| `GET /api/v1/executor/home-services/jobs` | привязанный мастер | Свои работы на 7 дней вперёд (`CONFIRMED`, `IN_PROGRESS`) со стадией и ETA |
+| `PUT …/jobs/{id}/stage` `{stage: EN_ROUTE\|ARRIVED, etaMinutes?}` | мастер брони | «В пути» (ETA можно обновлять), затем «на месте» |
+| `POST …/jobs/{id}/start`, `…/complete` | мастер брони | Начать только после «на месте»; завершить только начатую |
+| `GET /api/v1/home-services/bookings/{id}/visit` | клиент брони | Статус, стадия и ETA; чужая бронь — `404` |
+
+Нарушение порядка даёт `409 JOB_STATE_INVALID`; при выключенном флаге — `404 HOME_SERVICES_DISABLED`. ETA пока вводит мастер; расчёт через KUNDE Maps — следующий шаг. Роли используют уже разрешённое ребро `homeservices → booking`; baseline не расширялся. Проверка: `cd backend && ./gradlew :app:test --tests '*HomeServicesVisitApiIntegrationTest'` на PostgreSQL 16 (локально не запускалось: нет Docker; проверяет CI).
