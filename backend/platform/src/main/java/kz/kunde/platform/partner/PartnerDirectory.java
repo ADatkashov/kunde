@@ -15,8 +15,9 @@ import java.util.UUID;
  *       caller's write cannot commit after the partner was already taken out of service. Only an in-process adapter can
  *       offer this; a remote adapter must replace the check by re-validation or a compensating step (ADR-021).</li>
  * </ul>
- * Role-based authorization (owner, manager) stays in Partner's own service; this contract answers only "approved and
- * active".
+ * Role-based authorization stays in Partner: the contract answers "approved and active" and, as a named capability,
+ * "may manage the catalogue offers of this partner" ({@link #isCatalogManager}); which staff roles carry that capability is
+ * Partner's decision and never leaks to the caller.
  */
 public interface PartnerDirectory {
     boolean isActiveStaffOfApprovedPartner(UUID userId, UUID partnerId);
@@ -29,4 +30,13 @@ public interface PartnerDirectory {
      * membership until the surrounding transaction ends. Must be called inside a transaction.
      */
     boolean lockActiveStaffOfApprovedPartner(UUID userId, UUID partnerId);
+
+    /**
+     * Capability check: the user is ACTIVE staff of an APPROVED partner with the authority to create, submit and withdraw
+     * catalogue offers (service listings) of that partner. Snapshot read; use it to pick an error response.
+     */
+    boolean isCatalogManager(UUID userId, UUID partnerId);
+
+    /** Same answer as {@link #isCatalogManager} with the shared row locks of {@link #lockActiveStaffOfApprovedPartner}. */
+    boolean lockCatalogManager(UUID userId, UUID partnerId);
 }

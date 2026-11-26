@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import kz.kunde.platform.ApiException;
+import kz.kunde.platform.partner.PartnerDirectory;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -60,14 +61,40 @@ public class HomeServiceOffers {
             """;
 
     private final JdbcTemplate db;
+    private final PartnerDirectory partners;
 
-    public HomeServiceOffers(JdbcTemplate db) {
+    public HomeServiceOffers(JdbcTemplate db, PartnerDirectory partners) {
         this.db = db;
+        this.partners = partners;
+    }
+
+    /**
+     * Partner-side write authority, checked inside the caller's transaction with row locks (a concurrent suspension of
+     * the partner or revocation of the user waits for this transaction). Partner decides who may manage offers; this
+     * module only learns the verdict: not a member of an approved partner is indistinguishable from a missing one.
+     */
+    private void requireCatalogManager(UUID user, UUID partnerId) {
+        if (partners.lockCatalogManager(user, partnerId)) {
+            return;
+        }
+        if (partners.isActiveStaffOfApprovedPartner(user, partnerId)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "PARTNER_ROLE_FORBIDDEN", "Role is not allowed to do this");
+        }
+        throw new ApiException(HttpStatus.NOT_FOUND, "PARTNER_NOT_FOUND", "Partner not found");
+    }
+
+    /** Read access of any active staff member of the approved partner. */
+    @Transactional(readOnly = true)
+    public void requirePartnerStaff(UUID user, UUID partnerId) {
+        if (!partners.isActiveStaffOfApprovedPartner(user, partnerId)) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "PARTNER_NOT_FOUND", "Partner not found");
+        }
     }
 
     @Transactional
     public Offer create(UUID actor, UUID partnerId, UUID serviceId, String definitionCode, String pricingModel,
             boolean homeVisit, int warrantyDays) {
+        requireCatalogManager(actor, partnerId);
         if (!PRICING_MODELS.contains(pricingModel)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "PRICING_MODEL_INVALID", "Unknown pricing model");
         }
@@ -102,6 +129,9 @@ public class HomeServiceOffers {
     @Transactional
     public Offer transition(UUID actor, Actor role, UUID partnerScope, UUID offerId, Action action, long expectedVersion,
             String reason) {
+        if (role == Actor.PARTNER) {
+            requireCatalogManager(actor, partnerScope);
+        }
         if (action.actor != role) {
             throw new ApiException(HttpStatus.FORBIDDEN, "ACTION_FORBIDDEN", "This action is not allowed for the role");
         }

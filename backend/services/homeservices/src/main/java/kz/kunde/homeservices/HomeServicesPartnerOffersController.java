@@ -10,8 +10,6 @@ import java.util.UUID;
 import kz.kunde.homeservices.HomeServiceOffers.Action;
 import kz.kunde.homeservices.HomeServiceOffers.Actor;
 import kz.kunde.homeservices.HomeServiceOffers.Offer;
-import kz.kunde.partner.PartnerAccessPolicy;
-import kz.kunde.partner.PartnerService;
 import kz.kunde.platform.ApiException;
 import kz.kunde.platform.FeatureToggles;
 import kz.kunde.platform.FeatureToggles.Feature;
@@ -39,12 +37,10 @@ import org.springframework.web.bind.annotation.RestController;
 @ConditionalOnProperty(name = {"app.booking.enabled", "app.identity.consumer-enabled", "app.auth.phone.enabled"}, havingValue = "true")
 public class HomeServicesPartnerOffersController {
     private final HomeServiceOffers offers;
-    private final PartnerService partners;
     private final FeatureToggles toggles;
 
-    public HomeServicesPartnerOffersController(HomeServiceOffers offers, PartnerService partners, FeatureToggles toggles) {
+    public HomeServicesPartnerOffersController(HomeServiceOffers offers, FeatureToggles toggles) {
         this.offers = offers;
-        this.partners = partners;
         this.toggles = toggles;
     }
 
@@ -62,14 +58,14 @@ public class HomeServicesPartnerOffersController {
     ResponseEntity<List<Offer>> list(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
             @RequestParam(defaultValue = "30") @Min(1) @Max(100) int limit,
             @RequestParam(defaultValue = "0") @Min(0) @Max(10000) int offset) {
-        authorize(principal, partnerId);
+        offers.requirePartnerStaff(user(principal), partnerId);
         return ok(HttpStatus.OK, offers.listForPartner(partnerId, limit, offset));
     }
 
     @PostMapping
     ResponseEntity<Offer> create(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
             @Valid @RequestBody CreateOffer request) {
-        UUID user = authorize(principal, partnerId);
+        UUID user = user(principal);
         return ok(HttpStatus.CREATED, offers.create(user, partnerId, request.serviceId(), request.definitionCode(),
                 request.pricingModel(), request.homeVisit() == null || request.homeVisit(),
                 request.warrantyDays() == null ? 0 : request.warrantyDays()));
@@ -78,19 +74,21 @@ public class HomeServicesPartnerOffersController {
     @PostMapping("/{offerId}/transition")
     ResponseEntity<Offer> transition(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
             @PathVariable UUID offerId, @Valid @RequestBody TransitionRequest request) {
-        UUID user = authorize(principal, partnerId);
+        UUID user = user(principal);
         return ok(HttpStatus.OK, offers.transition(user, Actor.PARTNER, partnerId, offerId,
                 Action.valueOf(request.action()), request.expectedVersion(), null));
     }
 
-    private UUID authorize(Jwt principal, UUID partnerId) {
+    /** The entry scope is checked by {@code partnerAccessPolicy}; the write authority is re-checked in the service. */
+    private UUID user(Jwt principal) {
         if (!toggles.enabled(Feature.HOME_SERVICES)) {
             throw new ApiException(HttpStatus.NOT_FOUND, "HOME_SERVICES_DISABLED", "Home Services is unavailable");
         }
-        UUID user = PartnerAccessPolicy.userId(principal)
-                .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN", "Access is not allowed"));
-        partners.requireProcessing(user, partnerId);
-        return user;
+        try {
+            return UUID.fromString(principal.getSubject());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN", "Access is not allowed");
+        }
     }
 
     private static <T> ResponseEntity<T> ok(HttpStatus status, T body) {

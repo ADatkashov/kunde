@@ -193,6 +193,23 @@ class HomeServicesOffersApiIntegrationTest {
     }
 
     @Test
+    void offerAuthorityBelongsToPartnerRolesAndStatus() throws Exception {
+        String offer = createOffer(service, owner);
+        // An operator may read the organisation's offers but not manage them: Partner decides which roles carry the authority.
+        db.update("update marketplace.partner_staff set role = 'OPERATOR' where partner_id = ?", partnerA);
+        call("GET", partnerBase(partnerA), owner, null).andExpect(status().isOk());
+        partnerAct(offer, "SUBMIT", 1, owner).andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("PARTNER_ROLE_FORBIDDEN"));
+        call("POST", partnerBase(partnerA), owner, "{\"serviceId\":\"" + otherService + "\",\"definitionCode\":\"DEEP_CLEAN\",\"pricingModel\":\"FIXED\"}")
+                .andExpect(status().isForbidden());
+        // A suspended organisation is invisible to its own staff: nothing can be written or listed.
+        db.update("update marketplace.partner_staff set role = 'OWNER' where partner_id = ?", partnerA);
+        db.update("update marketplace.partners set verification_status = 'SUSPENDED' where id = ?", partnerA);
+        partnerAct(offer, "SUBMIT", 1, owner).andExpect(status().isNotFound());
+        call("GET", partnerBase(partnerA), owner, null).andExpect(status().isNotFound());
+        assertThat(db.queryForObject("select status from marketplace.home_service_offers where id = ?::uuid", String.class, offer)).isEqualTo("DRAFT");
+    }
+
+    @Test
     void partnerIsConfinedToItsOwnOrganisation() throws Exception {
         // Partner B can not offer partner A's service, even by guessing its id.
         call("POST", partnerBase(partnerB), stranger, "{\"serviceId\":\"" + service + "\",\"definitionCode\":\"DEEP_CLEAN\",\"pricingModel\":\"FIXED\"}")
