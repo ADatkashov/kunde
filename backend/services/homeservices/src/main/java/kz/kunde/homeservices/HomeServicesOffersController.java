@@ -8,6 +8,7 @@ import java.util.UUID;
 import kz.kunde.platform.ApiException;
 import kz.kunde.platform.FeatureToggles;
 import kz.kunde.platform.FeatureToggles.Feature;
+import kz.kunde.platform.partner.PartnerDirectory;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,11 +28,14 @@ public class HomeServicesOffersController {
     private final JdbcTemplate db;
     private final FeatureToggles toggles;
     private final HomeServicePricing pricing;
+    private final PartnerDirectory partners;
 
-    public HomeServicesOffersController(JdbcTemplate db, FeatureToggles toggles, HomeServicePricing pricing) {
+    public HomeServicesOffersController(JdbcTemplate db, FeatureToggles toggles, HomeServicePricing pricing,
+            PartnerDirectory partners) {
         this.db = db;
         this.toggles = toggles;
         this.pricing = pricing;
+        this.partners = partners;
     }
 
     /** Itemised price of one published offer for an address, time and size: exactly what a booking made now would cost. */
@@ -71,13 +75,19 @@ public class HomeServicesOffersController {
                 join marketplace.booking_services s on s.id = o.service_id
                 join marketplace.booking_venues v on v.id = s.venue_id
                 where o.status = 'PUBLISHED' and d.active and c.active and s.available and v.is_open
+                  and v.partner_id = any(?::uuid[])
                   and (?::text is null or d.category_code = ?) and (?::text is null or d.code = ?)
                 order by c.sort_order, d.code, s.price_minor, o.id limit ? offset ?
                 """, (rs, row) -> new OfferCard(rs.getString("id"), rs.getString("service_id"), rs.getString("venue_id"),
                 rs.getString("venue_name"), rs.getString("code"), rs.getString("category_code"), rs.getString("name_ru"),
                 rs.getString("name_kk"), rs.getString("name_en"), rs.getString("service_name"), rs.getLong("price_minor"),
                 rs.getString("pricing_model"), rs.getInt("duration_minutes"), rs.getBoolean("home_visit"),
-                rs.getInt("warranty_days")), category, category, definition, definition, limit, offset);
+                rs.getInt("warranty_days")), arrayLiteral(partners.approvedPartnerIds()), category, category, definition, definition, limit, offset);
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(cards);
+    }
+
+    /** PostgreSQL array literal of ids; an empty set matches nothing. */
+    static String arrayLiteral(java.util.Set<UUID> ids) {
+        return ids.stream().map(UUID::toString).collect(java.util.stream.Collectors.joining(",", "{", "}"));
     }
 }

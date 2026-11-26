@@ -40,6 +40,11 @@ public class JdbcPartnerDirectory implements PartnerDirectory {
     }
 
     @Override
+    public Set<UUID> approvedPartnerIds() {
+        return new HashSet<>(db.queryForList("select id from marketplace.partners where verification_status = 'APPROVED'", UUID.class));
+    }
+
+    @Override
     public boolean lockActiveStaffOfApprovedPartner(UUID userId, UUID partnerId) {
         return !db.queryForList(ACTIVE_STAFF_OF_APPROVED + " for share of p, s", userId, partnerId).isEmpty();
     }

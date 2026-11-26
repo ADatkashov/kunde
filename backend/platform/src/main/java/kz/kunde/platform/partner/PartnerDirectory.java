@@ -32,6 +32,12 @@ public interface PartnerDirectory {
     boolean lockActiveStaffOfApprovedPartner(UUID userId, UUID partnerId);
 
     /**
+     * Ids of all APPROVED partners, a snapshot for public listings that must hide offers of partners that were suspended,
+     * rejected or never approved. Products filter by it instead of joining the partner tables.
+     */
+    Set<UUID> approvedPartnerIds();
+
+    /**
      * Capability check: the user is ACTIVE staff of an APPROVED partner with the authority to create, submit and withdraw
      * catalogue offers (service listings) of that partner. Snapshot read; use it to pick an error response.
      */

@@ -106,9 +106,9 @@ public class HomeServicePricing {
                 from marketplace.home_service_offers o
                 join marketplace.booking_services s on s.id = o.service_id
                 join marketplace.booking_venues v on v.id = s.venue_id
-                where o.id = ? and o.status = 'PUBLISHED' and s.available and v.is_open
+                where o.id = ? and o.status = 'PUBLISHED' and s.available and v.is_open and v.partner_id = any(?::uuid[])
                 """, (rs, i) -> new Object[] {rs.getObject(1, UUID.class), rs.getObject(2, UUID.class), rs.getString(3),
-                        rs.getLong(4), rs.getLong(5), rs.getObject(6, Integer.class), rs.getObject(7, Integer.class)}, offerId)
+                        rs.getLong(4), rs.getLong(5), rs.getObject(6, Integer.class), rs.getObject(7, Integer.class)}, offerId, HomeServicesOffersController.arrayLiteral(partners.approvedPartnerIds()))
                 .stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "OFFER_NOT_FOUND", "Offer not found"));
         long perSqm = (Long) row[4];
         if (perSqm > 0) {

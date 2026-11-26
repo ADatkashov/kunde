@@ -207,6 +207,19 @@ class HomeServicesPricingApiIntegrationTest {
     }
 
     @Test
+    void suspendedPartnerOffersAreHiddenFromCatalogueAndQuoteUntilRestored() throws Exception {
+        String offer = publishedOffer();
+        call("GET", "/api/v1/home-services/offers", null, null).andExpect(jsonPath("$.length()").value(1));
+        call("GET", "/api/v1/home-services/offers/" + offer + "/quote?areaSqm=50", null, null).andExpect(status().isOk());
+        db.update("update marketplace.partners set verification_status = 'SUSPENDED' where id = ?", partnerA);
+        call("GET", "/api/v1/home-services/offers", null, null).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+        call("GET", "/api/v1/home-services/offers/" + offer + "/quote?areaSqm=50", null, null).andExpect(status().isNotFound());
+        db.update("update marketplace.partners set verification_status = 'APPROVED' where id = ?", partnerA);
+        call("GET", "/api/v1/home-services/offers", null, null).andExpect(jsonPath("$.length()").value(1));
+        call("GET", "/api/v1/home-services/offers/" + offer + "/quote?areaSqm=50", null, null).andExpect(status().isOk());
+    }
+
+    @Test
     void zoneRefusesAddressesOutsideItAndAVenueWithoutZonesServesTheCity() throws Exception {
         String offer = publishedOffer();
         call("GET", "/api/v1/home-services/offers/" + offer + "/quote?areaSqm=50", null, null).andExpect(status().isOk())
