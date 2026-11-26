@@ -15,6 +15,7 @@ const _startsAt = '2026-11-27T18:00:00+05:00';
 class _Auth implements AuthRepository {
   final posts = <Map<String, dynamic>>[];
   bool priceChanged = false;
+  bool slotTaken = false;
 
   @override
   Future<dynamic> authorizedJson(
@@ -26,6 +27,9 @@ class _Auth implements AuthRepository {
   }) async {
     if (method == 'POST' && path == 'booking/bookings') {
       posts.add(body!);
+      if (slotTaken) {
+        throw IdentityApiError(409, 'SLOT_TAKEN');
+      }
       if (priceChanged) {
         throw IdentityApiError(409, 'BOOKING_PRICE_CHANGED');
       }
@@ -52,6 +56,8 @@ class _Auth implements AuthRepository {
 
 class _Catalog implements HomeServicesCatalog {
   final startsAtSeen = <String?>[];
+  final urgentSeen = <bool>[];
+  final areaSeen = <int?>[];
 
   @override
   Future<List<HomeServiceOffer>> offers(
@@ -66,6 +72,8 @@ class _Catalog implements HomeServicesCatalog {
       double? lng,
       bool urgent = false}) async {
     startsAtSeen.add(startsAtIso);
+    urgentSeen.add(urgent);
+    areaSeen.add(areaSqm);
     return HomeServiceQuote(
       listPriceMinor: 1500000,
       callOutFeeMinor: 0,
@@ -120,7 +128,7 @@ HomeServiceOffer _offerWith([int perSqm = 0]) => HomeServiceOffer.fromJson({
     });
 
 Future<void> _open(WidgetTester tester, _Auth auth, _Catalog catalog,
-    [int perSqm = 0]) async {
+    [int perSqm = 0, int? area, bool urgent = false]) async {
   tester.view.physicalSize = const Size(1080, 2600);
   tester.view.devicePixelRatio = 2.75;
   addTearDown(tester.view.reset);
@@ -128,12 +136,42 @@ Future<void> _open(WidgetTester tester, _Auth auth, _Catalog catalog,
     locale: const Locale('en'),
     supportedLocales: const [Locale('en')],
     home: HomeServiceOrderScreen(
-        offer: _offerWith(perSqm), services: _Services(auth), api: catalog),
+        offer: _offerWith(perSqm),
+        services: _Services(auth),
+        api: catalog,
+        initialAreaSqm: area,
+        initialUrgent: urgent),
   ));
   await tester.pumpAndSettle();
 }
 
 void main() {
+  testWidgets('area and urgency chosen on the offer card carry into the order',
+      (tester) async {
+    final catalog = _Catalog();
+    await _open(tester, _Auth(), catalog, 450000, 50, true);
+    await tester.tap(find.byKey(const ValueKey('slot-$_startsAt')));
+    await tester.pumpAndSettle();
+    expect(catalog.areaSeen, [50]);
+    expect(catalog.urgentSeen, [true]);
+    expect(find.text('18\u00A0000\u00A0₸'), findsWidgets);
+  });
+
+  testWidgets('a taken slot is explained even though the price is gone',
+      (tester) async {
+    final auth = _Auth()..slotTaken = true;
+    await _open(tester, auth, _Catalog());
+    await tester.tap(find.byKey(const ValueKey('slot-$_startsAt')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const ValueKey('address')), 'Abay 150');
+    await tester.pump();
+    await tester.ensureVisible(find.byKey(const ValueKey('submit')));
+    await tester.tap(find.byKey(const ValueKey('submit')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('That time was just taken'), findsOneWidget);
+    expect(find.byKey(const ValueKey('submit')), findsNothing);
+  });
+
   testWidgets('an area-priced service asks for the area before ordering',
       (tester) async {
     final auth = _Auth();

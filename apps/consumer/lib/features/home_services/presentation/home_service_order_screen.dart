@@ -18,7 +18,13 @@ class HomeServiceOrderScreen extends StatefulWidget {
       {required this.offer,
       required this.services,
       required this.api,
+      this.initialAreaSqm,
+      this.initialUrgent = false,
       super.key});
+
+  /// What the customer already entered on the offer card, so the price they saw is the price they order.
+  final int? initialAreaSqm;
+  final bool initialUrgent;
 
   final HomeServiceOffer offer;
   final BookingServices services;
@@ -30,14 +36,15 @@ class HomeServiceOrderScreen extends StatefulWidget {
 
 class _HomeServiceOrderScreenState extends State<HomeServiceOrderScreen> {
   final _address = TextEditingController();
-  final _area = TextEditingController();
+  late final _area =
+      TextEditingController(text: widget.initialAreaSqm?.toString() ?? '');
   final _comment = TextEditingController();
   final String _key = _newKey();
   late final DateTime _today = DateTime.now();
   late DateTime _date = _today;
   late Future<List<BookingSlot>> _slots = _loadSlots();
   BookingSlot? _slot;
-  bool _urgent = false;
+  late bool _urgent = widget.initialUrgent;
   bool _touched = false;
   bool _busy = false;
   String? _error;
@@ -99,6 +106,7 @@ class _HomeServiceOrderScreenState extends State<HomeServiceOrderScreen> {
         expectedPriceMinor: quote.totalMinor,
         urgent: _urgent,
       );
+      if (!mounted) return;
       nav.popUntil((route) => route.isFirst);
       nav.push(MaterialPageRoute<void>(
           builder: (_) => BookingDetailScreen(
@@ -255,10 +263,21 @@ class _HomeServiceOrderScreenState extends State<HomeServiceOrderScreen> {
               future: _quote,
               builder: (context, state) {
                 if (_quote == null) {
-                  return Text(s.t(
-                      'Выберите время, чтобы увидеть цену',
-                      'Бағаны көру үшін уақытты таңдаңыз',
-                      'Pick a time to see the price'));
+                  return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(s.t(
+                            'Выберите время, чтобы увидеть цену',
+                            'Бағаны көру үшін уақытты таңдаңыз',
+                            'Pick a time to see the price')),
+                        if (_error != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(_error!,
+                                style:
+                                    TextStyle(color: theme.colorScheme.error)),
+                          ),
+                      ]);
                 }
                 if (state.connectionState != ConnectionState.done) {
                   return const Center(child: CircularProgressIndicator());

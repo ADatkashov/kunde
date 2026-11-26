@@ -108,17 +108,19 @@ public class HomeServicesVisitController {
         return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
     }
 
-    /** Own upcoming and running jobs (next 7 days), earliest first. */
+    /** Own upcoming and running jobs (next 7 days) and ones that ended in the last 12 hours but were not finished, earliest first. */
     @GetMapping("/executor/home-services/jobs")
     @Transactional(readOnly = true)
     ResponseEntity<List<Job>> jobs(@AuthenticationPrincipal Jwt principal) {
         UUID master = master(user(principal));
         return ok(db.query("""
                 select b.id, b.booking_number, b.service_name, b.venue_name, b.address_text, b.starts_at, b.ends_at, b.status,
-                       v.stage, v.eta_minutes, b.price_minor
+                       v.stage, case when v.stage = 'EN_ROUTE' and v.eta_minutes is not null
+                            then greatest(0, v.eta_minutes - floor(extract(epoch from (now() - v.updated_at)) / 60)::int)
+                            else v.eta_minutes end, b.price_minor
                 from transactions.bookings b left join marketplace.home_service_visits v on v.booking_id = b.id
                 where b.master_id = ? and b.category = ? and b.status in ('CONFIRMED', 'IN_PROGRESS')
-                  and (b.ends_at > now() or b.status = 'IN_PROGRESS') and b.starts_at < now() + interval '7 days'
+                  and (b.ends_at > now() - interval '12 hours' or b.status = 'IN_PROGRESS') and b.starts_at < now() + interval '7 days'
                 order by b.starts_at, b.id
                 """, (rs, row) -> new Job(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5),
                 rs.getObject(6, OffsetDateTime.class), rs.getObject(7, OffsetDateTime.class), rs.getString(8),
@@ -210,7 +212,9 @@ public class HomeServicesVisitController {
 
     private Visit visit(UUID bookingId) {
         return db.query("""
-                select b.id, b.status, v.stage, v.eta_minutes from transactions.bookings b
+                select b.id, b.status, v.stage, case when v.stage = 'EN_ROUTE' and v.eta_minutes is not null
+                            then greatest(0, v.eta_minutes - floor(extract(epoch from (now() - v.updated_at)) / 60)::int)
+                            else v.eta_minutes end from transactions.bookings b
                 left join marketplace.home_service_visits v on v.booking_id = b.id where b.id = ?
                 """, (rs, n) -> new Visit(rs.getString(1), rs.getString(2), rs.getString(3), rs.getObject(4, Integer.class)), bookingId)
                 .getFirst();

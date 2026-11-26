@@ -28,83 +28,123 @@ class HomeServicesOffersScreen extends StatefulWidget {
 }
 
 class _HomeServicesOffersScreenState extends State<HomeServicesOffersScreen> {
+  static const _page = 20;
+
   late final HomeServicesCatalog _api =
       widget.api ?? HomeServicesApi(widget.services.api);
-  late Future<List<HomeServiceOffer>> _offers = _api.offers();
+  final _items = <HomeServiceOffer>[];
+  bool _loading = true;
+  bool _failed = false;
+  bool _more = false;
 
-  void _retry() => setState(() {
-        _offers = _api.offers();
+  @override
+  void initState() {
+    super.initState();
+    _loadPage();
+  }
+
+  /// Loads the next page of the catalogue; earlier pages stay on screen, a failure keeps them and offers a retry.
+  Future<void> _loadPage() async {
+    setState(() {
+      _loading = true;
+      _failed = false;
+    });
+    try {
+      final page = await _api.offers(limit: _page, offset: _items.length);
+      if (!mounted) return;
+      setState(() {
+        _items.addAll(page);
+        _more = page.length == _page;
+        _loading = false;
       });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _failed = true;
+        _loading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final s = RideStrings(context);
+    Widget body;
+    if (_items.isEmpty && _loading) {
+      body = const Center(child: CircularProgressIndicator());
+    } else if (_items.isEmpty && _failed) {
+      body = Center(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(s.error),
+          TextButton(onPressed: _loadPage, child: Text(s.retry)),
+        ]),
+      );
+    } else if (_items.isEmpty) {
+      body = Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(s.t(
+              'Пока нет доступных услуг в вашем городе',
+              'Қазір қалаңызда қолжетімді қызметтер жоқ',
+              'No services available yet')),
+        ),
+      );
+    } else {
+      body = ListView.separated(
+        padding: const EdgeInsets.all(16),
+        itemCount: _items.length + (_more || _failed || _loading ? 1 : 0),
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        itemBuilder: (context, i) {
+          if (i == _items.length) {
+            if (_loading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            return Center(
+              child: TextButton(
+                key: const ValueKey('more'),
+                onPressed: _loadPage,
+                child: Text(_failed
+                    ? s.retry
+                    : s.t('Показать ещё', 'Тағы көрсету', 'Show more')),
+              ),
+            );
+          }
+          final offer = _items[i];
+          return _OfferCard(
+            offer: offer,
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => HomeServiceOfferScreen(
+                    offer: offer, services: widget.services, api: _api),
+              ),
+            ),
+          );
+        },
+      );
+    }
     return Scaffold(
       appBar: AppBar(
           title: Text(s.t('Дом и быт', 'Үй және тұрмыс', 'Home services'))),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 640),
-          child: FutureBuilder<List<HomeServiceOffer>>(
-            future: _offers,
-            builder: (context, state) {
-              if (state.connectionState != ConnectionState.done) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (state.hasError) {
-                return Center(
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Text(s.error),
-                    TextButton(onPressed: _retry, child: Text(s.retry)),
-                  ]),
-                );
-              }
-              final offers = state.data!;
-              if (offers.isEmpty) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(s.t(
-                        'Пока нет доступных услуг в вашем городе',
-                        'Қазір қалаңызда қолжетімді қызметтер жоқ',
-                        'No services available yet')),
-                  ),
-                );
-              }
-              return ListView.separated(
-                padding: const EdgeInsets.all(16),
-                itemCount: offers.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, i) => _OfferCard(
-                  offer: offers[i],
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => HomeServiceOfferScreen(
-                          offer: offers[i],
-                          services: widget.services,
-                          api: _api),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
+            constraints: const BoxConstraints(maxWidth: 640), child: body),
       ),
     );
   }
 }
 
-String priceLabel(RideStrings s, HomeServiceOffer o) =>
-    switch (o.pricingModel) {
-      'FROM' => '${s.t('от', 'бастап', 'from')} ${formatKzt(o.priceMinor)}',
-      'HOURLY' => '${formatKzt(o.priceMinor)} / ${s.t('час', 'сағ', 'h')}',
-      'PER_SQM' => '${formatKzt(o.priceMinor)} / ${s.t('м²', 'м²', 'm²')}',
-      'QUOTE' => s.t('По расчёту', 'Есептеу бойынша', 'On quote'),
-      'DIAGNOSTIC' =>
-        '${s.t('диагностика', 'диагностика', 'diagnostics')} ${formatKzt(o.priceMinor)}',
-      _ => formatKzt(o.priceMinor),
-    };
+String priceLabel(RideStrings s, HomeServiceOffer o) => o.areaBased
+    ? '${formatKzt(o.priceMinor)} + ${formatKzt(o.pricePerSqmMinor)} / ${s.t('м²', 'м²', 'm²')}'
+    : switch (o.pricingModel) {
+        'FROM' => '${s.t('от', 'бастап', 'from')} ${formatKzt(o.priceMinor)}',
+        'HOURLY' => '${formatKzt(o.priceMinor)} / ${s.t('час', 'сағ', 'h')}',
+        'PER_SQM' =>
+          '${formatKzt(o.priceMinor)} + ${formatKzt(o.pricePerSqmMinor)} / ${s.t('м²', 'м²', 'm²')}',
+        'QUOTE' => s.t('По расчёту', 'Есептеу бойынша', 'On quote'),
+        'DIAGNOSTIC' =>
+          '${s.t('диагностика', 'диагностика', 'diagnostics')} ${formatKzt(o.priceMinor)}',
+        _ => formatKzt(o.priceMinor),
+      };
 
 class _OfferCard extends StatelessWidget {
   const _OfferCard({required this.offer, required this.onTap});
@@ -288,7 +328,9 @@ class _HomeServiceOfferScreenState extends State<HomeServiceOfferScreen> {
                     builder: (_) => HomeServiceOrderScreen(
                         offer: offer,
                         services: widget.services,
-                        api: widget.api)),
+                        api: widget.api,
+                        initialAreaSqm: int.tryParse(_area.text.trim()),
+                        initialUrgent: _urgent)),
               ),
               child: Text(s.t('Заказать услугу', 'Қызметке тапсырыс беру',
                   'Order the service')),

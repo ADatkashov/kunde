@@ -6,6 +6,7 @@ import 'package:kunde_executor/features/home_services/home_services_work_screen.
 /// A tiny server: one job that walks CONFIRMED → EN_ROUTE → ARRIVED → IN_PROGRESS → COMPLETED, like the real order rules.
 class _Session implements AuthRepository {
   bool linked = false;
+  bool offline = false;
   String status = 'CONFIRMED';
   String? stage;
   final calls = <String>[];
@@ -26,6 +27,7 @@ class _Session implements AuthRepository {
       return null;
     }
     if (!linked) throw IdentityApiError(404, 'NOT_A_MASTER');
+    if (offline && method != 'GET') throw IdentityUnavailable();
     if (path.endsWith('/stage')) {
       stageBody = body;
       stage = body!['stage'] as String;
@@ -56,6 +58,7 @@ class _Session implements AuthRepository {
 }
 
 void main() {
+  offlineTest();
   gpsFailureTest();
   test('the next action follows the booking status and visit stage', () {
     final next = HomeServicesWorkScreen.nextAction;
@@ -123,5 +126,26 @@ void gpsFailureTest() {
     await tester.tap(find.byKey(const ValueKey('en_route-j1')));
     await tester.pumpAndSettle();
     expect(auth.stageBody, {'stage': 'EN_ROUTE', 'etaMinutes': 20});
+  });
+}
+
+void offlineTest() {
+  testWidgets('a lost connection during an action is reported, not swallowed',
+      (tester) async {
+    final auth = _Session()
+      ..linked = true
+      ..offline = true;
+    await tester.pumpWidget(MaterialApp(
+      locale: const Locale('en'),
+      supportedLocales: const [Locale('en')],
+      home: HomeServicesWorkScreen(
+          auth: auth, readPosition: () async => throw Exception('no gps')),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('en_route-j1')));
+    await tester.pumpAndSettle();
+    expect(find.text('No connection. Check the internet and try again.'),
+        findsOneWidget);
+    expect(auth.stage, isNull);
   });
 }

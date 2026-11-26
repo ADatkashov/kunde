@@ -72,6 +72,12 @@ class _HomeServicesWorkScreenState extends State<HomeServicesWorkScreen> {
               'Action not available now: refresh the list')
           : s.error;
       if (mounted) _reload();
+    } on IdentityUnavailable {
+      // No network or a timeout: the visit did not change, so say so and keep the screen as it is.
+      _error = s.t(
+          'Нет связи с сервером. Проверьте интернет и повторите.',
+          'Сервермен байланыс жоқ. Интернетті тексеріп, қайталаңыз.',
+          'No connection. Check the internet and try again.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }

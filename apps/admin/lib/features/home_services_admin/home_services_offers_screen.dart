@@ -4,6 +4,7 @@ import 'package:kunde_auth/auth_repository.dart';
 import 'package:kunde_ui/ride_strings.dart';
 
 const _offersPath = 'admin/home-services/offers';
+const _pageSize = 30;
 const _statuses = ['PENDING', 'PUBLISHED', 'SUSPENDED', 'REJECTED', 'DRAFT'];
 
 /// Moderation queue of Home Services offers (`HOME_SERVICES_CATALOG`): approve, reject, suspend, restore.
@@ -20,12 +21,13 @@ class HomeServicesOffersScreen extends StatefulWidget {
 /// Visible for testing: [actionsFor] is the screen's transition table.
 class HomeServicesOffersScreenState extends State<HomeServicesOffersScreen> {
   String _status = 'PENDING';
+  int _offset = 0;
   late Future<List<Map<String, dynamic>>> _page = _load();
 
   Future<List<Map<String, dynamic>>> _load() async {
     final data = await widget.auth.authorizedJson(
       'GET',
-      '$_offersPath?status=$_status',
+      '$_offersPath?status=$_status&limit=$_pageSize&offset=$_offset',
     ) as List<dynamic>;
     return data.cast<Map<String, dynamic>>();
   }
@@ -113,6 +115,7 @@ class HomeServicesOffersScreenState extends State<HomeServicesOffersScreen> {
                       selected: _status == status,
                       onSelected: (_) {
                         _status = status;
+                        _offset = 0;
                         _reload();
                       },
                     ),
@@ -178,6 +181,26 @@ class HomeServicesOffersScreenState extends State<HomeServicesOffersScreen> {
                               ),
                             ),
                           ),
+                        Wrap(spacing: 8, children: [
+                          if (_offset > 0)
+                            TextButton(
+                              key: const ValueKey('prev-page'),
+                              onPressed: () {
+                                _offset -= _pageSize;
+                                _reload();
+                              },
+                              child: Text(s.back),
+                            ),
+                          if (items.length == _pageSize && _offset < 10000)
+                            TextButton(
+                              key: const ValueKey('next-page'),
+                              onPressed: () {
+                                _offset += _pageSize;
+                                _reload();
+                              },
+                              child: Text(s.t('Далее', 'Келесі', 'Next')),
+                            ),
+                        ]),
                       ],
                     ),
                   );
@@ -217,7 +240,7 @@ class _ReasonDialogState extends State<_ReasonDialog> {
       content: TextField(
         key: const ValueKey('reason'),
         controller: _controller,
-        maxLength: 500,
+        maxLength: 200,
         decoration: InputDecoration(
           labelText: s.t('Причина (от 3 символов)', 'Себебі (кемінде 3 таңба)',
               'Reason (3+ characters)'),

@@ -20,6 +20,7 @@ class _Session implements AuthRepository {
       decision = body;
       return {};
     }
+    if (path.contains('offset=30')) return <Map<String, dynamic>>[];
     return path.contains('status=PENDING')
         ? [
             {
@@ -73,8 +74,9 @@ void main() {
       'reason': 'checked',
     });
     expect(
-      auth.calls
-          .where((c) => c == 'GET admin/home-services/offers?status=PENDING'),
+      auth.calls.where((c) =>
+          c ==
+          'GET admin/home-services/offers?status=PENDING&limit=30&offset=0'),
       hasLength(2),
     );
   });

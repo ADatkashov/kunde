@@ -23,7 +23,7 @@ Consumer, Partner-обзор, Executor и Admin-аналитика готовы 
 
 ## KUNDE Home Services 1.0
 
-Backend предложений и тарифов (V69, V70) готов; экраны Consumer (каталог, котировка), Partner (список, подача) и Admin (модерация) есть. Дальше по порядку: (1) Partner — создание предложения, зоны и тарифы; Consumer — заказ по выбранному предложению с `expectedPriceMinor`; (2) мастера и назначение на `booking_masters`, заказы с состояниями EN_ROUTE/ARRIVED/IN_PROGRESS и ETA через KUNDE Maps; (3) смета и доп. работы с согласием клиента, фотоотчёты, отзывы, гарантийные обращения; (4) сидер DEV, многоролевой E2E, деплой DEV и четыре Release APK. Команды: `cd backend && ./gradlew :app:test --tests '*HomeServices*' --tests '*Booking*'`; `cd apps/consumer && flutter test test/features/booking/booking_flow_test.dart`.
+Готово: backend предложений, тарифов и визита мастера (V69–V71, ETA через `RoutingProvider`); экраны Consumer (каталог, котировка, заказ с `expectedPriceMinor`, ход визита), Partner (список, создание, подача), Admin (модерация) и Executor (визит). Дальше по порядку: (1) Partner — зоны и тарифы, выдача кода-приглашения мастеру; (2) смета и доп. работы с согласием клиента, фотоотчёты, отзывы, гарантийные обращения; (3) сидер DEV, многоролевой нативный E2E, деплой DEV и четыре Release APK. Команды: `cd backend && ./gradlew :app:test --tests '*HomeServices*' --tests '*Booking*'`; `cd apps/consumer && flutter test test/features/home_services test/features/booking/booking_flow_test.dart`; `cd apps/executor && flutter test test/features/home_services`.
 
 ## KUNDE Events & Tickets
 

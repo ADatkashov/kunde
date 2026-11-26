@@ -23,6 +23,7 @@ class HomeServiceVisitCard extends StatefulWidget {
 class _HomeServiceVisitCardState extends State<HomeServiceVisitCard> {
   Map<String, dynamic>? _visit;
   Timer? _timer;
+  bool _inFlight = false;
 
   @override
   void initState() {
@@ -37,12 +38,17 @@ class _HomeServiceVisitCardState extends State<HomeServiceVisitCard> {
     super.dispose();
   }
 
+  /// One read at a time: a slow answer is never overtaken and then overwritten by an older one.
   Future<void> _refresh() async {
+    if (_inFlight) return;
+    _inFlight = true;
     try {
       final visit = await widget.load();
       if (mounted) setState(() => _visit = visit);
     } catch (_) {
       // Keep the last known state.
+    } finally {
+      _inFlight = false;
     }
   }
 

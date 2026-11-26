@@ -207,11 +207,35 @@ class HomeServiceOfferForm extends StatefulWidget {
 }
 
 class _HomeServiceOfferFormState extends State<HomeServiceOfferForm> {
-  late final Future<List<Venue>> _venues = widget.ops
+  late Future<List<Venue>> _venues = _loadVenues();
+  late Future<List<Map<String, dynamic>>> _definitions = _loadDefinitions();
+  Future<List<Venue>> _loadVenues() => widget.ops
       .venues()
       .then((all) => all.where((v) => v.category == 'CLEANING').toList());
-  late final Future<List<Map<String, dynamic>>> _definitions =
-      widget.api.getList('home-services/definitions?limit=50');
+
+  /// The catalogue is paged by the server (at most 50 a page); every page is read so no kind of work is missing.
+  Future<List<Map<String, dynamic>>> _loadDefinitions() async {
+    final all = <Map<String, dynamic>>[];
+    for (var offset = 0; offset <= 10000; offset += 50) {
+      final page = await widget.api
+          .getList('home-services/definitions?limit=50&offset=$offset');
+      all.addAll(page);
+      if (page.length < 50) break;
+    }
+    return all;
+  }
+
+  /// A failed load is shown as a failure with a retry, never as an empty list.
+  Widget _failed(
+          String Function(String, String, String) t, VoidCallback retry) =>
+      Row(children: [
+        Expanded(
+            child: Text(t('Не удалось загрузить', 'Жүктеу мүмкін болмады',
+                'Could not load'))),
+        TextButton(
+            onPressed: retry, child: Text(t('Повторить', 'Қайталау', 'Retry'))),
+      ]);
+
   Venue? _venue;
   Future<List<VenueService>>? _services;
   VenueService? _service;
@@ -252,6 +276,7 @@ class _HomeServiceOfferFormState extends State<HomeServiceOfferForm> {
         'homeVisit': _homeVisit,
         'warrantyDays': _warrantyDays,
       });
+      if (!mounted) return;
       nav.pop(true);
     } catch (error) {
       if (!mounted) return;
@@ -285,6 +310,13 @@ class _HomeServiceOfferFormState extends State<HomeServiceOfferForm> {
             if (state.connectionState != ConnectionState.done) {
               return const LinearProgressIndicator();
             }
+            if (state.hasError) {
+              return _failed(
+                  t,
+                  () => setState(() {
+                        _venues = _loadVenues();
+                      }));
+            }
             final venues = state.data ?? const <Venue>[];
             if (venues.isEmpty) {
               return Text(t(
@@ -317,6 +349,13 @@ class _HomeServiceOfferFormState extends State<HomeServiceOfferForm> {
               if (state.connectionState != ConnectionState.done) {
                 return const LinearProgressIndicator();
               }
+              if (state.hasError) {
+                return _failed(
+                    t,
+                    () => setState(() {
+                          _services = widget.ops.services(_venue!.id);
+                        }));
+              }
               return DropdownButtonFormField<VenueService>(
                 key: const ValueKey('service'),
                 initialValue: _service,
@@ -336,6 +375,13 @@ class _HomeServiceOfferFormState extends State<HomeServiceOfferForm> {
           builder: (context, state) {
             if (state.connectionState != ConnectionState.done) {
               return const LinearProgressIndicator();
+            }
+            if (state.hasError) {
+              return _failed(
+                  t,
+                  () => setState(() {
+                        _definitions = _loadDefinitions();
+                      }));
             }
             return DropdownButtonFormField<String>(
               key: const ValueKey('definition'),

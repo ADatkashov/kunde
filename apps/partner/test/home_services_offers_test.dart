@@ -14,6 +14,7 @@ http.Response _json(Object body) => http.Response(jsonEncode(body), 200,
     headers: {'content-type': 'application/json; charset=utf-8'});
 
 void main() {
+  _loadTests();
   _formTests();
   test('partner transitions mirror the backend state machine', () {
     final action = HomeServicesOffersScreen.actionFor;
@@ -167,5 +168,85 @@ void _formTests() {
     expect(posts, [
       '/api/v1/partner/partners/p1/home-services/offers {"serviceId":"s1","definitionCode":"DEEP_CLEAN","pricingModel":"FIXED","homeVisit":true,"warrantyDays":14}'
     ]);
+  });
+}
+
+void _loadTests() {
+  Widget host(PartnerApi api) {
+    return MaterialApp(
+      locale: const Locale('en'),
+      supportedLocales: S.supported,
+      localizationsDelegates: const [
+        S.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      home: HomeServiceOfferForm(
+          ops: PartnerOperations(api, 'p1'),
+          api: api,
+          root: 'partner/partners/p1/home-services/offers'),
+    );
+  }
+
+  testWidgets('every page of the kinds of work is read (55 > one page of 50)',
+      (tester) async {
+    final queries = <String>[];
+    final api = PartnerApi(
+      baseUri: Uri.parse('https://api.example.test/api/v1/'),
+      accessToken: () async => 'token',
+      client: MockClient((r) async {
+        if (r.url.path.endsWith('/home-services/definitions')) {
+          queries.add(r.url.query);
+          final count = r.url.queryParameters['offset'] == '0' ? 50 : 5;
+          return _json([
+            for (var i = 0; i < count; i++)
+              {
+                'code': 'W${r.url.queryParameters['offset']}_$i',
+                'categoryCode': 'CLEANING',
+                'nameRu': 'Работа',
+                'nameKk': 'Жұмыс',
+                'nameEn': 'Work',
+              },
+          ]);
+        }
+        return _json([]);
+      }),
+    );
+    await tester.pumpWidget(host(api));
+    await tester.pumpAndSettle();
+    expect(queries, ['limit=50&offset=0', 'limit=50&offset=50']);
+  });
+
+  testWidgets('a failed venue load is a failure with a retry, not "no venue"',
+      (tester) async {
+    var fail = true;
+    final api = PartnerApi(
+      baseUri: Uri.parse('https://api.example.test/api/v1/'),
+      accessToken: () async => 'token',
+      getRetries: 0,
+      client: MockClient((r) async {
+        if (r.url.path.endsWith('/booking/venues')) {
+          if (fail) return http.Response('boom', 500);
+          return _json([
+            {
+              'id': 'v1',
+              'name': 'Clean Co',
+              'open': true,
+              'category': 'CLEANING'
+            },
+          ]);
+        }
+        return _json([]);
+      }),
+    );
+    await tester.pumpWidget(host(api));
+    await tester.pumpAndSettle();
+    expect(find.text('Could not load'), findsWidgets);
+    expect(find.textContaining('No Home services venue'), findsNothing);
+    fail = false;
+    await tester.tap(find.text('Retry').first);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('venue')), findsOneWidget);
   });
 }

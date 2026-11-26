@@ -207,9 +207,11 @@ class HomeServicesVisitApiIntegrationTest {
                 .andExpect(jsonPath("$.code").value("NOT_A_MASTER"));
         // Another master's job is "not found", even for a linked master.
         db.update("update marketplace.booking_masters set user_id = null where user_id = ?::uuid", executorUser);
-        var other = db.queryForObject("select id::text from marketplace.booking_masters where venue_id = ?::uuid and active order by id limit 1 offset 1", String.class, venueId());
-        if (other != null) {
-            db.update("update marketplace.booking_masters set user_id = ?::uuid where id = ?::uuid and id <> (select master_id from transactions.bookings where id = ?::uuid)", executorUser, other, booking);
+        var other = db.queryForList("select id::text from marketplace.booking_masters where venue_id = ?::uuid and active "
+                + "and id <> (select master_id from transactions.bookings where id = ?::uuid) order by id limit 1", String.class, venueId(), booking).stream().findFirst().orElse(null);
+        assertThat(other).as("the demo cleaning venue has a second master").isNotNull();
+        {
+            db.update("update marketplace.booking_masters set user_id = ?::uuid where id = ?::uuid", executorUser, other);
             stage(booking, "EN_ROUTE", null, executor).andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("JOB_NOT_FOUND"));
         }
         // A customer sees only their own booking.
