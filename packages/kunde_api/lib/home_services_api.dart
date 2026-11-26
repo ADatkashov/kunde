@@ -96,7 +96,11 @@ abstract interface class HomeServicesCatalog {
       {String? category, int limit = 20, int offset = 0});
 
   Future<HomeServiceQuote> quote(String offerId,
-      {int? areaSqm, double? lat, double? lng, bool urgent = false});
+      {int? areaSqm,
+      String? startsAtIso,
+      double? lat,
+      double? lng,
+      bool urgent = false});
 }
 
 /// Public Home Services catalogue on the booking transport (same error mapping, no auth).
@@ -121,10 +125,15 @@ class HomeServicesApi implements HomeServicesCatalog {
 
   @override
   Future<HomeServiceQuote> quote(String offerId,
-      {int? areaSqm, double? lat, double? lng, bool urgent = false}) async {
+      {int? areaSqm,
+      String? startsAtIso,
+      double? lat,
+      double? lng,
+      bool urgent = false}) async {
     final response =
         await _booking.publicResponse('home-services/offers/$offerId/quote', {
       if (areaSqm != null) 'areaSqm': '$areaSqm',
+      if (startsAtIso != null) 'startsAt': startsAtIso,
       if (lat != null) 'lat': '$lat',
       if (lng != null) 'lng': '$lng',
       if (urgent) 'urgent': 'true',

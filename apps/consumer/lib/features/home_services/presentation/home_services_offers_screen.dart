@@ -4,7 +4,7 @@ import 'package:kunde_api/home_services_api.dart';
 import 'package:kunde_ui/ride_strings.dart';
 
 import '../../booking/booking_services.dart';
-import '../../booking/presentation/cleaning_flow_screen.dart';
+import 'home_service_order_screen.dart';
 
 String formatKzt(int minor) {
   final tenge = (minor / 100).round().toString();
@@ -286,8 +286,10 @@ class _HomeServiceOfferScreenState extends State<HomeServiceOfferScreen> {
               key: const ValueKey('order'),
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
-                    builder: (_) =>
-                        CleaningFlowScreen(services: widget.services)),
+                    builder: (_) => HomeServiceOrderScreen(
+                        offer: offer,
+                        services: widget.services,
+                        api: widget.api)),
               ),
               child: Text(s.t('Заказать услугу', 'Қызметке тапсырыс беру',
                   'Order the service')),
