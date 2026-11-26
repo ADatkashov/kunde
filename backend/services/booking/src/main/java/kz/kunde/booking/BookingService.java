@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -33,7 +35,8 @@ public class BookingService {
     public record BookRequest(@NotNull UUID venueId, @NotNull UUID serviceId, @NotNull UUID masterId,
             @NotNull OffsetDateTime startsAt, @Size(max = 300) String comment,
             @Size(max = 300) String addressText, @Min(1) @Max(1000) Integer areaSqm, @Min(0) Long expectedPriceMinor, @Size(max = 16) String paymentMethod,
-            Boolean acceptsTerms) {}
+            Boolean acceptsTerms, @DecimalMin("-90") @DecimalMax("90") Double latitude,
+            @DecimalMin("-180") @DecimalMax("180") Double longitude, Boolean urgent) {}
 
     public record BookingView(String id, String venueId, String venueName, String venueAddress, String serviceName,
             int durationMinutes, String masterId, String masterName, OffsetDateTime startsAt, OffsetDateTime endsAt,
@@ -124,14 +127,17 @@ public class BookingService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "DETAILS_NOT_APPLICABLE", "Address and area apply to home services only");
         }
         // The price is always computed here; the app only previews it.
-        long price = service.priceMinor() + service.pricePerSqmMinor() * (area == null ? 0 : area);
+        long price = service.listPriceMinor(area);
         // A Beauty promotion (the venue's or platform-wide) active right now is applied to the list price.
         Integer discount = categories.discountPercent(venue.category(), venue.id());
         long listPrice = price;
         if (discount != null) {
             price = listPrice - Math.round(listPrice * discount / 100.0);
         }
-        if ((health || (request.expectedPriceMinor() != null && "BARBER".equals(venue.category())))
+        // Vertical surcharges (Home Services: call-out, urgent, evening) are added after the discount; a vertical may refuse here.
+        price += categories.surchargeMinor(venue.category(), new BookingCategory.PricingContext(venue.id(), service.id(), price,
+                request.startsAt(), venue.zone(), request.latitude(), request.longitude(), Boolean.TRUE.equals(request.urgent())));
+        if ((health || (request.expectedPriceMinor() != null && ("BARBER".equals(venue.category()) || home)))
                 && !java.util.Objects.equals(request.expectedPriceMinor(), price)) {
             throw new ApiException(HttpStatus.CONFLICT, "BOOKING_PRICE_CHANGED", "Reload the service and review the current price");
         }

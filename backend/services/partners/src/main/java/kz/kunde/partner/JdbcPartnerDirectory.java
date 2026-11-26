@@ -16,6 +16,9 @@ public class JdbcPartnerDirectory implements PartnerDirectory {
             where p.id = ? and p.verification_status = 'APPROVED'
             """;
 
+    /** Roles that manage catalogue offers: the organisation's owner and managers; operators run orders only. */
+    private static final String CATALOG_MANAGER = ACTIVE_STAFF_OF_APPROVED + " and s.role in ('OWNER', 'MANAGER')";
+
     private final JdbcTemplate db;
 
     public JdbcPartnerDirectory(JdbcTemplate db) {
@@ -37,7 +40,22 @@ public class JdbcPartnerDirectory implements PartnerDirectory {
     }
 
     @Override
+    public Set<UUID> approvedPartnerIds() {
+        return new HashSet<>(db.queryForList("select id from marketplace.partners where verification_status = 'APPROVED'", UUID.class));
+    }
+
+    @Override
     public boolean lockActiveStaffOfApprovedPartner(UUID userId, UUID partnerId) {
         return !db.queryForList(ACTIVE_STAFF_OF_APPROVED + " for share of p, s", userId, partnerId).isEmpty();
+    }
+
+    @Override
+    public boolean isCatalogManager(UUID userId, UUID partnerId) {
+        return !db.queryForList(CATALOG_MANAGER, userId, partnerId).isEmpty();
+    }
+
+    @Override
+    public boolean lockCatalogManager(UUID userId, UUID partnerId) {
+        return !db.queryForList(CATALOG_MANAGER + " for share of p, s", userId, partnerId).isEmpty();
     }
 }

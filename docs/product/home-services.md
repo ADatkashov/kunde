@@ -29,3 +29,39 @@ Home Services использует общий Booking Engine. Новый спр�
 Сотрудник с грантом `HOME_SERVICES_CATALOG` может читать все категории через `GET /api/v1/admin/home-services/categories` и сохранять категорию через `PUT /api/v1/admin/home-services/categories/{code}`. Для создания передаётся `expectedVersion: 0`, для обновления — текущая версия. Конфликт версии возвращает `409`. Смена сохраняется в одной транзакции с записью аудита. Деактивация скрывает категорию и её наименования из публичной выдачи. Администратор может подготовить справочник до включения пилота.
 
 На PostgreSQL 16 прошли `FeatureTogglesApiIntegrationTest` и `DomainSchemaOwnershipIntegrationTest` (15 тестов). Проверены отсутствие доступа без гранта, создание, деактивация, конфликт версии и история аудита.
+
+## Модерируемые предложения (V69)
+
+Предложение — это существующая услуга Booking (`booking_services` площадки категории `CLEANING`), отнесённая к определению справочника и прошедшая модерацию. Цена, длительность и слоты остаются в Booking Engine; предложение добавляет модель цены (`FIXED`, `FROM`, `HOURLY`, `PER_SQM`, `PER_UNIT`, `DIAGNOSTIC`, `QUOTE`), выезд на дом и гарантию в днях (0–1095). Гарантия не подразумевается по умолчанию: `warrantyDays = 0`.
+
+Состояния: `DRAFT → PENDING` (партнёр, `SUBMIT`), `PENDING → PUBLISHED | REJECTED` (сотрудник, `APPROVE`/`REJECT`), `PUBLISHED ⇄ SUSPENDED` (сотрудник, `SUSPEND`/`RESTORE`), `PENDING | PUBLISHED → DRAFT` (партнёр, `WITHDRAW`), `REJECTED → PENDING` (повторная подача). Допустимость перехода, версия и роль проверяются в одном месте (`HomeServiceOffers`); каждое изменение пишет неизменяемое событие в `home_service_offer_events` (роль, прежний и новый статус, причина).
+
+| Метод и путь | Доступ | Назначение |
+| --- | --- | --- |
+| `GET /api/v1/home-services/offers?category=&definition=&limit=&offset=` | публично, при включённом флаге | Только `PUBLISHED` предложения открытых площадок и доступных услуг; `limit` 1–50 |
+| `GET/POST /api/v1/partner/partners/{partnerId}/home-services/offers` | список — активный сотрудник одобренного партнёра; запись — `OWNER`/`MANAGER` | Список своих предложений; создание (`DRAFT`) только для услуги собственной площадки партнёра |
+| `POST …/offers/{offerId}/transition` | то же | `SUBMIT` или `WITHDRAW` с `expectedVersion`; чужое предложение даёт `404 OFFER_NOT_FOUND` |
+| `GET /api/v1/admin/home-services/offers?status=` | грант `HOME_SERVICES_CATALOG` | Очередь модерации, работает при выключенном флаге |
+| `POST /api/v1/admin/home-services/offers/{offerId}/decision` | тот же грант | `APPROVE`, `REJECT`, `SUSPEND`, `RESTORE` с `expectedVersion` и причиной от 3 символов |
+
+Права партнёра проверяются через публичный технический порт `kz.kunde.platform.partner.PartnerDirectory` (ADR-021, Конституция §4), а не импортом `partner.*`: список — `isActiveStaffOfApprovedPartner`, запись — `lockCatalogManager` внутри транзакции записи (общая блокировка партнёра и членства: приостановка партнёра или отзыв сотрудника ждёт и не теряется). Какие роли управляют предложениями (`OWNER`, `MANAGER`; `OPERATOR` только читает) решает Partner в `JdbcPartnerDirectory`. Принадлежность площадки партнёру — данные Booking (`booking_venues.partner_id`) и читается по записанному ребру `homeservices → booking`. Не участник одобренного партнёра получает `404 PARTNER_NOT_FOUND`, участник без полномочия — `403 PARTNER_ROLE_FORBIDDEN`. Baseline границ не расширялся.
+
+Коды ошибок: `PARTNER_NOT_FOUND` (404), `PARTNER_ROLE_FORBIDDEN` (403), `VERSION_CONFLICT` и `INVALID_TRANSITION` (409), `OFFER_EXISTS` (409), `SERVICE_NOT_FOUND` и `OFFER_NOT_FOUND` (404), `DEFINITION_INACTIVE` (422), `REASON_REQUIRED` и `PRICING_MODEL_INVALID` (400).
+
+Ограничения: смена цены или доступности уже опубликованной услуги идёт через существующий Booking API партнёра и повторную модерацию не запускает; фотографии, районы обслуживания, мастера и коммерческая модель комиссии пока не входят. Экраны Consumer, Partner и Admin для предложений не реализованы (в среде работы не было Flutter SDK).
+
+Проверка: `cd backend && ./gradlew :app:test --tests '*HomeServicesOffersApiIntegrationTest'` на PostgreSQL 16 (`DB_USERNAME=postgres`).
+
+## Зоны обслуживания, тарифы и расчёт (V70)
+
+Зона — круг (центр, радиус 300 м – 100 км) площадки `CLEANING`. Площадка без активных зон обслуживает весь город; с зонами адрес должен лежать в одной из них (расстояние — `platform.geo.Geo`). Тариф предложения — выездной сбор, надбавка за срочность и вечернюю надбавку (процент от цены, время «вечера» задаёт партнёр); тариф действует только у опубликованного предложения.
+
+Цену считает один метод (`HomeServicePricing.charges`): Booking Engine вызывает его через хук `BookingCategory.surchargeMinor` при создании записи, публичная котировка — при запросе, поэтому котировка и запись не расходятся. Список цен остаётся в Booking (`BookingSlots.Service.listPriceMinor`); `BookRequest` получил необязательные `latitude`, `longitude`, `urgent`, прежние клиенты не меняются. Для `CLEANING` теперь проверяется и `expectedPriceMinor`, если он передан (`409 BOOKING_PRICE_CHANGED`).
+
+| Метод и путь | Доступ | Назначение |
+| --- | --- | --- |
+| `GET /api/v1/home-services/offers/{offerId}/quote?areaSqm=&startsAt=&lat=&lng=&urgent=` | публично, при включённом флаге | Постатейная цена опубликованного предложения; `404 OFFER_NOT_FOUND` для остальных |
+| `GET/POST /api/v1/partner/partners/{partnerId}/home-services/zones`, `PUT …/zones/{zoneId}` | чтение — персонал; запись — `OWNER`/`MANAGER` | Зоны своих площадок; `expectedVersion`, `active=false` выводит зону из работы |
+| `PUT /api/v1/partner/partners/{partnerId}/home-services/offers/{offerId}/tariff` | `OWNER`/`MANAGER` | Тариф; `expectedVersion` 0 создаёт, иначе версия должна совпасть |
+
+Коды: `LOCATION_REQUIRED` и `OUT_OF_ZONE` (422), `LOCATION_INVALID` (400), `ZONE_NOT_FOUND`, `VENUE_NOT_FOUND`, `OFFER_NOT_FOUND` (404), `VERSION_CONFLICT` (409). Публичный каталог и котировка показывают только предложения партнёров со статусом `APPROVED` (`PartnerDirectory.approvedPartnerIds`); приостановка партнёра скрывает их сразу, восстановление возвращает. Открыто: мастера и графики используют существующие `booking_masters`/`booking_working_hours` без изменений; полигональные зоны и районы — позже.

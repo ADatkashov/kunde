@@ -35,4 +35,9 @@ public class BookingCategories {
         BookingCategory c = byCategory.get(category);
         return c != null && c.confirmsInstantly(venueId);
     }
+
+    public long surchargeMinor(String category, BookingCategory.PricingContext context) {
+        BookingCategory c = byCategory.get(category);
+        return c == null ? 0 : c.surchargeMinor(context);
+    }
 }
