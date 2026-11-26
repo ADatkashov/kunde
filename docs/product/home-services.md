@@ -51,3 +51,18 @@ Home Services использует общий Booking Engine. Новый спр�
 Ограничения: смена цены или доступности уже опубликованной услуги идёт через существующий Booking API партнёра и повторную модерацию не запускает; фотографии, районы обслуживания, мастера и коммерческая модель комиссии пока не входят. Экраны Consumer, Partner и Admin для предложений не реализованы (в среде работы не было Flutter SDK).
 
 Проверка: `cd backend && ./gradlew :app:test --tests '*HomeServicesOffersApiIntegrationTest'` на PostgreSQL 16 (`DB_USERNAME=postgres`).
+
+## Зоны обслуживания, тарифы и расчёт (V70)
+
+Зона — круг (центр, радиус 300 м – 100 км) площадки `CLEANING`. Площадка без активных зон обслуживает весь город; с зонами адрес должен лежать в одной из них (расстояние — `platform.geo.Geo`). Тариф предложения — выездной сбор, надбавка за срочность и вечернюю надбавку (процент от цены, время «вечера» задаёт партнёр); тариф действует только у опубликованного предложения.
+
+Цену считает один метод (`HomeServicePricing.charges`): Booking Engine вызывает его через хук `BookingCategory.surchargeMinor` при создании записи, публичная котировка — при запросе, поэтому котировка и запись не расходятся. Список цен остаётся в Booking (`BookingSlots.Service.listPriceMinor`); `BookRequest` получил необязательные `latitude`, `longitude`, `urgent`, прежние клиенты не меняются. Для `CLEANING` теперь проверяется и `expectedPriceMinor`, если он передан (`409 BOOKING_PRICE_CHANGED`).
+
+| Метод и путь | Доступ | Назначение |
+| --- | --- | --- |
+| `GET /api/v1/home-services/offers/{offerId}/quote?areaSqm=&startsAt=&lat=&lng=&urgent=` | публично, при включённом флаге | Постатейная цена опубликованного предложения; `404 OFFER_NOT_FOUND` для остальных |
+| `GET/POST /api/v1/partner/partners/{partnerId}/home-services/zones`, `PUT …/zones/{zoneId}` | чтение — персонал; запись — `OWNER`/`MANAGER` | Зоны своих площадок; `expectedVersion`, `active=false` выводит зону из работы |
+| `PUT /api/v1/partner/partners/{partnerId}/home-services/offers/{offerId}/tariff` | `OWNER`/`MANAGER` | Тариф; `expectedVersion` 0 создаёт, иначе версия должна совпасть |
+
+Коды: `LOCATION_REQUIRED` и `OUT_OF_ZONE` (422), `LOCATION_INVALID` (400), `ZONE_NOT_FOUND`, `VENUE_NOT_FOUND`, `OFFER_NOT_FOUND` (404), `VERSION_CONFLICT` (409). Открыто: приостановка партнёра пока не скрывает его опубликованные предложения автоматически (скрывает `is_open` площадки); мастера и графики используют существующие `booking_masters`/`booking_working_hours` без изменений; полигональные зоны и районы — позже.
+

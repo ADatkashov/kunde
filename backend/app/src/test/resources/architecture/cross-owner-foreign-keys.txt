@@ -49,6 +49,7 @@ marketplace.health_moderation_events -> marketplace.booking_venues (health -> bo
 marketplace.home_service_category_events -> identity.users (homeservices -> identity)
 marketplace.home_service_offer_events -> identity.users (homeservices -> identity)
 marketplace.home_service_offers -> marketplace.booking_services (homeservices -> booking)
+marketplace.home_service_zones -> marketplace.booking_venues (homeservices -> booking)
 marketplace.leisure_audit -> identity.users (leisure -> identity)
 marketplace.leisure_audit -> marketplace.partners (leisure -> partner)
 marketplace.leisure_venues -> marketplace.partners (leisure -> partner)

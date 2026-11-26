@@ -70,6 +70,9 @@ public class BookingSlots {
     public record Service(UUID id, String name, int durationMinutes, long priceMinor, long pricePerSqmMinor, Integer minAreaSqm,
             Integer maxAreaSqm) {
         public boolean areaBased() { return pricePerSqmMinor > 0; }
+
+        /** The list price of one booking: the base price plus the per-square-metre price times the area. */
+        public long listPriceMinor(Integer areaSqm) { return priceMinor + pricePerSqmMinor * (areaSqm == null ? 0 : areaSqm); }
     }
 
     public record Venue(UUID id, String category, String name, String address, ZoneId zone, int bufferMinutes) {}

@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import java.util.List;
+import java.util.UUID;
 import kz.kunde.platform.ApiException;
 import kz.kunde.platform.FeatureToggles;
 import kz.kunde.platform.FeatureToggles.Feature;
@@ -13,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,10 +26,26 @@ import org.springframework.web.bind.annotation.RestController;
 public class HomeServicesOffersController {
     private final JdbcTemplate db;
     private final FeatureToggles toggles;
+    private final HomeServicePricing pricing;
 
-    public HomeServicesOffersController(JdbcTemplate db, FeatureToggles toggles) {
+    public HomeServicesOffersController(JdbcTemplate db, FeatureToggles toggles, HomeServicePricing pricing) {
         this.db = db;
         this.toggles = toggles;
+        this.pricing = pricing;
+    }
+
+    /** Itemised price of one published offer for an address, time and size: exactly what a booking made now would cost. */
+    @GetMapping("/{offerId}/quote")
+    public ResponseEntity<HomeServicePricing.Quote> quote(@PathVariable UUID offerId,
+            @RequestParam(required = false) @Min(1) @Max(1000) Integer areaSqm,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.OffsetDateTime startsAt,
+            @RequestParam(required = false) @jakarta.validation.constraints.DecimalMin("-90") @jakarta.validation.constraints.DecimalMax("90") Double lat,
+            @RequestParam(required = false) @jakarta.validation.constraints.DecimalMin("-180") @jakarta.validation.constraints.DecimalMax("180") Double lng,
+            @RequestParam(defaultValue = "false") boolean urgent) {
+        if (!toggles.enabled(Feature.HOME_SERVICES)) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "HOME_SERVICES_DISABLED", "Home Services is unavailable");
+        }
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(pricing.quote(offerId, areaSqm, startsAt, lat, lng, urgent));
     }
 
     public record OfferCard(String id, String serviceId, String venueId, String venueName, String definitionCode,
