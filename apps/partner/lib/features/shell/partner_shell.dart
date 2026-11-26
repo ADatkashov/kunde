@@ -169,6 +169,7 @@ class _PartnerShellState extends State<PartnerShell>
                               builder: (_) => HomeServicesOffersScreen(
                                 api: _store.ops.api,
                                 partnerId: _store.ops.partnerId,
+                                ops: _store.ops,
                                 canManage:
                                     widget.controller.partner?.canManage ??
                                         false,
