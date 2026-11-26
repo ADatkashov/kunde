@@ -134,8 +134,8 @@ public class FoodOrderService {
         boolean pickup = "PICKUP".equals(fulfillmentType);
         requireGroceriesOn(restaurantId);
         var restaurant = db.query("""
-                select name, delivery_fee_minor, min_order_minor, is_open and moderation_status = 'ACTIVE', pickup_enabled, prep_minutes
-                from marketplace.food_restaurants where id = ?
+                select name, delivery_fee_minor, min_order_minor, marketplace.food_restaurant_open(r), pickup_enabled, prep_minutes
+                from marketplace.food_restaurants r where id = ?
                 """, (rs, row) -> new Object[] {rs.getString(1), rs.getLong(2), rs.getLong(3), rs.getBoolean(4),
                         rs.getBoolean(5), rs.getInt(6)},
                 restaurantId).stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND,

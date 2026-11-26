@@ -1066,11 +1066,15 @@ paths:
       description: KUNDE Food DEV pilot (only when app.food.enabled; absent otherwise). Synthetic demo restaurants.
       parameters:
         - { name: vertical, in: query, schema: { type: string, enum: [FOOD, GROCERY, FLOWERS_GIFTS], default: FOOD } }
+        - { name: sort, in: query, schema: { type: string, enum: [recommended, rating, delivery_fee, eta, distance], default: recommended }, description: "distance requires lat and lon (400 LOCATION_REQUIRED otherwise)." }
+        - { name: lat, in: query, schema: { type: number, minimum: -90, maximum: 90 }, description: "Customer latitude; must be sent together with lon (400 LOCATION_INVALID otherwise)." }
+        - { name: lon, in: query, schema: { type: number, minimum: -180, maximum: 180 } }
+        - { name: maxDistanceMeters, in: query, schema: { type: integer, minimum: 1, maximum: 200000 }, description: "Straight-line radius; requires lat and lon. Restaurants without stored coordinates are excluded." }
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
         - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
       responses:
         '200':
-          description: Restaurants (id, slug, name, cuisine, description, emoji, tone, deliveryFeeMinor, minOrderMinor, eta range, open, synthetic). Money is integer KZT minor units.
+          description: Restaurants (id, slug, name, cuisine, description, emoji, tone, deliveryFeeMinor, minOrderMinor, eta range, open, synthetic, latitude, longitude, distanceMeters). open is effective (manual switch, moderation and weekly hours in Asia/Almaty). distanceMeters is the straight-line distance and is null without lat/lon or without stored restaurant coordinates. Money is integer KZT minor units.
           content:
             application/json:
               schema: { type: array, items: { type: object } }
@@ -1083,7 +1087,7 @@ paths:
         '404':
           description: RESTAURANT_NOT_FOUND.
         '200':
-          description: Restaurant with menu sections, dishes and option groups.
+          description: Restaurant with menu sections, dishes and option groups, and `hours` (weekly slots {dayOfWeek 1-7, opensAt, closesAt} in Asia/Almaty; closesAt <= opensAt ends the next morning, 24:00 closes at midnight; empty = no schedule restriction).
           content:
             application/json:
               schema: { type: object }

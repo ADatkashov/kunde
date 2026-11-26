@@ -38,6 +38,21 @@ public class FoodDemoSeeder implements ApplicationRunner {
             }
         }
         seedPromotions();
+        seedLocations();
+    }
+
+    /**
+     * Synthetic points within ~5 km of the centre of Almaty for synthetic restaurants that have none, derived from the slug
+     * so every run gives the same result. Never touches non-synthetic rows. Working hours are intentionally not seeded:
+     * a seeded schedule would make demo restaurants close at arbitrary times and break DEV smoke runs.
+     */
+    @Transactional
+    public void seedLocations() {
+        db.update("""
+                update marketplace.food_restaurants
+                set latitude = round((43.2389 + ((abs(hashtext(slug)) % 1000) - 500) / 10000.0)::numeric, 6),
+                    longitude = round((76.8897 + ((abs(hashtext(slug || '#lon')) % 1000) - 500) / 10000.0)::numeric, 6)
+                where is_synthetic and latitude is null""");
     }
 
     /** Synthetic DEV promo codes (idempotent by code). They are labelled synthetic and never exist in production. */

@@ -1,6 +1,8 @@
 package kz.kunde.food;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -34,9 +36,12 @@ public class FoodPartnerController {
     private final FoodPartnerService service;
     private final FoodPromotionService promotions;
     private final FoodEngagementController engagement;
+    private final FoodScheduleService schedule;
 
-    public FoodPartnerController(FoodPartnerService service, FoodPromotionService promotions, FoodEngagementController engagement) {
+    public FoodPartnerController(FoodPartnerService service, FoodPromotionService promotions, FoodEngagementController engagement,
+            FoodScheduleService schedule) {
         this.service = service;
+        this.schedule = schedule;
         this.promotions = promotions;
         this.engagement = engagement;
     }
@@ -78,6 +83,25 @@ public class FoodPartnerController {
         return ok(service.updateRestaurant(user(principal), partnerId, restaurantId, new FoodPartnerService.RestaurantUpdate(
                 request.open(), request.pickupEnabled(), request.prepMinutes(), request.etaMinMinutes(), request.etaMaxMinutes(),
                 request.deliveryFeeMinor(), request.minOrderMinor(), request.addressText(), request.description())));
+    }
+
+    @GetMapping("/restaurants/{restaurantId}/schedule")
+    ResponseEntity<FoodScheduleService.Schedule> schedule(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
+            @PathVariable UUID restaurantId) {
+        return ok(schedule.get(user(principal), partnerId, restaurantId));
+    }
+
+    /** Replaces the whole weekly schedule (empty list = no restriction). */
+    @PutMapping("/restaurants/{restaurantId}/hours")
+    ResponseEntity<FoodScheduleService.Schedule> hours(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
+            @PathVariable UUID restaurantId, @Valid @RequestBody HoursRequest request) {
+        return ok(schedule.replaceHours(user(principal), partnerId, restaurantId, request.hours()));
+    }
+
+    @PutMapping("/restaurants/{restaurantId}/location")
+    ResponseEntity<FoodScheduleService.Schedule> location(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId,
+            @PathVariable UUID restaurantId, @Valid @RequestBody LocationRequest request) {
+        return ok(schedule.setLocation(user(principal), partnerId, restaurantId, request.latitude(), request.longitude()));
     }
 
     @GetMapping("/summary")
@@ -178,6 +202,11 @@ public class FoodPartnerController {
             @Min(1) @Max(240) Integer etaMinMinutes, @Min(1) @Max(240) Integer etaMaxMinutes,
             @Min(0) @Max(10000000) Long deliveryFeeMinor, @Min(0) @Max(100000000) Long minOrderMinor,
             @Size(max = 300) String addressText, @Size(max = 500) String description) {}
+
+    public record HoursRequest(@NotNull @Size(max = 28) List<FoodCatalogController.Hours> hours) {}
+
+    public record LocationRequest(@DecimalMin("-90") @DecimalMax("90") Double latitude,
+            @DecimalMin("-180") @DecimalMax("180") Double longitude) {}
 
     public record PromotionRequest(@Size(max = 32) String code, @NotBlank @Size(max = 120) String title, @Size(max = 300) String description,
             @NotBlank @jakarta.validation.constraints.Pattern(regexp = "PERCENT|FIXED") String kind, @Min(1) @Max(100000000) long value,

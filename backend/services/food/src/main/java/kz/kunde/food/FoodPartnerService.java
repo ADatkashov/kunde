@@ -551,6 +551,10 @@ public class FoodPartnerService {
 
     // ---- internals -----------------------------------------------------------------------------
 
+    void auditCatalog(UUID partnerId, UUID actor, String entityType, UUID entityId, String field, String oldValue, String newValue) {
+        audit(partnerId, actor, entityType, entityId, field, oldValue, newValue);
+    }
+
     private void audit(UUID partnerId, UUID actor, String entityType, UUID entityId, String field, String oldValue, String newValue) {
         db.update("""
                 insert into marketplace.partner_catalog_events (partner_id, actor_user_id, entity_type, entity_id, field, old_value, new_value)
