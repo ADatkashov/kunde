@@ -114,6 +114,17 @@ variable "booking_enabled" {
   }
 }
 
+variable "flowers_enabled" {
+  description = "KUNDE Flowers & Gifts domain (ADR-026): public catalogue, cart, orders and courier hand-off. Forbidden outside dev/local/test; ordering needs consumer identity."
+  type        = bool
+  default     = false
+
+  validation {
+    condition     = !var.flowers_enabled || contains(["dev", "local", "test"], var.environment_name)
+    error_message = "flowers_enabled is only allowed when environment_name is dev, local or test."
+  }
+}
+
 variable "auto_enabled" {
   description = "KUNDE Auto DEV pilot (car services on the Booking engine, DEV/TEST ledger payments, synthetic demo seed). Forbidden outside dev/local/test and needs booking."
   type        = bool

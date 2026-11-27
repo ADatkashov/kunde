@@ -73,6 +73,9 @@ resource "render_web_service" "this" {
       BEAUTY_ENABLED    = { value = "true" }
       BEAUTY_SEED_DEMO  = { value = "true" }
     } : {},
+    var.flowers_enabled ? {
+      FLOWERS_ENABLED = { value = "true" }
+    } : {},
     var.auto_enabled ? {
       AUTO_ENABLED   = { value = "true" }
       AUTO_SEED_DEMO = { value = "true" }
