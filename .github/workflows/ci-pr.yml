@@ -1,0 +1,31 @@
+name: CI PR gate
+# ADR-027: one check that is ALWAYS created for every pull request (no path filter), so branch protection can require it without
+# a path-filtered workflow ever leaving a required check "Expected". It summarises the other GitHub Actions checks of the head
+# commit: failure/cancelled/timed_out block, skipped is fine, the always-on checks (CI configuration, Security CI) must exist.
+# Branch protection is not changed by this file: the owner adds "Required CI Gate" to the required checks.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+permissions:
+  contents: read
+  checks: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  gate:
+    name: Required CI Gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Wait for and evaluate the PR checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          python3 scripts/ci/required_gate.py "$REPO" "$HEAD_SHA" 2400 | tee -a "$GITHUB_STEP_SUMMARY"

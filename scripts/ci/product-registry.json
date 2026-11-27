@@ -65,7 +65,8 @@
         "partner": [
           "home_services"
         ]
-      }
+      },
+      "e2e": {}
     },
     "beauty": {
       "backend": "beauty",
@@ -82,7 +83,8 @@
         "admin": [
           "beauty"
         ]
-      }
+      },
+      "e2e": {}
     },
     "taxi": {
       "backend": "rides",
@@ -95,6 +97,17 @@
         ],
         "admin": [
           "rides_admin"
+        ]
+      },
+      "e2e": {
+        "consumer": [
+          "rides-native-e2e.yml"
+        ],
+        "executor": [
+          "rides-native-e2e.yml"
+        ],
+        "multi-role": [
+          "rides-native-e2e.yml"
         ]
       }
     },
@@ -113,6 +126,17 @@
         "partner": [
           "delivery"
         ]
+      },
+      "e2e": {
+        "consumer": [
+          "delivery-native-e2e.yml"
+        ],
+        "executor": [
+          "delivery-native-e2e.yml"
+        ],
+        "multi-role": [
+          "delivery-native-e2e.yml"
+        ]
       }
     },
     "food": {
@@ -127,7 +151,8 @@
         "admin": [
           "food_admin"
         ]
-      }
+      },
+      "e2e": {}
     },
     "groceries": {
       "backend": "groceries",
@@ -137,6 +162,17 @@
       "flutter": {
         "consumer": [
           "groceries"
+        ]
+      },
+      "e2e": {
+        "consumer": [
+          "groceries-native-e2e.yml"
+        ],
+        "partner": [
+          "groceries-roles-native-e2e.yml"
+        ],
+        "multi-role": [
+          "groceries-roles-native-e2e.yml"
         ]
       }
     },
@@ -152,6 +188,23 @@
         "partner": [
           "education"
         ]
+      },
+      "e2e": {
+        "consumer": [
+          "education-native-e2e.yml"
+        ],
+        "partner": [
+          "education-roles-native-e2e.yml"
+        ],
+        "admin": [
+          "education-roles-native-e2e.yml"
+        ],
+        "executor": [
+          "education-roles-native-e2e.yml"
+        ],
+        "multi-role": [
+          "education-roles-native-e2e.yml"
+        ]
       }
     },
     "health": {
@@ -166,12 +219,18 @@
         "admin": [
           "health"
         ]
+      },
+      "e2e": {
+        "consumer": [
+          "health-native-e2e.yml"
+        ]
       }
     },
     "events": {
       "backend": "events",
       "app_test_packages": [],
-      "flutter": {}
+      "flutter": {},
+      "e2e": {}
     },
     "leisure": {
       "backend": "leisure",
@@ -192,6 +251,11 @@
         "partner": [
           "leisure"
         ]
+      },
+      "e2e": {
+        "consumer": [
+          "leisure-native-e2e.yml"
+        ]
       }
     },
     "auto": {
@@ -206,6 +270,11 @@
         "admin": [
           "auto_admin"
         ]
+      },
+      "e2e": {
+        "consumer": [
+          "auto-native-e2e.yml"
+        ]
       }
     },
     "flowers-gifts": {
@@ -217,7 +286,8 @@
         "consumer": [
           "flowers"
         ]
-      }
+      },
+      "e2e": {}
     }
   },
   "flutter_apps": {
@@ -257,5 +327,7 @@
         "shell"
       ]
     }
-  }
+  },
+  "e2e_api_workflow": "backend.yml",
+  "_comment_e2e": "Existing native E2E workflows per product and suite (all run on an isolated stack built from the ref). A product/suite without an entry is reported as NOT AVAILABLE, never as passed. `api` maps to the full Backend CI because workflow_call cannot filter by product."
 }
