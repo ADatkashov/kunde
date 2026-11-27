@@ -1,0 +1,261 @@
+{
+  "_comment": "Product registry for scripts/ci/detect_affected.py (ADR-027). Backend module edges come from backend/*/build.gradle.kts and Flutter package edges from pubspec.yaml, never from this file. A backend module missing here, or a Gradle module missing from settings.gradle.kts, makes the detector fall back to FULL CI.",
+  "backend_shared": {
+    "platform": {
+      "path": "backend/platform",
+      "app_test_packages": [],
+      "app_tests_all": true
+    },
+    "identity": {
+      "path": "backend/services/identity",
+      "app_test_packages": [
+        "auth",
+        "config"
+      ],
+      "app_tests_all": true
+    },
+    "partners": {
+      "path": "backend/services/partners",
+      "app_test_packages": [
+        "partner",
+        "catalog"
+      ],
+      "app_tests_all": true
+    },
+    "booking": {
+      "path": "backend/services/booking",
+      "app_test_packages": [
+        "booking"
+      ]
+    },
+    "support": {
+      "path": "backend/services/support",
+      "app_test_packages": []
+    },
+    "admin": {
+      "path": "backend/services/admin",
+      "app_test_packages": [
+        "admin"
+      ]
+    },
+    "maps": {
+      "path": "backend/services/maps",
+      "app_test_packages": [
+        "maps"
+      ]
+    }
+  },
+  "products": {
+    "home-services": {
+      "backend": "homeservices",
+      "app_test_packages": [
+        "homeservices"
+      ],
+      "flutter": {
+        "consumer": [
+          "home",
+          "home_services"
+        ],
+        "executor": [
+          "home_services"
+        ],
+        "admin": [
+          "home_services_admin"
+        ],
+        "partner": [
+          "home_services"
+        ]
+      }
+    },
+    "beauty": {
+      "backend": "beauty",
+      "app_test_packages": [
+        "beauty"
+      ],
+      "flutter": {
+        "consumer": [
+          "beauty"
+        ],
+        "executor": [
+          "beauty"
+        ],
+        "admin": [
+          "beauty"
+        ]
+      }
+    },
+    "taxi": {
+      "backend": "rides",
+      "app_test_packages": [
+        "rides"
+      ],
+      "flutter": {
+        "consumer": [
+          "rides"
+        ],
+        "admin": [
+          "rides_admin"
+        ]
+      }
+    },
+    "delivery": {
+      "backend": "delivery",
+      "app_test_packages": [
+        "delivery"
+      ],
+      "flutter": {
+        "consumer": [
+          "delivery"
+        ],
+        "admin": [
+          "delivery_admin"
+        ],
+        "partner": [
+          "delivery"
+        ]
+      }
+    },
+    "food": {
+      "backend": "food",
+      "app_test_packages": [
+        "food"
+      ],
+      "flutter": {
+        "consumer": [
+          "food"
+        ],
+        "admin": [
+          "food_admin"
+        ]
+      }
+    },
+    "groceries": {
+      "backend": "groceries",
+      "app_test_packages": [
+        "groceries"
+      ],
+      "flutter": {
+        "consumer": [
+          "groceries"
+        ]
+      }
+    },
+    "education": {
+      "backend": "education",
+      "app_test_packages": [
+        "education"
+      ],
+      "flutter": {
+        "consumer": [
+          "education"
+        ],
+        "partner": [
+          "education"
+        ]
+      }
+    },
+    "health": {
+      "backend": "health",
+      "app_test_packages": [
+        "health"
+      ],
+      "flutter": {
+        "consumer": [
+          "health"
+        ],
+        "admin": [
+          "health"
+        ]
+      }
+    },
+    "events": {
+      "backend": "events",
+      "app_test_packages": [],
+      "flutter": {}
+    },
+    "leisure": {
+      "backend": "leisure",
+      "app_test_packages": [
+        "leisure"
+      ],
+      "flutter": {
+        "consumer": [
+          "leisure"
+        ],
+        "executor": [
+          "leisure"
+        ],
+        "admin": [
+          "leisure_admin",
+          "leisure"
+        ],
+        "partner": [
+          "leisure"
+        ]
+      }
+    },
+    "auto": {
+      "backend": "auto",
+      "app_test_packages": [
+        "auto"
+      ],
+      "flutter": {
+        "consumer": [
+          "auto"
+        ],
+        "admin": [
+          "auto_admin"
+        ]
+      }
+    },
+    "flowers-gifts": {
+      "backend": "flowers",
+      "app_test_packages": [
+        "flowers"
+      ],
+      "flutter": {
+        "consumer": [
+          "flowers"
+        ]
+      }
+    }
+  },
+  "flutter_apps": {
+    "consumer": {
+      "selective_tests": true,
+      "shared_features": [
+        "assistant",
+        "booking",
+        "identity",
+        "identity_poc",
+        "partner",
+        "shell"
+      ]
+    },
+    "executor": {
+      "selective_tests": true,
+      "shared_features": [
+        "executor"
+      ]
+    },
+    "admin": {
+      "selective_tests": true,
+      "shared_features": [
+        "admin_employees",
+        "admin_features"
+      ]
+    },
+    "partner": {
+      "selective_tests": false,
+      "shared_features": [
+        "bookings",
+        "business",
+        "dashboard",
+        "login",
+        "orders",
+        "profile",
+        "shell"
+      ]
+    }
+  }
+}

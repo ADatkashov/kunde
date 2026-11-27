@@ -1,5 +1,10 @@
 # KUNDE project state
 
+## Selective CI по продуктам (2026-11-27, ADR-027 PROPOSED)
+
+- Добавлены детектор затронутых модулей `scripts/ci/detect_affected.py`, реестр `scripts/ci/product-registry.json` и тесты `scripts/ci/test_detect_affected.py` (22 теста, идут в job `CI configuration`). Граф берётся из Gradle/pubspec; неизвестный файл, CI/Gradle-файлы, невалидный граф или неразрешимые SHA → FULL. Baseline: [ci-baseline-2026-11-27](docs/engineering-foundation/ci-baseline-2026-11-27.md).
+- **Детектор пока не подключён к workflow** (PR 3–5 плана ADR-027); Required CI Gate, `product-e2e.yml`, кэши, профили продуктов и DEV Release по детектору не реализованы. Branch protection недоступна агенту (HTTP 403) — не проверена.
+
 ## Flowers & Gifts (2026-11-27, ADR-026 ACCEPTED)
 
 - Владелец утвердил выделение цветов и подарков в отдельный домен `flowers` ([ADR-026](docs/architecture/adr/ADR-026-flowers-gifts-domain.md)). Шаг 1 выполнен: модуль `backend/services/flowers` (18-й), флаг `FLOWERS_ENABLED` (по умолчанию выключен, только dev/local/test), Flyway V73, поле `flowersEnabled` в `/capabilities`, строка в реестре доменов. Шаг 2 выполнен: V74 (таблицы `flowers_*`, копия `FLOWERS_GIFTS` из Food с теми же id), публичный каталог `/api/v1/flowers/*`, демо-сидер `FLOWERS_SEED_DEMO`, Consumer: главная цветов за `flowersEnabled`. Шаг 3 выполнен: V75 (`flowers_orders*`), `POST /flowers/cart/quote`, `/flowers/orders` (идемпотентный заказ, история, отмена), `GET /flowers/delivery-slots`; Consumer: корзина, «Доставка», ход заказа. Статусы после `PLACED` ставят магазин и курьер (шаги 4–5); промокоды пока нет. Локально тесты бэкенда идут на PostgreSQL 16 (`DB_USERNAME`/`DB_PASSWORD`).
