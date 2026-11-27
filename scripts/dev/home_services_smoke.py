@@ -93,7 +93,7 @@ if offer["status"] in ("DRAFT", "REJECTED"):
 
 # Roles: a stranger partner and a plain customer see nothing of this organisation; Admin needs the grant.
 call("GET", offers_path, token=stranger, expect=404)
-call("GET", offers_path, token=customer, expect=404)
+call("GET", offers_path, token=customer, expect=403)  # a plain customer is refused at the partner entry (no partner scope)
 call("GET", "/api/v1/admin/home-services/offers?status=PENDING", token=customer, expect=403)
 call("POST", f"/api/v1/admin/home-services/offers/{offer['id']}/decision",
      {"action": "APPROVE", "expectedVersion": 2, "reason": "smoke"}, token=partner, expect=403)
