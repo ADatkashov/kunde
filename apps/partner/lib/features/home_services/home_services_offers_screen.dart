@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../data/models.dart';
 import '../../data/partner_api.dart';
 import '../../data/partner_operations.dart';
+import 'home_services_masters_screen.dart';
 
 /// «Дом и быт»: the partner's own service offers and their moderation state. Roles and ownership are the server's
 /// decision (OWNER/MANAGER write; OPERATOR reads); this screen only offers the transitions the state machine allows.
@@ -98,8 +99,23 @@ class _HomeServicesOffersScreenState extends State<HomeServicesOffersScreen> {
         };
     return Scaffold(
       appBar: AppBar(
-          title: Text(t('Дом и быт: мои услуги', 'Үй және тұрмыс: қызметтерім',
-              'Home services: my offers'))),
+        title: Text(t('Дом и быт: мои услуги', 'Үй және тұрмыс: қызметтерім',
+            'Home services: my offers')),
+        actions: [
+          IconButton(
+            key: const ValueKey('open-masters'),
+            tooltip: t('Мастера и коды', 'Шеберлер және кодтар',
+                'Masters and codes'),
+            icon: const Icon(Icons.groups_outlined),
+            onPressed: () => Navigator.of(context).push<void>(MaterialPageRoute(
+                builder: (_) => HomeServicesMastersScreen(
+                    api: widget.api,
+                    partnerId: widget.partnerId,
+                    canManage: widget.canManage,
+                    ops: widget.ops))),
+          ),
+        ],
+      ),
       floatingActionButton: widget.canManage && widget.ops != null
           ? FloatingActionButton.extended(
               key: const ValueKey('create-offer'),
