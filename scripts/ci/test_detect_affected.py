@@ -26,8 +26,9 @@ class PilotScenarios(unittest.TestCase):
         self.assertEqual(r["products"]["affected"], ["home-services"])
         self.assertEqual(r["backend"]["gradle_tasks"], [":services:homeservices:test"])
         self.assertEqual(r["backend"]["app_test_packages"], ["homeservices"])
-        self.assertEqual(r["flutter"]["apps"]["consumer"]["features"], ["home", "home_services"])
-        self.assertEqual(r["flutter"]["apps"]["executor"]["features"], ["home_services"])
+        # Feature isolation follows real imports: importers of home_services (booking, home, ...) are included, never fewer.
+        self.assertTrue({"home", "home_services", "booking"} <= set(r["flutter"]["apps"]["consumer"]["features"]))
+        self.assertEqual(r["flutter"]["apps"]["executor"]["features"], ["executor", "home_services"])
         self.assertIn("taxi", r["products"]["skipped"])
         self.assertIn("food", r["products"]["skipped"])
 
@@ -36,7 +37,8 @@ class PilotScenarios(unittest.TestCase):
         self.assertEqual(r["products"]["affected"], ["taxi"])
         self.assertIn("home-services", r["products"]["skipped"])
         self.assertNotIn(":services:homeservices:test", r["backend"]["gradle_tasks"])
-        self.assertNotIn("home_services", r["flutter"]["apps"]["consumer"]["features"])
+        self.assertNotIn("executor", r["flutter"]["apps"])  # no Taxi code in Executor
+        self.assertEqual(r["flutter"]["apps"]["admin"]["features"], ["rides_admin"])
 
     def test_c_booking_runs_all_consumers_of_booking(self):
         r = detect("backend/services/booking/src/main/java/kz/kunde/booking/BookingService.java")
@@ -104,8 +106,8 @@ class ClassificationDetails(unittest.TestCase):
 
     def test_backend_change_pulls_in_feature_tests_of_its_clients(self):
         r = detect("backend/services/food/src/main/java/kz/kunde/food/A.java")
-        self.assertEqual(r["flutter"]["apps"]["consumer"]["features"], ["food", "groceries"])
-        self.assertEqual(r["flutter"]["apps"]["admin"]["features"], ["food_admin"])
+        self.assertIn("groceries", r["flutter"]["apps"]["consumer"]["features"])
+        self.assertIn("food_admin", r["flutter"]["apps"]["admin"]["features"])
         self.assertIn("groceries", r["products"]["affected"])  # groceries depends on food
 
     def test_app_module_test_for_one_domain(self):

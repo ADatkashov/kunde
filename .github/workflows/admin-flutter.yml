@@ -19,18 +19,56 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
+          fetch-depth: 0  # detect_affected.py diffs base...head (ADR-027)
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
         with:
           flutter-version: '3.47.9'
           channel: stable
           cache: true
-      - name: Resolve, analyze, format and test
+      # ADR-027: scripts/ci/detect_affected.py + flutter_selection.py choose what to run. Any doubt (dispatch, unknown file,
+      # CI/Gradle change, unusable SHAs, detector error) = FULL = the previous full run. A step, not a job: the required check
+      # always exists, and `skip` (the change cannot reach this app) still succeeds explicitly.
+      - name: Detect affected modules
+        id: affected
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_HEAD: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          case "$EVENT" in
+            pull_request) set -- --base "$PR_BASE" --head "$PR_HEAD" --merge-base ;;
+            push) set -- --base "$PUSH_BEFORE" --head "$PUSH_HEAD" ;;
+            *) set -- ;;
+          esac
+          python3 scripts/ci/detect_affected.py "$@" --summary --result-file "$RUNNER_TEMP/affected.json"
+          python3 scripts/ci/flutter_selection.py "$RUNNER_TEMP/affected.json" admin | tee "$RUNNER_TEMP/selection.txt"
+          grep -q '^mode=' "$RUNNER_TEMP/selection.txt"
+          cat "$RUNNER_TEMP/selection.txt" >> "$GITHUB_OUTPUT"
+      - name: Resolve, analyze and check format
+        if: steps.affected.outputs.mode != 'skip'
         working-directory: apps/admin
         run: |
           flutter pub get --enforce-lockfile
           flutter analyze --fatal-infos
           dart format --output=none --set-exit-if-changed lib test
-          flutter test --machine > flutter-tests.json
+      - name: Test (whole suite or affected features only)
+        if: steps.affected.outputs.mode != 'skip'
+        working-directory: apps/admin
+        env:
+          MODE: ${{ steps.affected.outputs.mode }}
+          TESTS: ${{ steps.affected.outputs.tests }}
+        run: |
+          set -euo pipefail
+          if [ "$MODE" = selective ]; then
+            if [ -z "$TESTS" ]; then echo "No test directories for the affected features; analyze above still compiled the whole app"; exit 0; fi
+            read -r -a TEST_ARGS <<< "$TESTS"
+          else
+            TEST_ARGS=()
+          fi
+          flutter test --machine "${TEST_ARGS[@]}" > flutter-tests.json
           python3 -c 'import json; e=[json.loads(s) for s in open("flutter-tests.json") if s.lstrip().startswith("{")]; assert any(x.get("type")=="done" and x.get("success") is True for x in e), "Missing successful test completion event"; t=[x for x in e if x.get("type")=="testDone" and not x.get("hidden",False)]; print("FLUTTER_TEST_SUMMARY",json.dumps({"tests":len(t),"success":sum(x.get("result")=="success" for x in t),"skipped":sum(x.get("skipped",False) for x in t)}))'
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()

@@ -65,6 +65,38 @@ def flutter_graph(root=ROOT):
     return graph
 
 
+def flutter_feature_graph(root=ROOT):
+    """app -> {feature dir -> set(feature dirs it imports)}, from real import/export directives under lib/features/.
+
+    Feature isolation is only as real as these edges: a feature that imports another one must be re-tested when that one changes.
+    Only edges between lib/features/<dir> directories are tracked; shared/app-level files already select the whole app.
+    """
+    result = {}
+    for app in APPS:
+        base = root / "apps" / app
+        features_dir = base / "lib" / "features"
+        if not features_dir.is_dir():
+            result[app] = {}
+            continue
+        pubspec = (base / "pubspec.yaml").read_text(encoding="utf-8")
+        name = re.search(r"^name:\s*(\S+)", pubspec, re.M).group(1)
+        graph = {d.name: set() for d in features_dir.iterdir() if d.is_dir()}
+        for feature in graph:
+            for dart in (features_dir / feature).rglob("*.dart"):
+                for imp in re.findall(r"^(?:import|export)\s+'([^']+)'", dart.read_text(encoding="utf-8", errors="ignore"), re.M):
+                    if imp.startswith("package:" + name + "/"):
+                        target = "lib/" + imp.split("/", 1)[1]
+                    elif imp.startswith(("dart:", "package:")):
+                        continue
+                    else:
+                        target = os.path.relpath(os.path.normpath(dart.parent / imp), base).replace(os.sep, "/")
+                    m = re.match(r"lib/features/([^/]+)/", target)
+                    if m and m.group(1) != feature and m.group(1) in graph:
+                        graph[feature].add(m.group(1))
+        result[app] = graph
+    return result
+
+
 def check_acyclic(graph, label):
     state = {}
 
@@ -102,6 +134,7 @@ class Detector:
         self.flutter = flutter_graph(root)
         check_acyclic(self.backend, "backend")
         check_acyclic(self.flutter, "flutter")
+        self.features = flutter_feature_graph(root)  # cycles between features are legal in Dart; dependents() copes with them
         reg = self.registry
         self.shared = reg["backend_shared"]
         self.products = reg["products"]
@@ -122,15 +155,19 @@ class Detector:
         reasons = []
         full = []
         modules, packages, products, flutter_all, flutter_feats = set(), set(), set(), set(), {}
+        test_only = {}  # test files changed: only those tests rerun, importers of the feature are unaffected
         app_all = False
         migration = docker = docs = infra = False
 
-        def feat(app, d):
+        def feat(app, d, tests_only=False):
             if (app, d) in self.feature_owner:
                 owner = self.feature_owner[(app, d)]
                 if owner is None:
                     flutter_all.add(app)
                     reasons.append("%s: shared feature %s/%s -> whole app" % (app, app, d))
+                elif tests_only:
+                    test_only.setdefault(app, set()).add(d)
+                    products.add(owner)
                 else:
                     flutter_feats.setdefault(app, set()).add(d)
                     products.add(owner)
@@ -175,7 +212,7 @@ class Detector:
             elif parts[0] == "apps" and len(parts) > 2 and parts[1] in APPS:
                 app = parts[1]
                 if len(parts) > 4 and parts[2] in ("lib", "test") and parts[3] == "features":
-                    feat(app, parts[4])
+                    feat(app, parts[4], tests_only=parts[2] == "test")
                 else:
                     flutter_all.add(app)
                     reasons.append("%s: %s application-level file -> whole app" % (path, app))
@@ -220,6 +257,11 @@ class Detector:
         for p in backend_products:
             for app, dirs in self.products[p]["flutter"].items():
                 flutter_feats.setdefault(app, set()).update(dirs)
+        # Feature isolation is as real as the import graph: importers of a changed feature are re-tested too.
+        for app, feats_ in list(flutter_feats.items()):
+            flutter_feats[app] = dependents(self.features.get(app, {}), feats_)
+        for app, feats_ in test_only.items():
+            flutter_feats.setdefault(app, set()).update(feats_)
         flutter = {}
         for app in APPS:
             selective = self.registry["flutter_apps"][app]["selective_tests"]
