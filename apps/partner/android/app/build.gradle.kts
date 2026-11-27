@@ -27,6 +27,9 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // flutter_appauth (pulled in by kunde_session -> kunde_auth) declares a redirect activity whose manifest scheme is a
+        // placeholder; without a value the manifest merge fails. The scheme is the application id: unique on the device.
+        manifestPlaceholders["appAuthRedirectScheme"] = "com.kunde.kunde_partner"
     }
 
     // Release signing comes only from the environment (CI secrets or a local shell);
