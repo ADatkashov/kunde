@@ -21,6 +21,17 @@ on:
         type: choice
         default: api
         options: [api, consumer, partner, executor, admin, multi-role, full]
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        default: ''
+      product:
+        type: string
+        default: all
+      suite:
+        type: string
+        default: full
 permissions:
   contents: read
 jobs:

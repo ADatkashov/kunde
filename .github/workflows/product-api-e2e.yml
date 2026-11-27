@@ -49,7 +49,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-          cache: gradle
+      # Gradle dependency + build cache (ADR-027). setup-gradle is already pinned in the Android workflows; PRs only read the cache,
+      # main writes it. Test tasks are never cached (see backend/gradle/kunde-module.gradle.kts), so a green cache hit can not hide a test.
+      - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
       - name: Product API E2E
         working-directory: backend
         env:

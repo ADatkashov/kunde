@@ -1,0 +1,101 @@
+name: Full Regression
+# ADR-027: the whole KUNDE ecosystem on one commit - Backend CI (FULL), all four Flutter apps (FULL) and every existing native E2E.
+# Nightly on main, on demand, and reusable as the gate before a PROD release (a PROD release must reference a successful run
+# of this workflow for the exact SHA; there is no PROD pipeline in this repository yet). It never blocks PR merge or the DEV APK.
+# Triggered by schedule / workflow_dispatch / workflow_call, so detect_affected.py sees no PR diff and selects FULL everywhere.
+# Visual regression (android-visual.yml) stays a manual check (needs a base SHA).
+on:
+  schedule:
+    - cron: '17 21 * * *'  # 21:17 UTC = 02:17 Asia/Almaty
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Commit SHA, branch or tag to test (empty = selected branch)'
+        type: string
+        default: ''
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        default: ''
+permissions:
+  contents: read
+concurrency:
+  group: full-regression-${{ inputs.ref || github.ref }}
+  cancel-in-progress: false
+jobs:
+  resolve:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      sha: ${{ steps.r.outputs.sha }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref || github.sha }}
+      - id: r
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "Full Regression of commit $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+  backend:
+    needs: resolve
+    uses: ./.github/workflows/backend.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+  consumer:
+    needs: resolve
+    uses: ./.github/workflows/flutter.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+  executor:
+    needs: resolve
+    uses: ./.github/workflows/executor-flutter.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+  admin:
+    needs: resolve
+    uses: ./.github/workflows/admin-flutter.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+  partner:
+    needs: resolve
+    uses: ./.github/workflows/partner-flutter.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+  product_e2e:
+    needs: resolve
+    uses: ./.github/workflows/product-e2e.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+      product: all
+      suite: full
+  report:
+    if: always()
+    needs: [resolve, backend, consumer, executor, admin, partner, product_e2e]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Summarise results
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import json, os, sys
+          needs = json.loads(os.environ["NEEDS"])
+          label = {"success": "PASSED", "failure": "FAILED", "cancelled": "FAILED (cancelled)", "skipped": "NOT RUN"}
+          sha = needs["resolve"]["outputs"].get("sha", "?")
+          print("## Full Regression for `%s`\n| Part | Status |\n|---|---|" % sha)
+          bad = []
+          for k, v in needs.items():
+              if k == "resolve":
+                  continue
+              print("| %s | %s |" % (k, label.get(v["result"], v["result"])))
+              if v["result"] != "success":
+                  bad.append(k)  # a skipped part is NOT a pass here: every part is mandatory
+          if needs["resolve"]["result"] != "success":
+              bad.append("resolve")
+          print("\n**%s**" % ("FAILED/NOT RUN: " + ", ".join(bad) + ". This commit is NOT regression-verified." if bad else
+                              "All parts passed. Products without native E2E (see product-e2e summary) remain unverified by E2E."))
+          sys.exit(1 if bad else 0)
+          PY

@@ -66,7 +66,13 @@
           "home_services"
         ]
       },
-      "e2e": {}
+      "e2e": {},
+      "profile_flags": [
+        "HOME_SERVICES_ENABLED",
+        "BOOKING_ENABLED",
+        "BOOKING_SEED_DEMO",
+        "PARTNER_OPS_SEED_DEMO"
+      ]
     },
     "beauty": {
       "backend": "beauty",
@@ -84,7 +90,14 @@
           "beauty"
         ]
       },
-      "e2e": {}
+      "e2e": {},
+      "profile_flags": [
+        "BEAUTY_ENABLED",
+        "BEAUTY_SEED_DEMO",
+        "BOOKING_ENABLED",
+        "BOOKING_SEED_DEMO",
+        "PARTNER_OPS_SEED_DEMO"
+      ]
     },
     "taxi": {
       "backend": "rides",
@@ -109,7 +122,16 @@
         "multi-role": [
           "rides-native-e2e.yml"
         ]
-      }
+      },
+      "profile_flags": [
+        "RIDES_ENABLED",
+        "RIDES_CONSUMER_ENABLED",
+        "RIDES_EXECUTOR_ENABLED",
+        "RIDES_PARTNER_ENABLED",
+        "RIDES_DISPATCH_ENABLED",
+        "RIDES_SYNTHETIC_ROUTING_ENABLED",
+        "PARTNER_OPS_SEED_DEMO"
+      ]
     },
     "delivery": {
       "backend": "delivery",
@@ -137,7 +159,16 @@
         "multi-role": [
           "delivery-native-e2e.yml"
         ]
-      }
+      },
+      "profile_flags": [
+        "DELIVERY_ENABLED",
+        "DELIVERY_CONSUMER_ENABLED",
+        "DELIVERY_EXECUTOR_ENABLED",
+        "DELIVERY_PARTNER_ENABLED",
+        "DELIVERY_DISPATCH_ENABLED",
+        "DELIVERY_SYNTHETIC_ROUTING_ENABLED",
+        "PARTNER_OPS_SEED_DEMO"
+      ]
     },
     "food": {
       "backend": "food",
@@ -152,7 +183,12 @@
           "food_admin"
         ]
       },
-      "e2e": {}
+      "e2e": {},
+      "profile_flags": [
+        "FOOD_ENABLED",
+        "FOOD_SEED_DEMO",
+        "PARTNER_OPS_SEED_DEMO"
+      ]
     },
     "groceries": {
       "backend": "groceries",
@@ -174,7 +210,12 @@
         "multi-role": [
           "groceries-roles-native-e2e.yml"
         ]
-      }
+      },
+      "profile_flags": [
+        "FOOD_ENABLED",
+        "FOOD_SEED_DEMO",
+        "PARTNER_OPS_SEED_DEMO"
+      ]
     },
     "education": {
       "backend": "education",
@@ -205,7 +246,12 @@
         "multi-role": [
           "education-roles-native-e2e.yml"
         ]
-      }
+      },
+      "profile_flags": [
+        "EDUCATION_ENABLED",
+        "EDUCATION_SEED_DEMO",
+        "PARTNER_OPS_SEED_DEMO"
+      ]
     },
     "health": {
       "backend": "health",
@@ -222,13 +268,24 @@
         "consumer": [
           "health-native-e2e.yml"
         ]
-      }
+      },
+      "profile_flags": [
+        "BOOKING_ENABLED",
+        "BOOKING_SEED_DEMO",
+        "HEALTH_SEED_DEMO",
+        "PARTNER_OPS_SEED_DEMO"
+      ]
     },
     "events": {
       "backend": "events",
       "app_test_packages": [],
       "flutter": {},
-      "e2e": {}
+      "e2e": {},
+      "profile_flags": [
+        "LEISURE_ENABLED",
+        "LEISURE_SEED_DEMO",
+        "EVENTS_ENABLED"
+      ]
     },
     "leisure": {
       "backend": "leisure",
@@ -254,7 +311,12 @@
         "consumer": [
           "leisure-native-e2e.yml"
         ]
-      }
+      },
+      "profile_flags": [
+        "LEISURE_ENABLED",
+        "LEISURE_SEED_DEMO",
+        "PARTNER_OPS_SEED_DEMO"
+      ]
     },
     "auto": {
       "backend": "auto",
@@ -273,7 +335,13 @@
         "consumer": [
           "auto-native-e2e.yml"
         ]
-      }
+      },
+      "profile_flags": [
+        "AUTO_ENABLED",
+        "AUTO_SEED_DEMO",
+        "BOOKING_ENABLED",
+        "BOOKING_SEED_DEMO"
+      ]
     },
     "flowers-gifts": {
       "backend": "flowers",
@@ -285,7 +353,12 @@
           "flowers"
         ]
       },
-      "e2e": {}
+      "e2e": {},
+      "profile_flags": [
+        "FLOWERS_ENABLED",
+        "FLOWERS_SEED_DEMO",
+        "PARTNER_OPS_SEED_DEMO"
+      ]
     }
   },
   "flutter_apps": {
@@ -327,5 +400,10 @@
     }
   },
   "e2e_api_workflow": "product-api-e2e.yml",
-  "_comment_e2e": "Existing native E2E workflows per product and suite (all run on an isolated stack built from the ref). A product/suite without an entry is reported as NOT AVAILABLE, never as passed. `api` is the selective Product API E2E (product-api-e2e.yml): the product's module tests plus kz.kunde.<package>.* integration tests in :app."
+  "_comment_e2e": "Existing native E2E workflows per product and suite (all run on an isolated stack built from the ref). A product/suite without an entry is reported as NOT AVAILABLE, never as passed. `api` is the selective Product API E2E (product-api-e2e.yml): the product's module tests plus kz.kunde.<package>.* integration tests in :app.",
+  "profile_always_on": [
+    "CONSUMER_IDENTITY_ENABLED",
+    "AUTH_PHONE_ENABLED",
+    "AUTH_DEV_OTP_ENABLED"
+  ]
 }

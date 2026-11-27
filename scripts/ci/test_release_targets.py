@@ -17,8 +17,16 @@ class ReleaseTargetsTest(unittest.TestCase):
         self.assertEqual(targets(["apps/admin/lib/main.dart"]), only("admin"))
         self.assertEqual(targets(["apps/partner/lib/x.dart"]), only("partner"))
 
-    def test_operator_package_builds_the_two_operator_apps(self):
-        self.assertEqual(targets(["packages/kunde_operator/lib/operator_gate.dart"]), only("executor", "admin"))
+    def test_operator_package_builds_its_dependents_incl_consumer(self):
+        self.assertEqual(targets(["packages/kunde_operator/lib/operator_gate.dart"]), only("consumer", "executor", "admin"))
+
+    def test_package_builds_only_the_apps_that_depend_on_it(self):
+        self.assertEqual(targets(["packages/kunde_maps/lib/a.dart"]), only("consumer", "executor"))
+        self.assertEqual(targets(["packages/kunde_ui/lib/a.dart"]), only("consumer", "executor", "admin"))
+        self.assertEqual(targets(["packages/kunde_session/lib/a.dart"]), only("consumer", "executor", "admin", "partner"))
+
+    def test_unknown_package_builds_everything(self):
+        self.assertEqual(targets(["packages/not_a_package/lib/a.dart"]), only("consumer", "executor", "admin", "partner"))
 
     def test_other_shared_packages_and_workflows_build_all(self):
         everything = only("consumer", "executor", "admin", "partner")
