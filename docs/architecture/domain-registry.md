@@ -19,6 +19,7 @@
 | auto | Авто | `auto` → `services/auto` ✔ | `auto`, `admin/auto` | `auto`, `auto_admin`, `executor/auto_work` | `auto_*`, `customer_vehicles` | booking |
 | leisure | Досуг | `leisure` → `services/leisure` ✔ | `leisure`, `executor/leisure`, `partner/…/leisure`, `admin/leisure` | `leisure`, `leisure_admin`, `executor/gate_scan` | `leisure_*` | partners, auth |
 | events | Мероприятия | `events` → `services/events` ✔ | `events`, `search` | — (UI в `leisure`) | (`leisure_*`) | leisure |
+| flowers | Цветы и подарки | `flowers` → `services/flowers` ✔ (шаги 1–2 [ADR-026](adr/ADR-026-flowers-gifts-domain.md): модуль, флаг `FLOWERS_ENABLED`, каталог, корзина и заказ; старый путь через вертикаль `FLOWERS_GIFTS` в `food` остаётся на переходный период) | `flowers/{categories,shops,shops/{id},products/popular,delivery-slots,cart/quote,orders}` | `flowers` (Consumer) | `flowers_*` (V74, V75) | partners |
 | education | Образование | `education` → `services/education` ✔ | `education`, `education/enrollments` | `education` | `education_*` | partners |
 | support | Поддержка | `support` → `services/support` ✔ | `me/support/cases` | (в `delivery`/`rides`) | `support.*` | platform.support |
 | admin | Админ-панель | `admin` → `services/admin` ✔ | `admin/*` (auto, beauty, features, food, groceries, home-services, leisure, partners) | `admin_*`, `*_admin` | `identity.admin_*` | домены (однонаправленно) |
@@ -26,7 +27,7 @@
 
 Бывшие заготовки (ADR-023 «Судьба заготовок»), перенесены: `food.order` (жизненный цикл заказа Food), `food.fulfillment` (самовывоз), `platform.notifications` (цепочка доставки, допустимость каналов), `platform.analytics` (каталог событий и шлюз минимизации). Ни одна из них пока не вызывается из кода; отдельные домены появятся при реальной бизнес-ответственности.
 
-**Feature flags:** `FOOD_*`, `GROCERIES_*`, `DELIVERY_*`, `RIDES_*`, `MAPS_ENABLED`, `BEAUTY_ENABLED`, `BOOKING_*`, … + runtime-переключатели `identity.feature_toggles`; точный перечень выводится из `FeatureGate`-бинов (`platform.FeatureToggles`).
+**Feature flags:** `FOOD_*`, `GROCERIES_*`, `DELIVERY_*`, `RIDES_*`, `MAPS_ENABLED`, `BEAUTY_ENABLED`, `FLOWERS_ENABLED`, `BOOKING_*`, … + runtime-переключатели `identity.feature_toggles`; точный перечень выводится из `FeatureGate`-бинов (`platform.FeatureToggles`).
 **Расположение тестов:** сейчас `backend/src/test/java/kz/kunde/<pkg>`, `apps/consumer/test/features/<feature>`; целевое — в модуле/приложении домена.
 
 **Готовность к выделению и связи:** [microservice-readiness](microservice-readiness.md) · [оценки](domain-readiness-scores.md) · [матрица зависимостей](domain-dependency-matrix.md) · [владение данными](database-ownership-matrix.md) · [события](event-catalog.md) · [ADR-025](adr/ADR-025-gradual-service-extraction.md).

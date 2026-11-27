@@ -25,6 +25,7 @@ public final class TestToggles {
                 new kz.kunde.groceries.GroceriesSettings(env),
                 new kz.kunde.events.EventsSettings(env),
                 new kz.kunde.homeservices.HomeServicesSettings(env),
-                new kz.kunde.beauty.BeautySettings(env)));
+                new kz.kunde.beauty.BeautySettings(env),
+                new kz.kunde.flowers.FlowersSettings(env)));
     }
 }

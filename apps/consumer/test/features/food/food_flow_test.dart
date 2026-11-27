@@ -444,7 +444,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Маргарита'));
     await tester.pumpAndSettle();
-    await tester.tap(find.textContaining('Add ·'));
+    await tester.tap(find.textContaining('Add to cart ·'));
     await tester.pumpAndSettle();
     await tester.tap(find.textContaining('Cart · 1'));
     await tester.pumpAndSettle();
@@ -602,6 +602,9 @@ void main() {
     await _show(
         tester, FoodHomeScreen(services: services, vertical: 'GROCERY'));
     await premiumGolden(tester, 'premium_grocery');
+    await _show(
+        tester, FoodHomeScreen(services: services, vertical: 'FLOWERS_GIFTS'));
+    await premiumGolden(tester, 'premium_flowers');
   });
 
   testWidgets('premium golden cart checkout and history', (tester) async {

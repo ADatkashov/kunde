@@ -45,7 +45,8 @@ public class PlatformController {
                 toggles.enabled(FeatureToggles.Feature.HEALTH), toggles.enabled(FeatureToggles.Feature.EDUCATION),
                 toggles.enabled(FeatureToggles.Feature.GROCERIES), toggles.enabled(FeatureToggles.Feature.EVENTS),
                 bookingEnabled && toggles.enabled(FeatureToggles.Feature.HOME_SERVICES), mapsEnabled,
-                bookingEnabled && toggles.enabled(FeatureToggles.Feature.BEAUTY));
+                bookingEnabled && toggles.enabled(FeatureToggles.Feature.BEAUTY),
+                toggles.enabled(FeatureToggles.Feature.FLOWERS));
     }
 
     public record PlatformCapabilities(
@@ -60,5 +61,7 @@ public class PlatformController {
             /** The KUNDE Maps Platform is the configured routing provider; clients show map UI only together with the product flag. */
             boolean mapsEnabled,
             /** Effective switch for Beauty &amp; Care (BEAUTY_ENABLED); off by default. */
-            boolean beautyEnabled) {}
+            boolean beautyEnabled,
+            /** Effective switch for Flowers &amp; Gifts (FLOWERS_ENABLED, ADR-026); off by default. */
+            boolean flowersEnabled) {}
 }

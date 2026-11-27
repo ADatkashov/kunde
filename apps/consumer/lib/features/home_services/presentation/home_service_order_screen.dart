@@ -9,18 +9,20 @@ import 'package:kunde_ui/ride_strings.dart';
 
 import '../../booking/booking_services.dart';
 import '../../booking/presentation/booking_detail_screen.dart';
-import 'home_services_offers_screen.dart' show formatKzt;
+import 'home_services_offers_screen.dart' show formatKzt, priceLabel;
+import 'home_services_widgets.dart';
 
 /// Order of one published offer: date → slot → address → itemised server price → booking. The price the customer saw
 /// (`expectedPriceMinor`) is checked by the server again, so a changed tariff can never be charged silently.
 class HomeServiceOrderScreen extends StatefulWidget {
-  const HomeServiceOrderScreen(
-      {required this.offer,
-      required this.services,
-      required this.api,
-      this.initialAreaSqm,
-      this.initialUrgent = false,
-      super.key});
+  const HomeServiceOrderScreen({
+    required this.offer,
+    required this.services,
+    required this.api,
+    this.initialAreaSqm,
+    this.initialUrgent = false,
+    super.key,
+  });
 
   /// What the customer already entered on the offer card, so the price they saw is the price they order.
   final int? initialAreaSqm;
@@ -36,8 +38,9 @@ class HomeServiceOrderScreen extends StatefulWidget {
 
 class _HomeServiceOrderScreenState extends State<HomeServiceOrderScreen> {
   final _address = TextEditingController();
-  late final _area =
-      TextEditingController(text: widget.initialAreaSqm?.toString() ?? '');
+  late final _area = TextEditingController(
+    text: widget.initialAreaSqm?.toString() ?? '',
+  );
   final _comment = TextEditingController();
   final String _key = _newKey();
   late final DateTime _today = DateTime.now();
@@ -53,7 +56,9 @@ class _HomeServiceOrderScreenState extends State<HomeServiceOrderScreen> {
   static String _newKey() {
     final r = Random.secure();
     return List.generate(
-        16, (_) => r.nextInt(256).toRadixString(16).padLeft(2, '0')).join();
+      16,
+      (_) => r.nextInt(256).toRadixString(16).padLeft(2, '0'),
+    ).join();
   }
 
   bool get _perSqm => widget.offer.areaBased;
@@ -61,18 +66,21 @@ class _HomeServiceOrderScreenState extends State<HomeServiceOrderScreen> {
   bool get _addressOk => _address.text.trim().length >= 5;
 
   Future<List<BookingSlot>> _loadSlots() => widget.services.api.slots(
-      venueId: widget.offer.venueId,
-      serviceId: widget.offer.serviceId,
-      date: _date);
+        venueId: widget.offer.venueId,
+        serviceId: widget.offer.serviceId,
+        date: _date,
+      );
 
   void _requote() {
     final slot = _slot;
     _quote = slot == null
         ? null
-        : widget.api.quote(widget.offer.id,
+        : widget.api.quote(
+            widget.offer.id,
             areaSqm: _perSqm ? _areaValue : null,
             startsAtIso: slot.startsAtIso,
-            urgent: _urgent);
+            urgent: _urgent,
+          );
   }
 
   @override
@@ -108,12 +116,16 @@ class _HomeServiceOrderScreenState extends State<HomeServiceOrderScreen> {
       );
       if (!mounted) return;
       nav.popUntil((route) => route.isFirst);
-      nav.push(MaterialPageRoute<void>(
+      nav.push(
+        MaterialPageRoute<void>(
           builder: (_) => BookingDetailScreen(
-              services: widget.services,
-              bookingId: record.id,
-              initial: record,
-              justBooked: true)));
+            services: widget.services,
+            bookingId: record.id,
+            initial: record,
+            justBooked: true,
+          ),
+        ),
+      );
     } on BookingException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -122,11 +134,13 @@ class _HomeServiceOrderScreenState extends State<HomeServiceOrderScreen> {
           BookingFailure.priceChanged => s.t(
               'Цена изменилась. Проверьте сумму и подтвердите снова.',
               'Баға өзгерді. Соманы тексеріп, қайта растаңыз.',
-              'The price changed. Check the amount and confirm again.'),
+              'The price changed. Check the amount and confirm again.',
+            ),
           BookingFailure.slotTaken => s.t(
               'Это время только что заняли. Выберите другое.',
               'Бұл уақытты жаңа ғана алды. Басқасын таңдаңыз.',
-              'That time was just taken. Pick another.'),
+              'That time was just taken. Pick another.',
+            ),
           _ => s.error,
         };
         if (e.failure == BookingFailure.priceChanged) _requote();
@@ -139,192 +153,326 @@ class _HomeServiceOrderScreenState extends State<HomeServiceOrderScreen> {
     }
   }
 
+  InputDecoration _plain(String hint, {String? error}) => InputDecoration(
+        hintText: hint,
+        errorText: error,
+        isDense: true,
+        filled: false,
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
+        contentPadding: EdgeInsets.zero,
+      );
+
+  Widget _priceBlock(RideStrings s, ThemeData theme) =>
+      FutureBuilder<HomeServiceQuote>(
+        future: _quote,
+        builder: (context, state) {
+          if (_quote == null) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  s.t(
+                    'Выберите время, чтобы увидеть цену',
+                    'Бағаны көру үшін уақытты таңдаңыз',
+                    'Pick a time to see the price',
+                  ),
+                ),
+                if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      _error!,
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
+                  ),
+              ],
+            );
+          }
+          if (state.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (state.hasError) return Text(s.error);
+          final q = state.data!;
+          Widget row(String label, int minor) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                            color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ),
+                    Text(formatKzt(minor)),
+                  ],
+                ),
+              );
+          return Column(
+            children: [
+              row(s.t('Услуга', 'Қызмет', 'Service'), q.listPriceMinor),
+              if (q.callOutFeeMinor > 0)
+                row(s.t('Выезд', 'Шығу', 'Call-out'), q.callOutFeeMinor),
+              if (q.urgentSurchargeMinor > 0)
+                row(
+                  s.t('Срочность', 'Шұғылдық', 'Urgency'),
+                  q.urgentSurchargeMinor,
+                ),
+              if (q.eveningSurchargeMinor > 0)
+                row(
+                  s.t('Вечернее время', 'Кешкі уақыт', 'Evening'),
+                  q.eveningSurchargeMinor,
+                ),
+              const Divider(height: 28),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Text(
+                      s.t('Стоимость', 'Құны', 'Total'),
+                      style: theme.textTheme.titleLarge,
+                    ),
+                  ),
+                  Text(
+                    formatKzt(q.totalMinor),
+                    style: theme.textTheme.headlineSmall,
+                  ),
+                ],
+              ),
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    _error!,
+                    style: TextStyle(color: theme.colorScheme.error),
+                  ),
+                ),
+              const SizedBox(height: 16),
+              FilledButton(
+                key: const ValueKey('submit'),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(56),
+                  shape: const StadiumBorder(),
+                ),
+                onPressed: _busy ? null : () => _submit(q),
+                child: Text(
+                  s.t(
+                    'Заказать за ${formatKzt(q.totalMinor)}',
+                    '${formatKzt(q.totalMinor)} тапсырыс беру',
+                    'Order for ${formatKzt(q.totalMinor)}',
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+
   @override
   Widget build(BuildContext context) {
     final s = RideStrings(context);
     final theme = Theme.of(context);
     final days = [for (var i = 0; i < 7; i++) _today.add(Duration(days: i))];
+    const gap = SizedBox(height: 12);
     return Scaffold(
       appBar: AppBar(
-          title: Text(
-              s.t('Оформление заказа', 'Тапсырысты рәсімдеу', 'Place order'))),
+        centerTitle: true,
+        title: Text(
+          s.t('Оформление заказа', 'Тапсырысты рәсімдеу', 'Place order'),
+          style: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+      ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 640),
-          child: ListView(padding: const EdgeInsets.all(16), children: [
-            Text(widget.offer.name(s.language),
-                style: theme.textTheme.titleLarge),
-            Text(widget.offer.venueName),
-            const SizedBox(height: 16),
-            Text(s.t('Дата', 'Күні', 'Date'),
-                style: theme.textTheme.titleMedium),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 48,
-              child: ListView(scrollDirection: Axis.horizontal, children: [
-                for (final d in days)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      key: ValueKey('day-${d.month}-${d.day}'),
-                      label: Text(
-                          '${d.day}.${d.month.toString().padLeft(2, '0')}'),
-                      selected: d.day == _date.day && d.month == _date.month,
-                      onSelected: (_) => setState(() {
-                        _date = d;
-                        _slot = null;
-                        _quote = null;
-                        _slots = _loadSlots();
-                      }),
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              HomeServiceField(
+                icon: homeCategoryMeta(s, widget.offer.categoryCode).$1,
+                label: widget.offer.name(s.language),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.offer.venueName,
+                      style:
+                          TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      priceLabel(s, widget.offer),
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ],
+                ),
+              ),
+              gap,
+              HomeServiceField(
+                icon: Icons.calendar_month_rounded,
+                label: s.t('Дата и время', 'Күні мен уақыты', 'Date and time'),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      height: 44,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        children: [
+                          for (final d in days)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: ChoiceChip(
+                                key: ValueKey('day-${d.month}-${d.day}'),
+                                shape: const StadiumBorder(),
+                                showCheckmark: false,
+                                label: Text(
+                                  '${d.day}.${d.month.toString().padLeft(2, '0')}',
+                                ),
+                                selected: d.day == _date.day &&
+                                    d.month == _date.month,
+                                onSelected: (_) => setState(() {
+                                  _date = d;
+                                  _slot = null;
+                                  _quote = null;
+                                  _slots = _loadSlots();
+                                }),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    FutureBuilder<List<BookingSlot>>(
+                      future: _slots,
+                      builder: (context, state) {
+                        if (state.connectionState != ConnectionState.done) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                        if (state.hasError) return Text(s.error);
+                        final slots = state.data!;
+                        if (slots.isEmpty) {
+                          return Text(
+                            s.t(
+                              'На эту дату нет свободного времени',
+                              'Бұл күні бос уақыт жоқ',
+                              'No free time on this date',
+                            ),
+                          );
+                        }
+                        // One entry per start time: the server picks the master by the slot it is given.
+                        final seen = <String>{};
+                        final unique = slots
+                            .where((x) => seen.add(x.startsAtIso))
+                            .toList();
+                        return Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final slot in unique)
+                              ChoiceChip(
+                                key: ValueKey('slot-${slot.startsAtIso}'),
+                                shape: const StadiumBorder(),
+                                showCheckmark: false,
+                                label: Text(
+                                  '${slot.start.hour.toString().padLeft(2, '0')}:${slot.start.minute.toString().padLeft(2, '0')}',
+                                ),
+                                selected:
+                                    _slot?.startsAtIso == slot.startsAtIso,
+                                onSelected: (_) => setState(() {
+                                  _slot = slot;
+                                  _requote();
+                                }),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              gap,
+              HomeServiceField(
+                icon: Icons.location_on_rounded,
+                label: s.t('Адрес', 'Мекенжай', 'Address'),
+                child: TextField(
+                  key: const ValueKey('address'),
+                  controller: _address,
+                  decoration: _plain(
+                    s.t(
+                      'Улица, дом, квартира',
+                      'Көше, үй, пәтер',
+                      'Street, building, apartment',
+                    ),
+                    error: _touched && !_addressOk
+                        ? s.t(
+                            'Укажите адрес (от 5 символов)',
+                            'Мекенжайды көрсетіңіз (кемінде 5 таңба)',
+                            'Enter an address (5+ characters)',
+                          )
+                        : null,
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              if (_perSqm) ...[
+                gap,
+                HomeServiceField(
+                  icon: Icons.square_foot_rounded,
+                  label: s.t('Площадь, м²', 'Ауданы, м²', 'Area, m²'),
+                  child: TextField(
+                    key: const ValueKey('area'),
+                    controller: _area,
+                    keyboardType: TextInputType.number,
+                    decoration: _plain(
+                      '50',
+                      error: _touched && _areaValue == null
+                          ? s.t(
+                              'Укажите площадь',
+                              'Ауданын көрсетіңіз',
+                              'Enter the area',
+                            )
+                          : null,
+                    ),
+                    onChanged: (_) => setState(_requote),
+                  ),
+                ),
+              ],
+              gap,
+              HomeServiceField(
+                icon: Icons.edit_outlined,
+                label: s.t('Комментарий', 'Түсініктеме', 'Comment'),
+                child: TextField(
+                  controller: _comment,
+                  maxLines: 2,
+                  minLines: 1,
+                  decoration: _plain(
+                    s.t(
+                      'Например: замена смесителя',
+                      'Мысалы: араластырғышты ауыстыру',
+                      'For example: replace a tap',
                     ),
                   ),
-              ]),
-            ),
-            const SizedBox(height: 12),
-            Text(s.t('Время', 'Уақыт', 'Time'),
-                style: theme.textTheme.titleMedium),
-            const SizedBox(height: 8),
-            FutureBuilder<List<BookingSlot>>(
-              future: _slots,
-              builder: (context, state) {
-                if (state.connectionState != ConnectionState.done) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (state.hasError) return Text(s.error);
-                final slots = state.data!;
-                if (slots.isEmpty) {
-                  return Text(s.t('На эту дату нет свободного времени',
-                      'Бұл күні бос уақыт жоқ', 'No free time on this date'));
-                }
-                // One entry per start time: the server picks the master by the slot it is given.
-                final seen = <String>{};
-                final unique =
-                    slots.where((x) => seen.add(x.startsAtIso)).toList();
-                return Wrap(spacing: 8, runSpacing: 8, children: [
-                  for (final slot in unique)
-                    ChoiceChip(
-                      key: ValueKey('slot-${slot.startsAtIso}'),
-                      label: Text(
-                          '${slot.start.hour.toString().padLeft(2, '0')}:${slot.start.minute.toString().padLeft(2, '0')}'),
-                      selected: _slot?.startsAtIso == slot.startsAtIso,
-                      onSelected: (_) => setState(() {
-                        _slot = slot;
-                        _requote();
-                      }),
-                    ),
-                ]);
-              },
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              key: const ValueKey('address'),
-              controller: _address,
-              decoration: InputDecoration(
-                labelText: s.t('Адрес', 'Мекенжай', 'Address'),
-                errorText: _touched && !_addressOk
-                    ? s.t(
-                        'Укажите адрес (от 5 символов)',
-                        'Мекенжайды көрсетіңіз (кемінде 5 таңба)',
-                        'Enter an address (5+ characters)')
-                    : null,
+                ),
               ),
-              onChanged: (_) => setState(() {}),
-            ),
-            if (_perSqm)
-              TextField(
-                key: const ValueKey('area'),
-                controller: _area,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                    labelText: s.t('Площадь, м²', 'Ауданы, м²', 'Area, m²'),
-                    errorText: _touched && _areaValue == null
-                        ? s.t('Укажите площадь', 'Ауданын көрсетіңіз',
-                            'Enter the area')
-                        : null),
-                onChanged: (_) => setState(_requote),
+              SwitchListTile(
+                key: const ValueKey('urgent'),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                title: Text(s.t('Срочно', 'Шұғыл', 'Urgent')),
+                value: _urgent,
+                onChanged: (v) => setState(() {
+                  _urgent = v;
+                  _requote();
+                }),
               ),
-            TextField(
-              controller: _comment,
-              maxLines: 2,
-              decoration: InputDecoration(
-                  labelText: s.t('Комментарий', 'Түсініктеме', 'Comment')),
-            ),
-            SwitchListTile(
-              key: const ValueKey('urgent'),
-              contentPadding: EdgeInsets.zero,
-              title: Text(s.t('Срочно', 'Шұғыл', 'Urgent')),
-              value: _urgent,
-              onChanged: (v) => setState(() {
-                _urgent = v;
-                _requote();
-              }),
-            ),
-            FutureBuilder<HomeServiceQuote>(
-              future: _quote,
-              builder: (context, state) {
-                if (_quote == null) {
-                  return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(s.t(
-                            'Выберите время, чтобы увидеть цену',
-                            'Бағаны көру үшін уақытты таңдаңыз',
-                            'Pick a time to see the price')),
-                        if (_error != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Text(_error!,
-                                style:
-                                    TextStyle(color: theme.colorScheme.error)),
-                          ),
-                      ]);
-                }
-                if (state.connectionState != ConnectionState.done) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (state.hasError) return Text(s.error);
-                final q = state.data!;
-                Widget row(String label, int minor, {bool bold = false}) =>
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: Row(children: [
-                        Expanded(child: Text(label)),
-                        Text(formatKzt(minor),
-                            style: bold ? theme.textTheme.titleMedium : null),
-                      ]),
-                    );
-                return Column(children: [
-                  row(s.t('Услуга', 'Қызмет', 'Service'), q.listPriceMinor),
-                  if (q.callOutFeeMinor > 0)
-                    row(s.t('Выезд', 'Шығу', 'Call-out'), q.callOutFeeMinor),
-                  if (q.urgentSurchargeMinor > 0)
-                    row(s.t('Срочность', 'Шұғылдық', 'Urgency'),
-                        q.urgentSurchargeMinor),
-                  if (q.eveningSurchargeMinor > 0)
-                    row(s.t('Вечернее время', 'Кешкі уақыт', 'Evening'),
-                        q.eveningSurchargeMinor),
-                  const Divider(),
-                  row(s.t('Итого', 'Барлығы', 'Total'), q.totalMinor,
-                      bold: true),
-                  if (_error != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(_error!,
-                          style: TextStyle(color: theme.colorScheme.error)),
-                    ),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    key: const ValueKey('submit'),
-                    onPressed: _busy ? null : () => _submit(q),
-                    child: Text(s.t(
-                        'Заказать за ${formatKzt(q.totalMinor)}',
-                        '${formatKzt(q.totalMinor)} тапсырыс беру',
-                        'Order for ${formatKzt(q.totalMinor)}')),
-                  ),
-                ]);
-              },
-            ),
-          ]),
+              const Divider(height: 28),
+              _priceBlock(s, theme),
+            ],
+          ),
         ),
       ),
     );

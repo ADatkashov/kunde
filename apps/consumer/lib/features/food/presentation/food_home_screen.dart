@@ -167,10 +167,15 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
         child: SearchBar(
           controller: _query,
-          hintText: _grocery
-              ? _tx('Магазины и товары', 'Дүкендер мен тауарлар',
-                  'Shops and products')
-              : 'Найти ресторан или блюдо',
+          hintText: _flowers
+              ? _tx(
+                  'Найти цветы, подарки или магазин',
+                  'Гүл, сыйлық немесе дүкен іздеу',
+                  'Find flowers, gifts or a shop')
+              : _grocery
+                  ? _tx('Магазины и товары', 'Дүкендер мен тауарлар',
+                      'Shops and products')
+                  : 'Найти ресторан или блюдо',
           leading: const Icon(Icons.search_rounded),
           trailing: [
             if (_query.text.isNotEmpty)
@@ -209,7 +214,7 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_grocery && !_flowers) {
+    if (!_grocery || _flowers) {
       return Scaffold(
         bottomNavigationBar: FoodCartBar(services: widget.services),
         body: Center(
@@ -217,8 +222,14 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
             constraints: const BoxConstraints(maxWidth: 640),
             child: Column(children: [
               FoodHeroHeader(
-                title: 'Еда',
-                subtitle: 'Рестораны, кафе и доставка еды',
+                title: _flowers ? _flowersTitle(context) : 'Еда',
+                subtitle: _flowers
+                    ? _tx(
+                        'Букеты, подарки и приятные сюрпризы для ваших близких',
+                        'Жақындарыңызға гүл шоқтары, сыйлықтар мен тосынсыйлар',
+                        'Bouquets, gifts and pleasant surprises for loved ones')
+                    : 'Рестораны, кафе и доставка еды',
+                image: _flowers ? null : 'assets/photos/food-banner.webp',
                 actions: [_cartAction(onDark: true)],
               ),
               Expanded(

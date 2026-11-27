@@ -44,6 +44,7 @@ paths:
                   aiEnabled: { type: boolean, example: false }
                   homeServicesEnabled: { type: boolean, example: false, description: Effective switch for the Home Services pilot. }
                   beautyEnabled: { type: boolean, example: false, description: Effective switch for Beauty and Care (BEAUTY_ENABLED). }
+                  flowersEnabled: { type: boolean, example: false, description: Effective switch for Flowers and Gifts (FLOWERS_ENABLED). }
                   mapsEnabled: { type: boolean, example: false, description: KUNDE Maps Platform is the configured routing provider (MAPS_ENABLED); map screens also require the product flag, for example ridesEnabled. }
                   deliveryEnabled: { type: boolean, example: false }
                   deliverySyntheticRouting: { type: boolean, example: false }
@@ -1267,6 +1268,124 @@ paths:
           description: Invalid pagination.
         '404':
           description: BEAUTY_DISABLED.
+  /flowers/categories:
+    get:
+      operationId: listFlowersCategories
+      description: Active Flowers and Gifts categories in display order (featured ones form the home grid). Hidden while FLOWERS_ENABLED is off (ADR-026).
+      parameters:
+        - { name: featured, in: query, schema: { type: boolean } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 10000, default: 0 } }
+      responses:
+        '200':
+          description: Categories with code, nameRu, nameKk, nameEn, icon and featured.
+        '400':
+          description: Invalid pagination.
+        '404':
+          description: FLOWERS_DISABLED.
+  /flowers/shops:
+    get:
+      operationId: listFlowersShops
+      description: Public flower and gift shops, open ones first. A shop is public when it is synthetic demo data or belongs to an APPROVED partner. Hidden while FLOWERS_ENABLED is off.
+      parameters:
+        - { name: category, in: query, description: Only shops that sell an available product of this category., schema: { type: string, maxLength: 32 } }
+        - { name: q, in: query, description: Case-insensitive match on shop name or description., schema: { type: string, maxLength: 80 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 100000, default: 0 } }
+      responses:
+        '200':
+          description: Shops with id, slug, name, description, emoji, tone, imageUrl, deliveryFeeMinor, minOrderMinor, etaMinMinutes, etaMaxMinutes, open, synthetic, latitude, longitude and productCount.
+        '400':
+          description: Invalid parameters.
+        '404':
+          description: FLOWERS_DISABLED.
+  /flowers/shops/{id}:
+    get:
+      operationId: getFlowersShop
+      description: One shop with all its products (available or not). Hidden while FLOWERS_ENABLED is off.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: shop and products (id, shopId, shopName, categoryCode, name, description, priceMinor, emoji, tone, imageUrl, available, stockQty, popular).
+        '404':
+          description: FLOWERS_DISABLED or FLOWERS_SHOP_NOT_FOUND.
+  /flowers/products/popular:
+    get:
+      operationId: listFlowersPopularProducts
+      description: Showcase of the home screen - available popular products of visible, open shops. Hidden while FLOWERS_ENABLED is off.
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 30, default: 10 } }
+      responses:
+        '200':
+          description: Products as in the shop detail.
+        '400':
+          description: Invalid limit.
+        '404':
+          description: FLOWERS_DISABLED.
+  /flowers/delivery-slots:
+    get:
+      operationId: listFlowersDeliverySlots
+      description: Two-hour delivery windows (10:00-20:00, Asia/Almaty) of one local date for scheduled delivery; only future windows with a two-hour lead, up to 14 days ahead. Hidden while FLOWERS_ENABLED is off.
+      parameters:
+        - { name: date, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        '200':
+          description: Windows with startsAt and endsAt (ISO instants). Empty outside the allowed range.
+        '404':
+          description: FLOWERS_DISABLED.
+  /flowers/cart/quote:
+    post:
+      operationId: quoteFlowersCart
+      description: Server price of a cart of one shop (subtotal, delivery fee, total). Requires a signed-in consumer.
+      responses:
+        '200':
+          description: Quote with lines, subtotalMinor, deliveryFeeMinor, totalMinor, minOrderMinor.
+        '409':
+          description: FLOWERS_STOCK_INSUFFICIENT.
+        '422':
+          description: FLOWERS_PRODUCT_UNAVAILABLE, FLOWERS_SHOP_CLOSED, FLOWERS_SLOT_UNAVAILABLE or FLOWERS_MIN_ORDER.
+  /flowers/orders:
+    get:
+      operationId: listFlowersOrders
+      description: The caller's flower orders, newest first.
+      responses:
+        '200':
+          description: Orders.
+    post:
+      operationId: placeFlowersOrder
+      description: Places an order. Idempotency-Key is required; the same key returns the same order (200), a different shop with the same key is 409 IDEMPOTENCY_KEY_REUSED. expectedTotalMinor must equal the server total (409 FLOWERS_PRICE_CHANGED). Payment is DEV_NO_PAYMENT only.
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, maxLength: 64 } }
+      responses:
+        '201':
+          description: Order created with status PLACED.
+        '200':
+          description: Existing order for the same Idempotency-Key.
+        '409':
+          description: FLOWERS_PRICE_CHANGED, FLOWERS_STOCK_INSUFFICIENT, IDEMPOTENCY_KEY_REUSED or TOO_MANY_ACTIVE_ORDERS.
+  /flowers/orders/{orderId}:
+    get:
+      operationId: getFlowersOrder
+      description: One of the caller's orders with items and status events; another user's order is 404.
+      parameters:
+        - { name: orderId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Order.
+        '404':
+          description: ORDER_NOT_FOUND.
+  /flowers/orders/{orderId}/cancel:
+    post:
+      operationId: cancelFlowersOrder
+      description: Free cancellation only while the order is PLACED; reserved stock is returned.
+      parameters:
+        - { name: orderId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Cancelled order.
+        '409':
+          description: ORDER_NOT_CANCELLABLE.
   /beauty/salons:
     get:
       operationId: listBeautySalons

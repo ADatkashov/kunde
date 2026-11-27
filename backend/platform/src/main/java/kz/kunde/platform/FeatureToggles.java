@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class FeatureToggles {
-    public enum Feature { AUTO, RIDES, DELIVERY, LEISURE, HEALTH, EDUCATION, GROCERIES, EVENTS, HOME_SERVICES, BEAUTY }
+    public enum Feature { AUTO, RIDES, DELIVERY, LEISURE, HEALTH, EDUCATION, GROCERIES, EVENTS, HOME_SERVICES, BEAUTY, FLOWERS }
 
     public record Toggle(boolean enabled, long version, String reason, UUID updatedBy, OffsetDateTime updatedAt) {}
 

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import 'package:kunde_ui/ride_strings.dart';
 
+import 'home_services_widgets.dart';
+
 /// Progress of a Home Services visit for the customer: the master is assigned, on the way (with an ETA), on site, or working.
 /// Refreshes itself; a failed read keeps the last known state and never blocks the booking screen.
 class HomeServiceVisitCard extends StatefulWidget {
@@ -63,8 +65,11 @@ class _HomeServiceVisitCardState extends State<HomeServiceVisitCard> {
     final (IconData icon, String text) = switch ((status, stage)) {
       ('IN_PROGRESS', _) => (
           Icons.handyman_outlined,
-          s.t('Мастер выполняет работу', 'Шебер жұмыс істеп жатыр',
-              'The master is working'),
+          s.t(
+            'Мастер выполняет работу',
+            'Шебер жұмыс істеп жатыр',
+            'The master is working',
+          ),
         ),
       ('CONFIRMED', 'ARRIVED') => (
           Icons.home_outlined,
@@ -77,14 +82,16 @@ class _HomeServiceVisitCardState extends State<HomeServiceVisitCard> {
               : s.t(
                   'Мастер в пути, прибудет через ~$eta мин',
                   'Шебер жолда, ~$eta мин ішінде жетеді',
-                  'The master is on the way, arriving in ~$eta min'),
+                  'The master is on the way, arriving in ~$eta min',
+                ),
         ),
       ('CONFIRMED', _) => (
           Icons.schedule_outlined,
           s.t(
-              'Мастер приедет в назначенное время',
-              'Шебер белгіленген уақытта келеді',
-              'The master will come at the scheduled time'),
+            'Мастер приедет в назначенное время',
+            'Шебер белгіленген уақытта келеді',
+            'The master will come at the scheduled time',
+          ),
         ),
       _ => (Icons.info_outline, ''),
     };
@@ -95,9 +102,42 @@ class _HomeServiceVisitCardState extends State<HomeServiceVisitCard> {
       child: Card(
         key: const ValueKey('visit-card'),
         margin: const EdgeInsets.only(top: 12),
-        child: ListTile(
-          leading: Icon(icon),
-          title: Text(text),
+        elevation: 0,
+        color: Theme.of(context)
+            .colorScheme
+            .primaryContainer
+            .withValues(alpha: .35),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Column(
+            children: [
+              HomeServiceStepper(
+                step: switch ((status, stage)) {
+                  ('IN_PROGRESS', _) => 2,
+                  ('CONFIRMED', 'ARRIVED' || 'EN_ROUTE') => 1,
+                  _ => 0,
+                },
+                labels: [
+                  s.t('Принят', 'Қабылданды', 'Accepted'),
+                  s.t('В пути', 'Жолда', 'On the way'),
+                  s.t('В работе', 'Жұмыста', 'Working'),
+                  s.t('Завершён', 'Аяқталды', 'Done'),
+                ],
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(
+                  icon,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                title: Text(
+                  text,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

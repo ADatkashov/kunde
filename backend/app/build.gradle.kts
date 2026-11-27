@@ -10,6 +10,7 @@ dependencies {
     implementation(project(":services:admin"))
     implementation(project(":services:support"))
     implementation(project(":services:education"))
+    implementation(project(":services:flowers"))
     implementation(project(":services:events"))
     implementation(project(":services:leisure"))
     implementation(project(":services:delivery"))
