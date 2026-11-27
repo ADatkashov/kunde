@@ -1,8 +1,10 @@
 # Следующие проверки
 
-## Selective CI: PR 6 ([ADR-027](docs/architecture/adr/ADR-027-product-based-selective-ci.md))
+## Home Services MVP: аудит и недостающие функции (приоритет P0)
 
-Backend и Flutter подключены к детектору (PR 3–4), Product E2E и Required CI Gate добавлены (PR 5). Владелец: проверить required checks и добавить «Required CI Gate». Затем убедиться на PR одного модуля (`homeservices`) и одной фичи Executor/Admin, что selective-ветки зелёные и быстрее FULL. Дальше: Full Regression (ночью и перед PROD), DEV Release по детектору, профили продуктов (Home Services), развязка фич Consumer, замеры до/после. Проверка: `python3 -m unittest discover -s scripts/ci -p 'test_*.py'`.
+Engineering Foundation 2.0 завершён технически ([ADR-027](docs/architecture/adr/ADR-027-product-based-selective-ci.md), [пилот](docs/engineering-foundation/selective-ci-pilot-2026-11-27.md)); остальные продукты и архитектурные улучшения заморожены, общие компоненты — только при необходимости Home Services или для критических ошибок. Задача: полный аудит Home Services от Consumer до Partner, Executor и Admin ([docs/product/home-services.md](docs/product/home-services.md)), список недостающих бизнес-функций и их реализация до пилота с реальными клиентами и мастерами в Алматы. Бэклог MVP: **нативный multi-role Android E2E Home Services** (Journey-тест — API-интеграция, не замена), проверка на реальном устройстве, оплата/возвраты/уведомления (за провайдерскими gate-ами), подключение реальных исполнителей.
+
+Владельцу: подключить «Required CI Gate» к branch protection по [инструкции](docs/engineering-foundation/branch-protection-required-ci-gate.md) (старые required checks пока не отключать). Проверка: `python3 -m unittest discover -s scripts/ci -p 'test_*.py'`; `cd backend && ./gradlew :services:homeservices:test :app:test --tests 'kz.kunde.homeservices.*'`; `cd apps/executor && flutter test test/features/home_services`.
 
 ## Микросервисная готовность: следующие PR
 
