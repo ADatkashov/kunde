@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:kunde_design/kunde_design.dart';
 
 import 'package:kunde_localization/kunde_localizations.dart';
 import 'package:kunde_localization/kunde_formats.dart';
@@ -142,69 +143,118 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
     } catch (_) {}
   }
 
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(
-          title: Text(_flowers
-              ? _flowersTitle(context)
-              : (_grocery ? 'Продукты · Алматы' : 'Еда · Алматы')),
-          actions: [
-            ListenableBuilder(
-              listenable: widget.services.cart,
-              builder: (context, _) => IconButton(
-                tooltip: _tx('Корзина', 'Себет', 'Cart'),
-                onPressed: widget.services.cart.isEmpty
-                    ? null
-                    : () => Navigator.of(context).push(MaterialPageRoute<void>(
-                        builder: (_) => CartScreen(services: widget.services))),
-                icon: Badge(
-                  isLabelVisible: !widget.services.cart.isEmpty,
-                  label: Text('${widget.services.cart.itemCount}'),
-                  child: const Icon(Icons.shopping_bag_outlined),
-                ),
-              ),
-            ),
-          ],
+  Widget _cartAction({bool onDark = false}) => ListenableBuilder(
+        listenable: widget.services.cart,
+        builder: (context, _) => IconButton(
+          tooltip: _tx('Корзина', 'Себет', 'Cart'),
+          color: onDark ? Colors.white : null,
+          onPressed: widget.services.cart.isEmpty
+              ? null
+              : () => Navigator.of(context).push(MaterialPageRoute<void>(
+                  builder: (_) => CartScreen(services: widget.services))),
+          icon: Badge(
+            isLabelVisible: !widget.services.cart.isEmpty,
+            label: Text('${widget.services.cart.itemCount}'),
+            child: Icon(Icons.shopping_bag_outlined,
+                color: onDark && !widget.services.cart.isEmpty
+                    ? Colors.white
+                    : (onDark ? Colors.white54 : null)),
+          ),
         ),
+      );
+
+  Widget _searchField() => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        child: SearchBar(
+          controller: _query,
+          hintText: _grocery
+              ? _tx('Магазины и товары', 'Дүкендер мен тауарлар',
+                  'Shops and products')
+              : 'Найти ресторан или блюдо',
+          leading: const Icon(Icons.search_rounded),
+          trailing: [
+            if (_query.text.isNotEmpty)
+              IconButton(
+                tooltip: _tx('Очистить', 'Тазалау', 'Clear'),
+                icon: const Icon(Icons.close_rounded),
+                onPressed: () {
+                  _query.clear();
+                  _onChanged('');
+                  setState(() {});
+                },
+              ),
+          ],
+          onChanged: (value) {
+            setState(() {});
+            _onChanged(value);
+          },
+          elevation: const WidgetStatePropertyAll(0),
+        ),
+      );
+
+  /// The only supported city is shown as a read-only chip (no empty picker).
+  Widget _cityChip() => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.location_on_rounded,
+                size: 18, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 4),
+            const Text('Алматы',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+          ]),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_grocery && !_flowers) {
+      return Scaffold(
         bottomNavigationBar: FoodCartBar(services: widget.services),
         body: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 640),
             child: Column(children: [
-              if (!_flowers) FoodCollectionHeader(grocery: _grocery),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: SearchBar(
-                  controller: _query,
-                  hintText: _grocery
-                      ? _tx('Магазины и товары', 'Дүкендер мен тауарлар',
-                          'Shops and products')
-                      : 'Рестораны и блюда',
-                  leading: const Icon(Icons.search_rounded),
-                  trailing: [
-                    if (_query.text.isNotEmpty)
-                      IconButton(
-                        tooltip: _tx('Очистить', 'Тазалау', 'Clear'),
-                        icon: const Icon(Icons.close_rounded),
-                        onPressed: () {
-                          _query.clear();
-                          _onChanged('');
-                          setState(() {});
-                        },
-                      ),
-                  ],
-                  onChanged: (value) {
-                    setState(() {});
-                    _onChanged(value);
-                  },
-                  elevation: const WidgetStatePropertyAll(0),
+              FoodHeroHeader(
+                title: 'Еда',
+                subtitle: 'Рестораны, кафе и доставка еды',
+                actions: [_cartAction(onDark: true)],
+              ),
+              Expanded(
+                child: FoodSheet(
+                  child: Column(children: [
+                    _cityChip(),
+                    _searchField(),
+                    Expanded(child: _search == null ? _catalog() : _results()),
+                  ]),
                 ),
               ),
-              Expanded(child: _search == null ? _catalog() : _results()),
             ]),
           ),
         ),
       );
+    }
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_flowers
+            ? _flowersTitle(context)
+            : (_grocery ? 'Продукты · Алматы' : 'Еда · Алматы')),
+        actions: [_cartAction()],
+      ),
+      bottomNavigationBar: FoodCartBar(services: widget.services),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: Column(children: [
+            if (!_flowers) FoodCollectionHeader(grocery: _grocery),
+            _searchField(),
+            Expanded(child: _search == null ? _catalog() : _results()),
+          ]),
+        ),
+      ),
+    );
+  }
 
   Widget _catalog() => FutureBuilder<List<Restaurant>>(
         future: _restaurants,
@@ -247,7 +297,7 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
               itemCount: list.length + 1,
               separatorBuilder: (_, __) => const SizedBox(height: 14),
               itemBuilder: (context, i) {
-                if (i == 0) return _header();
+                if (i == 0) return _header(foundCount: list.length);
                 if (list.isEmpty) {
                   return Padding(
                     padding: const EdgeInsets.all(24),
@@ -271,11 +321,19 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
         },
       );
 
-  Widget _header() =>
+  Widget _header({int? foundCount}) =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         if (!_flowers) _promoBanner(),
         if (!_flowers && !_grocery) _categoryRow(),
         _filters(),
+        if (!_flowers && !_grocery && foundCount != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(2, 12, 0, 0),
+            child: Text('Найдено: $foundCount',
+                key: const Key('found-count'),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          ),
       ]);
 
   /// The banner only exists when the server has an active promotion; it opens the real offer.
@@ -293,8 +351,9 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
               label: 'Акция: ${promo.title}',
               child: Material(
                 key: const Key('promo-banner'),
-                color: theme.colorScheme.primary,
+                color: KundePalette.violet,
                 borderRadius: BorderRadius.circular(20),
+                clipBehavior: Clip.antiAlias,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(20),
                   onTap: () => _openPromotion(promo),
@@ -307,17 +366,17 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
                             children: [
                               Text(promo.title,
                                   style: theme.textTheme.titleMedium?.copyWith(
-                                      color: theme.colorScheme.onPrimary,
+                                      color: Colors.white,
                                       fontWeight: FontWeight.w800)),
                               if (promo.code != null)
                                 Text('Промокод ${promo.code}',
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                        color: theme.colorScheme.onPrimary)),
+                                    style: theme.textTheme.bodyMedium
+                                        ?.copyWith(color: Colors.white)),
                             ]),
                       ),
                       Text(promo.valueLabel,
                           style: theme.textTheme.headlineSmall?.copyWith(
-                              color: theme.colorScheme.onPrimary,
+                              color: KundePalette.gold,
                               fontWeight: FontWeight.w900)),
                     ]),
                   ),
@@ -371,23 +430,74 @@ class _FoodHomeScreenState extends State<FoodHomeScreen> {
         builder: (context, state) {
           final list = state.data ?? const <FoodCategory>[];
           if (list.isEmpty) return const SizedBox.shrink();
+          final colors = Theme.of(context).colorScheme;
           return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: SizedBox(
-              height: 56,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: list.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (context, i) => ChoiceChip(
-                  key: Key('category-${list[i].cuisine}'),
-                  label: Text('${list[i].cuisine} · ${list[i].restaurants}'),
-                  selected: _filter.cuisine == list[i].cuisine,
-                  onSelected: (v) => _applyFilter(
-                      _filter.copyWith(cuisine: v ? list[i].cuisine : null)),
-                ),
-              ),
-            ),
+            padding: const EdgeInsets.only(bottom: 12),
+            child: LayoutBuilder(builder: (context, box) {
+              final columns =
+                  box.maxWidth < 300 ? 2 : (box.maxWidth < 360 ? 3 : 4);
+              final gap = 10.0;
+              final width = (box.maxWidth - gap * (columns - 1)) / columns;
+              return Wrap(spacing: gap, runSpacing: gap, children: [
+                for (final c in list)
+                  SizedBox(
+                    width: width,
+                    child: Semantics(
+                      button: true,
+                      selected: _filter.cuisine == c.cuisine,
+                      label: '${c.cuisine}, ${c.restaurants}',
+                      child: Material(
+                        key: Key('category-${c.cuisine}'),
+                        color: _filter.cuisine == c.cuisine
+                            ? colors.primaryContainer
+                            : colors.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          onTap: () => _applyFilter(_filter.copyWith(
+                              cuisine: _filter.cuisine == c.cuisine
+                                  ? null
+                                  : c.cuisine)),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 12, horizontal: 4),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                  color: _filter.cuisine == c.cuisine
+                                      ? colors.primary
+                                      : colors.outlineVariant),
+                            ),
+                            child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 44,
+                                    height: 44,
+                                    decoration: BoxDecoration(
+                                        color: colors.primaryContainer
+                                            .withValues(alpha: .6),
+                                        shape: BoxShape.circle),
+                                    child: Icon(Icons.restaurant_rounded,
+                                        color: colors.primary),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(c.cuisine,
+                                        maxLines: 1,
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700)),
+                                  ),
+                                ]),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ]);
+            }),
           );
         },
       );
