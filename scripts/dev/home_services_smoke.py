@@ -2,7 +2,7 @@
 """Smoke test of KUNDE Home Services (DEV pilot) over real HTTP (stdlib only).
 
 Usage: home_services_smoke.py BASE_URL [CUSTOMER_PHONE]
-Needs a backend with HOME_SERVICES_ENABLED, BOOKING_ENABLED, PARTNER_OPS_SEED_DEMO (synthetic partners +77000000002 / +77000000003),
+Needs a backend with HOME_SERVICES_ENABLED, BOOKING_ENABLED, BOOKING_SEED_DEMO (venue home-clean-demo), PARTNER_OPS_SEED_DEMO (synthetic partners +77000000002 / +77000000003, which also links home-clean-demo to the first one),
 AUTH_PHONE_ENABLED and AUTH_DEV_OTP_ENABLED with the synthetic numbers allowlisted.
 
 Covers everything reachable with synthetic phones and no staff credentials: the flag, the public catalogue and quote, the partner
@@ -118,13 +118,19 @@ for offset in range(1, 8):
         break
 if booking is None:
     sys.exit("FAIL: no free cleaning slot in the next week")
-visit = call("GET", f"/api/v1/home-services/bookings/{booking['id']}/visit", token=customer)
-assert visit["bookingId"] == booking["id"] and visit.get("stage") is None, visit
-call("GET", f"/api/v1/home-services/bookings/{booking['id']}/visit", token=stranger, expect=404)
-call("GET", f"/api/v1/home-services/bookings/{booking['id']}/visit", expect=401)
+try:
+    visit = call("GET", f"/api/v1/home-services/bookings/{booking['id']}/visit", token=customer)
+    assert visit["bookingId"] == booking["id"] and visit.get("stage") is None, visit
+    call("GET", f"/api/v1/home-services/bookings/{booking['id']}/visit", token=stranger, expect=404)
+    call("GET", f"/api/v1/home-services/bookings/{booking['id']}/visit", expect=401)
 
-# Executor API: an account that is not linked to a master gets a clear refusal, never somebody else's jobs.
-call("GET", "/api/v1/executor/home-services/jobs", token=customer, expect=404)
-call("POST", "/api/v1/executor/home-services/link", {"code": "NOSUCH-0000"}, token=customer, expect=404)
-call("POST", f"/api/v1/booking/bookings/{booking['id']}/cancel", token=customer)
+    # Executor API: an account that is not linked to a master gets a clear refusal, never somebody else's jobs.
+    call("GET", "/api/v1/executor/home-services/jobs", token=customer, expect=404)
+    call("POST", "/api/v1/executor/home-services/link", {"code": "NOSUCH-0000"}, token=customer, expect=404)
+finally:
+    # The booking is cancelled even when a check above failed, so a failed smoke never leaves a taken slot on DEV.
+    try:
+        call("POST", f"/api/v1/booking/bookings/{booking['id']}/cancel", token=customer)
+    except BaseException as cleanup_error:  # keep the original failure, only report the cleanup problem
+        print(f"WARN could not cancel smoke booking {booking['id']}: {cleanup_error}")
 print("home services smoke: all checks passed")

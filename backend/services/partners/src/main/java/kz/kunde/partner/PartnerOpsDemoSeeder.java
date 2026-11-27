@@ -18,7 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
  * {@code app.partner-ops.seed-demo=true} in a dev/local/test environment. It creates two APPROVED synthetic partners whose
  * owners are the synthetic numbers {@value #PARTNER_PHONE} and {@value #OTHER_PHONE} (DEV OTP allowlist), links the first one
  * to the synthetic restaurant {@code partner-kitchen-demo} and venues {@code partner-salon-demo} and {@code home-clean-demo} (Home Services), and leaves the second one
- * without assets (used to verify that a partner cannot touch another partner's data). No real person or business is represented.
+ * without assets (the venue links need the Booking demo seed, {@code app.booking.seed-demo}, to have created them first;
+ * otherwise they match nothing) (used to verify that a partner cannot touch another partner's data). No real person or business is represented.
  */
 @Component
 @Order(100)
