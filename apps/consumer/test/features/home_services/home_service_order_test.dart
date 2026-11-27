@@ -87,6 +87,8 @@ class _Catalog implements HomeServicesCatalog {
     areaSeen.add(areaSqm);
     pointsSeen.add((lat, lng));
     if (zoned && lat == null) {
+      // Like a real request: the failure arrives after the screen has subscribed to the future.
+      await Future<void>.delayed(const Duration(milliseconds: 1));
       throw const BookingException(BookingFailure.locationRequired);
     }
     return HomeServiceQuote(

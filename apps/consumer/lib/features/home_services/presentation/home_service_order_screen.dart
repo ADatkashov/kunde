@@ -84,16 +84,22 @@ class _HomeServiceOrderScreenState extends State<HomeServiceOrderScreen> {
 
   void _requote() {
     final slot = _slot;
-    _quote = slot == null
-        ? null
-        : widget.api.quote(
-            widget.offer.id,
-            areaSqm: _perSqm ? _areaValue : null,
-            startsAtIso: slot.startsAtIso,
-            lat: _lat,
-            lng: _lng,
-            urgent: _urgent,
-          );
+    if (slot == null) {
+      _quote = null;
+      return;
+    }
+    final quote = widget.api.quote(
+      widget.offer.id,
+      areaSqm: _perSqm ? _areaValue : null,
+      startsAtIso: slot.startsAtIso,
+      lat: _lat,
+      lng: _lng,
+      urgent: _urgent,
+    );
+    // The price block below the fold is built lazily; a refused quote (e.g. no point for a zoned venue) must not surface
+    // as an unhandled error before anything listens. The FutureBuilder still receives the failure when it is built.
+    quote.ignore();
+    _quote = quote;
   }
 
   Future<void> _pickOnMap() async {
