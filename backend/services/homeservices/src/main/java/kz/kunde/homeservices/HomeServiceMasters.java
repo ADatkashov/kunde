@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Masters of the partner's cleaning venues: the partner creates a master, hands out a one-time invite code (the master links it in
  * Executor) and retires the master. A master is a Booking Engine resource ({@code booking_masters}); Home Services only adds this
  * onboarding. Writes need a catalog manager (same rule as offers and zones); every change is audited in
- * {@code partner_catalog_events}.
+ * the partner's catalogue audit trail (written through the Partner port).
  */
 @Service
 public class HomeServiceMasters {
@@ -137,8 +137,7 @@ public class HomeServiceMasters {
     }
 
     private void audit(UUID partnerId, UUID actor, UUID masterId, String field, String oldValue, String newValue) {
-        db.update("insert into marketplace.partner_catalog_events (partner_id, actor_user_id, entity_type, entity_id, field, old_value, new_value) "
-                + "values (?, ?, 'MASTER', ?, ?, ?, ?)", partnerId, actor, masterId, field, oldValue, newValue);
+        partners.recordCatalogChange(partnerId, actor, "MASTER", masterId, field, oldValue, newValue);
     }
 
     private void requireManager(UUID user, UUID partnerId) {
