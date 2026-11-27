@@ -1367,7 +1367,7 @@ paths:
   /flowers/orders/{orderId}:
     get:
       operationId: getFlowersOrder
-      description: One of the caller's orders with items and status events; another user's order is 404.
+      description: One of the caller's orders with items, status events, courierAssigned and etaMinutes (only while ON_THE_WAY; an estimate from the shop's stated delivery time, not GPS); another user's order is 404. Orders of demo shops advance on their own in DEV.
       parameters:
         - { name: orderId, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
@@ -1386,6 +1386,59 @@ paths:
           description: Cancelled order.
         '409':
           description: ORDER_NOT_CANCELLABLE.
+  /executor/flowers/tasks/open:
+    get:
+      operationId: listFlowersOpenTasks
+      description: Assembled flower orders waiting for a courier (shop and shop address only; the customer's address stays hidden until the task is accepted). Requires an approved online courier profile of the Delivery registry. Hidden while FLOWERS_ENABLED is off.
+      responses:
+        '200':
+          description: Tasks.
+        '403':
+          description: COURIER_NOT_APPROVED.
+        '404':
+          description: FLOWERS_DISABLED.
+  /executor/flowers/tasks/mine:
+    get:
+      operationId: listFlowersMyTasks
+      description: The courier's own flower tasks with the delivery address and recipient.
+      responses:
+        '200':
+          description: Tasks.
+        '403':
+          description: COURIER_NOT_APPROVED.
+  /executor/flowers/tasks/{taskId}/accept:
+    post:
+      operationId: acceptFlowersTask
+      description: Atomic claim - the first approved online courier wins; the winner's repeat request is a replay. At most three active tasks per courier.
+      parameters:
+        - { name: taskId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: The assigned task.
+        '409':
+          description: TASK_UNAVAILABLE or COURIER_BUSY.
+  /executor/flowers/tasks/{taskId}/pickup:
+    post:
+      operationId: pickUpFlowersTask
+      description: The courier collected the order at the shop; the order becomes ON_THE_WAY and the customer sees an estimate counted down from the shop's stated delivery time (no GPS).
+      parameters:
+        - { name: taskId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: The task.
+        '409':
+          description: TASK_STATE_INVALID.
+  /executor/flowers/tasks/{taskId}/deliver:
+    post:
+      operationId: deliverFlowersTask
+      description: The order was handed to the recipient; the order becomes DELIVERED.
+      parameters:
+        - { name: taskId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: The task.
+        '409':
+          description: TASK_STATE_INVALID.
   /beauty/salons:
     get:
       operationId: listBeautySalons

@@ -59,6 +59,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
   String? _failure;
   String? _locationFailure;
   bool _foodAvailable = false;
+  bool _flowersAvailable = false;
   bool _deliveryEnabled = false;
   bool _deliveryResume = false;
   bool _deliverySynthetic = false;
@@ -97,6 +98,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
       if (!mounted) return;
       setState(() {
         _foodAvailable = food;
+        _flowersAvailable = capabilities['flowersEnabled'] == true;
         _deliveryEnabled = enabled;
         _deliveryResume = shipments.any((row) =>
             row is Map<String, dynamic> && row['pickupAddress'] != null);
@@ -398,6 +400,19 @@ class _ExecutorScreenState extends State<ExecutorScreen>
               onPressed: () => Navigator.of(context).push<void>(
                   MaterialPageRoute(
                       builder: (_) => FoodWorkScreen(auth: widget.auth))),
+            ),
+          if (_flowersAvailable)
+            IconButton(
+              key: const Key('executor-flowers'),
+              icon: const Icon(Icons.local_florist_outlined),
+              tooltip: s.t('Заказы цветов', 'Гүл тапсырыстары', 'Flower orders'),
+              onPressed: () => Navigator.of(context).push<void>(
+                  MaterialPageRoute(
+                      builder: (_) => FoodWorkScreen(
+                          auth: widget.auth,
+                          basePath: 'executor/flowers',
+                          title: s.t('Заказы цветов', 'Гүл тапсырыстары',
+                              'Flower orders')))),
             ),
           if (_deliveryEnabled || _deliveryResume)
             IconButton(

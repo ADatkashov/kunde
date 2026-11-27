@@ -153,6 +153,33 @@ class _FlowersOrderScreenState extends State<FlowersOrderScreen> {
                     style: theme.textTheme.titleMedium
                         ?.copyWith(color: theme.colorScheme.error)),
               ),
+            if (o.status == 'ON_THE_WAY' ||
+                (o.status == 'ASSEMBLING' && o.courierAssigned))
+              Card(
+                key: const ValueKey('courier-card'),
+                color:
+                    theme.colorScheme.primaryContainer.withValues(alpha: .45),
+                elevation: 0,
+                child: ListTile(
+                  leading: Icon(Icons.delivery_dining_rounded,
+                      color: theme.colorScheme.primary),
+                  title: Text(
+                      s.t('Курьер KUNDE', 'KUNDE курьері', 'KUNDE courier'),
+                      style: const TextStyle(fontWeight: FontWeight.w800)),
+                  subtitle: Text(o.status == 'ON_THE_WAY'
+                      ? (o.etaMinutes == null
+                          ? s.t('Курьер в пути', 'Курьер жолда',
+                              'The courier is on the way')
+                          : s.t(
+                              'Прибудет через ~${o.etaMinutes} мин',
+                              '~${o.etaMinutes} мин ішінде жетеді',
+                              'Arriving in ~${o.etaMinutes} min'))
+                      : s.t(
+                          'Курьер едет в магазин',
+                          'Курьер дүкенге бара жатыр',
+                          'The courier is heading to the shop')),
+                ),
+              ),
             Text(o.shopName, style: theme.textTheme.titleLarge),
             const SizedBox(height: 12),
             _info(
