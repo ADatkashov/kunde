@@ -7,6 +7,7 @@ import 'package:geolocator/geolocator.dart';
 
 import 'package:kunde_ui/beauty_theme.dart';
 import '../beauty/presentation/beauty_executor_screen.dart';
+import '../home_services/home_services_work_screen.dart';
 import 'package:kunde_auth/auth_repository.dart';
 import 'package:kunde_maps/kunde_maps.dart';
 import 'package:kunde_ui/ride_strings.dart';
@@ -63,6 +64,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
   bool _deliverySynthetic = false;
   bool _autoEnabled = false;
   bool _beautyEnabled = false;
+  bool _homeServicesEnabled = false;
   bool _leisureAvailable = false;
   bool _gateAvailable = false;
   bool _educationEnabled = false;
@@ -154,6 +156,7 @@ class _ExecutorScreenState extends State<ExecutorScreen>
           _gateAvailable = capabilities['eventsEnabled'] == true;
           _educationEnabled = education;
           _beautyEnabled = capabilities['beautyEnabled'] == true;
+          _homeServicesEnabled = capabilities['homeServicesEnabled'] == true;
         });
       }
     } catch (_) {
@@ -440,6 +443,16 @@ class _ExecutorScreenState extends State<ExecutorScreen>
                   Navigator.of(context).push<void>(MaterialPageRoute(
                 builder: (_) => LeisureWorkScreen(auth: widget.auth),
               )),
+            ),
+          if (_homeServicesEnabled)
+            IconButton(
+              icon: const Icon(Icons.home_repair_service_outlined),
+              tooltip: s.t('Дом и быт', 'Үй және тұрмыс', 'Home services'),
+              onPressed: () => Navigator.of(context).push<void>(
+                MaterialPageRoute(
+                  builder: (_) => HomeServicesWorkScreen(auth: widget.auth),
+                ),
+              ),
             ),
           if (_beautyEnabled)
             IconButton(

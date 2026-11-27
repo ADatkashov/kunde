@@ -4,6 +4,7 @@ import 'package:kunde_ui/beauty_strings.dart';
 import '../../beauty/presentation/beauty_home_screen.dart';
 import '../booking_services.dart';
 import 'package:kunde_ui/booking_strings.dart';
+import '../../home_services/presentation/home_services_offers_screen.dart';
 import 'cleaning_flow_screen.dart';
 import 'services_home_screen.dart';
 import 'venue_list_screen.dart';
@@ -67,6 +68,31 @@ class CleaningEntry extends StatelessWidget {
   }
 }
 
+/// Home services → moderated offers of approved partners with an itemised price.
+class HomeServiceOffersEntry extends StatelessWidget {
+  const HomeServiceOffersEntry({required this.services, super.key});
+
+  final BookingServices services;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = bkL10n(context);
+    final ru = Localizations.localeOf(context).languageCode;
+    return ServiceEntryCard(
+      emoji: '🛠️',
+      tone: 'blue',
+      title: switch (ru) {
+        'kk' => 'Мамандар мен қызметтер',
+        'en' => 'Pros and services',
+        _ => 'Мастера и услуги',
+      },
+      subtitle: s.bkHomeSubtitle,
+      onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => HomeServicesOffersScreen(services: services))),
+    );
+  }
+}
+
 /// «Красота» category page. Only barbershops are live; the rest of the target structure is announced as text.
 class BeautyCategoryScreen extends StatelessWidget {
   const BeautyCategoryScreen({required this.services, super.key});
@@ -97,7 +123,10 @@ class HomeServicesCategoryScreen extends StatelessWidget {
     return _CategoryPage(
       title: s.bkHomeTitle,
       subtitle: s.bkHomeSubtitle,
-      entries: [CleaningEntry(services: services)],
+      entries: [
+        HomeServiceOffersEntry(services: services),
+        CleaningEntry(services: services),
+      ],
       soon: s.bkHomeSoon,
     );
   }

@@ -48,7 +48,7 @@ Home Services использует общий Booking Engine. Новый спр�
 
 Коды ошибок: `PARTNER_NOT_FOUND` (404), `PARTNER_ROLE_FORBIDDEN` (403), `VERSION_CONFLICT` и `INVALID_TRANSITION` (409), `OFFER_EXISTS` (409), `SERVICE_NOT_FOUND` и `OFFER_NOT_FOUND` (404), `DEFINITION_INACTIVE` (422), `REASON_REQUIRED` и `PRICING_MODEL_INVALID` (400).
 
-Ограничения: смена цены или доступности уже опубликованной услуги идёт через существующий Booking API партнёра и повторную модерацию не запускает; фотографии, районы обслуживания, мастера и коммерческая модель комиссии пока не входят. Экраны Consumer, Partner и Admin для предложений не реализованы (в среде работы не было Flutter SDK).
+Ограничения: смена цены или доступности уже опубликованной услуги идёт через существующий Booking API партнёра и повторную модерацию не запускает; фотографии, районы обслуживания, мастера и коммерческая модель комиссии пока не входят. Экраны (Flutter, локально проверены `flutter analyze --fatal-infos` и `flutter test`): Consumer — «Мастера и услуги» (каталог предложений, карточка, постатейная котировка с учётом срочности и площади; кнопка «Заказать» пока ведёт в существующий поток уборки); Partner — «Дом и быт: мои услуги» (список, подача и отзыв, только `OWNER`/`MANAGER`; иконка в шапке при `homeServicesEnabled`); Admin — очередь модерации (`HOME_SERVICES_CATALOG`). Partner также создаёт черновик предложения (площадка `CLEANING` → услуга → вид работ → модель цены → выезд, гарантия). Открыто: редактирование зон и тарифов в Partner, заказ по конкретному предложению, мастера и назначение.
 
 Проверка: `cd backend && ./gradlew :app:test --tests '*HomeServicesOffersApiIntegrationTest'` на PostgreSQL 16 (`DB_USERNAME=postgres`).
 
@@ -65,3 +65,17 @@ Home Services использует общий Booking Engine. Новый спр�
 | `PUT /api/v1/partner/partners/{partnerId}/home-services/offers/{offerId}/tariff` | `OWNER`/`MANAGER` | Тариф; `expectedVersion` 0 создаёт, иначе версия должна совпасть |
 
 Коды: `LOCATION_REQUIRED` и `OUT_OF_ZONE` (422), `LOCATION_INVALID` (400), `ZONE_NOT_FOUND`, `VENUE_NOT_FOUND`, `OFFER_NOT_FOUND` (404), `VERSION_CONFLICT` (409). Публичный каталог и котировка показывают только предложения партнёров со статусом `APPROVED` (`PartnerDirectory.approvedPartnerIds`); приостановка партнёра скрывает их сразу, восстановление возвращает. Открыто: мастера и графики используют существующие `booking_masters`/`booking_working_hours` без изменений; полигональные зоны и районы — позже.
+
+## Визит мастера (V71)
+
+Мастер (Executor) ведёт визит; клиент видит ход работ. Статусы брони остаются статусами Booking Engine (`CONFIRMED → IN_PROGRESS → COMPLETED`); «в пути» и «на месте» уточняют `CONFIRMED` и хранятся в `home_service_visits` (владелец — Home Services). Мастер — запись `booking_masters`, привязанная к аккаунту по одноразовому коду-приглашению; чужую бронь он видит как `404 JOB_NOT_FOUND`.
+
+| Метод и путь | Доступ | Назначение |
+| --- | --- | --- |
+| `POST /api/v1/executor/home-services/link` `{code}` | аккаунт | Привязка к мастеру по коду; `404 INVITE_INVALID` |
+| `GET /api/v1/executor/home-services/jobs` | привязанный мастер | Свои работы на 7 дней вперёд (`CONFIRMED`, `IN_PROGRESS`) со стадией и ETA |
+| `PUT …/jobs/{id}/stage` `{stage: EN_ROUTE\|ARRIVED, etaMinutes?}` | мастер брони | «В пути» (ETA можно обновлять), затем «на месте» |
+| `POST …/jobs/{id}/start`, `…/complete` | мастер брони | Начать только после «на месте»; завершить только начатую |
+| `GET /api/v1/home-services/bookings/{id}/visit` | клиент брони | Статус, стадия и ETA; чужая бронь — `404` |
+
+Нарушение порядка даёт `409 JOB_STATE_INVALID`; при выключенном флаге — `404 HOME_SERVICES_DISABLED`. Consumer показывает ход визита в карточке брони (`HomeServiceVisitCard`, обновление раз в 15 с), Executor — экран «Дом и быт: мои заказы» (привязка по коду, выезд с ETA, прибытие, старт, завершение). Если Executor передаёт позицию мастера, ETA считает сервер по дорожному маршруту KUNDE Maps (`RoutingProvider`: адрес брони геокодируется; синтетические маршруты, сбой и отсутствие провайдера не показываются как реальные), иначе остаётся ETA, введённый мастером. Роли используют уже разрешённое ребро `homeservices → booking`; baseline не расширялся. Проверка: `cd backend && ./gradlew :app:test --tests '*HomeServicesVisitApiIntegrationTest'` на PostgreSQL 16 (локально не запускалось: нет Docker; проверяет CI).

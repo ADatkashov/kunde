@@ -230,10 +230,12 @@ class BookingApi {
     int? expectedPriceMinor,
     String? paymentMethod,
     bool? acceptsTerms,
+    bool urgent = false,
   }) =>
       _guard(() async {
         final json =
             await auth.authorizedJson('POST', 'booking/bookings', body: {
+          if (urgent) 'urgent': true,
           'venueId': venueId,
           'serviceId': serviceId,
           'masterId': masterId,

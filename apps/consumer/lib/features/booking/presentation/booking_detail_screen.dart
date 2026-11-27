@@ -1,3 +1,4 @@
+import '../../home_services/presentation/home_service_visit_card.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -40,7 +41,14 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     _load();
     // A request waiting for the partner's answer is refreshed until it is decided.
     _poll = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (_booking?.status == 'PENDING') _load();
+      final b = _booking;
+      if (b == null) return;
+      // A home visit also moves on its own (started, finished by the master), so the screen follows it.
+      if (b.status == 'PENDING' ||
+          (b.isCleaning &&
+              (b.status == 'CONFIRMED' || b.status == 'IN_PROGRESS'))) {
+        _load();
+      }
     });
   }
 
@@ -205,6 +213,16 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                           ),
                         ),
                       _StatusBanner(booking: b),
+                      if (b.isCleaning &&
+                          (b.status == 'CONFIRMED' ||
+                              b.status == 'IN_PROGRESS'))
+                        HomeServiceVisitCard(
+                          key: ValueKey('visit-${b.id}-${b.status}'),
+                          load: () async => (await widget.services.auth
+                                  .authorizedJson('GET',
+                                      'home-services/bookings/${b.id}/visit'))
+                              as Map<String, dynamic>,
+                        ),
                       if (b.isHealth)
                         SelectableText(b.id, style: theme.textTheme.bodySmall),
                       const SizedBox(height: 12),
