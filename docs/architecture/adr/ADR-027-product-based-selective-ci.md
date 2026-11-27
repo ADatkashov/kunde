@@ -58,4 +58,3 @@ PR 1 — этот ADR, baseline, реестр. PR 2 — детектор и те
 ## Статус внедрения (2026-11-27)
 
 Подтверждено на реальном GitHub Actions: Backend selective и Executor Flutter selective (пилот [#295](https://github.com/ADatkashov/kunde/pull/295), замеры — [selective-ci-pilot-2026-11-27](../../engineering-foundation/selective-ci-pilot-2026-11-27.md)); FULL-пути Backend и всех Flutter-workflow ([#294](https://github.com/ADatkashov/kunde/pull/294)); Required CI Gate (PASS на FULL и SELECTIVE); сквозной `HomeServicesJourneyIntegrationTest` и `ProductProfileIsolationIntegrationTest` на PostgreSQL. Не подтверждено: skip-ветка Flutter, эффект кэша Gradle (холодный кэш), Full Regression/Nightly (ни разу не запускались), подключение Gate к branch protection (за владельцем), native multi-role E2E Home Services (в бэклоге Home Services MVP; Journey-тест его не заменяет). Статус ADR остаётся PROPOSED до решения владельца.
-
