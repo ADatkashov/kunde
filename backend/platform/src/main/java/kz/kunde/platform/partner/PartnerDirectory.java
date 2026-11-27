@@ -45,4 +45,11 @@ public interface PartnerDirectory {
 
     /** Same answer as {@link #isCatalogManager} with the shared row locks of {@link #lockActiveStaffOfApprovedPartner}. */
     boolean lockCatalogManager(UUID userId, UUID partnerId);
+
+    /**
+     * Writes one line of the partner's catalogue audit trail (who changed which entity of the partner's catalogue, from what to
+     * what). Partner owns the trail; products ask it to record instead of writing its table. Call inside the transaction of the change
+     * so the record commits or rolls back with it.
+     */
+    void recordCatalogChange(UUID partnerId, UUID actorUserId, String entityType, UUID entityId, String field, String oldValue, String newValue);
 }

@@ -29,6 +29,11 @@ class GraphError(Exception):
     pass
 
 
+def gradle_project(module):
+    """Gradle path of a backend module as settings.gradle.kts declares it (:platform, :app, :services:<name>)."""
+    return ":" + module if module in ("app", "platform") else ":services:" + module
+
+
 def load_registry():
     return json.loads(REGISTRY.read_text(encoding="utf-8"))
 
@@ -275,7 +280,7 @@ class Detector:
         run_backend = bool(aff_modules or migration or docker)
         return {
             "scope": scope, "full": False, "reasons": reasons,
-            "backend": {"modules": task_modules, "gradle_tasks": [":services:%s:test" % m for m in task_modules],
+            "backend": {"modules": task_modules, "gradle_tasks": [gradle_project(m) + ":test" for m in task_modules],
                         "app_tests": "all" if app_all else (app_packages or ("architecture-only" if run_backend else "none")),
                         "app_test_packages": [] if app_all else app_packages, "migration": migration, "docker": docker,
                         "run": run_backend},

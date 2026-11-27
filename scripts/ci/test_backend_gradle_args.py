@@ -43,6 +43,24 @@ class BackendGradleArgsTest(unittest.TestCase):
         self.assertEqual(args("backend/README.md"), ("skip", []))
         self.assertEqual(args("docs/a.md"), ("skip", []))
 
+    def test_platform_module_has_its_own_gradle_path(self):
+        # regression: ':services:platform:test' does not exist, the project is ':platform' (PR 296)
+        _, a = args("backend/platform/src/main/java/kz/kunde/platform/partner/PartnerDirectory.java")
+        self.assertIn(":platform:test", a)
+        self.assertNotIn(":services:platform:test", a)
+
+    def test_every_module_maps_to_a_project_declared_in_settings(self):
+        import pathlib
+        import re
+        settings = (pathlib.Path(__file__).resolve().parents[2] / "backend/settings.gradle.kts").read_text(encoding="utf-8")
+        declared = set(re.findall(r'"(:[a-z:]+)"', " ".join(re.findall(r"include\((.*?)\)", settings, re.S))))
+        for module in da.backend_graph():
+            self.assertIn(da.gradle_project(module), declared, module)
+        for path in ("backend/platform/src/A.java", "backend/services/identity/src/A.java", "backend/app/src/main/A.java"):
+            _, a = args(path)
+            for task in (t for t in a if t.endswith(":test") and t.startswith(":")):
+                self.assertIn(task[:-len(":test")], declared, task)
+
     def test_every_selective_module_task_exists_in_gradle(self):
         _, a = args("backend/services/booking/src/main/java/A.java")
         modules = da.backend_graph()

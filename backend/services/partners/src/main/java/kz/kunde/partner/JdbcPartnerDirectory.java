@@ -58,4 +58,12 @@ public class JdbcPartnerDirectory implements PartnerDirectory {
     public boolean lockCatalogManager(UUID userId, UUID partnerId) {
         return !db.queryForList(CATALOG_MANAGER + " for share of p, s", userId, partnerId).isEmpty();
     }
+
+    @Override
+    public void recordCatalogChange(UUID partnerId, UUID actorUserId, String entityType, UUID entityId, String field, String oldValue, String newValue) {
+        db.update("""
+                insert into marketplace.partner_catalog_events (partner_id, actor_user_id, entity_type, entity_id, field, old_value, new_value)
+                values (?, ?, ?, ?, ?, ?, ?)
+                """, partnerId, actorUserId, entityType, entityId, field, oldValue, newValue);
+    }
 }

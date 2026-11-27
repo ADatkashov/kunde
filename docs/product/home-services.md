@@ -79,3 +79,16 @@ Home Services использует общий Booking Engine. Новый спр�
 | `GET /api/v1/home-services/bookings/{id}/visit` | клиент брони | Статус, стадия и ETA; чужая бронь — `404` |
 
 Нарушение порядка даёт `409 JOB_STATE_INVALID`; при выключенном флаге — `404 HOME_SERVICES_DISABLED`. Consumer показывает ход визита в карточке брони (`HomeServiceVisitCard`, обновление раз в 15 с), Executor — экран «Дом и быт: мои заказы» (привязка по коду, выезд с ETA, прибытие, старт, завершение). Если Executor передаёт позицию мастера, ETA считает сервер по дорожному маршруту KUNDE Maps (`RoutingProvider`: адрес брони геокодируется; синтетические маршруты, сбой и отсутствие провайдера не показываются как реальные), иначе остаётся ETA, введённый мастером. Роли используют уже разрешённое ребро `homeservices → booking`; baseline не расширялся. Проверка: `cd backend && ./gradlew :app:test --tests '*HomeServicesVisitApiIntegrationTest'` на PostgreSQL 16 (локально не запускалось: нет Docker; проверяет CI).
+
+## Мастера партнёра и коды-приглашения (H1, 2026-11-27)
+
+Партнёр сам заводит мастеров своих площадок `CLEANING` и выдаёт им одноразовый код для Executor (раньше мастера появлялись только из демо-сидера: `createPost` в Booking работает только для AUTO). Мастер — ресурс Booking Engine (`booking_masters`): новый мастер получает все услуги площадки и график пн–сб 09:00–18:00, изменения пишутся в журнал каталога партнёра через порт `PartnerDirectory.recordCatalogChange`.
+
+| Метод и путь | Доступ | Назначение |
+| --- | --- | --- |
+| `GET /api/v1/partner/partners/{partnerId}/home-services/masters` | активный сотрудник одобренного партнёра | Активные мастера; код виден, пока мастер не привязал аккаунт |
+| `POST …/masters` `{venueId, name}` | `OWNER`/`MANAGER` | Создать мастера и код `HXXXX-XXXXX`; не более 50 активных на площадку (`409 TOO_MANY_MASTERS`) |
+| `POST …/masters/{masterId}/invite` | `OWNER`/`MANAGER` | Выдать новый код (старый перестаёт работать); `409 MASTER_LINKED`, если аккаунт уже привязан |
+| `POST …/masters/{masterId}/deactivate` | `OWNER`/`MANAGER` | Вывести мастера из работы; `409 MASTER_HAS_BOOKINGS`, пока есть открытые брони |
+
+Коды ошибок: `PARTNER_NOT_FOUND`, `VENUE_NOT_FOUND`, `MASTER_NOT_FOUND` (404), `PARTNER_ROLE_FORBIDDEN` (403), `NAME_INVALID` (400). Мастер привязывается кодом в Executor (`POST /executor/home-services/link`). Проверка: `cd backend && ./gradlew :app:test --tests 'kz.kunde.homeservices.HomeServicesMastersApiIntegrationTest'`. Экран Partner для этих методов — следующий шаг H1.
