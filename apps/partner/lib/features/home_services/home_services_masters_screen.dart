@@ -60,8 +60,8 @@ class _HomeServicesMastersScreenState extends State<HomeServicesMastersScreen> {
   Future<void> _create() async {
     final created = await showDialog<bool>(
         context: context,
-        builder: (_) => _NewMasterDialog(
-            ops: widget.ops!, api: widget.api, root: _root));
+        builder: (_) =>
+            _NewMasterDialog(ops: widget.ops!, api: widget.api, root: _root));
     if (created == true && mounted) await _reload();
   }
 
@@ -156,7 +156,8 @@ class _HomeServicesMastersScreenState extends State<HomeServicesMastersScreen> {
                           if (master['linked'] == true)
                             Text(
                                 key: ValueKey('linked-${master['id']}'),
-                                t('Вошёл в приложение мастера',
+                                t(
+                                    'Вошёл в приложение мастера',
                                     'Шебер қосымшасына кірді',
                                     'Signed in to the master app'))
                           else if (master['inviteCode'] != null)
@@ -173,8 +174,9 @@ class _HomeServicesMastersScreenState extends State<HomeServicesMastersScreen> {
                                 tooltip: t('Скопировать код', 'Кодты көшіру',
                                     'Copy code'),
                                 icon: const Icon(Icons.copy),
-                                onPressed: () => Clipboard.setData(ClipboardData(
-                                    text: '${master['inviteCode']}')),
+                                onPressed: () => Clipboard.setData(
+                                    ClipboardData(
+                                        text: '${master['inviteCode']}')),
                               ),
                             ]),
                           if (widget.canManage)
@@ -183,8 +185,8 @@ class _HomeServicesMastersScreenState extends State<HomeServicesMastersScreen> {
                                 TextButton(
                                   key: ValueKey('reissue-${master['id']}'),
                                   onPressed: () => _reissue(master),
-                                  child: Text(t('Новый код', 'Жаңа код',
-                                      'New code')),
+                                  child: Text(
+                                      t('Новый код', 'Жаңа код', 'New code')),
                                 ),
                               TextButton(
                                 key: ValueKey('deactivate-${master['id']}'),
@@ -260,7 +262,8 @@ class _NewMasterDialogState extends State<_NewMasterDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final t = _HomeServicesMastersScreenState._t(Localizations.localeOf(context));
+    final t =
+        _HomeServicesMastersScreenState._t(Localizations.localeOf(context));
     return AlertDialog(
       title: Text(t('Новый мастер', 'Жаңа шебер', 'New master')),
       content: FutureBuilder<List<Venue>>(
@@ -283,8 +286,8 @@ class _NewMasterDialogState extends State<_NewMasterDialog> {
             DropdownButtonFormField<Venue>(
               key: const ValueKey('master-venue'),
               initialValue: _venue,
-              decoration: InputDecoration(
-                  labelText: t('Площадка', 'Алаң', 'Venue')),
+              decoration:
+                  InputDecoration(labelText: t('Площадка', 'Алаң', 'Venue')),
               items: [
                 for (final v in venues)
                   DropdownMenuItem(value: v, child: Text(v.name)),

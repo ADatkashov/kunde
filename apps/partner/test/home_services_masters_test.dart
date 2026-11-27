@@ -69,8 +69,7 @@ void main() {
     expect(find.byKey(const ValueKey('deactivate-m2')), findsOneWidget);
   });
 
-  testWidgets('an operator reads the team but sees no actions',
-      (tester) async {
+  testWidgets('an operator reads the team but sees no actions', (tester) async {
     final api = _api(MockClient((r) async => _json(_masters)));
     await tester.pumpWidget(_app(api, canManage: false));
     await tester.pumpAndSettle();
@@ -98,9 +97,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('reissue-m1')));
     await tester.pumpAndSettle();
-    expect(posts, [
-      '/api/v1/partner/partners/p1/home-services/masters/m1/invite {}'
-    ]);
+    expect(posts,
+        ['/api/v1/partner/partners/p1/home-services/masters/m1/invite {}']);
     expect(find.text('HZZZZ-77777'), findsOneWidget);
   });
 
@@ -161,11 +159,17 @@ void main() {
       final path = r.url.path;
       if (r.method == 'POST') {
         posts.add('$path ${r.body}');
-        return _json({'id': 'm3', 'name': 'Айдос', 'inviteCode': 'HAAAA-22222'});
+        return _json(
+            {'id': 'm3', 'name': 'Айдос', 'inviteCode': 'HAAAA-22222'});
       }
       if (path.endsWith('/booking/venues')) {
         return _json([
-          {'id': 'v1', 'name': 'Clean Co', 'open': true, 'category': 'CLEANING'},
+          {
+            'id': 'v1',
+            'name': 'Clean Co',
+            'open': true,
+            'category': 'CLEANING'
+          },
           {'id': 'v2', 'name': 'Barber', 'open': true, 'category': 'BARBER'},
         ]);
       }
@@ -177,7 +181,9 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('create-master')));
     await tester.pumpAndSettle();
     expect(
-        tester.widget<TextButton>(find.byKey(const ValueKey('save-master'))).onPressed,
+        tester
+            .widget<TextButton>(find.byKey(const ValueKey('save-master')))
+            .onPressed,
         isNull);
 
     await tester.tap(find.byKey(const ValueKey('master-venue')));

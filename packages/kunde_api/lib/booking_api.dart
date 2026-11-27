@@ -18,6 +18,12 @@ enum BookingFailure {
   addressRequired,
   areaInvalid,
   priceChanged,
+
+  /// Home services: the venue serves chosen areas only, so the address must be picked on the map.
+  locationRequired,
+
+  /// Home services: the picked address is outside every service zone of the venue.
+  outOfZone,
   other
 }
 
@@ -44,6 +50,10 @@ class BookingException implements Exception {
           'Площадь вне допустимого диапазона для этой услуги.',
         BookingFailure.priceChanged =>
           'Цена изменилась. Проверьте сумму и подтвердите снова.',
+        BookingFailure.locationRequired =>
+          'Выберите адрес на карте: мастер работает по зонам обслуживания.',
+        BookingFailure.outOfZone =>
+          'Этот адрес вне зоны обслуживания мастера. Выберите другой адрес.',
         BookingFailure.other =>
           'Не удалось выполнить действие. Попробуйте позже.',
       };
@@ -96,6 +106,8 @@ class BookingApi {
         'ADDRESS_REQUIRED' => BookingFailure.addressRequired,
         'AREA_INVALID' || 'AREA_NOT_APPLICABLE' => BookingFailure.areaInvalid,
         'BOOKING_PRICE_CHANGED' => BookingFailure.priceChanged,
+        'LOCATION_REQUIRED' || 'LOCATION_INVALID' => BookingFailure.locationRequired,
+        'OUT_OF_ZONE' => BookingFailure.outOfZone,
         'BOOKING_NOT_FOUND' ||
         'VENUE_NOT_FOUND' ||
         'SERVICE_NOT_FOUND' ||
@@ -231,11 +243,19 @@ class BookingApi {
     String? paymentMethod,
     bool? acceptsTerms,
     bool urgent = false,
+
+    /// Both or none: the picked point of the address (home services in zoned venues need it).
+    double? latitude,
+    double? longitude,
   }) =>
       _guard(() async {
         final json =
             await auth.authorizedJson('POST', 'booking/bookings', body: {
           if (urgent) 'urgent': true,
+          if (latitude != null && longitude != null) ...{
+            'latitude': latitude,
+            'longitude': longitude,
+          },
           'venueId': venueId,
           'serviceId': serviceId,
           'masterId': masterId,

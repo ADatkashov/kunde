@@ -264,6 +264,14 @@ extension BookingStrings on KundeLocalizations {
             'Цена изменилась. Проверьте сумму и подтвердите снова.',
             'Баға өзгерді. Соманы тексеріп, қайта растаңыз.',
             'The price has changed. Check the amount and confirm again.'),
+        BookingFailure.locationRequired => _t(
+            'Выберите адрес на карте: мастер работает по зонам обслуживания.',
+            'Мекенжайды картадан таңдаңыз: шебер қызмет көрсету аймақтарында жұмыс істейді.',
+            'Pick the address on the map: the master works in service zones.'),
+        BookingFailure.outOfZone => _t(
+            'Этот адрес вне зоны обслуживания мастера. Выберите другой адрес.',
+            'Бұл мекенжай шебердің қызмет көрсету аймағынан тыс. Басқасын таңдаңыз.',
+            'This address is outside the master\'s service zone. Pick another.'),
         BookingFailure.other => _t(
             'Не удалось выполнить действие. Попробуйте позже.',
             'Әрекетті орындау мүмкін болмады. Кейінірек көріңіз.',
