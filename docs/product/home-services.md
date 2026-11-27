@@ -92,4 +92,3 @@ Home Services использует общий Booking Engine. Новый спр�
 | `POST …/masters/{masterId}/deactivate` | `OWNER`/`MANAGER` | Вывести мастера из работы; `409 MASTER_HAS_BOOKINGS`, пока есть открытые брони |
 
 Коды ошибок: `PARTNER_NOT_FOUND`, `VENUE_NOT_FOUND`, `MASTER_NOT_FOUND` (404), `PARTNER_ROLE_FORBIDDEN` (403), `NAME_INVALID` (400). Мастер привязывается кодом в Executor (`POST /executor/home-services/link`). Проверка: `cd backend && ./gradlew :app:test --tests 'kz.kunde.homeservices.HomeServicesMastersApiIntegrationTest'`. Экран Partner для этих методов — следующий шаг H1.
-
