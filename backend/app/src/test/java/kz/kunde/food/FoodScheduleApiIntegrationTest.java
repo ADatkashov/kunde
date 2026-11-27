@@ -29,7 +29,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Food restaurant location and weekly hours against PostgreSQL (Flyway V71): the schedule function at fixed instants
+ * Food restaurant location and weekly hours against PostgreSQL (Flyway V72): the schedule function at fixed instants
  * (open boundaries, overnight and 24:00 slots, no schedule = unrestricted), partner edit rules and isolation, effective
  * "closed outside hours" in the catalog and at checkout, straight-line distance, distance sort and filter, and the
  * idempotent synthetic location seed. Synthetic data only; rolls back.

@@ -76,7 +76,7 @@ Rules: the discount applies to the items subtotal only, is capped by the subtota
 
 Seed: `FOOD_SEED_DEMO=true` also inserts two synthetic promo codes (`WELCOME10`, `FIX500`). Tests: `FoodEngagementApiIntegrationTest`, `FoodPartnerAdminApiIntegrationTest` (PostgreSQL), Flutter `food_flow_test.dart`.
 
-## Food: location, opening hours and distance (Flyway V71, DEV/TEST) — 2026-11-26
+## Food: location, opening hours and distance (Flyway V72, DEV/TEST) — 2026-11-26
 
 First slice of the "Food Ordering 1.0" completion audit (closes two rows of the Food 2.0 matrix: *distance* and *opening hours*). Backend only; the Flutter clients are not changed in this slice.
 

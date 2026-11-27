@@ -76,8 +76,8 @@
 
 ## KUNDE Food Ordering 1.0 — slice 1: location, hours, distance (2026-11-26, ветка `ccr-d1e798b4-0h5jn4`)
 
-- Flyway V71: координаты ресторана, недельный график (Asia/Almaty, ночные слоты, `24:00`), функции `food_restaurant_open`/`food_distance_m`. Единое «открыто сейчас» (переключатель + модерация + график) во всех чтениях каталога и в checkout (`409 RESTAURANT_CLOSED` вне графика). `distanceMeters`, `sort=distance`, `maxDistanceMeters` (по прямой, без выдуманных значений); Partner `PUT …/hours`, `PUT …/location`, `GET …/schedule` (Owner/Manager, аудит); синтетические координаты DEV-сида.
-- Проверено локально: `./gradlew test` на PostgreSQL 16 — 530 тестов, 0 падений (новый `FoodScheduleApiIntegrationTest`, 5 тестов; fitness-функции и владение схемами зелёные). **Не проверено:** Flutter (в окружении нет SDK), DEV-деплой V71, смоук на DEV. UI этих полей не реализован. Детали и список оставшегося: [food-mvp](docs/product/food-mvp.md#food-location-opening-hours-and-distance-flyway-v71-devtest--2026-11-26).
+- Flyway V72 (был V71, переименована из-за коллизии с V71 home_service_visits): координаты ресторана, недельный график (Asia/Almaty, ночные слоты, `24:00`), функции `food_restaurant_open`/`food_distance_m`. Единое «открыто сейчас» (переключатель + модерация + график) во всех чтениях каталога и в checkout (`409 RESTAURANT_CLOSED` вне графика). `distanceMeters`, `sort=distance`, `maxDistanceMeters` (по прямой, без выдуманных значений); Partner `PUT …/hours`, `PUT …/location`, `GET …/schedule` (Owner/Manager, аудит); синтетические координаты DEV-сида.
+- Проверено локально: `./gradlew test` на PostgreSQL 16 — 530 тестов, 0 падений (новый `FoodScheduleApiIntegrationTest`, 5 тестов; fitness-функции и владение схемами зелёные). **Не проверено:** Flutter (в окружении нет SDK), DEV-деплой V72, смоук на DEV. UI этих полей не реализован. Детали и список оставшегося: [food-mvp](docs/product/food-mvp.md#food-location-opening-hours-and-distance-flyway-v72-devtest--2026-11-26).
 
 ## KUNDE Food Ordering 2.0 — DEV slice (2026-11-21, ветка `ccr-0b95f693-1hsj46`)
 
