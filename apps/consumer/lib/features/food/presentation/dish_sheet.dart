@@ -107,13 +107,16 @@ class _DishSheetState extends State<DishSheet> {
               controller: controller,
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
               children: [
-                Center(
-                    child: EmojiTile(
-                        emoji: dish.emoji,
-                        tone: dish.tone,
-                        size: 132,
-                        radius: 28,
-                        imageUrl: dish.imageUrl)),
+                if (widget.flowers)
+                  _FlowerHero(dish: dish)
+                else
+                  Center(
+                      child: EmojiTile(
+                          emoji: dish.emoji,
+                          tone: dish.tone,
+                          size: 132,
+                          radius: 28,
+                          imageUrl: dish.imageUrl)),
                 const SizedBox(height: 16),
                 Text(dish.name, style: theme.textTheme.headlineSmall),
                 if (dish.description.isNotEmpty) ...[
@@ -123,8 +126,17 @@ class _DishSheetState extends State<DishSheet> {
                           color: theme.colorScheme.onSurfaceVariant)),
                 ],
                 const SizedBox(height: 8),
-                Text(unitPriceLabel(dish.unit, dish.priceMinor),
-                    style: theme.textTheme.titleLarge),
+                if (widget.flowers)
+                  Row(children: [
+                    Expanded(
+                        child: Text(unitPriceLabel(dish.unit, dish.priceMinor),
+                            style: theme.textTheme.headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.w800))),
+                    _stepper(tx, theme, dish),
+                  ])
+                else
+                  Text(unitPriceLabel(dish.unit, dish.priceMinor),
+                      style: theme.textTheme.titleLarge),
                 if (lowStock)
                   Padding(
                     padding: const EdgeInsets.only(top: 6),
@@ -200,33 +212,20 @@ class _DishSheetState extends State<DishSheet> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
             child: Row(children: [
-              IconButton.outlined(
-                tooltip: tx('Меньше', 'Азайту', 'Decrease'),
-                onPressed: _quantity - _step >= _step
-                    ? () => setState(() => _quantity -= _step)
-                    : null,
-                icon: const Icon(Icons.remove_rounded),
-              ),
-              SizedBox(
-                  width: dish.weighed ? 76 : 44,
-                  child: Text(formatQuantity(dish.unit, _quantity),
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.titleMedium)),
-              IconButton.outlined(
-                tooltip: tx('Больше', 'Көбейту', 'Increase'),
-                onPressed: _quantity + _step <= _max
-                    ? () => setState(() => _quantity += _step)
-                    : null,
-                icon: const Icon(Icons.add_rounded),
-              ),
-              const SizedBox(width: 16),
+              if (!widget.flowers) _stepper(tx, theme, dish),
+              if (!widget.flowers) const SizedBox(width: 16),
               Expanded(
                 child: FilledButton(
+                  style: widget.flowers
+                      ? FilledButton.styleFrom(
+                          minimumSize: const Size.fromHeight(56),
+                          shape: const StadiumBorder())
+                      : null,
                   onPressed: _valid && widget.restaurantOpen && dish.available
                       ? _submit
                       : null,
                   child: Text(_valid
-                      ? '${tx('Добавить', 'Қосу', 'Add')} · ${formatTenge(lineTotalMinor(dish.unit, _unit, _quantity))}'
+                      ? '${widget.flowers ? tx('В корзину', 'Себетке', 'Add to cart') : tx('Добавить', 'Қосу', 'Add')} · ${formatTenge(lineTotalMinor(dish.unit, _unit, _quantity))}'
                       : _max < _step
                           ? tx('Нет в наличии', 'Қолжетімсіз', 'Unavailable')
                           : tx('Выберите опции', 'Нұсқаларды таңдаңыз',
@@ -238,6 +237,30 @@ class _DishSheetState extends State<DishSheet> {
         ),
       ]),
     );
+  }
+
+  Widget _stepper(
+      String Function(String, String, String) tx, ThemeData theme, Dish dish) {
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      IconButton.outlined(
+        tooltip: tx('Меньше', 'Азайту', 'Decrease'),
+        onPressed: _quantity - _step >= _step
+            ? () => setState(() => _quantity -= _step)
+            : null,
+        icon: const Icon(Icons.remove_rounded),
+      ),
+      SizedBox(
+          width: dish.weighed ? 76 : 44,
+          child: Text(formatQuantity(dish.unit, _quantity),
+              textAlign: TextAlign.center, style: theme.textTheme.titleMedium)),
+      IconButton.outlined(
+        tooltip: tx('Больше', 'Көбейту', 'Increase'),
+        onPressed: _quantity + _step <= _max
+            ? () => setState(() => _quantity += _step)
+            : null,
+        icon: const Icon(Icons.add_rounded),
+      ),
+    ]);
   }
 
   void _submit() {
@@ -328,4 +351,44 @@ class _DishSheetState extends State<DishSheet> {
             },
           ),
       ];
+}
+
+/// Wide product photo of the flowers and gifts card; falls back to a tonal gradient with the emoji.
+class _FlowerHero extends StatelessWidget {
+  const _FlowerHero({required this.dish});
+
+  final Dish dish;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = toneColors(dish.tone);
+    final fallback = Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.white.withValues(alpha: .85), colors.background],
+        ),
+      ),
+      alignment: Alignment.center,
+      child: Text(dish.emoji, style: const TextStyle(fontSize: 96)),
+    );
+    final url = dish.imageUrl;
+    return ExcludeSemantics(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: SizedBox(
+          height: 220,
+          width: double.infinity,
+          child: url != null && url.startsWith('https://')
+              ? Image.network(url,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => fallback,
+                  loadingBuilder: (context, child, progress) =>
+                      progress == null ? child : fallback)
+              : fallback,
+        ),
+      ),
+    );
+  }
 }

@@ -444,7 +444,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Маргарита'));
     await tester.pumpAndSettle();
-    await tester.tap(find.textContaining('Add ·'));
+    await tester.tap(find.textContaining('Add to cart ·'));
     await tester.pumpAndSettle();
     await tester.tap(find.textContaining('Cart · 1'));
     await tester.pumpAndSettle();
