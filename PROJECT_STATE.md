@@ -1,5 +1,11 @@
 # KUNDE project state
 
+## Home Services MVP (2026-11-27)
+
+- Аудит и бэклог пилота в Алматы: [home-services-mvp-audit](docs/product/home-services-mvp-audit.md). Готово и смержено: **H1** онбординг мастеров (backend `#296`: `/partner/partners/{id}/home-services/masters`, коды-приглашения, 5 тестов на PostgreSQL; экран Partner «Мастера и коды» `#297`) и **H2** адрес на карте в заказе Consumer (`#298`: координаты в котировку и заказ, отказы `LOCATION_REQUIRED`/`OUT_OF_ZONE`, golden экрана заказа обновлён).
+- **DEV и APK отстают от `main`**: на DEV задеплой `237fa44`, подписанные APK собраны на нём же; H1/H2 в них нет. Перед проверкой на телефоне нужны новый деплой DEV и пересборка четырёх APK.
+- Не сделано: H3 нативный multi-role E2E, H4 SMS-вход и H5 уведомления (решения владельца о провайдерах), H6 отзывы, H7 споры, H8 панель заказов в Admin, H9 оплата/возвраты, H10 отказ мастера и переназначение, H11 фото. На реальном устройстве Home Services не проверялся.
+
 ## Selective CI по продуктам (2026-11-27, ADR-027 PROPOSED)
 
 - **Пилот Home Services (#295) подтвердил selective-ветки Backend (41 тест вместо 465, `backend` 138 с против 207 с) и Executor Flutter (32 теста, 58 с против 70 с); Gate PASS.** Замеры и ограничения — [selective-ci-pilot-2026-11-27](docs/engineering-foundation/selective-ci-pilot-2026-11-27.md). Кэш Gradle на этих прогонах холодный (hit 0 %). Инструкция по подключению Gate к branch protection — [branch-protection-required-ci-gate](docs/engineering-foundation/branch-protection-required-ci-gate.md); Gate **не подключён** (действие владельца). Engineering Foundation 2.0 технически завершён, кроме пунктов «не подтверждено» в ADR-027; следующий фокус — Home Services MVP.
