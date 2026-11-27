@@ -405,7 +405,8 @@ class _ExecutorScreenState extends State<ExecutorScreen>
             IconButton(
               key: const Key('executor-flowers'),
               icon: const Icon(Icons.local_florist_outlined),
-              tooltip: s.t('Заказы цветов', 'Гүл тапсырыстары', 'Flower orders'),
+              tooltip:
+                  s.t('Заказы цветов', 'Гүл тапсырыстары', 'Flower orders'),
               onPressed: () => Navigator.of(context).push<void>(
                   MaterialPageRoute(
                       builder: (_) => FoodWorkScreen(

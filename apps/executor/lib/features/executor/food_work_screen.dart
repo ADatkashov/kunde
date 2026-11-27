@@ -299,8 +299,8 @@ class _FoodWorkScreenState extends State<FoodWorkScreen> {
             FilledButton(
               onPressed: _busy
                   ? null
-                  : () => _act(() =>
-                      _call('POST', '${widget.basePath}/tasks/${t['id']}/accept')),
+                  : () => _act(() => _call(
+                      'POST', '${widget.basePath}/tasks/${t['id']}/accept')),
               child: Text(s.t('Взять заказ', 'Тапсырысты алу', 'Accept order')),
             ),
           ]),

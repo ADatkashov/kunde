@@ -277,7 +277,8 @@ void main() {
     await tester.tap(find.text('Доставлено'));
     await tester.pumpAndSettle();
     expect(
-        backend.calls.where((c) => c.startsWith('POST executor/flowers/tasks/t1/')),
+        backend.calls
+            .where((c) => c.startsWith('POST executor/flowers/tasks/t1/')),
         [
           'POST executor/flowers/tasks/t1/accept',
           'POST executor/flowers/tasks/t1/pickup',
