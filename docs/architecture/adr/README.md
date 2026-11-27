@@ -17,3 +17,5 @@ Structure & build (2026-11-24): [ADR-023](ADR-023-build-system-and-module-struct
 Token session (2026-11-24): [ADR-024](ADR-024-shared-token-session-core.md) (ACCEPTED) — общее ядро токен-сессии `packages/kunde_session` и отдельные адаптеры Consumer/Operator (`AuthRepository`) и Partner (`PartnerSession`).
 
 Extraction (2026-11-24): [ADR-025](ADR-025-gradual-service-extraction.md) (PROPOSED) fixes the conditions, gates and order for extracting services from the modular monolith; until the owner accepts it, nothing is split.
+
+Flowers & Gifts (2026-11-27): [ADR-026](ADR-026-flowers-gifts-domain.md) (PROPOSED) — выделение цветов и подарков из вертикали Food в отдельный домен `flowers`; план из шести PR, код домена до принятия не пишется.
