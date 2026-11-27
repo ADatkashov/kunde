@@ -10,6 +10,7 @@
 | `HomeServicesOffersController` | `home-services/offers`, `home-services/offers/{id}/quote` | Consumer (публично) |
 | `HomeServicesPartnerOffersController` | `partner/partners/{partnerId}/home-services/offers` (+ `/{id}/transition`) | Partner |
 | `HomeServicesPartnerPricingController` | `partner/partners/{partnerId}/home-services/zones`, `offers/{id}/tariff` | Partner |
+| `HomeServicesPartnerMastersController` | `partner/partners/{partnerId}/home-services/masters` (+ `/{id}/invite`, `/{id}/deactivate`) | Partner: мастера и коды-приглашения для Executor |
 | `HomeServicesAdminOffersController` | `admin/home-services/offers` (+ `/{id}/decision`) | Admin (грант `HOME_SERVICES_CATALOG`) |
 | `HomeServicesVisitController` | `executor/home-services/{link,jobs,jobs/{id}/stage,start,complete}`, `home-services/bookings/{id}/visit` | Executor, Consumer (своя запись) |
 
