@@ -223,16 +223,15 @@ class HomeServicesMastersApiIntegrationTest {
         String id = JsonPath.read(json, "$.id");
         String code = JsonPath.read(json, "$.inviteCode");
 
-        // An open booking of this master blocks retirement.
-        String slots = null;
-        for (int offset = 1; offset < 7 && slots == null; offset++) {
+        // An open booking of this master blocks retirement. Slots of "any master" show one master per start time, so ask for this one.
+        String slotStart = null;
+        for (int offset = 1; offset < 7 && slotStart == null; offset++) {
             var date = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Almaty")).plusDays(offset);
-            String all = body(call("GET", "/api/v1/booking/slots?venueId=" + venueId() + "&serviceId=" + service + "&date=" + date, null, null));
-            java.util.List<Object> mine = JsonPath.read(all, "$[?(@.masterId=='" + id + "')]");
-            if (!mine.isEmpty()) { slots = all; }
+            String mine = body(call("GET", "/api/v1/booking/slots?venueId=" + venueId() + "&serviceId=" + service + "&masterId=" + id + "&date=" + date, null, null));
+            java.util.List<String> starts = JsonPath.read(mine, "$[*].startsAt");
+            if (!starts.isEmpty()) { slotStart = starts.getFirst(); }
         }
-        assertThat(slots).as("the new master has free slots").isNotNull();
-        String slotStart = ((java.util.List<String>) JsonPath.read(slots, "$[?(@.masterId=='" + id + "')].startsAt")).getFirst();
+        assertThat(slotStart).as("the new master has free slots").isNotNull();
         String booking = JsonPath.read(body(http.perform(post("/api/v1/booking/bookings").header("Authorization", "Bearer " + customer)
                 .header("Idempotency-Key", "masters-block-00000001").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"venueId\":\"" + venueId() + "\",\"serviceId\":\"" + service + "\",\"masterId\":\"" + id
