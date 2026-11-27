@@ -83,11 +83,20 @@ class _CartScreenState extends State<CartScreen> {
                 child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                     children: [
-                      OrderProgressHeader(
-                          checkout: false,
-                          flowers: restaurant.vertical == 'FLOWERS_GIFTS'),
-                      Text(restaurant.name, style: theme.textTheme.titleLarge),
-                      const SizedBox(height: 8),
+                      Card(
+                        margin: EdgeInsets.zero,
+                        child: ListTile(
+                          leading: CircleAvatar(
+                              backgroundColor:
+                                  theme.colorScheme.primaryContainer,
+                              child: Icon(Icons.storefront_rounded,
+                                  color: theme.colorScheme.primary)),
+                          title: Text(restaurant.name,
+                              style: theme.textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w800)),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
                       for (final line in _cart.lines)
                         _LineTile(line: line, cart: _cart),
                       const Divider(height: 32),
@@ -146,15 +155,28 @@ class _CartScreenState extends State<CartScreen> {
     }
     final quote = state.data!;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      _Row(_tx('Блюда', 'Тауарлар', 'Items'), formatTenge(quote.subtotalMinor)),
-      _Row(
-          _tx('Доставка', 'Жеткізу', 'Delivery'),
-          quote.deliveryFeeMinor == 0
-              ? _tx('Бесплатно', 'Тегін', 'Free')
-              : formatTenge(quote.deliveryFeeMinor)),
-      const SizedBox(height: 4),
-      _Row(_tx('Итого', 'Барлығы', 'Total'), formatTenge(quote.totalMinor),
-          bold: true),
+      Text(_tx('Доставка', 'Жеткізу', 'Delivery'),
+          style: theme.textTheme.titleLarge),
+      const SizedBox(height: 8),
+      Card(
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(children: [
+            _Row(_tx('Блюда', 'Тауарлар', 'Items'),
+                formatTenge(quote.subtotalMinor)),
+            _Row(
+                _tx('Доставка', 'Жеткізу', 'Delivery'),
+                quote.deliveryFeeMinor == 0
+                    ? _tx('Бесплатно', 'Тегін', 'Free')
+                    : formatTenge(quote.deliveryFeeMinor)),
+            const Divider(height: 24),
+            _Row(
+                _tx('Итого', 'Барлығы', 'Total'), formatTenge(quote.totalMinor),
+                bold: true),
+          ]),
+        ),
+      ),
       if (belowMin)
         Padding(
           padding: const EdgeInsets.only(top: 12),
@@ -208,54 +230,87 @@ class _LineTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-        child: Row(children: [
-          EmojiTile(emoji: line.emoji, tone: line.tone, size: 56, radius: 14),
+        padding: const EdgeInsets.all(12),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          EmojiTile(emoji: line.emoji, tone: line.tone, size: 72, radius: 16),
           const SizedBox(width: 12),
           Expanded(
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(line.name, style: theme.textTheme.titleMedium),
+              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Expanded(
+                    child: Text(line.name,
+                        style: theme.textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w800))),
+                SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    tooltip: 'Удалить ${line.name}',
+                    onPressed: () => cart.setQuantity(line, 0),
+                    icon: Icon(Icons.delete_outline_rounded,
+                        size: 22, color: colors.onSurfaceVariant),
+                  ),
+                ),
+              ]),
               if (line.optionsText.isNotEmpty)
                 Text(line.optionsText,
                     style: theme.textTheme.bodySmall
-                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-              const SizedBox(height: 2),
-              Text(
-                  line.weighed
-                      ? '${formatQuantity(line.unit, line.quantity)} · ${formatTenge(line.totalMinor)}'
-                      : formatTenge(line.totalMinor),
-                  style: theme.textTheme.titleSmall),
+                        ?.copyWith(color: colors.onSurfaceVariant)),
               if (line.substitution != 'NONE')
                 Text(
                     line.substitution == 'ANY_SIMILAR'
                         ? 'Замена: на похожий'
                         : 'Замена: на выбранные (${line.substituteDishIds.length})',
                     style: theme.textTheme.bodySmall
-                        ?.copyWith(color: theme.colorScheme.primary)),
+                        ?.copyWith(color: colors.primary)),
+              const SizedBox(height: 8),
+              Row(children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: colors.primaryContainer.withValues(alpha: .6),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      tooltip: 'Меньше',
+                      onPressed: () =>
+                          cart.setQuantity(line, line.quantity - line.step),
+                      icon: Icon(Icons.remove_rounded, color: colors.primary),
+                    ),
+                    if (!line.weighed)
+                      SizedBox(
+                          width: 24,
+                          child: Text('${line.quantity}',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w800))),
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      tooltip: 'Больше',
+                      onPressed: line.quantity + line.step <= line.maxQuantity
+                          ? () =>
+                              cart.setQuantity(line, line.quantity + line.step)
+                          : null,
+                      icon: Icon(Icons.add_rounded, color: colors.primary),
+                    ),
+                  ]),
+                ),
+                const Spacer(),
+                Text(
+                    line.weighed
+                        ? '${formatQuantity(line.unit, line.quantity)} · ${formatTenge(line.totalMinor)}'
+                        : formatTenge(line.totalMinor),
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w800)),
+              ]),
             ]),
-          ),
-          IconButton(
-            tooltip:
-                line.quantity <= line.step ? 'Удалить ${line.name}' : 'Меньше',
-            onPressed: () => cart.setQuantity(line, line.quantity - line.step),
-            icon: Icon(line.quantity <= line.step
-                ? Icons.delete_outline_rounded
-                : Icons.remove_circle_outline_rounded),
-          ),
-          if (!line.weighed)
-            SizedBox(
-                width: 24,
-                child: Text('${line.quantity}', textAlign: TextAlign.center)),
-          IconButton(
-            tooltip: 'Больше',
-            onPressed: line.quantity + line.step <= line.maxQuantity
-                ? () => cart.setQuantity(line, line.quantity + line.step)
-                : null,
-            icon: const Icon(Icons.add_circle_outline_rounded),
           ),
         ]),
       ),

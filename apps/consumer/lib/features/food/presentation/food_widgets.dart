@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kunde_design/kunde_design.dart';
 
 import 'package:kunde_models/food_models.dart';
 import '../food_services.dart';
@@ -132,6 +133,42 @@ class DemoBadge extends StatelessWidget {
       );
 }
 
+/// Compact violet pill used for delivery time and minimum order (reference: tonal capsules).
+class FoodPill extends StatelessWidget {
+  const FoodPill(this.text, {this.icon, super.key});
+
+  final String text;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: colors.primaryContainer.withValues(alpha: .6),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        if (icon != null) ...[
+          Icon(icon, size: 15, color: colors.primary),
+          const SizedBox(width: 4),
+        ],
+        Flexible(
+          child: Text(text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: colors.onPrimaryContainer)),
+        ),
+      ]),
+    );
+  }
+}
+
+/// Restaurant row: photo on the left, name, rating, cuisine and tonal capsules on the right.
 class RestaurantCard extends StatelessWidget {
   const RestaurantCard(
       {required this.restaurant,
@@ -150,15 +187,13 @@ class RestaurantCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final fee = restaurant.deliveryFeeMinor == 0
-        ? 'Доставка бесплатно'
-        : 'Доставка ${formatTenge(restaurant.deliveryFeeMinor)}';
+    final r = restaurant;
+    final muted = theme.colorScheme.onSurfaceVariant;
     return Semantics(
       button: true,
-      label:
-          '${restaurant.name}, ${restaurant.cuisine}, ${restaurant.open ? restaurant.eta : 'закрыто'}'
-          '${restaurant.ratingAvg == null ? '' : ', рейтинг ${restaurant.ratingAvg!.toStringAsFixed(1).replaceAll('.', ',')}, отзывов ${restaurant.ratingCount}'}'
-          '${restaurant.hasPromo ? ', есть акция' : ''}',
+      label: '${r.name}, ${r.cuisine}, ${r.open ? r.eta : 'закрыто'}'
+          '${r.ratingAvg == null ? '' : ', рейтинг ${r.ratingAvg!.toStringAsFixed(1).replaceAll('.', ',')}, отзывов ${r.ratingCount}'}'
+          '${r.hasPromo ? ', есть акция' : ''}',
       child: Card(
         clipBehavior: Clip.antiAlias,
         margin: EdgeInsets.zero,
@@ -171,129 +206,129 @@ class RestaurantCard extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: Opacity(
-            opacity: restaurant.open ? 1 : 0.55,
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Container(
-                height: 140,
-                width: double.infinity,
-                alignment: Alignment.center,
-                child: Stack(
-                    fit: StackFit.expand,
-                    alignment: Alignment.center,
-                    children: [
-                      MerchantArtwork(restaurant: restaurant, height: 140),
-                      if (!restaurant.open)
+            opacity: r.open ? 1 : 0.55,
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child:
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: SizedBox(
+                    width: 104,
+                    height: 112,
+                    child: Stack(fit: StackFit.expand, children: [
+                      MerchantArtwork(restaurant: r, height: 112),
+                      if (r.hasPromo)
                         Positioned(
-                          right: 12,
-                          top: 12,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                                color: Colors.black87,
-                                borderRadius: BorderRadius.circular(999)),
-                            child: const Text('Закрыто',
-                                style: TextStyle(
-                                    color: Colors.white, fontSize: 12)),
-                          ),
-                        ),
-                      if (restaurant.synthetic)
-                        const Positioned(left: 12, top: 12, child: DemoBadge()),
-                      if (restaurant.hasPromo)
-                        Positioned(
-                          left: 12,
-                          bottom: 10,
+                          left: 6,
+                          bottom: 6,
                           child: Container(
                             key: const Key('restaurant-promo-badge'),
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
+                                horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
                                 color: theme.colorScheme.primary,
                                 borderRadius: BorderRadius.circular(999)),
                             child: Text('Акция',
                                 style: TextStyle(
                                     color: theme.colorScheme.onPrimary,
-                                    fontSize: 12,
+                                    fontSize: 11,
                                     fontWeight: FontWeight.w700)),
                           ),
                         ),
-                      if (favorite != null)
-                        Positioned(
-                          right: 4,
-                          top: 4,
-                          child: IconButton.filledTonal(
-                            tooltip: favorite!
-                                ? 'Убрать из избранного'
-                                : 'В избранное',
-                            onPressed: onFavorite,
-                            icon: Icon(favorite!
-                                ? Icons.favorite
-                                : Icons.favorite_border),
+                    ]),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          Expanded(
+                            child: Text(r.name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.w800)),
                           ),
-                        ),
-                    ]),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(restaurant.name, style: theme.textTheme.titleLarge),
-                      const SizedBox(height: 2),
-                      Row(children: [
-                        if (restaurant.ratingAvg != null) ...[
-                          const Icon(Icons.star_rounded,
-                              size: 18, color: Color(0xFFF5A623)),
-                          const SizedBox(width: 2),
-                          Text(
-                              '${restaurant.ratingAvg!.toStringAsFixed(1).replaceAll('.', ',')} (${restaurant.ratingCount}) · ',
-                              key: const Key('restaurant-rating'),
-                              style: theme.textTheme.bodyMedium
-                                  ?.copyWith(fontWeight: FontWeight.w700)),
-                        ],
-                        Flexible(
-                          child: Text(restaurant.cuisine,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant)),
-                        ),
+                          if (favorite != null)
+                            SizedBox(
+                              width: 32,
+                              height: 32,
+                              child: IconButton(
+                                padding: EdgeInsets.zero,
+                                tooltip: favorite!
+                                    ? 'Убрать из избранного'
+                                    : 'В избранное',
+                                onPressed: onFavorite,
+                                icon: Icon(
+                                    favorite!
+                                        ? Icons.favorite
+                                        : Icons.favorite_border,
+                                    color: favorite!
+                                        ? theme.colorScheme.primary
+                                        : muted),
+                              ),
+                            ),
+                        ]),
+                        if (r.ratingAvg != null)
+                          Row(children: [
+                            const Icon(Icons.star_rounded,
+                                size: 18, color: Color(0xFFF5A623)),
+                            const SizedBox(width: 2),
+                            Text(
+                                r.ratingAvg!
+                                    .toStringAsFixed(1)
+                                    .replaceAll('.', ','),
+                                key: const Key('restaurant-rating'),
+                                style: theme.textTheme.bodyMedium
+                                    ?.copyWith(fontWeight: FontWeight.w800)),
+                            Text(' (${r.ratingCount})',
+                                style: theme.textTheme.bodyMedium
+                                    ?.copyWith(color: muted)),
+                          ]),
+                        const SizedBox(height: 2),
+                        Row(children: [
+                          Icon(Icons.restaurant_menu_rounded,
+                              size: 15, color: muted),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(r.cuisine,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodySmall
+                                    ?.copyWith(color: muted)),
+                          ),
+                          if (r.synthetic) ...[
+                            const SizedBox(width: 6),
+                            const DemoBadge(),
+                          ],
+                        ]),
+                        const SizedBox(height: 8),
+                        Wrap(spacing: 8, runSpacing: 6, children: [
+                          if (!r.open)
+                            const FoodPill('Закрыто')
+                          else
+                            FoodPill(r.eta),
+                          if (r.minOrderMinor > 0)
+                            FoodPill('от ${formatTenge(r.minOrderMinor)}'),
+                          if (r.deliveryFeeMinor == 0)
+                            const FoodPill('Доставка бесплатно')
+                          else
+                            FoodPill(
+                                'Доставка ${formatTenge(r.deliveryFeeMinor)}'),
+                          if (r.pickupEnabled && r.vertical == 'FOOD')
+                            const FoodPill('Самовывоз'),
+                        ]),
                       ]),
-                      const SizedBox(height: 8),
-                      Wrap(spacing: 14, runSpacing: 4, children: [
-                        _Meta(Icons.schedule_rounded, restaurant.eta),
-                        _Meta(Icons.delivery_dining_rounded, fee),
-                        if (restaurant.pickupEnabled &&
-                            restaurant.vertical == 'FOOD')
-                          const _Meta(Icons.storefront_outlined, 'Самовывоз'),
-                        if (restaurant.minOrderMinor > 0)
-                          _Meta(Icons.shopping_bag_outlined,
-                              'от ${formatTenge(restaurant.minOrderMinor)}'),
-                      ]),
-                    ]),
-              ),
-            ]),
+                ),
+              ]),
+            ),
           ),
         ),
       ),
     );
-  }
-}
-
-class _Meta extends StatelessWidget {
-  const _Meta(this.icon, this.text);
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.onSurfaceVariant;
-    return Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(icon, size: 16, color: color),
-      const SizedBox(width: 4),
-      Flexible(child: Text(text, style: TextStyle(fontSize: 13, color: color))),
-    ]);
   }
 }
 
@@ -510,4 +545,106 @@ class MerchantArtwork extends StatelessWidget {
           progress == null ? child : fallback,
     ));
   }
+}
+
+/// Violet screen header of the Food catalog: back, title, subtitle, cart and the bundled meal photo.
+class FoodHeroHeader extends StatelessWidget {
+  const FoodHeroHeader(
+      {required this.title, required this.subtitle, this.actions, super.key});
+
+  final String title;
+  final String subtitle;
+  final List<Widget>? actions;
+
+  @override
+  Widget build(BuildContext context) {
+    final canPop = Navigator.of(context).canPop();
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [KundePalette.deepViolet, KundePalette.violet],
+        ),
+      ),
+      child: Stack(children: [
+        Positioned(
+          right: 0,
+          top: 0,
+          bottom: 0,
+          width: 190,
+          child: ExcludeSemantics(
+            child: ShaderMask(
+              blendMode: BlendMode.dstIn,
+              shaderCallback: (rect) => const LinearGradient(
+                  colors: [Color(0x00FFFFFF), Color(0xFFFFFFFF)],
+                  stops: [0, .55]).createShader(rect),
+              child: Image.asset('assets/photos/food-banner.webp',
+                  fit: BoxFit.cover, alignment: Alignment.centerRight),
+            ),
+          ),
+        ),
+        SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(4, 4, 4, 24),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                if (canPop)
+                  IconButton(
+                    tooltip:
+                        MaterialLocalizations.of(context).backButtonTooltip,
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                        color: Colors.white, size: 20),
+                  )
+                else
+                  const SizedBox(height: 48),
+                const Spacer(),
+                ...?actions,
+              ]),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 150, 0),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title,
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineLarge
+                              ?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800)),
+                      const SizedBox(height: 4),
+                      Text(subtitle,
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 15)),
+                    ]),
+              ),
+            ]),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+/// White rounded sheet that overlaps the violet [FoodHeroHeader].
+class FoodSheet extends StatelessWidget {
+  const FoodSheet({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => ColoredBox(
+        color: KundePalette.violet,
+        child: Material(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+          clipBehavior: Clip.antiAlias,
+          child: child,
+        ),
+      );
 }

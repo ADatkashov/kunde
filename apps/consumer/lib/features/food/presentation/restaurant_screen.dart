@@ -144,32 +144,41 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                 child: CustomScrollView(slivers: [
                   SliverAppBar(
                     pinned: true,
-                    expandedHeight: 168,
+                    expandedHeight: 220,
                     title: Text(restaurant.name),
+                    leading: _circleButton(
+                      tooltip:
+                          MaterialLocalizations.of(context).backButtonTooltip,
+                      icon: Icons.arrow_back_ios_new_rounded,
+                      onPressed: () => Navigator.of(context).maybePop(),
+                    ),
                     actions: [
                       if (_favorite != null)
-                        IconButton(
+                        _circleButton(
                           key: const Key('restaurant-favorite'),
                           tooltip: _favorite!
                               ? 'Убрать из избранного'
                               : 'В избранное',
                           onPressed: _toggleFavorite,
-                          icon: Icon(_favorite!
+                          icon: _favorite!
                               ? Icons.favorite
-                              : Icons.favorite_border),
+                              : Icons.favorite_border,
                         ),
+                      const SizedBox(width: 8),
                     ],
                     flexibleSpace: FlexibleSpaceBar(
-                      background: Container(
-                        color: toneColors(restaurant.tone).background,
-                        alignment: Alignment.center,
-                        padding: const EdgeInsets.only(top: 40),
-                        child: EmojiTile(
-                            emoji: restaurant.emoji,
-                            tone: restaurant.tone,
-                            size: 112,
-                            radius: 28),
-                      ),
+                      background: restaurant.imageUrl != null
+                          ? MerchantArtwork(restaurant: restaurant, height: 260)
+                          : Container(
+                              color: toneColors(restaurant.tone).background,
+                              alignment: Alignment.center,
+                              padding: const EdgeInsets.only(top: 40),
+                              child: EmojiTile(
+                                  emoji: restaurant.emoji,
+                                  tone: restaurant.tone,
+                                  size: 112,
+                                  radius: 28),
+                            ),
                     ),
                   ),
                   SliverToBoxAdapter(child: _info(context, restaurant)),
@@ -239,49 +248,69 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
         ),
       );
 
+  Widget _circleButton(
+          {required IconData icon,
+          required String tooltip,
+          required VoidCallback onPressed,
+          Key? key}) =>
+      Padding(
+        padding: const EdgeInsets.all(6),
+        child: IconButton.filledTonal(
+          key: key,
+          tooltip: tooltip,
+          onPressed: onPressed,
+          style: IconButton.styleFrom(
+              backgroundColor:
+                  Theme.of(context).colorScheme.surface.withValues(alpha: .9)),
+          icon: Icon(icon, size: 20),
+        ),
+      );
+
   Widget _info(BuildContext context, Restaurant r) {
     final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(r.name,
+            style: theme.textTheme.headlineSmall
+                ?.copyWith(fontWeight: FontWeight.w800)),
+        const SizedBox(height: 4),
+        if (r.ratingAvg != null)
+          Row(children: [
+            const Icon(Icons.star_rounded, color: Color(0xFFF5A623)),
+            const SizedBox(width: 4),
+            Text(
+                '${r.ratingAvg!.toStringAsFixed(1).replaceAll('.', ',')} · ${r.ratingCount} отзывов',
+                key: const Key('restaurant-rating-line'),
+                style: theme.textTheme.titleSmall),
+          ]),
+        const SizedBox(height: 6),
         Row(children: [
-          Expanded(child: Text(r.cuisine, style: theme.textTheme.titleMedium)),
+          Icon(Icons.restaurant_menu_rounded, size: 18, color: muted),
+          const SizedBox(width: 6),
+          Expanded(
+              child: Text(r.cuisine,
+                  style: theme.textTheme.bodyMedium?.copyWith(color: muted))),
           if (r.synthetic) const DemoBadge(),
         ]),
-        const SizedBox(height: 6),
-        Text(r.description,
-            style: theme.textTheme.bodyMedium
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        if (r.description.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(r.description,
+              style: theme.textTheme.bodyMedium?.copyWith(color: muted)),
+        ],
         const SizedBox(height: 12),
-        if (r.ratingAvg != null)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(children: [
-              const Icon(Icons.star_rounded, color: Color(0xFFF5A623)),
-              const SizedBox(width: 4),
-              Text(
-                  '${r.ratingAvg!.toStringAsFixed(1).replaceAll('.', ',')} · ${r.ratingCount} отзывов',
-                  key: const Key('restaurant-rating-line'),
-                  style: theme.textTheme.titleSmall),
-            ]),
-          ),
         Wrap(spacing: 8, runSpacing: 8, children: [
-          Chip(
-              avatar: const Icon(Icons.schedule_rounded, size: 18),
-              label: Text(r.eta)),
-          if (r.pickupEnabled && r.vertical == 'FOOD')
-            const Chip(
-                avatar: Icon(Icons.storefront_outlined, size: 18),
-                label: Text('Самовывоз')),
-          Chip(
-              avatar: const Icon(Icons.delivery_dining_rounded, size: 18),
-              label: Text(r.deliveryFeeMinor == 0
-                  ? _tx('Доставка бесплатно', 'Жеткізу тегін', 'Free delivery')
-                  : 'Доставка ${formatTenge(r.deliveryFeeMinor)}')),
+          FoodPill(r.eta, icon: Icons.schedule_rounded),
           if (r.minOrderMinor > 0)
-            Chip(
-                avatar: const Icon(Icons.shopping_basket_outlined, size: 18),
-                label: Text('Минимум ${formatTenge(r.minOrderMinor)}')),
+            FoodPill('от ${formatTenge(r.minOrderMinor)}'),
+          if (r.pickupEnabled && r.vertical == 'FOOD')
+            const FoodPill('Самовывоз', icon: Icons.storefront_outlined),
+          FoodPill(
+              r.deliveryFeeMinor == 0
+                  ? _tx('Доставка бесплатно', 'Жеткізу тегін', 'Free delivery')
+                  : 'Доставка ${formatTenge(r.deliveryFeeMinor)}',
+              icon: Icons.delivery_dining_rounded),
         ]),
         if (!r.open)
           Padding(
@@ -324,28 +353,54 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
               );
             },
           ),
-          SizedBox(
-            width: double.infinity,
-            child: SegmentedButton<int>(
-              key: const Key('restaurant-tabs'),
-              showSelectedIcon: false,
-              segments: const [
-                ButtonSegment(value: 0, label: Text('Меню')),
-                ButtonSegment(value: 1, label: Text('Отзывы')),
-                ButtonSegment(value: 2, label: Text('О заведении')),
-              ],
-              selected: {_tab},
-              onSelectionChanged: (v) => setState(() {
-                _tab = v.first;
-                if (_tab == 1) {
-                  _reviews ??=
-                      widget.services.api.reviews(widget.restaurant.id);
-                }
-              }),
-            ),
-          ),
+          Row(key: const Key('restaurant-tabs'), children: [
+            for (final entry in [
+              (0, 'Меню'),
+              (
+                1,
+                widget.restaurant.ratingCount > 0
+                    ? 'Отзывы (${widget.restaurant.ratingCount})'
+                    : 'Отзывы'
+              ),
+              (2, 'О заведении'),
+            ])
+              Expanded(child: _tabButton(entry.$1, entry.$2)),
+          ]),
+          const Divider(height: 1),
         ]),
       );
+
+  Widget _tabButton(int value, String label) {
+    final colors = Theme.of(context).colorScheme;
+    final selected = _tab == value;
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: InkWell(
+        onTap: () => setState(() {
+          _tab = value;
+          if (_tab == 1) {
+            _reviews ??= widget.services.api.reviews(widget.restaurant.id);
+          }
+        }),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            border: Border(
+                bottom: BorderSide(
+                    width: 3,
+                    color: selected ? colors.primary : Colors.transparent)),
+          ),
+          child: Text(label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                  color: selected ? colors.primary : colors.onSurfaceVariant)),
+        ),
+      ),
+    );
+  }
 
   Widget _reviewsPanel(Restaurant r) => FutureBuilder<FoodReviewSummary>(
         future: _reviews,
@@ -491,10 +546,12 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
           separatorBuilder: (_, __) => const SizedBox(width: 8),
           itemBuilder: (context, i) => i == 0
               ? FilterChip(
+                  shape: const StadiumBorder(),
                   label: Text(_tx('В наличии', 'Қолда бар', 'In stock')),
                   selected: _inStockOnly,
                   onSelected: (v) => setState(() => _inStockOnly = v))
               : ActionChip(
+                  shape: const StadiumBorder(),
                   label: Text(sections[i - 1].name),
                   onPressed: () => _scrollTo(sections[i - 1].id)),
         ),
@@ -534,12 +591,22 @@ class _DishTile extends StatelessWidget {
           opacity: dish.available ? 1 : 0.5,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+              EmojiTile(
+                  emoji: dish.emoji,
+                  tone: dish.tone,
+                  size: 84,
+                  radius: 18,
+                  imageUrl: dish.imageUrl),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(dish.name, style: theme.textTheme.titleMedium),
+                      Text(dish.name,
+                          style: theme.textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w800)),
                       if (dish.description.isNotEmpty) ...[
                         const SizedBox(height: 2),
                         Text(dish.description,
@@ -554,32 +621,20 @@ class _DishTile extends StatelessWidget {
                               ? unitPriceLabel(dish.unit, dish.priceMinor)
                               : unavailable,
                           style: theme.textTheme.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.w700)),
+                              ?.copyWith(fontWeight: FontWeight.w800)),
                     ]),
               ),
-              const SizedBox(width: 12),
-              Stack(clipBehavior: Clip.none, children: [
-                EmojiTile(
-                    emoji: dish.emoji,
-                    tone: dish.tone,
-                    size: 84,
-                    radius: 18,
-                    imageUrl: dish.imageUrl),
-                if (canOrder)
-                  Positioned(
-                    right: -4,
-                    bottom: -4,
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                          color: theme.colorScheme.primary,
-                          shape: BoxShape.circle),
-                      child: Icon(Icons.add_rounded,
-                          color: theme.colorScheme.onPrimary, size: 20),
-                    ),
-                  ),
-              ]),
+              if (canOrder) ...[
+                const SizedBox(width: 12),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                      color: theme.colorScheme.primary, shape: BoxShape.circle),
+                  child: Icon(Icons.add_rounded,
+                      color: theme.colorScheme.onPrimary, size: 22),
+                ),
+              ],
             ]),
           ),
         ),

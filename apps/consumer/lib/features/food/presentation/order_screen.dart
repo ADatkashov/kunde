@@ -262,6 +262,8 @@ class _OrderScreenState extends State<OrderScreen> {
                   'Offline: showing the most recent data.'),
               style: TextStyle(color: theme.colorScheme.error)),
         ),
+      if (order.vertical != 'FLOWERS_GIFTS' && order.status != 'CANCELLED')
+        _TrackerBar(order: order),
       Card(
         margin: EdgeInsets.zero,
         child: Padding(
@@ -415,6 +417,90 @@ class _OrderScreenState extends State<OrderScreen> {
         Expanded(child: Text(label, style: style)),
         Text(value, style: style)
       ]),
+    );
+  }
+}
+
+/// Four-stage progress bar (accepted, preparing, on the way / ready, delivered) derived from the real order status.
+class _TrackerBar extends StatelessWidget {
+  const _TrackerBar({required this.order});
+
+  final FoodOrder order;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final pickup = order.pickup;
+    final labels = [
+      'Принят',
+      'Готовится',
+      pickup ? 'Готов' : 'В пути',
+      pickup ? 'Выдан' : 'Доставлен',
+    ];
+    final current = switch (order.status) {
+      'PLACED' || 'ACCEPTED' => 0,
+      'PREPARING' => 1,
+      'READY_FOR_PICKUP' => pickup ? 2 : 1,
+      'ON_THE_WAY' => 2,
+      _ => 3,
+    };
+    final finished = order.status == 'DELIVERED';
+    return Semantics(
+      container: true,
+      label: 'Этап заказа: ${labels[current]}',
+      child: ExcludeSemantics(
+        child: Container(
+          key: const Key('order-tracker'),
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.fromLTRB(8, 16, 8, 12),
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: colors.outlineVariant),
+          ),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            for (var i = 0; i < labels.length; i++) ...[
+              Expanded(
+                child: Column(children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: i <= current ? colors.primary : colors.surface,
+                      border: Border.all(
+                          color: i <= current
+                              ? colors.primary
+                              : colors.outlineVariant,
+                          width: 2),
+                    ),
+                    child: Icon(
+                        i < current || (i == current && finished)
+                            ? Icons.check_rounded
+                            : (i == current
+                                ? Icons.arrow_forward_rounded
+                                : Icons.circle),
+                        size: i > current ? 6 : 18,
+                        color: i <= current
+                            ? colors.onPrimary
+                            : colors.outlineVariant),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(labels[i],
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight:
+                              i == current ? FontWeight.w800 : FontWeight.w500,
+                          color: i <= current
+                              ? colors.onSurface
+                              : colors.onSurfaceVariant)),
+                ]),
+              ),
+            ],
+          ]),
+        ),
+      ),
     );
   }
 }
