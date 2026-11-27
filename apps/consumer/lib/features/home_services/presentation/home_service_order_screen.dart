@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import 'package:kunde_api/booking_api.dart';
 import 'package:kunde_api/home_services_api.dart';
+import 'package:kunde_maps/kunde_maps.dart';
+import 'package:kunde_maps_sdk/kunde_maps_sdk.dart' show GeoPoint;
 import 'package:kunde_models/booking_models.dart';
 import 'package:kunde_ui/ride_strings.dart';
 
@@ -21,6 +23,7 @@ class HomeServiceOrderScreen extends StatefulWidget {
     required this.api,
     this.initialAreaSqm,
     this.initialUrgent = false,
+    this.maps,
     super.key,
   });
 
@@ -31,6 +34,9 @@ class HomeServiceOrderScreen extends StatefulWidget {
   final HomeServiceOffer offer;
   final BookingServices services;
   final HomeServicesCatalog api;
+
+  /// The map for picking the address; tests inject one. Without it a map is opened on demand (and closed after the pick).
+  final KundeMaps? maps;
 
   @override
   State<HomeServiceOrderScreen> createState() => _HomeServiceOrderScreenState();
@@ -52,6 +58,11 @@ class _HomeServiceOrderScreenState extends State<HomeServiceOrderScreen> {
   bool _busy = false;
   String? _error;
   Future<HomeServiceQuote>? _quote;
+
+  /// The point of the address picked on the map; cleared as soon as the text is edited by hand (it would no longer match).
+  double? _lat;
+  double? _lng;
+  String? _pickedText;
 
   static String _newKey() {
     final r = Random.secure();
@@ -79,8 +90,38 @@ class _HomeServiceOrderScreenState extends State<HomeServiceOrderScreen> {
             widget.offer.id,
             areaSqm: _perSqm ? _areaValue : null,
             startsAtIso: slot.startsAtIso,
+            lat: _lat,
+            lng: _lng,
             urgent: _urgent,
           );
+  }
+
+  Future<void> _pickOnMap() async {
+    final s = RideStrings(context);
+    final owned = widget.maps == null;
+    final maps = widget.maps ?? KundeMaps.forContext(context);
+    try {
+      final picked = await maps.pick(
+        context,
+        title: s.t('Адрес на карте', 'Картадағы мекенжай', 'Address on the map'),
+        initial: _lat == null || _lng == null ? null : GeoPoint(_lat!, _lng!),
+      );
+      if (!mounted || picked == null) return;
+      final name = picked.label(maps.config.language)?.trim();
+      final text = name != null && name.isNotEmpty
+          ? name
+          : '${picked.point.lat.toStringAsFixed(5)}, ${picked.point.lon.toStringAsFixed(5)}';
+      setState(() {
+        _address.text = text;
+        _pickedText = text;
+        _lat = picked.point.lat;
+        _lng = picked.point.lon;
+        _error = null;
+        _requote();
+      });
+    } finally {
+      if (owned) maps.close();
+    }
   }
 
   @override
@@ -113,6 +154,8 @@ class _HomeServiceOrderScreenState extends State<HomeServiceOrderScreen> {
         idempotencyKey: _key,
         expectedPriceMinor: quote.totalMinor,
         urgent: _urgent,
+        latitude: _lat,
+        longitude: _lng,
       );
       if (!mounted) return;
       nav.popUntil((route) => route.isFirst);
@@ -140,6 +183,16 @@ class _HomeServiceOrderScreenState extends State<HomeServiceOrderScreen> {
               'Это время только что заняли. Выберите другое.',
               'Бұл уақытты жаңа ғана алды. Басқасын таңдаңыз.',
               'That time was just taken. Pick another.',
+            ),
+          BookingFailure.locationRequired => s.t(
+              'Выберите адрес на карте: мастер работает по зонам обслуживания.',
+              'Мекенжайды картадан таңдаңыз: шебер қызмет көрсету аймақтарында жұмыс істейді.',
+              'Pick the address on the map: the master works in service zones.',
+            ),
+          BookingFailure.outOfZone => s.t(
+              'Этот адрес вне зоны обслуживания мастера. Выберите другой адрес.',
+              'Бұл мекенжай шебердің қызмет көрсету аймағынан тыс. Басқасын таңдаңыз.',
+              'This address is outside the master\'s service zone. Pick another.',
             ),
           _ => s.error,
         };
@@ -193,7 +246,24 @@ class _HomeServiceOrderScreenState extends State<HomeServiceOrderScreen> {
           if (state.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (state.hasError) return Text(s.error);
+          if (state.hasError) {
+            final error = state.error;
+            return Text(
+              switch (error is BookingException ? error.failure : null) {
+                BookingFailure.locationRequired => s.t(
+                    'Выберите адрес на карте, чтобы увидеть цену',
+                    'Бағаны көру үшін мекенжайды картадан таңдаңыз',
+                    'Pick the address on the map to see the price',
+                  ),
+                BookingFailure.outOfZone => s.t(
+                    'Этот адрес вне зоны обслуживания мастера',
+                    'Бұл мекенжай шебердің қызмет көрсету аймағынан тыс',
+                    'This address is outside the master\'s service zone',
+                  ),
+                _ => s.error,
+              },
+            );
+          }
           final q = state.data!;
           Widget row(String label, int minor) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 2),
@@ -416,7 +486,33 @@ class _HomeServiceOrderScreenState extends State<HomeServiceOrderScreen> {
                           )
                         : null,
                   ),
-                  onChanged: (_) => setState(() {}),
+                  onChanged: (_) => setState(() {
+                    if (_address.text != _pickedText) {
+                      _lat = null;
+                      _lng = null;
+                    }
+                  }),
+                ),
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  key: const ValueKey('pick-on-map'),
+                  onPressed: _pickOnMap,
+                  icon: const Icon(Icons.map_outlined),
+                  label: Text(
+                    _lat == null
+                        ? s.t(
+                            'Выбрать на карте',
+                            'Картадан таңдау',
+                            'Pick on the map',
+                          )
+                        : s.t(
+                            'Адрес выбран на карте',
+                            'Мекенжай картадан таңдалды',
+                            'Address picked on the map',
+                          ),
+                  ),
                 ),
               ),
               if (_perSqm) ...[
