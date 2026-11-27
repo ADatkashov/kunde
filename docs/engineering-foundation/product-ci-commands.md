@@ -41,3 +41,20 @@ Product E2E собирает изолированный стек из `ref` (л�
 - **DEV-ready**: required CI зелёный, merge в `main`, подписанный DEV APK и DEV backend собраны. E2E не требуется.
 - **E2E-verified**: Product E2E (или E2E suite) этого SHA прошёл; без запуска статус всегда «E2E NOT RUN».
 - **PROD-ready**: E2E-verified + Full Regression на SHA + решение владельца. Full Regression и ночной прогон **ещё не реализованы** (следующий PR).
+
+## Профили продуктов DEV/TEST (PR 6)
+
+`python3 scripts/dev/product_profile.py dev-home-services` печатает переменные окружения с **существующими** именами флагов (`HOME_SERVICES_ENABLED`, `BOOKING_ENABLED`, `FOOD_ENABLED`, …); все остальные флаги и demo-сидеры явно `false`, поэтому другие продукты не запускают планировщики (`DeliveryMaintenance` — `@ConditionalOnProperty app.delivery.enabled`), не создают демо-данные и не вызывают интеграции. Идентификация/вход остаются включёнными, Flyway не затрагивается. Профили: `dev-<продукт>` для каждого продукта реестра и `dev-all`; `--yaml` — блок `env:` для GitHub Actions. Профиль **никогда** не применяется к PROD (флаги PROD принадлежат владельцу). Проверки: `test_product_profile.py` (каждое имя флага есть в `application.yml`) и `ProductProfileIsolationIntegrationTest` (при выключенных продуктах нет Delivery-планировщика, демо-сидеров и `outboxRelayJob`, а `/capabilities` показывает только Home Services и Booking).
+Применение к DEV-сервису — переменными окружения на Render/compose (по действующим правилам AGENTS.md); `scripts/dev/*_smoke.py` проверяют результат.
+
+## Full Regression и Nightly (PR 6)
+
+`full-regression.yml`: ночью (02:17 Asia/Almaty), вручную и как `workflow_call` перед PROD. Состав: Backend CI (FULL), четыре Flutter-приложения (FULL), все существующие native E2E (`product-e2e.yml` product=all suite=full). Отчёт требует успеха **каждой** части (skipped не засчитывается); продукты без native E2E перечислены как «не верифицированы E2E». Не блокирует merge и DEV APK. PROD-пайплайна в репозитории нет: требование «релиз ссылается на успешный Full Regression этого SHA» зафиксировано здесь и в ADR-027, автоматически не исполняется.
+
+## DEV Release по затронутым приложениям (PR 6)
+
+`release_targets.py` теперь берёт зависимости общих пакетов из `pubspec.yaml` (например, `kunde_maps` → Consumer и Executor, а не все четыре); `kunde_operator` → Consumer, Executor, Admin (Consumer зависит от него по pubspec — прежнее правило этого не учитывало). Неизвестный пакет или нечитаемый граф → все четыре. Ручная сборка всех четырёх: `gh workflow run release-apk-on-merge.yml --ref main` (по умолчанию все `true`). Сборка APK не ждёт E2E.
+
+## Кэш сборки backend (PR 6)
+
+`setup-gradle` (уже закреплён в репозитории) вместо `cache: gradle`; `org.gradle.caching=true`; тесты **не кэшируются** (зависят от PostgreSQL и времени). На PR кэш только читается, пишется с `main`. Gradle configuration cache и параллельный запуск модулей не включены: тесты `:app` делят одну БД, эффект не измерен. Flutter: `flutter-action cache: true` (SDK + pub cache) уже был. Эффект измеряется по длительности `backend` на `main` до/после (см. отчёт).

@@ -36,6 +36,8 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
+    // Tests talk to PostgreSQL and the clock, which Gradle does not track as inputs: a cached "PASS" would be a lie. Never cache them.
+    outputs.cacheIf("tests depend on external state (PostgreSQL, time)") { false }
     // `./gradlew test --tests X` is run across all modules; a module without a match must not fail the build.
     filter {
         isFailOnNoMatchingTests = false

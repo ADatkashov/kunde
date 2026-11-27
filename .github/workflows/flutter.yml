@@ -6,11 +6,17 @@ on:
   pull_request:
     paths: ['apps/consumer/**', 'packages/**', '.github/workflows/flutter.yml']
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        default: ''
 permissions:
   contents: read
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Literal group: when called from Full Regression the four Flutter workflows share the caller's github.workflow and must not cancel each other.
+  group: flutter-ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
 jobs:
   flutter:
     runs-on: ubuntu-24.04
@@ -19,6 +25,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
+          ref: ${{ inputs.ref || github.sha }}
           fetch-depth: 0  # detect_affected.py diffs base...head (ADR-027)
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
         with:
