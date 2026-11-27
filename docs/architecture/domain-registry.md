@@ -19,7 +19,7 @@
 | auto | Авто | `auto` → `services/auto` ✔ | `auto`, `admin/auto` | `auto`, `auto_admin`, `executor/auto_work` | `auto_*`, `customer_vehicles` | booking |
 | leisure | Досуг | `leisure` → `services/leisure` ✔ | `leisure`, `executor/leisure`, `partner/…/leisure`, `admin/leisure` | `leisure`, `leisure_admin`, `executor/gate_scan` | `leisure_*` | partners, auth |
 | events | Мероприятия | `events` → `services/events` ✔ | `events`, `search` | — (UI в `leisure`) | (`leisure_*`) | leisure |
-| flowers | Цветы и подарки | `flowers` → `services/flowers` ✔ (шаг 1 [ADR-026](adr/ADR-026-flowers-gifts-domain.md): модуль и флаг `FLOWERS_ENABLED`, без поведения; пока цветы работают как вертикаль `FLOWERS_GIFTS` в `food`) | (будущие `flowers/**`) | (будущие `flowers/**` в Consumer, Partner, Executor, Admin) | (будущий префикс `flowers_`) | partners |
+| flowers | Цветы и подарки | `flowers` → `services/flowers` ✔ (шаги 1–2 [ADR-026](adr/ADR-026-flowers-gifts-domain.md): модуль, флаг `FLOWERS_ENABLED`, каталог; заказ пока идёт через вертикаль `FLOWERS_GIFTS` в `food`) | `flowers/{categories,shops,shops/{id},products/popular}` | `flowers` (Consumer) | `flowers_*` (V74) | partners |
 | education | Образование | `education` → `services/education` ✔ | `education`, `education/enrollments` | `education` | `education_*` | partners |
 | support | Поддержка | `support` → `services/support` ✔ | `me/support/cases` | (в `delivery`/`rides`) | `support.*` | platform.support |
 | admin | Админ-панель | `admin` → `services/admin` ✔ | `admin/*` (auto, beauty, features, food, groceries, home-services, leisure, partners) | `admin_*`, `*_admin` | `identity.admin_*` | домены (однонаправленно) |

@@ -27,6 +27,7 @@ transactions.health_=health
 marketplace.education_=education
 transactions.education_=education
 marketplace.food_=food
+marketplace.flowers_=flowers
 transactions.food_=food
 marketplace.grocery_=groceries
 marketplace.leisure_=leisure

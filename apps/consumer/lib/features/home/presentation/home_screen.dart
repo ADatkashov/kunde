@@ -7,6 +7,7 @@ import '../../leisure/data/leisure_api.dart';
 import '../../leisure/leisure_services.dart';
 import '../../leisure/presentation/leisure_home_screen.dart';
 import '../../booking/booking_services.dart';
+import '../../flowers/presentation/flowers_home_screen.dart';
 import '../../beauty/presentation/beauty_home_screen.dart';
 import '../../booking/presentation/category_screens.dart';
 import '../../delivery/delivery_api.dart';
@@ -80,6 +81,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late Future<PlatformSnapshot> _snapshot;
   bool _deliveryResume = false;
+  bool _flowersEnabled = false;
 
   @override
   void initState() {
@@ -96,6 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<PlatformSnapshot> _loadSnapshot() async {
     final snapshot = await widget.api.loadPlatformSnapshot();
+    _flowersEnabled = snapshot.flowersEnabled;
     final api = widget.delivery;
     if (!snapshot.deliveryEnabled && api != null) {
       unawaited(_checkActiveDeliveries(api));
@@ -230,7 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
           icon: Icons.local_florist_rounded,
           label: s.catFlowers,
           color: const Color(0xFFB83280),
-          enabled: foodEnabled && widget.food != null,
+          enabled: (foodEnabled && widget.food != null) || _flowersEnabled,
         ),
         ServiceCategory(
           icon: Icons.local_taxi_rounded,
@@ -377,6 +380,12 @@ class _HomeScreenState extends State<HomeScreen> {
         MaterialPageRoute<void>(
           builder: (_) =>
               GroceriesHomeScreen(services: widget.food!.groceries!),
+        ),
+      );
+    } else if (c.label == s.catFlowers && _flowersEnabled) {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => FlowersHomeScreen(api: widget.api),
         ),
       );
     } else if (c.label == s.catFlowers && foodEnabled && widget.food != null) {

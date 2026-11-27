@@ -1268,6 +1268,61 @@ paths:
           description: Invalid pagination.
         '404':
           description: BEAUTY_DISABLED.
+  /flowers/categories:
+    get:
+      operationId: listFlowersCategories
+      description: Active Flowers and Gifts categories in display order (featured ones form the home grid). Hidden while FLOWERS_ENABLED is off (ADR-026).
+      parameters:
+        - { name: featured, in: query, schema: { type: boolean } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 10000, default: 0 } }
+      responses:
+        '200':
+          description: Categories with code, nameRu, nameKk, nameEn, icon and featured.
+        '400':
+          description: Invalid pagination.
+        '404':
+          description: FLOWERS_DISABLED.
+  /flowers/shops:
+    get:
+      operationId: listFlowersShops
+      description: Public flower and gift shops, open ones first. A shop is public when it is synthetic demo data or belongs to an APPROVED partner. Hidden while FLOWERS_ENABLED is off.
+      parameters:
+        - { name: category, in: query, description: Only shops that sell an available product of this category., schema: { type: string, maxLength: 32 } }
+        - { name: q, in: query, description: Case-insensitive match on shop name or description., schema: { type: string, maxLength: 80 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 100000, default: 0 } }
+      responses:
+        '200':
+          description: Shops with id, slug, name, description, emoji, tone, imageUrl, deliveryFeeMinor, minOrderMinor, etaMinMinutes, etaMaxMinutes, open, synthetic, latitude, longitude and productCount.
+        '400':
+          description: Invalid parameters.
+        '404':
+          description: FLOWERS_DISABLED.
+  /flowers/shops/{id}:
+    get:
+      operationId: getFlowersShop
+      description: One shop with all its products (available or not). Hidden while FLOWERS_ENABLED is off.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: shop and products (id, shopId, shopName, categoryCode, name, description, priceMinor, emoji, tone, imageUrl, available, stockQty, popular).
+        '404':
+          description: FLOWERS_DISABLED or FLOWERS_SHOP_NOT_FOUND.
+  /flowers/products/popular:
+    get:
+      operationId: listFlowersPopularProducts
+      description: Showcase of the home screen - available popular products of visible, open shops. Hidden while FLOWERS_ENABLED is off.
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 30, default: 10 } }
+      responses:
+        '200':
+          description: Products as in the shop detail.
+        '400':
+          description: Invalid limit.
+        '404':
+          description: FLOWERS_DISABLED.
   /beauty/salons:
     get:
       operationId: listBeautySalons

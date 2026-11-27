@@ -87,6 +87,7 @@ class DomainSchemaOwnershipIntegrationTest {
             "serviceability.zone_addresses -> profile.consumer_addresses",
             // V67: city_id placement key on aggregate roots; serviceability.cities is the global registry.
             "marketplace.food_restaurants -> serviceability.cities",
+            "marketplace.flowers_shops -> serviceability.cities",
             "marketplace.booking_venues -> serviceability.cities",
             "marketplace.leisure_venues -> serviceability.cities",
             "marketplace.education_courses -> serviceability.cities",

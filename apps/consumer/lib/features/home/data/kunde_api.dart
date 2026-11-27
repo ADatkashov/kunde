@@ -88,6 +88,30 @@ class KundeApi {
     }
   }
 
+  /// Public Flowers & Gifts catalogue (`/flowers/**`); the decoded JSON (a map or a list).
+  Future<dynamic> flowersJson(String path,
+      [Map<String, String>? params]) async {
+    try {
+      final response = await _client
+          .get(_baseUri
+              .resolve('flowers/$path')
+              .replace(queryParameters: params))
+          .timeout(timeout);
+      if (response.statusCode != 200) {
+        throw const KundeApiException(KundeApiFailure.unavailable);
+      }
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } on TimeoutException {
+      throw const KundeApiException(KundeApiFailure.unavailable);
+    } on FormatException {
+      throw const KundeApiException(KundeApiFailure.unexpectedResponse);
+    } on KundeApiException {
+      rethrow;
+    } catch (_) {
+      throw const KundeApiException(KundeApiFailure.unavailable);
+    }
+  }
+
   Future<Map<String, dynamic>> loadEducationCourses({
     required String query,
     required String format,

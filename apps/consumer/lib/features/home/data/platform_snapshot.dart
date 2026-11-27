@@ -7,6 +7,7 @@ class PlatformSnapshot {
     this.bookingEnabled = false,
     this.homeServicesEnabled = false,
     this.beautyEnabled = false,
+    this.flowersEnabled = false,
     this.ridesEnabled = false,
     this.deliveryEnabled = false,
     this.deliverySyntheticRouting = false,
@@ -30,6 +31,9 @@ class PlatformSnapshot {
 
   /// Beauty & Care (BEAUTY_ENABLED); off by default; absent on older servers.
   final bool beautyEnabled;
+
+  /// Flowers & Gifts domain (FLOWERS_ENABLED, ADR-026); off by default; absent on older servers.
+  final bool flowersEnabled;
   final bool ridesEnabled;
   final bool deliveryEnabled;
   final bool deliverySyntheticRouting;
@@ -68,6 +72,7 @@ class PlatformSnapshot {
       bookingEnabled: json['bookingEnabled'] == true,
       homeServicesEnabled: json['homeServicesEnabled'] == true,
       beautyEnabled: json['beautyEnabled'] == true,
+      flowersEnabled: json['flowersEnabled'] == true,
       ridesEnabled: json['ridesEnabled'] == true,
       deliveryEnabled: json['deliveryEnabled'] == true,
       deliverySyntheticRouting: json['deliverySyntheticRouting'] == true,

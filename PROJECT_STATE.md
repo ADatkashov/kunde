@@ -2,7 +2,7 @@
 
 ## Flowers & Gifts (2026-11-27, ADR-026 ACCEPTED)
 
-- Владелец утвердил выделение цветов и подарков в отдельный домен `flowers` ([ADR-026](docs/architecture/adr/ADR-026-flowers-gifts-domain.md)). Шаг 1 выполнен: модуль `backend/services/flowers` (18-й), флаг `FLOWERS_ENABLED` (по умолчанию выключен, только dev/local/test), Flyway V73, поле `flowersEnabled` в `/capabilities`, строка в реестре доменов. Поведения у домена пока нет; цветы работают как вертикаль `FLOWERS_GIFTS` в Food. Шаг 2 — каталог и главная цветов (см. порядок в ADR).
+- Владелец утвердил выделение цветов и подарков в отдельный домен `flowers` ([ADR-026](docs/architecture/adr/ADR-026-flowers-gifts-domain.md)). Шаг 1 выполнен: модуль `backend/services/flowers` (18-й), флаг `FLOWERS_ENABLED` (по умолчанию выключен, только dev/local/test), Flyway V73, поле `flowersEnabled` в `/capabilities`, строка в реестре доменов. Шаг 2 выполнен: V74 (таблицы `flowers_*`, копия `FLOWERS_GIFTS` из Food с теми же id), публичный каталог `/api/v1/flowers/*`, демо-сидер `FLOWERS_SEED_DEMO`, Consumer: главная цветов за `flowersEnabled`. Заказ — по-прежнему через Food до шага 3 (корзина, заказ, слоты доставки).
 - Consumer: экраны Home Services и шапка/карточка товара цветов приведены к референсу (PR #288).
 
 ## Структура проекта и сборка (2026-11-24, ADR-023 ACCEPTED)

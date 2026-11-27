@@ -31,6 +31,9 @@ marketplace.auto_admin_events=GLOBAL
 marketplace.health_moderation_events=GLOBAL
 marketplace.leisure_categories=GLOBAL
 marketplace.beauty_categories=GLOBAL
+marketplace.flowers_categories=GLOBAL
+marketplace.flowers_shops=CITY_ROOT
+marketplace.flowers_products=CITY_CHILD:marketplace.flowers_shops
 marketplace.grocery_categories=GLOBAL
 transactions.customer_vehicles=GLOBAL
 
