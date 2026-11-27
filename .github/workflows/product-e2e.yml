@@ -17,7 +17,7 @@ on:
         default: home-services
         options: [home-services, beauty, taxi, delivery, food, groceries, education, health, events, leisure, auto, flowers-gifts, all]
       suite:
-        description: 'Test suite (api = full Backend CI; full = every existing suite of the product)'
+        description: 'Test suite (api = selective Product API E2E (module + :app integration tests of the product); full = every existing suite)'
         type: choice
         default: api
         options: [api, consumer, partner, executor, admin, multi-role, full]
@@ -115,16 +115,17 @@ jobs:
     with:
       ref: ${{ needs.plan.outputs.sha }}
 
-  backend:
+  api:
     needs: plan
-    if: ${{ contains(fromJSON(needs.plan.outputs.workflows), 'backend.yml') }}
-    uses: ./.github/workflows/backend.yml
+    if: ${{ contains(fromJSON(needs.plan.outputs.workflows), 'product-api-e2e.yml') }}
+    uses: ./.github/workflows/product-api-e2e.yml
     with:
       ref: ${{ needs.plan.outputs.sha }}
+      product: ${{ inputs.product }}
 
   report:
     if: always()
-    needs: [plan, auto, education, education_roles, groceries, groceries_roles, health, leisure, delivery, rides, backend]
+    needs: [plan, auto, education, education_roles, groceries, groceries_roles, health, leisure, delivery, rides, api]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:

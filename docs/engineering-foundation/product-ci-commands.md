@@ -34,7 +34,7 @@ Flutter, одна фича: `cd apps/<app> && flutter test test/features/<dir>`.
 | Product E2E (`product-e2e.yml`) | вручную | `gh workflow run product-e2e.yml --ref main -f product=taxi -f suite=multi-role` |
 | E2E suite (`e2e-suite.yml`) | вручную | флажки по приложениям |
 
-Product E2E собирает изолированный стек из `ref` (локальный PostgreSQL), поэтому поля DEV/TEST нет. Продукт без существующего E2E (home-services, beauty, food, events, flowers-gifts) даёт `NOT AVAILABLE` и красный запуск — «нет E2E» не выдаётся за «прошёл». Suite `api` = полный Backend CI (фильтр по продукту через `workflow_call` невозможен).
+Product E2E собирает изолированный стек из `ref` (локальный PostgreSQL), поэтому поля DEV/TEST нет. Продукт без существующего E2E (home-services, beauty, food, events, flowers-gifts) даёт `NOT AVAILABLE` и красный запуск — «нет E2E» не выдаётся за «прошёл». Suite `api` = выборочный Product API E2E (`product-api-e2e.yml`): `:services:<module>:test` продукта + HTTP/PostgreSQL-тесты его пакетов в `:app` (`kz.kunde.<package>.*`); для Home Services это в том числе сквозной `HomeServicesJourneyIntegrationTest` (оффер → модерация → заказ → приём → визит → завершение, отмена, доступ, повторы, недопустимые переходы).
 
 ## DEV-ready / E2E-verified / PROD-ready
 

@@ -16,12 +16,12 @@ class ProductE2EPlanTest(unittest.TestCase):
         self.assertEqual(r["workflows"], [])
         self.assertEqual(r["unavailable"], ["home-services/consumer"])
 
-    def test_api_is_full_backend_ci(self):
-        self.assertEqual(plan("home-services", "api")["workflows"], ["backend.yml"])
+    def test_api_is_the_selective_product_api_e2e(self):
+        self.assertEqual(plan("home-services", "api")["workflows"], ["product-api-e2e.yml"])
 
     def test_full_is_union_of_suites_plus_api(self):
         self.assertEqual(plan("groceries", "full")["workflows"],
-                         ["backend.yml", "groceries-native-e2e.yml", "groceries-roles-native-e2e.yml"])
+                         ["groceries-native-e2e.yml", "groceries-roles-native-e2e.yml", "product-api-e2e.yml"])
 
     def test_all_products_reports_missing_ones_but_runs_the_rest(self):
         r = plan("all", "consumer")

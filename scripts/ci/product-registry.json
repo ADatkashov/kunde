@@ -209,9 +209,7 @@
     },
     "health": {
       "backend": "health",
-      "app_test_packages": [
-        "health"
-      ],
+      "app_test_packages": [],
       "flutter": {
         "consumer": [
           "health"
@@ -328,6 +326,6 @@
       ]
     }
   },
-  "e2e_api_workflow": "backend.yml",
-  "_comment_e2e": "Existing native E2E workflows per product and suite (all run on an isolated stack built from the ref). A product/suite without an entry is reported as NOT AVAILABLE, never as passed. `api` maps to the full Backend CI because workflow_call cannot filter by product."
+  "e2e_api_workflow": "product-api-e2e.yml",
+  "_comment_e2e": "Existing native E2E workflows per product and suite (all run on an isolated stack built from the ref). A product/suite without an entry is reported as NOT AVAILABLE, never as passed. `api` is the selective Product API E2E (product-api-e2e.yml): the product's module tests plus kz.kunde.<package>.* integration tests in :app."
 }
