@@ -178,7 +178,8 @@ Future<void> _openWith(WidgetTester tester, _Auth auth, _Catalog catalog,
 }
 
 void main() {
-  testWidgets('an address picked on the map is quoted and ordered with its point',
+  testWidgets(
+      'an address picked on the map is quoted and ordered with its point',
       (tester) async {
     final auth = _Auth();
     final catalog = _Catalog();
@@ -195,7 +196,8 @@ void main() {
     expect(maps.titles, ['Address on the map']);
     expect(find.widgetWithText(TextField, 'Abay 150'), findsOneWidget);
     expect(find.text('Address picked on the map'), findsOneWidget);
-    expect(catalog.pointsSeen.last, (43.238, 76.945)); // re-quoted with the point
+    expect(
+        catalog.pointsSeen.last, (43.238, 76.945)); // re-quoted with the point
 
     await tester.ensureVisible(find.byKey(const ValueKey('submit')));
     await tester.tap(find.byKey(const ValueKey('submit')));

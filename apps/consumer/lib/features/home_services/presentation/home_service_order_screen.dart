@@ -103,7 +103,8 @@ class _HomeServiceOrderScreenState extends State<HomeServiceOrderScreen> {
     try {
       final picked = await maps.pick(
         context,
-        title: s.t('Адрес на карте', 'Картадағы мекенжай', 'Address on the map'),
+        title:
+            s.t('Адрес на карте', 'Картадағы мекенжай', 'Address on the map'),
         initial: _lat == null || _lng == null ? null : GeoPoint(_lat!, _lng!),
       );
       if (!mounted || picked == null) return;
