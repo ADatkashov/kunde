@@ -1,6 +1,6 @@
 # ADR-026 — Flowers & Gifts как отдельный домен `flowers`
 
-- Status: **Proposed** (2026-11-27). Направление выбрано владельцем в чате 2026-11-27 («Выделить Flowers в отдельный домен»); детали и порядок PR ждут его подтверждения. До принятия код домена не пишется, действует вертикаль `FLOWERS_GIFTS` внутри Food.
+- Status: **Accepted** (2026-11-27). Владелец выбрал направление («Выделить Flowers в отдельный домен») и подтвердил ADR и порядок PR в чате 2026-11-27. Шаг 1 выполнен; до шага 2 цветы по-прежнему работают как вертикаль `FLOWERS_GIFTS` внутри Food.
 - Scope: домен «Цветы и подарки» (Consumer, Partner, Executor, Admin, backend, данные)
 - Builds on: [ADR-023](ADR-023-build-system-and-module-structure.md), [Конституция](../CONSTITUTION.md) §1, §5, §8, [ADR-025](ADR-025-gradual-service-extraction.md)
 

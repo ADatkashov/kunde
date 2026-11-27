@@ -75,6 +75,9 @@ app:
   beauty:
     enabled: ${BEAUTY_ENABLED:false}
     seed-demo: ${BEAUTY_SEED_DEMO:false}
+  # Flowers & Gifts (ADR-026). Off by default; dev/local/test only (FlowersSettings).
+  flowers:
+    enabled: ${FLOWERS_ENABLED:false}
   booking:
     enabled: ${BOOKING_ENABLED:false}
     seed-demo: ${BOOKING_SEED_DEMO:false}

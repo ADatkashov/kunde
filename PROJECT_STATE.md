@@ -1,5 +1,10 @@
 # KUNDE project state
 
+## Flowers & Gifts (2026-11-27, ADR-026 ACCEPTED)
+
+- Владелец утвердил выделение цветов и подарков в отдельный домен `flowers` ([ADR-026](docs/architecture/adr/ADR-026-flowers-gifts-domain.md)). Шаг 1 выполнен: модуль `backend/services/flowers` (18-й), флаг `FLOWERS_ENABLED` (по умолчанию выключен, только dev/local/test), Flyway V73, поле `flowersEnabled` в `/capabilities`, строка в реестре доменов. Поведения у домена пока нет; цветы работают как вертикаль `FLOWERS_GIFTS` в Food. Шаг 2 — каталог и главная цветов (см. порядок в ADR).
+- Consumer: экраны Home Services и шапка/карточка товара цветов приведены к референсу (PR #288).
+
 ## Структура проекта и сборка (2026-11-24, ADR-023 ACCEPTED)
 
 - **Backend — Gradle Kotlin DSL multi-module, Maven удалён.** `backend/platform` (ядро без доменных импортов), `backend/app` (composition root, Flyway, Spring/БД-тесты), 17 модулей `backend/services/*` (identity, partners, food, groceries, booking, beauty, homeservices, health, auto, rides, maps, delivery, leisure, events, education, support, admin). Общая настройка — `backend/gradle/kunde-module.gradle.kts`; wrapper 8.14.3 с pinned checksum; jar по-прежнему `backend/build/libs/kunde-api-0.1.0-SNAPSHOT.jar`. Локально и в CI: 506 тестов, 0 падений. Docker-образ через pinned wrapper — **локально не собирался** (нет демона), проверяется на Render/CI.

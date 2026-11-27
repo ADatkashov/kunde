@@ -44,6 +44,7 @@ paths:
                   aiEnabled: { type: boolean, example: false }
                   homeServicesEnabled: { type: boolean, example: false, description: Effective switch for the Home Services pilot. }
                   beautyEnabled: { type: boolean, example: false, description: Effective switch for Beauty and Care (BEAUTY_ENABLED). }
+                  flowersEnabled: { type: boolean, example: false, description: Effective switch for Flowers and Gifts (FLOWERS_ENABLED). }
                   mapsEnabled: { type: boolean, example: false, description: KUNDE Maps Platform is the configured routing provider (MAPS_ENABLED); map screens also require the product flag, for example ridesEnabled. }
                   deliveryEnabled: { type: boolean, example: false }
                   deliverySyntheticRouting: { type: boolean, example: false }
