@@ -28,10 +28,21 @@ Future<bool> openMapsFor(String address) async {
 /// (registered in the Delivery mode). No distance or ETA is shown: stores have no coordinates, and none is invented.
 class FoodWorkScreen extends StatefulWidget {
   const FoodWorkScreen(
-      {required this.auth, this.openMap = openMapsFor, super.key});
+      {required this.auth,
+      this.openMap = openMapsFor,
+      this.basePath = 'executor/food',
+      this.title,
+      super.key});
 
   final AuthRepository auth;
   final OpenMap openMap;
+
+  /// API prefix of the task endpoints: `executor/food` (stores) or `executor/flowers` (flowers and gifts).
+  /// Both return tasks of the same shape and share the courier profile of the Delivery mode.
+  final String basePath;
+
+  /// Screen title; defaults to «Заказы магазинов».
+  final String? title;
 
   @override
   State<FoodWorkScreen> createState() => _FoodWorkScreenState();
@@ -79,10 +90,10 @@ class _FoodWorkScreenState extends State<FoodWorkScreen> {
       var open = <Map<String, dynamic>>[];
       var mine = <Map<String, dynamic>>[];
       if (profile != null && profile['status'] == 'APPROVED') {
-        mine = (await _call('GET', 'executor/food/tasks/mine') as List)
+        mine = (await _call('GET', '${widget.basePath}/tasks/mine') as List)
             .cast<Map<String, dynamic>>();
         if (profile['online'] == true) {
-          open = (await _call('GET', 'executor/food/tasks/open') as List)
+          open = (await _call('GET', '${widget.basePath}/tasks/open') as List)
               .cast<Map<String, dynamic>>();
         }
       }
@@ -158,7 +169,7 @@ class _FoodWorkScreenState extends State<FoodWorkScreen> {
     final online = profile?['online'] == true;
     return Scaffold(
       appBar: AppBar(
-          title: Text(
+          title: Text(widget.title ??
               s.t('Заказы магазинов', 'Дүкен тапсырыстары', 'Store orders'))),
       body: RefreshIndicator(
         onRefresh: _load,
@@ -288,8 +299,8 @@ class _FoodWorkScreenState extends State<FoodWorkScreen> {
             FilledButton(
               onPressed: _busy
                   ? null
-                  : () => _act(() =>
-                      _call('POST', 'executor/food/tasks/${t['id']}/accept')),
+                  : () => _act(() => _call(
+                      'POST', '${widget.basePath}/tasks/${t['id']}/accept')),
               child: Text(s.t('Взять заказ', 'Тапсырысты алу', 'Accept order')),
             ),
           ]),
@@ -333,7 +344,7 @@ class _FoodWorkScreenState extends State<FoodWorkScreen> {
               onPressed: _busy
                   ? null
                   : () => _act(() => _call('POST',
-                      'executor/food/tasks/${t['id']}/${pickedUp ? 'deliver' : 'pickup'}')),
+                      '${widget.basePath}/tasks/${t['id']}/${pickedUp ? 'deliver' : 'pickup'}')),
               child: Text(pickedUp
                   ? s.t('Доставлено', 'Жеткізілді', 'Delivered')
                   : s.t('Забрал заказ', 'Тапсырысты алдым', 'Picked up')),

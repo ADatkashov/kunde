@@ -322,4 +322,40 @@ void main() {
     // not cancellable once the shop has started
     expect(find.byKey(const ValueKey('cancel')), findsNothing);
   });
+
+  testWidgets(
+      'the courier card shows the estimate only while the order is on its way',
+      (tester) async {
+    final auth = _Auth();
+    final services = _services(auth);
+    tester.view.physicalSize = const Size(1080, 3200);
+    tester.view.devicePixelRatio = 2.75;
+    addTearDown(tester.view.reset);
+    Future<void> show(Map<String, dynamic> json) async {
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(MaterialApp(
+        locale: const Locale('en'),
+        supportedLocales: const [Locale('en')],
+        home: FlowersOrderScreen(
+            services: services,
+            initial: FlowersOrder.fromJson(json),
+            every: const Duration(hours: 1)),
+      ));
+      await tester.pumpAndSettle();
+    }
+
+    await show({
+      ..._orderJson('ON_THE_WAY'),
+      'courierAssigned': true,
+      'etaMinutes': 12
+    });
+    expect(find.byKey(const ValueKey('courier-card')), findsOneWidget);
+    expect(find.text('Arriving in ~12 min'), findsOneWidget);
+
+    await show({..._orderJson('ASSEMBLING'), 'courierAssigned': true});
+    expect(find.text('The courier is heading to the shop'), findsOneWidget);
+
+    await show(_orderJson('ASSEMBLING'));
+    expect(find.byKey(const ValueKey('courier-card')), findsNothing);
+  });
 }

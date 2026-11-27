@@ -34,6 +34,10 @@ class _Gateway implements OAuthGateway {
 
 /// In-memory courier backend: one open task, first accept wins, pickup then delivery.
 class _Backend {
+  _Backend({this.prefix = 'executor/food'});
+
+  /// API prefix the screen under test is expected to call (`executor/food` or `executor/flowers`).
+  final String prefix;
   String profileStatus = 'APPROVED';
   bool online = true;
   bool taken = false;
@@ -69,22 +73,22 @@ class _Backend {
       online = (jsonDecode(r.body) as Map)['online'] as bool;
       return _json({'status': profileStatus, 'online': online});
     }
-    if (path == 'executor/food/tasks/open') {
+    if (path == '$prefix/tasks/open') {
       return _json(taskStatus == 'OPEN' ? [task()] : []);
     }
-    if (path == 'executor/food/tasks/mine') {
+    if (path == '$prefix/tasks/mine') {
       return _json(taskStatus == 'OPEN' ? [] : [task()]);
     }
-    if (path == 'executor/food/tasks/t1/accept') {
+    if (path == '$prefix/tasks/t1/accept') {
       if (taken) return _json({'code': 'TASK_UNAVAILABLE'}, 409);
       taskStatus = 'ASSIGNED';
       return _json(task());
     }
-    if (path == 'executor/food/tasks/t1/pickup') {
+    if (path == '$prefix/tasks/t1/pickup') {
       taskStatus = 'PICKED_UP';
       return _json(task());
     }
-    if (path == 'executor/food/tasks/t1/deliver') {
+    if (path == '$prefix/tasks/t1/deliver') {
       taskStatus = 'DELIVERED';
       return _json(task());
     }
@@ -252,4 +256,34 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets(
+      'the flowers variant calls the flowers endpoints and shows its own title',
+      (tester) async {
+    final backend = _Backend(prefix: 'executor/flowers');
+    final auth = await _auth(backend);
+    await _show(
+        tester,
+        FoodWorkScreen(
+            auth: auth,
+            basePath: 'executor/flowers',
+            title: 'Заказы цветов',
+            openMap: (_) async => true));
+    expect(find.text('Заказы цветов'), findsOneWidget);
+    await tester.tap(find.text('Взять заказ'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Забрал заказ'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Доставлено'));
+    await tester.pumpAndSettle();
+    expect(
+        backend.calls
+            .where((c) => c.startsWith('POST executor/flowers/tasks/t1/')),
+        [
+          'POST executor/flowers/tasks/t1/accept',
+          'POST executor/flowers/tasks/t1/pickup',
+          'POST executor/flowers/tasks/t1/deliver'
+        ]);
+    expect(backend.calls.where((c) => c.contains('executor/food')), isEmpty);
+  });
 }

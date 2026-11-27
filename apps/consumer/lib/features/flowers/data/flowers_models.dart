@@ -208,6 +208,8 @@ class FlowersOrder {
     required this.items,
     required this.subtotalMinor,
     required this.deliveryFeeMinor,
+    this.courierAssigned = false,
+    this.etaMinutes,
   });
 
   factory FlowersOrder.fromJson(Map<String, dynamic> json) => FlowersOrder(
@@ -228,6 +230,8 @@ class FlowersOrder {
         recipientName: json['recipientName'] as String?,
         cardText: json['cardText'] as String?,
         placedAt: DateTime.parse(json['placedAt'] as String).toLocal(),
+        courierAssigned: json['courierAssigned'] == true,
+        etaMinutes: (json['etaMinutes'] as num?)?.toInt(),
         items: [
           for (final l in json['items'] as List<dynamic>)
             FlowersLine.fromJson(l as Map<String, dynamic>),
@@ -250,6 +254,12 @@ class FlowersOrder {
   final String? cardText;
   final DateTime placedAt;
   final List<FlowersLine> items;
+
+  /// A courier has taken the order (assigned, on the way or done).
+  final bool courierAssigned;
+
+  /// Minutes to arrival while the order is on its way: an estimate from the shop's stated delivery time, not GPS.
+  final int? etaMinutes;
 
   bool get cancellable => status == 'PLACED';
   bool get active => status != 'DELIVERED' && status != 'CANCELLED';

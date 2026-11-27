@@ -35,10 +35,12 @@ public class FlowersOrderService {
 
     private final JdbcTemplate db;
     private final PartnerDirectory partners;
+    private final FlowersFulfillmentService fulfillment;
 
-    public FlowersOrderService(JdbcTemplate db, PartnerDirectory partners) {
+    public FlowersOrderService(JdbcTemplate db, PartnerDirectory partners, FlowersFulfillmentService fulfillment) {
         this.db = db;
         this.partners = partners;
+        this.fulfillment = fulfillment;
     }
 
     public record ItemRequest(UUID productId, int quantity) {}
@@ -53,7 +55,7 @@ public class FlowersOrderService {
     public record OrderView(String id, String shopId, String shopName, String status, String paymentMethod, String paymentStatus,
             long subtotalMinor, long deliveryFeeMinor, long totalMinor, String deliveryMode, Instant scheduledFrom, Instant scheduledTo,
             String addressLabel, String addressText, String recipientName, String cardText, String comment, Instant placedAt,
-            List<Line> items, List<Event> events) {}
+            List<Line> items, List<Event> events, boolean courierAssigned, Integer etaMinutes) {}
 
     public record Event(String status, Instant occurredAt) {}
 
@@ -216,14 +218,18 @@ public class FlowersOrderService {
 
     // ---- reads and cancellation ---------------------------------------------------------------------------------------
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<OrderView> list(UUID user, int limit, int offset) {
-        return db.queryForList("select id from transactions.flowers_orders where user_id = ? order by placed_at desc, id limit ? offset ?",
-                UUID.class, user, limit, offset).stream().map(id -> view(id, user)).toList();
+        List<UUID> ids = db.queryForList("select id from transactions.flowers_orders where user_id = ? order by placed_at desc, id limit ? offset ?",
+                UUID.class, user, limit, offset);
+        ids.forEach(fulfillment::advance);
+        return ids.stream().map(id -> view(id, user)).toList();
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public OrderView get(UUID user, UUID orderId) {
+        view(orderId, user);
+        fulfillment.advance(orderId);
         return view(orderId, user);
     }
 
@@ -259,7 +265,27 @@ public class FlowersOrderService {
                 db.query("select product_id, product_name, emoji, unit_price_minor, quantity, line_total_minor from transactions.flowers_order_items where order_id = ? order by id",
                         (r, i) -> new Line(r.getString(1), r.getString(2), r.getString(3), r.getLong(4), r.getInt(5), r.getLong(6)), orderId),
                 db.query("select status, occurred_at from transactions.flowers_order_events where order_id = ? order by id",
-                        (r, i) -> new Event(r.getString(1), r.getTimestamp(2).toInstant()), orderId)), orderId, user)
+                        (r, i) -> new Event(r.getString(1), r.getTimestamp(2).toInstant()), orderId),
+                courier(orderId), estimate(orderId)), orderId, user)
                 .stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND", "Order not found"));
+    }
+
+    private boolean courier(UUID orderId) {
+        Integer n = db.queryForObject("select count(*) from transactions.flowers_courier_tasks where order_id = ? and status in ('ASSIGNED', 'PICKED_UP', 'DELIVERED')",
+                Integer.class, orderId);
+        return n != null && n > 0;
+    }
+
+    /**
+     * Minutes until arrival while the order is on its way: the shop's stated minimum delivery time counted down from the pick-up.
+     * It is an estimate from the shop's own promise, not a GPS prediction; it never drops below one minute.
+     */
+    private Integer estimate(UUID orderId) {
+        return db.query("""
+                select greatest(1, s.eta_min_minutes - floor(extract(epoch from (now() - t.picked_up_at)) / 60)::int)
+                from transactions.flowers_orders o join marketplace.flowers_shops s on s.id = o.shop_id
+                join transactions.flowers_courier_tasks t on t.order_id = o.id
+                where o.id = ? and o.status = 'ON_THE_WAY' and t.picked_up_at is not null
+                """, (rs, n) -> rs.getInt(1), orderId).stream().findFirst().orElse(null);
     }
 }

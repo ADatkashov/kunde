@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
         "app.environment=test",
         "app.identity.consumer-enabled=true",
         "app.flowers.enabled=true",
+        "app.flowers.simulation-step-seconds=0",
         "app.auth.phone.enabled=true",
         "app.auth.phone.secret=synthetic-test-secret-synthetic-test-secret",
         "app.auth.phone.dev-otp.enabled=true",
@@ -95,7 +96,7 @@ class FlowersOrderApiIntegrationTest {
         String far = LocalDate.now(ZoneId.of("Asia/Almaty")).plusDays(60).toString();
         send("GET", "/api/v1/flowers/delivery-slots?date=" + far, null, null, null).andExpect(jsonPath("$", hasSize(0)));
         // unit view of the lead rule: at 09:00 local time the 10:00 window is too close, 12:00 is the first one
-        var service = new FlowersOrderService(null, null);
+        var service = new FlowersOrderService(null, null, null);
         Instant nineLocal = LocalDate.now(ZoneId.of("Asia/Almaty")).plusDays(1).atTime(9, 0).atZone(ZoneId.of("Asia/Almaty")).toInstant();
         var slots = service.slots(nineLocal.atZone(ZoneId.of("Asia/Almaty")).toLocalDate(), nineLocal);
         assertThat(slots).hasSize(4);

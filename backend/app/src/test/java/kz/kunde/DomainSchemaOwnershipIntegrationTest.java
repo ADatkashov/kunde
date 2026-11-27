@@ -97,6 +97,7 @@ class DomainSchemaOwnershipIntegrationTest {
             "transactions.food_orders -> identity.users",
             "transactions.flowers_orders -> identity.users",
             "transactions.flowers_order_events -> identity.users",
+            "transactions.flowers_courier_tasks -> identity.users",
             "marketplace.partner_catalog_events -> identity.users",
             "marketplace.home_service_category_events -> identity.users",
             "marketplace.home_service_offer_events -> identity.users",
