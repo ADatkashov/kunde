@@ -1323,6 +1323,69 @@ paths:
           description: Invalid limit.
         '404':
           description: FLOWERS_DISABLED.
+  /flowers/delivery-slots:
+    get:
+      operationId: listFlowersDeliverySlots
+      description: Two-hour delivery windows (10:00-20:00, Asia/Almaty) of one local date for scheduled delivery; only future windows with a two-hour lead, up to 14 days ahead. Hidden while FLOWERS_ENABLED is off.
+      parameters:
+        - { name: date, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        '200':
+          description: Windows with startsAt and endsAt (ISO instants). Empty outside the allowed range.
+        '404':
+          description: FLOWERS_DISABLED.
+  /flowers/cart/quote:
+    post:
+      operationId: quoteFlowersCart
+      description: Server price of a cart of one shop (subtotal, delivery fee, total). Requires a signed-in consumer.
+      responses:
+        '200':
+          description: Quote with lines, subtotalMinor, deliveryFeeMinor, totalMinor, minOrderMinor.
+        '409':
+          description: FLOWERS_STOCK_INSUFFICIENT.
+        '422':
+          description: FLOWERS_PRODUCT_UNAVAILABLE, FLOWERS_SHOP_CLOSED, FLOWERS_SLOT_UNAVAILABLE or FLOWERS_MIN_ORDER.
+  /flowers/orders:
+    get:
+      operationId: listFlowersOrders
+      description: The caller's flower orders, newest first.
+      responses:
+        '200':
+          description: Orders.
+    post:
+      operationId: placeFlowersOrder
+      description: Places an order. Idempotency-Key is required; the same key returns the same order (200), a different shop with the same key is 409 IDEMPOTENCY_KEY_REUSED. expectedTotalMinor must equal the server total (409 FLOWERS_PRICE_CHANGED). Payment is DEV_NO_PAYMENT only.
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, maxLength: 64 } }
+      responses:
+        '201':
+          description: Order created with status PLACED.
+        '200':
+          description: Existing order for the same Idempotency-Key.
+        '409':
+          description: FLOWERS_PRICE_CHANGED, FLOWERS_STOCK_INSUFFICIENT, IDEMPOTENCY_KEY_REUSED or TOO_MANY_ACTIVE_ORDERS.
+  /flowers/orders/{orderId}:
+    get:
+      operationId: getFlowersOrder
+      description: One of the caller's orders with items and status events; another user's order is 404.
+      parameters:
+        - { name: orderId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Order.
+        '404':
+          description: ORDER_NOT_FOUND.
+  /flowers/orders/{orderId}/cancel:
+    post:
+      operationId: cancelFlowersOrder
+      description: Free cancellation only while the order is PLACED; reserved stock is returned.
+      parameters:
+        - { name: orderId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Cancelled order.
+        '409':
+          description: ORDER_NOT_CANCELLABLE.
   /beauty/salons:
     get:
       operationId: listBeautySalons

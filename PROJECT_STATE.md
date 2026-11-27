@@ -2,7 +2,7 @@
 
 ## Flowers & Gifts (2026-11-27, ADR-026 ACCEPTED)
 
-- Владелец утвердил выделение цветов и подарков в отдельный домен `flowers` ([ADR-026](docs/architecture/adr/ADR-026-flowers-gifts-domain.md)). Шаг 1 выполнен: модуль `backend/services/flowers` (18-й), флаг `FLOWERS_ENABLED` (по умолчанию выключен, только dev/local/test), Flyway V73, поле `flowersEnabled` в `/capabilities`, строка в реестре доменов. Шаг 2 выполнен: V74 (таблицы `flowers_*`, копия `FLOWERS_GIFTS` из Food с теми же id), публичный каталог `/api/v1/flowers/*`, демо-сидер `FLOWERS_SEED_DEMO`, Consumer: главная цветов за `flowersEnabled`. Заказ — по-прежнему через Food до шага 3 (корзина, заказ, слоты доставки).
+- Владелец утвердил выделение цветов и подарков в отдельный домен `flowers` ([ADR-026](docs/architecture/adr/ADR-026-flowers-gifts-domain.md)). Шаг 1 выполнен: модуль `backend/services/flowers` (18-й), флаг `FLOWERS_ENABLED` (по умолчанию выключен, только dev/local/test), Flyway V73, поле `flowersEnabled` в `/capabilities`, строка в реестре доменов. Шаг 2 выполнен: V74 (таблицы `flowers_*`, копия `FLOWERS_GIFTS` из Food с теми же id), публичный каталог `/api/v1/flowers/*`, демо-сидер `FLOWERS_SEED_DEMO`, Consumer: главная цветов за `flowersEnabled`. Шаг 3 выполнен: V75 (`flowers_orders*`), `POST /flowers/cart/quote`, `/flowers/orders` (идемпотентный заказ, история, отмена), `GET /flowers/delivery-slots`; Consumer: корзина, «Доставка», ход заказа. Статусы после `PLACED` ставят магазин и курьер (шаги 4–5); промокоды пока нет. Локально тесты бэкенда идут на PostgreSQL 16 (`DB_USERNAME`/`DB_PASSWORD`).
 - Consumer: экраны Home Services и шапка/карточка товара цветов приведены к референсу (PR #288).
 
 ## Структура проекта и сборка (2026-11-24, ADR-023 ACCEPTED)

@@ -32,11 +32,13 @@ public class FlowersCatalogController {
     private final JdbcTemplate db;
     private final FeatureToggles toggles;
     private final PartnerDirectory partners;
+    private final FlowersOrderService orders;
 
-    public FlowersCatalogController(JdbcTemplate db, FeatureToggles toggles, PartnerDirectory partners) {
+    public FlowersCatalogController(JdbcTemplate db, FeatureToggles toggles, PartnerDirectory partners, FlowersOrderService orders) {
         this.db = db;
         this.toggles = toggles;
         this.partners = partners;
+        this.orders = orders;
     }
 
     public record Category(String code, String nameRu, String nameKk, String nameEn, String icon, boolean featured) {}
@@ -148,5 +150,13 @@ public class FlowersCatalogController {
                 + " order by p.sort_order, p.name, p.id limit ?", FlowersCatalogController::mapProduct,
                 arrayLiteral(partners.approvedPartnerIds()), limit);
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(products);
+    }
+
+    /** Delivery windows of one local date (Asia/Almaty) for the «к определённому времени» mode. */
+    @GetMapping("/delivery-slots")
+    public ResponseEntity<List<FlowersOrderService.Slot>> deliverySlots(
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate date) {
+        requireOn();
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(orders.slots(date, java.time.Instant.now()));
     }
 }

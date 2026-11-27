@@ -123,3 +123,134 @@ class FlowersShopDetail {
   final FlowersShop shop;
   final List<FlowersProduct> products;
 }
+
+/// One line of a quote or of a placed order.
+class FlowersLine {
+  const FlowersLine({
+    required this.productId,
+    required this.name,
+    required this.emoji,
+    required this.unitPriceMinor,
+    required this.quantity,
+    required this.lineTotalMinor,
+  });
+
+  factory FlowersLine.fromJson(Map<String, dynamic> json) => FlowersLine(
+        productId: json['productId'] as String,
+        name: json['name'] as String,
+        emoji: json['emoji'] as String? ?? '💐',
+        unitPriceMinor: (json['unitPriceMinor'] as num).toInt(),
+        quantity: (json['quantity'] as num).toInt(),
+        lineTotalMinor: (json['lineTotalMinor'] as num).toInt(),
+      );
+
+  final String productId;
+  final String name;
+  final String emoji;
+  final int unitPriceMinor;
+  final int quantity;
+  final int lineTotalMinor;
+}
+
+/// Server price of a cart (`POST /flowers/cart/quote`); the total is what checkout must confirm.
+class FlowersQuote {
+  const FlowersQuote({
+    required this.lines,
+    required this.subtotalMinor,
+    required this.deliveryFeeMinor,
+    required this.totalMinor,
+  });
+
+  factory FlowersQuote.fromJson(Map<String, dynamic> json) => FlowersQuote(
+        lines: [
+          for (final l in json['lines'] as List<dynamic>)
+            FlowersLine.fromJson(l as Map<String, dynamic>),
+        ],
+        subtotalMinor: (json['subtotalMinor'] as num).toInt(),
+        deliveryFeeMinor: (json['deliveryFeeMinor'] as num).toInt(),
+        totalMinor: (json['totalMinor'] as num).toInt(),
+      );
+
+  final List<FlowersLine> lines;
+  final int subtotalMinor;
+  final int deliveryFeeMinor;
+  final int totalMinor;
+}
+
+class FlowersSlot {
+  const FlowersSlot({required this.startsAt, required this.endsAt});
+
+  factory FlowersSlot.fromJson(Map<String, dynamic> json) => FlowersSlot(
+        startsAt: DateTime.parse(json['startsAt'] as String),
+        endsAt: DateTime.parse(json['endsAt'] as String),
+      );
+
+  final DateTime startsAt;
+  final DateTime endsAt;
+
+  /// The exact string the server offered; it is sent back unchanged when ordering.
+  String get startsAtIso => startsAt.toUtc().toIso8601String();
+}
+
+class FlowersOrder {
+  const FlowersOrder({
+    required this.id,
+    required this.shopName,
+    required this.status,
+    required this.totalMinor,
+    required this.deliveryMode,
+    required this.scheduledFrom,
+    required this.scheduledTo,
+    required this.addressText,
+    required this.recipientName,
+    required this.cardText,
+    required this.placedAt,
+    required this.items,
+    required this.subtotalMinor,
+    required this.deliveryFeeMinor,
+  });
+
+  factory FlowersOrder.fromJson(Map<String, dynamic> json) => FlowersOrder(
+        id: json['id'] as String,
+        shopName: json['shopName'] as String,
+        status: json['status'] as String,
+        totalMinor: (json['totalMinor'] as num).toInt(),
+        subtotalMinor: (json['subtotalMinor'] as num).toInt(),
+        deliveryFeeMinor: (json['deliveryFeeMinor'] as num).toInt(),
+        deliveryMode: json['deliveryMode'] as String,
+        scheduledFrom: json['scheduledFrom'] == null
+            ? null
+            : DateTime.parse(json['scheduledFrom'] as String).toLocal(),
+        scheduledTo: json['scheduledTo'] == null
+            ? null
+            : DateTime.parse(json['scheduledTo'] as String).toLocal(),
+        addressText: json['addressText'] as String,
+        recipientName: json['recipientName'] as String?,
+        cardText: json['cardText'] as String?,
+        placedAt: DateTime.parse(json['placedAt'] as String).toLocal(),
+        items: [
+          for (final l in json['items'] as List<dynamic>)
+            FlowersLine.fromJson(l as Map<String, dynamic>),
+        ],
+      );
+
+  final String id;
+  final String shopName;
+
+  /// PLACED, ACCEPTED, ASSEMBLING, ON_THE_WAY, DELIVERED or CANCELLED.
+  final String status;
+  final int totalMinor;
+  final int subtotalMinor;
+  final int deliveryFeeMinor;
+  final String deliveryMode;
+  final DateTime? scheduledFrom;
+  final DateTime? scheduledTo;
+  final String addressText;
+  final String? recipientName;
+  final String? cardText;
+  final DateTime placedAt;
+  final List<FlowersLine> items;
+
+  bool get cancellable => status == 'PLACED';
+  bool get active => status != 'DELIVERED' && status != 'CANCELLED';
+}

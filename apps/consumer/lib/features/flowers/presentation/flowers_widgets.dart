@@ -25,10 +25,12 @@ IconData flowersCategoryIcon(String name) => switch (name) {
 
 /// Violet hero of the Flowers & Gifts screens (same language as the Food and Home Services heroes).
 class FlowersHero extends StatelessWidget {
-  const FlowersHero({required this.title, required this.subtitle, super.key});
+  const FlowersHero(
+      {required this.title, required this.subtitle, this.actions, super.key});
 
   final String title;
   final String subtitle;
+  final List<Widget>? actions;
 
   @override
   Widget build(BuildContext context) {
@@ -47,15 +49,19 @@ class FlowersHero extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(4, 4, 4, 24),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            if (canPop)
-              IconButton(
-                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-                onPressed: () => Navigator.of(context).maybePop(),
-                icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                    color: Colors.white, size: 20),
-              )
-            else
-              const SizedBox(height: 48),
+            Row(children: [
+              if (canPop)
+                IconButton(
+                  tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                  onPressed: () => Navigator.of(context).maybePop(),
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white, size: 20),
+                )
+              else
+                const SizedBox(height: 48),
+              const Spacer(),
+              ...?actions,
+            ]),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
               child: Column(
@@ -283,9 +289,12 @@ class FlowersProductCard extends StatelessWidget {
 }
 
 class FlowersProductRow extends StatelessWidget {
-  const FlowersProductRow({required this.product, super.key});
+  const FlowersProductRow({required this.product, this.trailing, super.key});
 
   final FlowersProduct product;
+
+  /// Add-to-cart control on the right (a button or a quantity stepper).
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -316,6 +325,44 @@ class FlowersProductRow extends StatelessWidget {
                       : theme.colorScheme.error,
                   fontWeight: FontWeight.w800)),
         ]),
+      ),
+      if (trailing != null) trailing!,
+    ]);
+  }
+}
+
+/// Round «− 1 +» quantity control of the product card and the cart.
+class FlowersStepper extends StatelessWidget {
+  const FlowersStepper(
+      {required this.quantity,
+      required this.onChanged,
+      this.max = 20,
+      super.key});
+
+  final int quantity;
+  final ValueChanged<int> onChanged;
+  final int max;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = RideStrings(context);
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      IconButton.outlined(
+        tooltip: s.t('Меньше', 'Азайту', 'Decrease'),
+        visualDensity: VisualDensity.compact,
+        onPressed: () => onChanged(quantity - 1),
+        icon: const Icon(Icons.remove_rounded),
+      ),
+      SizedBox(
+          width: 32,
+          child: Text('$quantity',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium)),
+      IconButton.filled(
+        tooltip: s.t('Больше', 'Көбейту', 'Increase'),
+        visualDensity: VisualDensity.compact,
+        onPressed: quantity < max ? () => onChanged(quantity + 1) : null,
+        icon: const Icon(Icons.add_rounded),
       ),
     ]);
   }

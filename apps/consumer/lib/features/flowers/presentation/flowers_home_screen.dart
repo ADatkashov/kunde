@@ -3,23 +3,33 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:kunde_ui/ride_strings.dart';
 
+import 'package:kunde_auth/auth_repository.dart';
+
 import '../../home/data/kunde_api.dart';
 import '../data/flowers_models.dart';
+import '../data/flowers_services.dart';
+import 'flowers_cart_screen.dart';
+import 'flowers_order_screen.dart';
 import 'flowers_shop_screen.dart';
 import 'flowers_widgets.dart';
 
 /// Flowers & Gifts home (ADR-026): violet hero with search, category grid, popular products and shops.
 /// Shown only when the server reports `flowersEnabled`; ordering arrives with the next steps of the ADR.
 class FlowersHomeScreen extends StatefulWidget {
-  const FlowersHomeScreen({required this.api, super.key});
+  const FlowersHomeScreen({required this.api, this.auth, super.key});
 
   final KundeApi api;
+
+  /// Signed-in session for ordering; without it the catalogue is read-only.
+  final AuthRepository? auth;
 
   @override
   State<FlowersHomeScreen> createState() => _FlowersHomeScreenState();
 }
 
 class _FlowersHomeScreenState extends State<FlowersHomeScreen> {
+  late final FlowersServices _services =
+      FlowersServices(api: widget.api, auth: widget.auth);
   final _query = TextEditingController();
   Timer? _debounce;
   String? _category;
@@ -72,7 +82,7 @@ class _FlowersHomeScreenState extends State<FlowersHomeScreen> {
 
   void _openShop(String id) =>
       Navigator.of(context).push(MaterialPageRoute<void>(
-          builder: (_) => FlowersShopScreen(api: widget.api, shopId: id)));
+          builder: (_) => FlowersShopScreen(services: _services, shopId: id)));
 
   @override
   Widget build(BuildContext context) {
@@ -83,6 +93,42 @@ class _FlowersHomeScreenState extends State<FlowersHomeScreen> {
           constraints: const BoxConstraints(maxWidth: 640),
           child: Column(children: [
             FlowersHero(
+              actions: [
+                if (_services.orders != null)
+                  IconButton(
+                    key: const ValueKey('orders'),
+                    tooltip:
+                        s.t('Мои заказы', 'Менің тапсырыстарым', 'My orders'),
+                    color: Colors.white,
+                    onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                            builder: (_) =>
+                                FlowersOrdersScreen(services: _services))),
+                    icon: const Icon(Icons.receipt_long_outlined),
+                  ),
+                ListenableBuilder(
+                  listenable: _services.cart,
+                  builder: (context, _) => IconButton(
+                    key: const ValueKey('cart'),
+                    tooltip: s.t('Корзина', 'Себет', 'Cart'),
+                    color: Colors.white,
+                    onPressed: _services.cart.isEmpty
+                        ? null
+                        : () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                                builder: (_) =>
+                                    FlowersCartScreen(services: _services))),
+                    icon: Badge(
+                      isLabelVisible: !_services.cart.isEmpty,
+                      label: Text('${_services.cart.itemCount}'),
+                      child: Icon(Icons.shopping_bag_outlined,
+                          color: _services.cart.isEmpty
+                              ? Colors.white54
+                              : Colors.white),
+                    ),
+                  ),
+                ),
+              ],
               title: s.t(
                   'Цветы и подарки', 'Гүлдер мен сыйлықтар', 'Flowers & gifts'),
               subtitle: s.t(

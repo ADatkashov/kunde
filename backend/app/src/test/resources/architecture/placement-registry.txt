@@ -34,6 +34,8 @@ marketplace.beauty_categories=GLOBAL
 marketplace.flowers_categories=GLOBAL
 marketplace.flowers_shops=CITY_ROOT
 marketplace.flowers_products=CITY_CHILD:marketplace.flowers_shops
+transactions.flowers_orders=CITY_CHILD:marketplace.flowers_shops
+transactions.flowers_=CITY_CHILD:transactions.flowers_orders
 marketplace.grocery_categories=GLOBAL
 transactions.customer_vehicles=GLOBAL
 

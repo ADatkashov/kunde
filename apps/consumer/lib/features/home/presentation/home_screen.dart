@@ -385,7 +385,9 @@ class _HomeScreenState extends State<HomeScreen> {
     } else if (c.label == s.catFlowers && _flowersEnabled) {
       Navigator.of(context).push(
         MaterialPageRoute<void>(
-          builder: (_) => FlowersHomeScreen(api: widget.api),
+          settings: const RouteSettings(name: '/flowers'),
+          builder: (_) =>
+              FlowersHomeScreen(api: widget.api, auth: widget.educationAuth),
         ),
       );
     } else if (c.label == s.catFlowers && foodEnabled && widget.food != null) {
