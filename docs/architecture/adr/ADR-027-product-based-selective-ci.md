@@ -53,4 +53,4 @@
 
 ## План
 
-PR 1 — этот ADR, baseline, реестр. PR 2 — детектор и тесты (выполнен вместе с PR 1). PR 3 — backend selective build/test (`backend.yml`, `backend_gradle_args.py`; в этой же ветке). PR 4 — Flutter selective testing (`flutter.yml`, `executor-flutter.yml`, `admin-flutter.yml`, `flutter_selection.py`; Partner без изменений: плоские тесты). PR 5 — `ci-pr.yml`, Required CI Gate, `product-e2e.yml`, кэши. PR 6 — product profiles, пилот Home Services, DEV Release.
+PR 1 — этот ADR, baseline, реестр. PR 2 — детектор и тесты (выполнен вместе с PR 1). PR 3 — backend selective build/test (`backend.yml`, `backend_gradle_args.py`; в этой же ветке). PR 4 — Flutter selective testing (`flutter.yml`, `executor-flutter.yml`, `admin-flutter.yml`, `flutter_selection.py`; Partner без изменений: плоские тесты). PR 5 — `ci-pr.yml` (Required CI Gate), `product-e2e.yml` ([команды](../../engineering-foundation/product-ci-commands.md)); кэши Gradle/Flutter не включены: без проверки ключей и без возможности измерить в песочнице. PR 6 — product profiles, пилот Home Services, DEV Release.

@@ -1,8 +1,8 @@
 # Следующие проверки
 
-## Selective CI: PR 5 ([ADR-027](docs/architecture/adr/ADR-027-product-based-selective-ci.md))
+## Selective CI: PR 6 ([ADR-027](docs/architecture/adr/ADR-027-product-based-selective-ci.md))
 
-Backend уже подключён (PR 3): сначала убедиться в CI на PR, затрагивающем один модуль (напр. `homeservices`), что selective-ветка зелёная и быстрее FULL. Дальше: `flutter.yml` и партнёрские/executor/admin workflow (`flutter test test/features/<dir>`), затем `ci-pr.yml` с Required CI Gate (всегда запускается, учитывает skipped) — **до этого владелец проверяет required checks**. Замерить время до/после. Проверка: `python3 -m unittest discover -s scripts/ci -p 'test_*.py'`; `python3 scripts/ci/detect_affected.py --print-graph`.
+Backend и Flutter подключены к детектору (PR 3–4), Product E2E и Required CI Gate добавлены (PR 5). Владелец: проверить required checks и добавить «Required CI Gate». Затем убедиться на PR одного модуля (`homeservices`) и одной фичи Executor/Admin, что selective-ветки зелёные и быстрее FULL. Дальше: Full Regression (ночью и перед PROD), DEV Release по детектору, профили продуктов (Home Services), развязка фич Consumer, замеры до/после. Проверка: `python3 -m unittest discover -s scripts/ci -p 'test_*.py'`.
 
 ## Микросервисная готовность: следующие PR
 

@@ -1,0 +1,71 @@
+name: Product API E2E
+# ADR-027: selective API E2E of ONE product (or all): the product's module tests plus its HTTP/PostgreSQL integration tests in :app
+# (kz.kunde.<package>.*). Manual / reusable (called by product-e2e.yml); never triggered by pull_request or push.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Commit SHA, branch or tag to test (empty = selected branch)'
+        type: string
+        default: ''
+      product:
+        description: 'Product (registry name) or all'
+        type: string
+        default: home-services
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        default: ''
+      product:
+        type: string
+        default: home-services
+permissions:
+  contents: read
+concurrency:
+  group: product-api-e2e-${{ inputs.product }}-${{ inputs.ref || github.ref }}
+  cancel-in-progress: false
+jobs:
+  api:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: kunde
+          POSTGRES_USER: kunde_ci
+          POSTGRES_PASSWORD: synthetic_ci_only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U kunde_ci -d kunde"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref || github.sha }}
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Product API E2E
+        working-directory: backend
+        env:
+          PRODUCT: ${{ inputs.product }}
+          DB_URL: jdbc:postgresql://localhost:5432/kunde
+          DB_USERNAME: kunde_ci
+          DB_PASSWORD: synthetic_ci_only
+        run: |
+          set -euo pipefail
+          python3 ../scripts/ci/product_api_e2e_args.py "$PRODUCT" > "$RUNNER_TEMP/args.txt"
+          mapfile -t ARGS < "$RUNNER_TEMP/args.txt"
+          echo "Gradle: ${ARGS[*]}" | tee -a "$GITHUB_STEP_SUMMARY"
+          ./gradlew --no-daemon "${ARGS[@]}"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: product-api-e2e-reports
+          path: backend/*/build/test-results/test/*.xml
+          retention-days: 3

@@ -1,0 +1,163 @@
+name: Product E2E (manual, async)
+# ADR-027: run the existing E2E of ONE product (or all) on the chosen ref, instead of the whole ecosystem.
+#   gh workflow run product-e2e.yml --ref main -f product=taxi -f suite=multi-role [-f ref=<sha>]
+# Never gates merge or the DEV APK. The E2E workflows build their own isolated stack from `ref` (local PostgreSQL service),
+# so there is deliberately no DEV/TEST environment input: none of them talks to a deployed environment.
+# A product/suite without an existing E2E is reported as NOT AVAILABLE and the run fails; it is never "passed".
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Commit SHA, branch or tag to test (empty = head of the selected branch)'
+        type: string
+        default: ''
+      product:
+        description: 'Product'
+        type: choice
+        default: home-services
+        options: [home-services, beauty, taxi, delivery, food, groceries, education, health, events, leisure, auto, flowers-gifts, all]
+      suite:
+        description: 'Test suite (api = selective Product API E2E (module + :app integration tests of the product); full = every existing suite)'
+        type: choice
+        default: api
+        options: [api, consumer, partner, executor, admin, multi-role, full]
+permissions:
+  contents: read
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      sha: ${{ steps.r.outputs.sha }}
+      workflows: ${{ steps.r.outputs.workflows }}
+      unavailable: ${{ steps.r.outputs.unavailable }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref || github.sha }}
+      - id: r
+        env:
+          PRODUCT: ${{ inputs.product }}
+          SUITE: ${{ inputs.suite }}
+        run: |
+          set -euo pipefail
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          python3 scripts/ci/product_e2e_plan.py "$PRODUCT" "$SUITE" > "$RUNNER_TEMP/plan.json"
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          p = json.load(open(os.environ["RUNNER_TEMP"] + "/plan.json"))
+          print("workflows=" + json.dumps(p["workflows"]))
+          print("unavailable=" + json.dumps(p["unavailable"]))
+          PY
+          echo "Testing commit $(git rev-parse HEAD): product=$PRODUCT suite=$SUITE" >> "$GITHUB_STEP_SUMMARY"
+
+  auto:
+    needs: plan
+    if: ${{ contains(fromJSON(needs.plan.outputs.workflows), 'auto-native-e2e.yml') }}
+    uses: ./.github/workflows/auto-native-e2e.yml
+    with:
+      ref: ${{ needs.plan.outputs.sha }}
+
+  education:
+    needs: plan
+    if: ${{ contains(fromJSON(needs.plan.outputs.workflows), 'education-native-e2e.yml') }}
+    uses: ./.github/workflows/education-native-e2e.yml
+    with:
+      ref: ${{ needs.plan.outputs.sha }}
+
+  education_roles:
+    needs: plan
+    if: ${{ contains(fromJSON(needs.plan.outputs.workflows), 'education-roles-native-e2e.yml') }}
+    uses: ./.github/workflows/education-roles-native-e2e.yml
+    with:
+      ref: ${{ needs.plan.outputs.sha }}
+
+  groceries:
+    needs: plan
+    if: ${{ contains(fromJSON(needs.plan.outputs.workflows), 'groceries-native-e2e.yml') }}
+    uses: ./.github/workflows/groceries-native-e2e.yml
+    with:
+      ref: ${{ needs.plan.outputs.sha }}
+
+  groceries_roles:
+    needs: plan
+    if: ${{ contains(fromJSON(needs.plan.outputs.workflows), 'groceries-roles-native-e2e.yml') }}
+    uses: ./.github/workflows/groceries-roles-native-e2e.yml
+    with:
+      ref: ${{ needs.plan.outputs.sha }}
+
+  health:
+    needs: plan
+    if: ${{ contains(fromJSON(needs.plan.outputs.workflows), 'health-native-e2e.yml') }}
+    uses: ./.github/workflows/health-native-e2e.yml
+    with:
+      ref: ${{ needs.plan.outputs.sha }}
+
+  leisure:
+    needs: plan
+    if: ${{ contains(fromJSON(needs.plan.outputs.workflows), 'leisure-native-e2e.yml') }}
+    uses: ./.github/workflows/leisure-native-e2e.yml
+    with:
+      ref: ${{ needs.plan.outputs.sha }}
+
+  delivery:
+    needs: plan
+    if: ${{ contains(fromJSON(needs.plan.outputs.workflows), 'delivery-native-e2e.yml') }}
+    uses: ./.github/workflows/delivery-native-e2e.yml
+    with:
+      ref: ${{ needs.plan.outputs.sha }}
+
+  rides:
+    needs: plan
+    if: ${{ contains(fromJSON(needs.plan.outputs.workflows), 'rides-native-e2e.yml') }}
+    uses: ./.github/workflows/rides-native-e2e.yml
+    with:
+      ref: ${{ needs.plan.outputs.sha }}
+
+  api:
+    needs: plan
+    if: ${{ contains(fromJSON(needs.plan.outputs.workflows), 'product-api-e2e.yml') }}
+    uses: ./.github/workflows/product-api-e2e.yml
+    with:
+      ref: ${{ needs.plan.outputs.sha }}
+      product: ${{ inputs.product }}
+
+  report:
+    if: always()
+    needs: [plan, auto, education, education_roles, groceries, groceries_roles, health, leisure, delivery, rides, api]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Summarise results
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+          SHA: ${{ needs.plan.outputs.sha }}
+          PRODUCT: ${{ inputs.product }}
+          SUITE: ${{ inputs.suite }}
+        run: |
+          python3 - <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import json, os, sys
+          needs = json.loads(os.environ["NEEDS"])
+          label = {"success": "PASSED", "failure": "FAILED", "cancelled": "FAILED (cancelled)", "skipped": "NOT RUN"}
+          print("## Product E2E: %s / %s on `%s`" % (os.environ["PRODUCT"], os.environ["SUITE"], os.environ["SHA"]))
+          if needs["plan"]["result"] != "success":
+              print("\n**Planning failed: nothing was verified.**")
+              sys.exit(1)
+          workflows = json.loads(needs["plan"]["outputs"]["workflows"])
+          unavailable = json.loads(needs["plan"]["outputs"]["unavailable"])
+          called = {k: v["result"] for k, v in needs.items() if k != "plan" and v["result"] != "skipped"}
+          print("| Check | Status |\n|---|---|")
+          for k, r in sorted(called.items()):
+              print("| %s | %s |" % (k, label.get(r, r)))
+          for u in unavailable:
+              print("| %s | NOT AVAILABLE (no E2E exists) |" % u)
+          bad = [k for k, r in called.items() if r in ("failure", "cancelled")]
+          if not workflows:
+              print("\n**No E2E exists for this product/suite: nothing was verified.**")
+          if bad:
+              print("\n**FAILED: %s. Do not mark this commit as E2E-verified.**" % ", ".join(bad))
+          if unavailable and workflows:
+              print("\nCoverage gaps above are NOT verified.")
+          sys.exit(1 if (bad or not workflows) else 0)
+          PY
