@@ -76,6 +76,12 @@ variable "food_enabled" {
   default     = true
 }
 
+variable "flowers_enabled" {
+  description = "KUNDE Flowers & Gifts domain on the DEV backend (ADR-026): catalogue, cart, orders, courier hand-off; payments stay disabled. DEV environment only."
+  type        = bool
+  default     = true
+}
+
 variable "auto_enabled" {
   description = "KUNDE Auto DEV pilot on the DEV backend (synthetic stations, DEV/TEST ledger payments, no real charges). DEV environment only."
   type        = bool
