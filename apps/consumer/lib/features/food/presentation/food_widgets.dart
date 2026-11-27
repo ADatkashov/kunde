@@ -550,11 +550,18 @@ class MerchantArtwork extends StatelessWidget {
 /// Violet screen header of the Food catalog: back, title, subtitle, cart and the bundled meal photo.
 class FoodHeroHeader extends StatelessWidget {
   const FoodHeroHeader(
-      {required this.title, required this.subtitle, this.actions, super.key});
+      {required this.title,
+      required this.subtitle,
+      this.actions,
+      this.image = 'assets/photos/food-banner.webp',
+      super.key});
 
   final String title;
   final String subtitle;
   final List<Widget>? actions;
+
+  /// Asset shown faded on the right; `null` keeps the plain violet gradient.
+  final String? image;
 
   @override
   Widget build(BuildContext context) {
@@ -568,22 +575,23 @@ class FoodHeroHeader extends StatelessWidget {
         ),
       ),
       child: Stack(children: [
-        Positioned(
-          right: 0,
-          top: 0,
-          bottom: 0,
-          width: 190,
-          child: ExcludeSemantics(
-            child: ShaderMask(
-              blendMode: BlendMode.dstIn,
-              shaderCallback: (rect) => const LinearGradient(
-                  colors: [Color(0x00FFFFFF), Color(0xFFFFFFFF)],
-                  stops: [0, .55]).createShader(rect),
-              child: Image.asset('assets/photos/food-banner.webp',
-                  fit: BoxFit.cover, alignment: Alignment.centerRight),
+        if (image != null)
+          Positioned(
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: 190,
+            child: ExcludeSemantics(
+              child: ShaderMask(
+                blendMode: BlendMode.dstIn,
+                shaderCallback: (rect) => const LinearGradient(
+                    colors: [Color(0x00FFFFFF), Color(0xFFFFFFFF)],
+                    stops: [0, .55]).createShader(rect),
+                child: Image.asset(image!,
+                    fit: BoxFit.cover, alignment: Alignment.centerRight),
+              ),
             ),
           ),
-        ),
         SafeArea(
           bottom: false,
           child: Padding(

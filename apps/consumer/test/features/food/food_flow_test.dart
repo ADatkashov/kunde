@@ -602,6 +602,9 @@ void main() {
     await _show(
         tester, FoodHomeScreen(services: services, vertical: 'GROCERY'));
     await premiumGolden(tester, 'premium_grocery');
+    await _show(
+        tester, FoodHomeScreen(services: services, vertical: 'FLOWERS_GIFTS'));
+    await premiumGolden(tester, 'premium_flowers');
   });
 
   testWidgets('premium golden cart checkout and history', (tester) async {
