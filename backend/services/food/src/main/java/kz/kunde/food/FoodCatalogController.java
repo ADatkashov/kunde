@@ -1,5 +1,7 @@
 package kz.kunde.food;
 
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
@@ -30,7 +32,8 @@ public class FoodCatalogController {
     public record RestaurantSummary(String id, String slug, String name, String cuisine, String description,
             String emoji, String tone, long deliveryFeeMinor, long minOrderMinor, int etaMinMinutes,
             int etaMaxMinutes, boolean open, boolean synthetic, String vertical, String imageUrl, Double ratingAvg,
-            int ratingCount, boolean pickupEnabled, int prepMinutes, String addressText, boolean hasPromo) {}
+            int ratingCount, boolean pickupEnabled, int prepMinutes, String addressText, boolean hasPromo,
+            Double latitude, Double longitude, Integer distanceMeters) {}
 
     public record Option(String id, String name, long priceDeltaMinor) {}
 
@@ -43,7 +46,10 @@ public class FoodCatalogController {
 
     public record Section(String id, String name, List<Dish> dishes) {}
 
-    public record RestaurantDetail(RestaurantSummary restaurant, List<Section> sections) {}
+    /** One weekly slot in Asia/Almaty local time (ISO day 1 = Monday); closesAt <= opensAt ends the next morning. */
+    public record Hours(int dayOfWeek, String opensAt, String closesAt) {}
+
+    public record RestaurantDetail(RestaurantSummary restaurant, List<Section> sections, List<Hours> hours) {}
 
     public record DishHit(String id, String name, String description, long priceMinor, String emoji, String tone,
             boolean available, String restaurantId, String restaurantName) {}
@@ -67,12 +73,13 @@ public class FoodCatalogController {
 
     static final String RESTAURANT_SELECT = """
             select id, slug, name, cuisine, description, emoji, tone, delivery_fee_minor, min_order_minor,
-                   eta_min_minutes, eta_max_minutes, (is_open and moderation_status = 'ACTIVE') as is_open, is_synthetic, vertical, image_url,
+                   eta_min_minutes, eta_max_minutes, marketplace.food_restaurant_open(r) as is_open, is_synthetic, vertical, image_url,
                    (select round(avg(v.rating)::numeric, 1)::float8 from marketplace.food_reviews v
                      where v.restaurant_id = r.id and v.status = 'VISIBLE') as rating_avg,
                    (select count(*) from marketplace.food_reviews v
                      where v.restaurant_id = r.id and v.status = 'VISIBLE') as rating_count,
-                   pickup_enabled, prep_minutes, address_text,
+                   pickup_enabled, prep_minutes, address_text, latitude::float8 as latitude, longitude::float8 as longitude,
+                   null::int as distance_m,
                    exists (select 1 from marketplace.food_promotions p
                             where p.status = 'ACTIVE' and p.starts_at <= now() and p.ends_at > now()
                               and (p.restaurant_id = r.id or (p.restaurant_id is null and (p.cuisine is null or p.cuisine = r.cuisine)))) as has_promo
@@ -86,7 +93,8 @@ public class FoodCatalogController {
                 rs.getInt("eta_max_minutes"), rs.getBoolean("is_open"), rs.getBoolean("is_synthetic"),
                 rs.getString("vertical"), rs.getString("image_url"), rs.getObject("rating_avg", Double.class),
                 rs.getInt("rating_count"), rs.getBoolean("pickup_enabled"), rs.getInt("prep_minutes"),
-                rs.getString("address_text"), rs.getBoolean("has_promo"));
+                rs.getString("address_text"), rs.getBoolean("has_promo"), rs.getObject("latitude", Double.class),
+                rs.getObject("longitude", Double.class), rs.getObject("distance_m", Integer.class));
     }
 
     private static String vertical(String value) {
@@ -97,15 +105,17 @@ public class FoodCatalogController {
     }
 
     private static final java.util.Map<String, String> SORTS = java.util.Map.of(
-            "recommended", "(r.is_open and r.moderation_status = 'ACTIVE') desc, r.sort_order, r.name, r.id",
-            "rating", "(r.is_open and r.moderation_status = 'ACTIVE') desc, rating_avg desc nulls last, rating_count desc, r.name, r.id",
-            "delivery_fee", "(r.is_open and r.moderation_status = 'ACTIVE') desc, r.delivery_fee_minor, r.name, r.id",
-            "eta", "(r.is_open and r.moderation_status = 'ACTIVE') desc, r.eta_min_minutes, r.name, r.id");
+            "recommended", "marketplace.food_restaurant_open(r) desc, r.sort_order, r.name, r.id",
+            "rating", "marketplace.food_restaurant_open(r) desc, rating_avg desc nulls last, rating_count desc, r.name, r.id",
+            "delivery_fee", "marketplace.food_restaurant_open(r) desc, r.delivery_fee_minor, r.name, r.id",
+            "eta", "marketplace.food_restaurant_open(r) desc, r.eta_min_minutes, r.name, r.id",
+            "distance", "marketplace.food_restaurant_open(r) desc, distance_m asc nulls last, r.name, r.id");
 
     /**
      * Stores/restaurants of one vertical (default FOOD, so existing clients are unchanged), with server-side filters
      * (open now, pickup, free delivery, promotion, minimum rating, cuisine, price range by minimum order) and sorting.
-     * Distance sorting is not offered: restaurants have no stored coordinates yet, so no distance is invented.
+     * With {@code lat}/{@code lon} each restaurant that has stored coordinates carries {@code distanceMeters}: the
+     * straight-line distance (road routing is KUNDE Maps' job); restaurants without coordinates get no distance and sort last.
      */
     @GetMapping("/restaurants")
     public ResponseEntity<List<RestaurantSummary>> restaurants(
@@ -117,18 +127,34 @@ public class FoodCatalogController {
             @RequestParam(required = false) @Min(1) @Max(5) Integer minRating,
             @RequestParam(required = false) @Size(max = 80) String cuisine,
             @RequestParam(required = false) @Min(0) @Max(100000000) Long maxMinOrderMinor,
+            @RequestParam(required = false) @DecimalMin("-90") @DecimalMax("90") Double lat,
+            @RequestParam(required = false) @DecimalMin("-180") @DecimalMax("180") Double lon,
+            @RequestParam(required = false) @Min(1) @Max(200000) Integer maxDistanceMeters,
             @RequestParam(defaultValue = "recommended") String sort,
             @RequestParam(defaultValue = "50") @Min(1) @Max(100) int limit,
             @RequestParam(defaultValue = "0") @Min(0) @Max(100000) int offset) {
         String orderBy = SORTS.get(sort);
         if (orderBy == null) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "SORT_INVALID", "sort must be recommended, rating, delivery_fee or eta");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "SORT_INVALID", "sort must be recommended, rating, delivery_fee, eta or distance");
+        }
+        if ((lat == null) != (lon == null)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "LOCATION_INVALID", "lat and lon must be given together");
+        }
+        if (lat == null && ("distance".equals(sort) || maxDistanceMeters != null)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "LOCATION_REQUIRED", "lat and lon are required for distance sorting and filtering");
         }
         requireGroceriesOn(vertical);
         StringBuilder where = new StringBuilder(" where r.vertical = ?");
         List<Object> args = new ArrayList<>();
+        String select = RESTAURANT_SELECT;
+        if (lat != null) {
+            select = RESTAURANT_SELECT.replace("null::int as distance_m",
+                    "marketplace.food_distance_m(r.latitude, r.longitude, ?::float8, ?::float8) as distance_m");
+            args.add(lat);
+            args.add(lon);
+        }
         args.add(vertical(vertical));
-        if (Boolean.TRUE.equals(openNow)) { where.append(" and (r.is_open and r.moderation_status = 'ACTIVE')"); }
+        if (Boolean.TRUE.equals(openNow)) { where.append(" and marketplace.food_restaurant_open(r)"); }
         if (Boolean.TRUE.equals(pickup)) { where.append(" and r.pickup_enabled"); }
         if (Boolean.TRUE.equals(freeDelivery)) { where.append(" and r.delivery_fee_minor = 0"); }
         if (Boolean.TRUE.equals(promo)) {
@@ -141,9 +167,15 @@ public class FoodCatalogController {
         }
         if (cuisine != null && !cuisine.isBlank()) { where.append(" and r.cuisine = ?"); args.add(cuisine.strip()); }
         if (maxMinOrderMinor != null) { where.append(" and r.min_order_minor <= ?"); args.add(maxMinOrderMinor); }
+        if (maxDistanceMeters != null) {
+            where.append(" and marketplace.food_distance_m(r.latitude, r.longitude, ?::float8, ?::float8) <= ?");
+            args.add(lat);
+            args.add(lon);
+            args.add(maxDistanceMeters);
+        }
         args.add(limit);
         args.add(offset);
-        List<RestaurantSummary> list = jdbc.query(RESTAURANT_SELECT + where + " order by " + orderBy + " limit ? offset ?",
+        List<RestaurantSummary> list = jdbc.query(select + where + " order by " + orderBy + " limit ? offset ?",
                 FoodCatalogController::mapRestaurant, args.toArray());
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(list);
     }
@@ -203,7 +235,7 @@ public class FoodCatalogController {
                     UUID id = rs.getObject("id", UUID.class);
                     return new Section(id.toString(), rs.getString("name"), dishesBySection.getOrDefault(id, List.of()));
                 }, restaurantId).stream().filter(section -> !section.dishes().isEmpty()).toList();
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(new RestaurantDetail(restaurant, sections));
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(new RestaurantDetail(restaurant, sections, FoodScheduleService.hours(jdbc, restaurantId)));
     }
 
     /** Acceptable replacements for a product: same store and unit, available, other than the product itself. */
@@ -235,7 +267,7 @@ public class FoodCatalogController {
         }
         String contains = "%" + term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
         List<RestaurantSummary> restaurants = jdbc.query(RESTAURANT_SELECT
-                + " where r.vertical = ? and (r.name ilike ? or r.cuisine ilike ?) order by (r.is_open and r.moderation_status = 'ACTIVE') desc, r.sort_order, r.name limit 30",
+                + " where r.vertical = ? and (r.name ilike ? or r.cuisine ilike ?) order by marketplace.food_restaurant_open(r) desc, r.sort_order, r.name limit 30",
                 FoodCatalogController::mapRestaurant, vertical, contains, contains);
         List<DishHit> dishes = jdbc.query("""
                 select d.id, d.name, d.description, d.price_minor, d.emoji, d.tone, d.available,

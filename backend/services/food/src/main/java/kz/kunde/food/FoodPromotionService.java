@@ -128,7 +128,7 @@ public class FoodPromotionService {
                        (select count(*) from transactions.food_promo_redemptions x where x.promotion_id = p.id and x.released_at is null))
                   and (?::uuid is null or p.restaurant_id is null or p.restaurant_id = ?::uuid)
                   and (p.restaurant_id is null or r.vertical = ?)
-                  and (p.restaurant_id is null or (r.is_open and r.moderation_status = 'ACTIVE'))
+                  and (p.restaurant_id is null or marketplace.food_restaurant_open(r))
                 order by p.banner desc, p.ends_at, p.title limit 30""",
                 FoodPromotionService::map, restaurantId, restaurantId, vertical);
     }

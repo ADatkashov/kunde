@@ -80,7 +80,7 @@ public class FoodEngagementController {
     @GetMapping("/categories")
     public ResponseEntity<List<Category>> categories(@RequestParam(defaultValue = "FOOD") String vertical) {
         return noStore(HttpStatus.OK, db.query("""
-                select cuisine, count(*) from marketplace.food_restaurants where vertical = ? and is_open and moderation_status = 'ACTIVE'
+                select cuisine, count(*) from marketplace.food_restaurants r where vertical = ? and marketplace.food_restaurant_open(r)
                 group by cuisine order by count(*) desc, cuisine""", (rs, n) -> new Category(rs.getString(1), rs.getInt(2)), vertical));
     }
 
@@ -120,7 +120,7 @@ public class FoodEngagementController {
         UUID user = identity.get(principal).id();
         return noStore(HttpStatus.OK, db.query(FoodCatalogController.RESTAURANT_SELECT
                 + " where r.id in (select restaurant_id from marketplace.food_favorites where user_id = ?)"
-                + " order by (r.is_open and r.moderation_status = 'ACTIVE') desc, r.sort_order, r.name, r.id", FoodCatalogController::mapRestaurant, user));
+                + " order by marketplace.food_restaurant_open(r) desc, r.sort_order, r.name, r.id", FoodCatalogController::mapRestaurant, user));
     }
 
     @PutMapping("/favorites/{restaurantId}")

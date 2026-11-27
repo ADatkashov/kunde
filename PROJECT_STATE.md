@@ -74,6 +74,11 @@
 - В `main` после #193, #194, #198–#201: каталог, запись в поток с TEST_CARD, текстовые уроки, задания с проверкой преподавателем, тест, прогресс, PDF с проверяемым кодом и отзыв. Partner создаёт черновик и поток, Admin модерирует, Executor работает с назначенной группой. Миграции Education: V44, V48–V49 и V53–V55.
 - [Контракты, покрытие и ограничения](docs/product/education.md). Полная техническая приёмка остаётся открытой.
 
+## KUNDE Food Ordering 1.0 — slice 1: location, hours, distance (2026-11-26, ветка `ccr-d1e798b4-0h5jn4`)
+
+- Flyway V71: координаты ресторана, недельный график (Asia/Almaty, ночные слоты, `24:00`), функции `food_restaurant_open`/`food_distance_m`. Единое «открыто сейчас» (переключатель + модерация + график) во всех чтениях каталога и в checkout (`409 RESTAURANT_CLOSED` вне графика). `distanceMeters`, `sort=distance`, `maxDistanceMeters` (по прямой, без выдуманных значений); Partner `PUT …/hours`, `PUT …/location`, `GET …/schedule` (Owner/Manager, аудит); синтетические координаты DEV-сида.
+- Проверено локально: `./gradlew test` на PostgreSQL 16 — 530 тестов, 0 падений (новый `FoodScheduleApiIntegrationTest`, 5 тестов; fitness-функции и владение схемами зелёные). **Не проверено:** Flutter (в окружении нет SDK), DEV-деплой V71, смоук на DEV. UI этих полей не реализован. Детали и список оставшегося: [food-mvp](docs/product/food-mvp.md#food-location-opening-hours-and-distance-flyway-v71-devtest--2026-11-26).
+
 ## KUNDE Food Ordering 2.0 — DEV slice (2026-11-21, ветка `ccr-0b95f693-1hsj46`)
 
 - Flyway V43: самовывоз, акции и промокоды (скидка считается на сервере), избранное и проверенные отзывы с рейтингом в PostgreSQL, `READY_FOR_PICKUP`, настройки ресторана и акции Partner, Admin Food API (`FOOD_OPERATIONS`, дашборд из реальных данных, модерация, тестовый возврат, аудит). Consumer: серверные фильтры и сортировка, категории и баннер акции только из данных backend, переключатель «Доставка/Самовывоз», промокод, вкладки Меню/Отзывы/О заведении, отзыв после доставки. Partner: статус «Готов», самовывоз, скидка в заказе.
