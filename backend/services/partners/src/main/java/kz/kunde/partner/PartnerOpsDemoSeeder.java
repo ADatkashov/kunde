@@ -17,8 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
  * Safe, repeatable DEV seed of synthetic partners for the Partner Operations pilot. Runs only with
  * {@code app.partner-ops.seed-demo=true} in a dev/local/test environment. It creates two APPROVED synthetic partners whose
  * owners are the synthetic numbers {@value #PARTNER_PHONE} and {@value #OTHER_PHONE} (DEV OTP allowlist), links the first one
- * to the synthetic restaurant {@code partner-kitchen-demo} and venue {@code partner-salon-demo}, and leaves the second one
- * without assets (used to verify that a partner cannot touch another partner's data). No real person or business is represented.
+ * to the synthetic restaurant {@code partner-kitchen-demo} and venues {@code partner-salon-demo} and {@code home-clean-demo} (Home Services), and leaves the second one
+ * without assets (the venue links need the Booking demo seed, {@code app.booking.seed-demo}, to have created them first;
+ * otherwise they match nothing) (used to verify that a partner cannot touch another partner's data). No real person or business is represented.
  */
 @Component
 @Order(100)
@@ -53,6 +54,7 @@ public class PartnerOpsDemoSeeder implements ApplicationRunner {
         db.update("update marketplace.food_restaurants set partner_id = ? where slug = 'partner-kitchen-demo' and partner_id is null", first);
         db.update("update marketplace.food_restaurants set partner_id = ? where slug = 'partner-flowers-demo' and is_synthetic and partner_id is null", first);
         db.update("update marketplace.booking_venues set partner_id = ? where slug = 'partner-salon-demo' and partner_id is null", first);
+        db.update("update marketplace.booking_venues set partner_id = ? where slug = 'home-clean-demo' and partner_id is null", first);
         return first;
     }
 
