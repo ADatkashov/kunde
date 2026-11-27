@@ -1,6 +1,6 @@
 # Следующие проверки
 
-## Selective CI: PR 4–5 ([ADR-027](docs/architecture/adr/ADR-027-product-based-selective-ci.md))
+## Selective CI: PR 5 ([ADR-027](docs/architecture/adr/ADR-027-product-based-selective-ci.md))
 
 Backend уже подключён (PR 3): сначала убедиться в CI на PR, затрагивающем один модуль (напр. `homeservices`), что selective-ветка зелёная и быстрее FULL. Дальше: `flutter.yml` и партнёрские/executor/admin workflow (`flutter test test/features/<dir>`), затем `ci-pr.yml` с Required CI Gate (всегда запускается, учитывает skipped) — **до этого владелец проверяет required checks**. Замерить время до/после. Проверка: `python3 -m unittest discover -s scripts/ci -p 'test_*.py'`; `python3 scripts/ci/detect_affected.py --print-graph`.
 

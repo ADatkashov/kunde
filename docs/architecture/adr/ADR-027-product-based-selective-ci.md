@@ -41,6 +41,7 @@
 
 - Не создаётся «зеркальная» структура `backend/services/home-services` — реальный модуль называется `homeservices`; имена не меняются ради нейминга.
 - Миграции не сопоставляются с продуктами по таблицам (консервативно все продукты); уточнение — отдельная задача после изучения `database-ownership-matrix`.
+- **Фичи Consumer связаны импортами** (`home` импортирует почти все фичи, `booking` — beauty/food/health/home/home_services, `identity` — десять): детектор строит граф по реальным `import`, поэтому правка одной фичи Consumer перезапускает почти все feature-тесты (замыкание Home Services — 15 из 18 директорий). Реальная изоляция Consumer требует инверсии зависимостей (отдельная задача); выгода сейчас — в Executor/Admin, пропуске недостижимых приложений и пакетов, не затронутых изменением. Тесты вне `test/features/` (`core`, `shared`, `support`) идут только при изменении общих файлов приложения.
 - Партнёрское приложение имеет плоскую структуру тестов (`apps/partner/test/*_test.dart`), выборочный запуск по продуктам для него невозможен — всегда целиком.
 - Часть `:app`-тестов (`architecture`, `config`, `platform`, интеграционные auth/identity) не принадлежит продукту и запускается при любом изменении shared-модулей.
 - Конституция не изменена (требуется отдельное согласование владельца).
@@ -52,4 +53,4 @@
 
 ## План
 
-PR 1 — этот ADR, baseline, реестр. PR 2 — детектор и тесты (выполнен вместе с PR 1). PR 3 — backend selective build/test (`backend.yml`, `backend_gradle_args.py`; в этой же ветке). PR 4 — Flutter selective testing. PR 5 — `ci-pr.yml`, Required CI Gate, `product-e2e.yml`, кэши. PR 6 — product profiles, пилот Home Services, DEV Release.
+PR 1 — этот ADR, baseline, реестр. PR 2 — детектор и тесты (выполнен вместе с PR 1). PR 3 — backend selective build/test (`backend.yml`, `backend_gradle_args.py`; в этой же ветке). PR 4 — Flutter selective testing (`flutter.yml`, `executor-flutter.yml`, `admin-flutter.yml`, `flutter_selection.py`; Partner без изменений: плоские тесты). PR 5 — `ci-pr.yml`, Required CI Gate, `product-e2e.yml`, кэши. PR 6 — product profiles, пилот Home Services, DEV Release.
