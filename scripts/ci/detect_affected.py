@@ -142,6 +142,8 @@ class Detector:
             parts = path.split("/")
             if path.startswith((".github/", "scripts/ci/", "compose.yaml")) or path in ("backend/build.gradle.kts", "backend/settings.gradle.kts") or path.startswith("backend/gradle/"):
                 full.append("%s: Gradle/CI/build configuration" % path)
+            elif path.startswith("backend/") and len(parts) == 2 and path.endswith(".md"):
+                docs = True
             elif path == "backend/Dockerfile":
                 docker = True
                 reasons.append(path + ": docker image build")
@@ -247,6 +249,16 @@ class Detector:
                 "products": {"affected": sorted(self.products), "skipped": {}}, "docs": True, "infra": True}
 
 
+def summary_markdown(result):
+    """Short human-readable decision for $GITHUB_STEP_SUMMARY."""
+    lines = ["### Affected modules (ADR-027)", "", "- scope: **%s**" % result["scope"],
+             "- backend: modules `%s`, :app tests `%s`" % (", ".join(result["backend"]["modules"]) or "-", result["backend"]["app_tests"]),
+             "- products affected: %s" % (", ".join(result["products"]["affected"]) or "-"),
+             "- products skipped: %s" % (", ".join(result["products"]["skipped"]) or "-"), ""]
+    lines += ["- " + r.replace("|", "\\|") for r in result["reasons"][:30]]
+    return "\n".join(lines) + "\n"
+
+
 def full_fallback(reason):
     """Result used when the detector cannot be trusted: everything runs."""
     return {"scope": "full", "full": True, "reasons": [reason],
@@ -277,6 +289,8 @@ def main(argv=None):
     ap.add_argument("--merge-base", action="store_true", help="diff base...head (pull requests)")
     ap.add_argument("--files-from", help="'-' reads one path per line from stdin")
     ap.add_argument("--print-graph", action="store_true")
+    ap.add_argument("--result-file", help="also write the JSON result to this file")
+    ap.add_argument("--summary", action="store_true", help="append a Markdown summary to $GITHUB_STEP_SUMMARY")
     args = ap.parse_args(argv)
     try:
         if args.print_graph:
@@ -293,6 +307,12 @@ def main(argv=None):
         result = full_fallback("detector failed, FULL CI (fail-safe): %s" % exc)
     text = json.dumps(result, indent=2, sort_keys=True)
     print(text)
+    if args.result_file:
+        pathlib.Path(args.result_file).write_text(text + "\n", encoding="utf-8")
+    summary = os.environ.get("GITHUB_STEP_SUMMARY")
+    if args.summary and summary:
+        with open(summary, "a", encoding="utf-8") as fh:
+            fh.write(summary_markdown(result))
     out = os.environ.get("GITHUB_OUTPUT")
     if out:
         with open(out, "a", encoding="utf-8") as fh:

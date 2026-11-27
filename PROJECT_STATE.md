@@ -3,7 +3,7 @@
 ## Selective CI по продуктам (2026-11-27, ADR-027 PROPOSED)
 
 - Добавлены детектор затронутых модулей `scripts/ci/detect_affected.py`, реестр `scripts/ci/product-registry.json` и тесты `scripts/ci/test_detect_affected.py` (22 теста, идут в job `CI configuration`). Граф берётся из Gradle/pubspec; неизвестный файл, CI/Gradle-файлы, невалидный граф или неразрешимые SHA → FULL. Baseline: [ci-baseline-2026-11-27](docs/engineering-foundation/ci-baseline-2026-11-27.md).
-- **Детектор пока не подключён к workflow** (PR 3–5 плана ADR-027); Required CI Gate, `product-e2e.yml`, кэши, профили продуктов и DEV Release по детектору не реализованы. Branch protection недоступна агенту (HTTP 403) — не проверена.
+- PR 3: `backend.yml` вызывает детектор шагом внутри job `backend` (required check не пропадает и не бывает «skipped»): FULL → прежний `clean build`; selective → `assemble testClasses` + `:services:<m>:test` затронутых модулей + `:app:test --tests kz.kunde.<pkg>.*` + архитектурные тесты; `skip` (только docs) → без Gradle. `scripts/ci/backend_gradle_args.py` (+тесты). **Selective-ветка не проверена на реальном Gradle/CI** (Maven Central отвечал 429 в песочнице; PR с правкой workflow сам даёт FULL) — проверить первым PR, затрагивающим один модуль. Flutter CI, Required CI Gate, `product-e2e.yml`, кэши, профили продуктов и DEV Release не реализованы. Branch protection недоступна агенту (HTTP 403) — не проверена.
 
 ## Flowers & Gifts (2026-11-27, ADR-026 ACCEPTED)
 

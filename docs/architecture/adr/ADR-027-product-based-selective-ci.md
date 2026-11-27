@@ -52,4 +52,4 @@
 
 ## План
 
-PR 1 — этот ADR, baseline, реестр. PR 2 — детектор и тесты (выполнен вместе с PR 1). PR 3 — backend selective build/test. PR 4 — Flutter selective testing. PR 5 — `ci-pr.yml`, Required CI Gate, `product-e2e.yml`, кэши. PR 6 — product profiles, пилот Home Services, DEV Release.
+PR 1 — этот ADR, baseline, реестр. PR 2 — детектор и тесты (выполнен вместе с PR 1). PR 3 — backend selective build/test (`backend.yml`, `backend_gradle_args.py`; в этой же ветке). PR 4 — Flutter selective testing. PR 5 — `ci-pr.yml`, Required CI Gate, `product-e2e.yml`, кэши. PR 6 — product profiles, пилот Home Services, DEV Release.
