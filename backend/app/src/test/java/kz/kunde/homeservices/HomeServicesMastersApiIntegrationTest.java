@@ -238,7 +238,8 @@ class HomeServicesMastersApiIntegrationTest {
                         + "\",\"startsAt\":\"" + slotStart + "\",\"addressText\":\"Алматы, ул. Тестовая 1\",\"areaSqm\":40}")).andExpect(status().isCreated())), "$.id");
         call("POST", base() + "/" + id + "/deactivate", owner, null).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("MASTER_HAS_BOOKINGS"));
 
-        db.update("update transactions.bookings set status = 'CANCELLED' where id = ?::uuid", booking);
+        // The customer cancels the way a real one does (the constraint bookings_cancel_ts needs who and when).
+        call("POST", "/api/v1/booking/bookings/" + booking + "/cancel", customer, null).andExpect(status().isOk());
         call("POST", base() + "/" + id + "/deactivate", owner, null).andExpect(status().isNoContent());
         call("GET", base(), owner, null).andExpect(jsonPath("$[?(@.id=='" + id + "')]").isEmpty());
         link(code, executor).andExpect(status().isNotFound());   // the code died with the master
