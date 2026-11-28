@@ -24,6 +24,7 @@ class HomeServiceOrderScreen extends StatefulWidget {
     this.initialAreaSqm,
     this.initialUrgent = false,
     this.maps,
+    this.today,
     super.key,
   });
 
@@ -38,6 +39,9 @@ class HomeServiceOrderScreen extends StatefulWidget {
   /// The map for picking the address; tests inject one. Without it a map is opened on demand (and closed after the pick).
   final KundeMaps? maps;
 
+  /// The day the date chips start from; tests pin it so a screenshot does not change with the calendar.
+  final DateTime? today;
+
   @override
   State<HomeServiceOrderScreen> createState() => _HomeServiceOrderScreenState();
 }
@@ -49,7 +53,7 @@ class _HomeServiceOrderScreenState extends State<HomeServiceOrderScreen> {
   );
   final _comment = TextEditingController();
   final String _key = _newKey();
-  late final DateTime _today = DateTime.now();
+  late final DateTime _today = widget.today ?? DateTime.now();
   late DateTime _date = _today;
   late Future<List<BookingSlot>> _slots = _loadSlots();
   BookingSlot? _slot;

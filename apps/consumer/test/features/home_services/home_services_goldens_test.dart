@@ -134,7 +134,10 @@ void main() {
     await _show(
         tester,
         HomeServiceOrderScreen(
-            offer: plumbing, services: services, api: catalog));
+            offer: plumbing,
+            services: services,
+            api: catalog,
+            today: DateTime(2026, 11, 27)));
     await tester.tap(find.byKey(const ValueKey('slot-$_startsAt')));
     await tester.pumpAndSettle();
     await tester.enterText(
