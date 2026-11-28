@@ -301,7 +301,8 @@ class HomeServicesAdminOrdersIntegrationTest {
                 .andExpect(jsonPath("$.code").value("MASTER_UNCHANGED"));
 
         db.update("update marketplace.booking_masters set online = false where id = ?::uuid", other);
-        call("POST", reassign, ops, replacement(other, originalVersion + 1)).andExpect(status().isNotFound());
+        call("POST", reassign, ops, replacement(other, originalVersion + 1)).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("SLOT_UNAVAILABLE"));
         db.update("update marketplace.booking_masters set online = true where id = ?::uuid", other);
         call("POST", reassign, ops, replacement(other, originalVersion + 1)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.history[1].fromMasterId").value(previous))
@@ -313,6 +314,34 @@ class HomeServicesAdminOrdersIntegrationTest {
         http.perform(post("/api/v1/booking/bookings").header("Authorization", "Bearer " + customer)
                 .header("Idempotency-Key", key).contentType(MediaType.APPLICATION_JSON).content(bookingJson(previous, startsAt)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.id").value(booking)).andExpect(jsonPath("$.masterId").value(other));
+    }
+
+    @Test
+    void partnerQueueAndReplacementAreScopedToTheOwningOrganization() throws Exception {
+        String booking = confirm(orderFor(customer, "partner-replacement-000001"));
+        String previous = JsonPath.read(slots, "$[0].masterId");
+        String other = masterOtherThan(booking);
+        db.update("update marketplace.booking_masters set user_id = ?::uuid where id = ?::uuid", executorUser, previous);
+        db.update("delete from marketplace.booking_working_hours where master_id = ?::uuid", other);
+        db.update("""
+                insert into marketplace.booking_working_hours (master_id, weekday, start_time, end_time, break_start, break_end)
+                select ?::uuid, weekday, start_time, end_time, break_start, break_end from marketplace.booking_working_hours
+                where master_id = ?::uuid
+                """, other, previous);
+        long initialVersion = version(booking);
+        call("POST", "/api/v1/executor/home-services/jobs/" + booking + "/decline", executor,
+                "{\"expectedVersion\":" + initialVersion + ",\"reason\":\"Unavailable\"}").andExpect(status().isNoContent());
+        String partner = db.queryForObject("select partner_id::text from marketplace.booking_venues where id = ?::uuid",
+                String.class, venueId());
+        String owner = login("+77000000002");
+        String queue = "/api/v1/partner/partners/" + partner + "/home-services/assignments";
+        call("GET", queue, owner, null).andExpect(status().isOk()).andExpect(jsonPath("$[0].id").value(booking));
+        call("GET", queue, otherCustomer, null).andExpect(status().isNotFound());
+        call("POST", queue + "/" + booking, otherCustomer, replacement(other, initialVersion + 1))
+                .andExpect(status().isNotFound());
+        call("POST", queue + "/" + booking, owner, replacement(other, initialVersion + 1))
+                .andExpect(status().isNoContent());
+        call("GET", queue, owner, null).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
     }
 
     private static String replacement(String master, long version) {
