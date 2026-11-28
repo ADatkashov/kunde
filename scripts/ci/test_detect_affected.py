@@ -56,7 +56,7 @@ class PilotScenarios(unittest.TestCase):
 
     def test_e_shared_flutter_package_runs_consumer_apps(self):
         r = detect("packages/kunde_ui/lib/src/button.dart")
-        self.assertEqual(modes(r), {"consumer": "all", "executor": "all", "admin": "all"})  # partner does not depend on kunde_ui
+        self.assertEqual(modes(r), {"consumer": "all", "executor": "all", "admin": "all", "partner": "all"})
         self.assertIn("kunde_ui", r["flutter"]["packages"])
         r = detect("packages/kunde_session/lib/a.dart")  # transitive: session -> auth -> api -> ui -> apps
         self.assertEqual(modes(r), {"consumer": "all", "executor": "all", "admin": "all", "partner": "all"})

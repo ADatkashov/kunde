@@ -37,7 +37,7 @@ public class BookingPartnerService {
             long priceMinor, String currency, String status, String comment, String addressText, Integer areaSqm,
             String customerRef, OffsetDateTime createdAt, String cancelledBy, String cancelReason,
             List<String> allowedActions, List<TimelineEntry> timeline, String vehicle, String priceKind,
-            Long finalPriceMinor, String priceApproval) {}
+            Long finalPriceMinor, String priceApproval, long version) {}
 
     public record VenueView(String id, String name, String category, boolean open) {}
 
@@ -622,7 +622,7 @@ public class BookingPartnerService {
         db.query("""
                 select id, venue_id, venue_name, category, service_name, duration_minutes, master_id, master_name, starts_at, ends_at,
                        price_minor, currency, status, comment, address_text, area_sqm, user_id, created_at, cancelled_by, cancel_reason,
-                       starts_at > now() as future, vehicle_label, price_kind, final_price_minor, price_approval
+                       starts_at > now() as future, vehicle_label, price_kind, final_price_minor, price_approval, version
                 from transactions.bookings where id = any (?)
                 """, rs -> {
                     UUID id = rs.getObject("id", UUID.class);
@@ -649,7 +649,7 @@ public class BookingPartnerService {
                             rs.getString("user_id").substring(0, 8), rs.getObject("created_at", OffsetDateTime.class),
                             rs.getString("cancelled_by"), rs.getString("cancel_reason"), actions,
                             timeline.getOrDefault(id, List.of()), rs.getString("vehicle_label"), rs.getString("price_kind"),
-                            rs.getObject("final_price_minor", Long.class), rs.getString("price_approval")));
+                            rs.getObject("final_price_minor", Long.class), rs.getString("price_approval"), rs.getLong("version")));
                 }, (Object) array);
         return ids.stream().map(byId::get).filter(java.util.Objects::nonNull).toList();
     }

@@ -74,12 +74,14 @@ public class HomeServicesAdminOrdersController {
     private final AdminGrants grants;
     private final BookingService bookings;
     private final HomeServiceAssignments assignments;
+    private final HomeServiceReschedules reschedules;
 
-    public HomeServicesAdminOrdersController(JdbcTemplate db, AdminGrants grants, BookingService bookings, HomeServiceAssignments assignments) {
+    public HomeServicesAdminOrdersController(JdbcTemplate db, AdminGrants grants, BookingService bookings, HomeServiceAssignments assignments, HomeServiceReschedules reschedules) {
         this.db = db;
         this.grants = grants;
         this.bookings = bookings;
         this.assignments = assignments;
+        this.reschedules = reschedules;
     }
 
     @GetMapping
@@ -154,6 +156,15 @@ public class HomeServicesAdminOrdersController {
         assignments.replace(id, order, request.masterId(), request.expectedVersion(), "ADMIN", admin, request.reason().trim());
         audit(id, admin, "REASSIGN", request.reason().trim(), order.master(), request.masterId());
         return ok(detailOf(id));
+    }
+
+    @PostMapping("/{id}/reschedule")
+    @Transactional
+    ResponseEntity<Void> proposeReschedule(@AuthenticationPrincipal Jwt principal, @PathVariable UUID id,
+            @Valid @RequestBody HomeServiceReschedules.Request request) {
+        UUID actor = authorize(principal);
+        reschedules.propose(id, null, actor, "ADMIN", request);
+        return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
     }
 
     // ---- internals

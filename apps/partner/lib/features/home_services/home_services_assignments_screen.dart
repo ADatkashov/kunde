@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kunde_ui/home_service_reschedule_dialog.dart';
 
 import '../../core/error_text.dart';
 import '../../core/strings.dart';
@@ -133,6 +134,35 @@ class _HomeServicesAssignmentsScreenState
     }
   }
 
+  Future<void> _proposeReschedule(Map<String, dynamic> order) async {
+    setState(() => _busy = true);
+    try {
+      final proposal = await showDialog<HomeServiceScheduleProposal>(
+        context: context,
+        builder: (_) => const HomeServiceRescheduleDialog(),
+      );
+      if (proposal == null || !mounted) return;
+      await widget.api.postJson('$_root/${order['id']}/reschedule', {
+        'expectedVersion': order['version'],
+        'startsAt': proposal.startsAt,
+        'reason': proposal.reason,
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+            _t('Предложение отправлено', 'Ұсыныс жіберілді', 'Proposal sent')),
+      ));
+      await _reload();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorText(S.of(context), error))));
+      await _reload();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
@@ -176,12 +206,30 @@ class _HomeServicesAssignmentsScreenState
                           title: Text(order['serviceName'] as String),
                           subtitle: Text(order['bookingNumber'] as String),
                           trailing: widget.canManage
-                              ? IconButton(
-                                  tooltip: _t('Назначить мастера',
-                                      'Шеберді тағайындау', 'Assign a master'),
-                                  onPressed:
-                                      _busy ? null : () => _assign(order),
-                                  icon: const Icon(Icons.person_add_alt),
+                              ? Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      tooltip: _t(
+                                          'Предложить перенос',
+                                          'Ауыстыруды ұсыну',
+                                          'Propose a change'),
+                                      onPressed: _busy
+                                          ? null
+                                          : () => _proposeReschedule(order),
+                                      icon: const Icon(
+                                          Icons.edit_calendar_outlined),
+                                    ),
+                                    IconButton(
+                                      tooltip: _t(
+                                          'Назначить мастера',
+                                          'Шеберді тағайындау',
+                                          'Assign a master'),
+                                      onPressed:
+                                          _busy ? null : () => _assign(order),
+                                      icon: const Icon(Icons.person_add_alt),
+                                    ),
+                                  ],
                                 )
                               : null,
                         ),

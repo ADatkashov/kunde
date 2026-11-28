@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:kunde_auth/auth_repository.dart';
+import 'package:kunde_ui/home_service_reschedule_dialog.dart';
 import 'package:kunde_ui/ride_strings.dart';
 
 const _ordersPath = 'admin/home-services/orders';
@@ -334,6 +335,7 @@ class _HomeServicesOrderScreenState extends State<HomeServicesOrderScreen> {
           'expectedVersion': detail['version'],
           'reason': reason,
         },
+        expected: const {200, 204},
       );
     } catch (_) {
       messenger.showSnackBar(SnackBar(
@@ -354,6 +356,16 @@ class _HomeServicesOrderScreenState extends State<HomeServicesOrderScreen> {
     );
     if (reason == null || !mounted) return;
     await _act('cancel', detail, reason: reason);
+  }
+
+  Future<void> _proposeReschedule(Map<String, dynamic> detail) async {
+    final proposal = await showDialog<HomeServiceScheduleProposal>(
+      context: context,
+      builder: (_) => const HomeServiceRescheduleDialog(),
+    );
+    if (proposal == null || !mounted) return;
+    await _act('reschedule', detail,
+        extra: {'startsAt': proposal.startsAt}, reason: proposal.reason);
   }
 
   Future<void> _reassign(Map<String, dynamic> detail) async {
@@ -470,6 +482,13 @@ class _HomeServicesOrderScreenState extends State<HomeServicesOrderScreen> {
               child: Text(s.t('Переназначить мастера', 'Шеберді ауыстыру',
                   'Reassign master')),
             ),
+            if (order['status'] == 'CONFIRMED')
+              FilledButton.tonal(
+                key: const ValueKey('propose-reschedule'),
+                onPressed: () => _proposeReschedule(d),
+                child: Text(s.t('Предложить перенос', 'Ауыстыруды ұсыну',
+                    'Propose a change')),
+              ),
             FilledButton.tonal(
               key: const ValueKey('cancel'),
               onPressed: () => _cancel(d),

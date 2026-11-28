@@ -69,7 +69,7 @@ public class BookingService {
         db.query("select pg_advisory_xact_lock(hashtext('booking'), hashtext(?))",
                 (org.springframework.jdbc.core.RowCallbackHandler) rs -> {}, user.toString());
         Instant start = request.startsAt().toInstant();
-        var existing = db.query("select id, coalesce(home_initial_master_id, master_id), coalesce(health_initial_starts_at, starts_at), venue_id, service_id, category, price_minor from transactions.bookings where user_id = ? and idempotency_key = ?",
+        var existing = db.query("select id, coalesce(home_initial_master_id, master_id), coalesce(health_initial_starts_at, home_initial_starts_at, starts_at), venue_id, service_id, category, price_minor from transactions.bookings where user_id = ? and idempotency_key = ?",
                 (rs, row) -> new Object[] {rs.getObject(1, UUID.class), rs.getObject(2, UUID.class), rs.getTimestamp(3).toInstant(),
                     rs.getObject(4, UUID.class), rs.getObject(5, UUID.class), rs.getString(6), rs.getLong(7)},
                 user, idempotencyKey).stream().findFirst();
@@ -327,8 +327,8 @@ public class BookingService {
     public void changeHomeAssignment(UUID id, UUID master, String name) {
         db.update("""
                 update transactions.bookings set home_initial_master_id = coalesce(home_initial_master_id, master_id),
-                    master_id = ?, master_name = ?, updated_at = now(), version = version + 1
-                where id = ? and category = 'CLEANING'
+                    master_id = ?, master_name = ?, home_proposed_starts_at = null, home_reschedule_reason = null,
+                    updated_at = now(), version = version + 1 where id = ? and category = 'CLEANING'
                 """, master, name, id);
     }
 
@@ -364,6 +364,45 @@ public class BookingService {
                 return false;
             }
             throw unavailable;
+        }
+    }
+
+    /** The surrounding transaction holds the booking row and the customer's booking lock. */
+    public void moveHomeBooking(UUID id, UUID user, OffsetDateTime start, OffsetDateTime end) {
+        boolean overlap = Boolean.TRUE.equals(db.queryForObject("""
+                select exists (select 1 from transactions.bookings where id <> ? and user_id = ?
+                    and status in ('PENDING', 'CONFIRMED', 'CHECKED_IN', 'IN_PROGRESS')
+                    and starts_at < ? and ends_at > ?)
+                """, Boolean.class, id, user, end, start));
+        if (overlap) {
+            throw new ApiException(HttpStatus.CONFLICT, "BOOKING_OVERLAPS_YOURS", "You already have a booking at this time");
+        }
+        try {
+            db.update("""
+                    update transactions.bookings set home_initial_starts_at = coalesce(home_initial_starts_at, starts_at),
+                        starts_at = ?, ends_at = ?, home_proposed_starts_at = null, home_reschedule_reason = null,
+                        updated_at = now(), version = version + 1 where id = ?
+                    """, start, end, id);
+        } catch (DataIntegrityViolationException conflict) {
+            if (conflict.getMostSpecificCause() instanceof SQLException sql && "23P01".equals(sql.getSQLState())) {
+                throw new ApiException(HttpStatus.CONFLICT, "SLOT_TAKEN", "This time was just booked by someone else");
+            }
+            throw conflict;
+        }
+    }
+
+    public void requireHomeRescheduleSlot(UUID id, UUID venue, UUID service, UUID master,
+            OffsetDateTime start, int durationMinutes) {
+        db.queryForObject("select id from marketplace.booking_venues where id = ? for share", UUID.class, venue);
+        db.queryForObject("select id from marketplace.booking_services where id = ? for share", UUID.class, service);
+        if (master != null) {
+            db.queryForObject("select id from marketplace.booking_masters where id = ? for share", UUID.class, master);
+        }
+        var date = start.atZoneSameInstant(slots.venue(venue).zone()).toLocalDate();
+        if (slots.service(venue, service).durationMinutes() != durationMinutes
+                || slots.freeSlots(venue, service, master, date, id).stream()
+                        .noneMatch(slot -> slot.startsAt().toInstant().equals(start.toInstant()))) {
+            throw new ApiException(HttpStatus.CONFLICT, "SLOT_UNAVAILABLE", "The proposed time is no longer available");
         }
     }
 
