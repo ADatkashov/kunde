@@ -20,6 +20,8 @@ class HomeServiceOffer {
     required this.homeVisit,
     required this.warrantyDays,
     this.pricePerSqmMinor = 0,
+    this.rating,
+    this.reviewCount = 0,
   });
 
   factory HomeServiceOffer.fromJson(Map<String, dynamic> json) =>
@@ -39,6 +41,8 @@ class HomeServiceOffer {
         homeVisit: json['homeVisit'] as bool,
         warrantyDays: (json['warrantyDays'] as num).toInt(),
         pricePerSqmMinor: (json['pricePerSqmMinor'] as num?)?.toInt() ?? 0,
+        rating: (json['rating'] as num?)?.toDouble(),
+        reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
       );
 
   final String id;
@@ -58,6 +62,10 @@ class HomeServiceOffer {
 
   /// Above zero when the service is priced by area: the customer must give the area and the quote depends on it.
   final int pricePerSqmMinor;
+
+  /// Average of published reviews computed by the server; `null` while the offer has no review (never shown as 0).
+  final double? rating;
+  final int reviewCount;
 
   bool get areaBased => pricePerSqmMinor > 0;
 

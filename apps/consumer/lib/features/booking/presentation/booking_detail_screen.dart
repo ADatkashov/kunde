@@ -1,3 +1,4 @@
+import '../../home_services/presentation/home_service_reviews.dart';
 import '../../home_services/presentation/home_service_visit_card.dart';
 import 'dart:async';
 
@@ -222,6 +223,12 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                                   .authorizedJson('GET',
                                       'home-services/bookings/${b.id}/visit'))
                               as Map<String, dynamic>,
+                        ),
+                      if (b.isCleaning && b.status == 'COMPLETED')
+                        HomeServiceReviewCard(
+                          key: ValueKey('review-${b.id}'),
+                          auth: widget.services.auth,
+                          bookingId: b.id,
                         ),
                       if (b.isHealth)
                         SelectableText(b.id, style: theme.textTheme.bodySmall),

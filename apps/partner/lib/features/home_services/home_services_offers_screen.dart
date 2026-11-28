@@ -7,6 +7,7 @@ import '../../data/models.dart';
 import '../../data/partner_api.dart';
 import '../../data/partner_operations.dart';
 import 'home_services_masters_screen.dart';
+import 'home_services_reviews_screen.dart';
 
 /// «Дом и быт»: the partner's own service offers and their moderation state. Roles and ownership are the server's
 /// decision (OWNER/MANAGER write; OPERATOR reads); this screen only offers the transitions the state machine allows.
@@ -103,9 +104,17 @@ class _HomeServicesOffersScreenState extends State<HomeServicesOffersScreen> {
             'Home services: my offers')),
         actions: [
           IconButton(
+            key: const ValueKey('open-reviews'),
+            tooltip: t('Отзывы', 'Пікірлер', 'Reviews'),
+            icon: const Icon(Icons.star_outline_rounded),
+            onPressed: () => Navigator.of(context).push<void>(MaterialPageRoute(
+                builder: (_) => HomeServicesReviewsScreen(
+                    api: widget.api, partnerId: widget.partnerId))),
+          ),
+          IconButton(
             key: const ValueKey('open-masters'),
-            tooltip: t('Мастера и коды', 'Шеберлер және кодтар',
-                'Masters and codes'),
+            tooltip: t(
+                'Мастера и коды', 'Шеберлер және кодтар', 'Masters and codes'),
             icon: const Icon(Icons.groups_outlined),
             onPressed: () => Navigator.of(context).push<void>(MaterialPageRoute(
                 builder: (_) => HomeServicesMastersScreen(

@@ -4,6 +4,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:kunde_auth/auth_repository.dart';
 import 'package:kunde_ui/ride_strings.dart';
 
+import 'home_services_rating_screen.dart';
+
 const _root = 'executor/home-services';
 
 /// KUNDE Executor for a Home Services master: link by invite code, then walk each visit in order —
@@ -146,8 +148,21 @@ class _HomeServicesWorkScreenState extends State<HomeServicesWorkScreen> {
     final s = RideStrings(context);
     return Scaffold(
       appBar: AppBar(
-          title: Text(s.t('Дом и быт: мои заказы',
-              'Үй және тұрмыс: тапсырыстарым', 'Home services: my jobs'))),
+        title: Text(s.t('Дом и быт: мои заказы',
+            'Үй және тұрмыс: тапсырыстарым', 'Home services: my jobs')),
+        actions: [
+          IconButton(
+            key: const ValueKey('open-rating'),
+            tooltip: s.t('Мой рейтинг', 'Менің рейтингім', 'My rating'),
+            icon: const Icon(Icons.star_outline_rounded),
+            onPressed: () => Navigator.of(context).push<void>(
+              MaterialPageRoute(
+                builder: (_) => HomeServicesRatingScreen(auth: widget.auth),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _jobs,
         builder: (context, state) {
