@@ -37,3 +37,27 @@ cd backend
 `HomeServicesJourneyIntegrationTest` — это **API-интеграционный** сценарий (оффер → модерация → заказ → приём → визит → завершение; отмена, доступ, повторы, недопустимые переходы). Он **не заменяет** нативный multi-role E2E на устройствах (в бэклоге Home Services MVP).
 
 Что CI запустит для правки только этого модуля: `git diff --name-only origin/main... | python3 scripts/ci/detect_affected.py --files-from -`.
+
+## Фото заказа (H11, draft)
+
+Маршрут `/api/v1/home-services/bookings/{bookingId}/photos` доступен владельцу заказа.
+`POST` принимает исходный JPEG/PNG в теле запроса и UUID в заголовке `Idempotency-Key`.
+`GET` возвращает список, `GET /{photoId}` выдаёт подписанный URL на три минуты,
+`DELETE /{photoId}` убирает фото из API и ставит объект в очередь очистки.
+До начала работ можно приложить до шести фото проблемы. Снимки проходят
+декодирование и повторное кодирование. PostgreSQL хранит только метаданные и аудит.
+
+Для локального теста нужен loopback S3 endpoint с синтетическим пользователем,
+который может создавать и удалять тестовые бакеты. При установленной переменной
+`HOME_SERVICES_TEST_S3_ENDPOINT` тест использует только
+`HOME_SERVICES_TEST_S3_ACCESS_KEY` и `HOME_SERVICES_TEST_S3_SECRET_KEY`.
+
+```bash
+cd backend
+./gradlew :services:homeservices:test --tests '*HomeServicePhotoStorageIntegrationTest'
+./gradlew :app:test --tests '*HomeServicesVisitApiIntegrationTest'
+```
+
+Для R2 предусмотрены S3 endpoint, регион `auto` и имя приватного бакета.
+Используется S3 API endpoint аккаунта. Публичный доступ к бакету должен быть выключен.
+До проверки облачного хранилища флаг `HOME_SERVICES_PHOTOS_ENABLED` остаётся выключенным.

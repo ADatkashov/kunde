@@ -4,7 +4,7 @@
 
 DEV на `ae67668ad86fcd8deb1aa49f3710cb1222685e01` (PR #306). V77–V80 применены. Readiness и расширенный HTTP smoke прошли. [Release workflow на том же SHA](https://github.com/ADatkashov/kunde/actions/runs/46132079845).
 
-**Следующий срез — H11.** В [draft PR #307](https://github.com/ADatkashov/kunde/pull/307) сохранены перекодирование JPEG/PNG с удалением EXIF и отключённый по умолчанию S3-адаптер. Подключить миграцию метаданных, привязку объектов к заказу или предложению, проверку владельца, лимиты на заказ, очистку и авторизованные API. Сначала провести интеграционный тест на локальном S3-совместимом хранилище, затем добавить загрузку и просмотр в приложениях.
+**Продолжить H11 в [draft PR #307](https://github.com/ADatkashov/kunde/pull/307).** V81 и API фото проблемы для владельца заказа добавлены. Проверить `:app:test --tests '*HomeServicesVisitApiIntegrationTest'` на PostgreSQL и `:services:homeservices:test --tests '*HomeServicePhotoStorageIntegrationTest'` на локальном S3 (параметры в README модуля). Следующий срез — активный Executor (до/после/допработы), Partner и scoped Admin, затем офферы и отзывы с модерацией и UI четырёх приложений. Cloudflare R2 DEV/PROD — BLOCKED до доступа к приватному бакету и проверки. После H11 продолжить H10 DEV-приёмку и H7 по аудиту.
 
 **Открытая приёмка H10:** отдельный разрешённый синтетический Executor, временный `HOME_SERVICES_OPERATIONS`, изоляция между городами, сценарий гонки и уточнение точки для исторических заказов. Основной контур отказа, переназначения и переноса прошёл CI в PR #304–306.
 

@@ -1,18 +1,21 @@
 package kz.kunde.homeservices;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.Set;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 @Configuration(proxyBeanMethods = false)
+@EnableScheduling
 @ConditionalOnProperty(name = {"app.home-services.enabled", "app.home-services.photos.enabled"}, havingValue = "true")
 class HomeServicePhotoStorageConfiguration {
     @Bean
@@ -32,7 +35,9 @@ class HomeServicePhotoStorageConfiguration {
         var config = S3Configuration.builder().pathStyleAccessEnabled(true).build();
         var presigner = S3Presigner.builder().region(region).endpointOverride(endpoint).serviceConfiguration(config).build();
         try {
-            var client = S3Client.builder().region(region).endpointOverride(endpoint).serviceConfiguration(config).build();
+            var client = S3Client.builder().region(region).endpointOverride(endpoint).serviceConfiguration(config)
+                    .overrideConfiguration(options -> options.apiCallTimeout(Duration.ofSeconds(10))
+                            .apiCallAttemptTimeout(Duration.ofSeconds(5))).build();
             return new HomeServicePhotoStorage(client, presigner, bucket);
         } catch (RuntimeException e) {
             presigner.close();
