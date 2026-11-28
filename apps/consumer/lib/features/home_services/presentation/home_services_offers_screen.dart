@@ -5,6 +5,7 @@ import 'package:kunde_ui/ride_strings.dart';
 
 import '../../booking/booking_services.dart';
 import 'home_service_order_screen.dart';
+import 'home_service_reviews.dart';
 import 'home_services_widgets.dart';
 
 String formatKzt(int minor) {
@@ -326,6 +327,11 @@ class _OfferCard extends StatelessWidget {
                         runSpacing: 6,
                         children: [
                           HomeServicePill(priceLabel(s, offer), strong: true),
+                          if (offer.rating != null)
+                            HomeServicePill(
+                              ratingLabel(offer.rating!, offer.reviewCount),
+                              icon: Icons.star_rounded,
+                            ),
                           if (offer.warrantyDays > 0)
                             HomeServicePill(
                               '${s.t('Гарантия', 'Кепілдік', 'Warranty')} ${offer.warrantyDays} ${s.t('дн.', 'күн', 'd')}',
@@ -573,6 +579,40 @@ class _HomeServiceOfferScreenState extends State<HomeServiceOfferScreen> {
                                   ),
                               ],
                             ),
+                            if (offer.rating != null) ...[
+                              const SizedBox(height: 10),
+                              InkWell(
+                                key: const ValueKey('offer-rating'),
+                                onTap: () => Navigator.of(context).push<void>(
+                                  MaterialPageRoute(
+                                    builder: (_) => HomeServiceReviewsScreen(
+                                      auth: widget.services.auth,
+                                      path:
+                                          'home-services/offers/${offer.id}/reviews',
+                                    ),
+                                  ),
+                                ),
+                                child: Row(children: [
+                                  const Icon(
+                                    Icons.star_rounded,
+                                    color: Color(0xFFFFB020),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    ratingLabel(
+                                        offer.rating!, offer.reviewCount),
+                                    style: theme.textTheme.titleMedium,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    s.t('отзывы', 'пікірлер', 'reviews'),
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                  ),
+                                ]),
+                              ),
+                            ],
                             const SizedBox(height: 14),
                             Text(
                               priceLabel(s, offer),
