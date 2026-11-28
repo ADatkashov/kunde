@@ -92,3 +92,19 @@ Home Services использует общий Booking Engine. Новый спр�
 | `POST …/masters/{masterId}/deactivate` | `OWNER`/`MANAGER` | Вывести мастера из работы; `409 MASTER_HAS_BOOKINGS`, пока есть открытые брони |
 
 Коды ошибок: `PARTNER_NOT_FOUND`, `VENUE_NOT_FOUND`, `MASTER_NOT_FOUND` (404), `PARTNER_ROLE_FORBIDDEN` (403), `NAME_INVALID` (400). Мастер привязывается кодом в Executor (`POST /executor/home-services/link`). Проверка: `cd backend && ./gradlew :app:test --tests 'kz.kunde.homeservices.HomeServicesMastersApiIntegrationTest'`. Экран Partner: «Дом и быт → Мастера и коды» (`apps/partner/lib/features/home_services/home_services_masters_screen.dart`): список с кодом (копирование), новый мастер, новый код, вывод из работы с подтверждением; роли без права управления видят только список.
+
+## Заказы в Admin: реестр, карточка, отмена и переназначение (H8, 2026-11-28, V77)
+
+Операции над заказами — отдельный грант **`HOME_SERVICES_OPERATIONS`** (грант `HOME_SERVICES_CATALOG` заказы не открывает и не позволяет действовать над ними): модерацию каталога и операции с заказами могут вести разные люди (scoped RBAC). Работает и при выключенном флаге продукта.
+
+| Метод и путь `/api/v1/admin/home-services/orders` | Назначение |
+| --- | --- |
+| `GET ?status=&q=&venueId=&from=&to=&limit=&offset=` | Реестр `{items,total,limit,offset}`: номер, услуга, площадка, мастер, статус, стадия визита, время, сумма. Без контактов и адреса клиента. `q` — начало номера `KND-…` (только `[A-Za-z0-9-]`), `from/to` — даты в зоне Asia/Almaty |
+| `GET /{id}` | Карточка: адрес, площадь, комментарий, причина и инициатор отмены, версия, визит, история статусов (`booking_events`), действия персонала |
+| `GET /{id}/masters` | Активные мастера той же площадки, которые выполняют эту услугу |
+| `POST /{id}/cancel` `{expectedVersion, reason}` | Отмена заказа `PENDING`/`CONFIRMED`; `cancelled_by = ADMIN` |
+| `POST /{id}/reassign` `{masterId, expectedVersion, reason}` | Передача заказа другому мастеру; сбрасывает «в пути» прежнего мастера |
+
+Правила: причина обязательна (≤200 символов); версия заказа проверяется под блокировкой строки (`409 VERSION_CONFLICT` — экран устарел); начатая работа (`IN_PROGRESS`) и завершённая не отменяются и не переназначаются операцией (`409 ORDER_NOT_OPERABLE`) — это спор (H7). Ошибки переназначения: `MASTER_UNCHANGED` (409), `MASTER_INVALID` (422: чужая площадка, неактивный мастер или не выполняет услугу), `MASTER_BUSY` (409: пересечение с другим заказом мастера; запасная защита — EXCLUDE-ограничение Booking Engine). Каждое действие пишется в историю заказа (`actor_type = ADMIN`) и в неизменяемый `home_service_admin_events` (ссылки по id без внешних ключей — ратчет Конституции §5).
+
+Проверено на PostgreSQL 16: `HomeServicesAdminOrdersIntegrationTest` (8 тестов: RBAC, фильтры и пагинация, отсутствие телефона клиента в реестре, отмена, переназначение, занятый и неподходящий мастер, начатая работа, неизменяемость аудита). Admin Flutter — экран «Дом и быт: заказы» (`HomeServicesOrdersScreen`, `HomeServicesOrderScreen`), виден при гранте `HOME_SERVICES_OPERATIONS`; 7 тестов. Не проверялось: DEV, устройство, выдача гранта через Admin-интерфейс.

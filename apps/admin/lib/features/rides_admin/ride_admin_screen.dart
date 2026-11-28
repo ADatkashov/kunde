@@ -12,6 +12,7 @@ import 'package:kunde_auth/auth_repository.dart';
 import '../health/health_admin_screen.dart';
 import '../home_services_admin/home_services_categories_screen.dart';
 import '../home_services_admin/home_services_offers_screen.dart';
+import '../home_services_admin/home_services_orders_screen.dart';
 import 'package:kunde_ui/ride_strings.dart';
 import 'ride_admin_dashboard.dart';
 import 'ride_driver_access_screen.dart';
@@ -408,6 +409,18 @@ class _RideAdminScreenState extends State<RideAdminScreen> {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context).push<void>(MaterialPageRoute(
                 builder: (_) => HomeServicesOffersScreen(auth: widget.auth),
+              )),
+            ),
+          ),
+        if (permissions.contains('HOME_SERVICES_OPERATIONS'))
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.assignment_outlined),
+              title: Text(s.t('Дом и быт: заказы',
+                  'Үй және тұрмыс: тапсырыстар', 'Home services orders')),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push<void>(MaterialPageRoute(
+                builder: (_) => HomeServicesOrdersScreen(auth: widget.auth),
               )),
             ),
           ),
