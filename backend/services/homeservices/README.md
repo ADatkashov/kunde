@@ -13,6 +13,10 @@
 | `HomeServicesPartnerMastersController` | `partner/partners/{partnerId}/home-services/masters` (+ `/{id}/invite`, `/{id}/deactivate`) | Partner: мастера и коды-приглашения для Executor |
 | `HomeServicesAdminOffersController` | `admin/home-services/offers` (+ `/{id}/decision`) | Admin (грант `HOME_SERVICES_CATALOG`) |
 | `HomeServicesAdminOrdersController` | `admin/home-services/orders` (+ `/{id}`, `/{id}/masters`, `/{id}/cancel`, `/{id}/reassign`) | Admin (грант `HOME_SERVICES_OPERATIONS`): реестр без контактов клиента, карточка с историей, отмена и переназначение мастера с причиной, версией и аудитом (`home_service_admin_events`, V77); начатую работу (`IN_PROGRESS`) операция не трогает — это спор (H7) |
+| `HomeServicesReviewsController` | `home-services/bookings/{id}/review` (POST, GET), `home-services/offers/{id}/reviews`, `home-services/masters/{id}/reviews` | Consumer: отзыв владельца завершённого заказа (один на заказ, повтор идемпотентен), публичные опубликованные отзывы и рассчитанный рейтинг |
+| `HomeServicesPartnerReviewsController` | `partner/partners/{partnerId}/home-services/reviews` (+ `/summary`, `/{id}/complaint`) | Partner: отзывы своих площадок, рейтинг организации и мастеров, жалоба на отзыв |
+| `HomeServicesExecutorReviewsController` | `executor/home-services/{rating,reviews}` | Executor: свой рейтинг, число выполненных заказов, история отзывов |
+| `HomeServicesAdminReviewsController` | `admin/home-services/{reviews,review-complaints}` (+ `/reviews/{id}/moderation`, `/review-complaints/{id}/resolve`) | Admin (грант `HOME_SERVICES_OPERATIONS`): реестр, скрытие/возврат отзыва, разбор жалоб, аудит |
 | `HomeServicesVisitController` | `executor/home-services/{link,jobs,jobs/{id}/stage,start,complete}`, `home-services/bookings/{id}/visit` | Executor, Consumer (своя запись) |
 
 Заказ создаётся общим `POST /booking/bookings` (идемпотентно, `Idempotency-Key`); Partner подтверждает через `partner/partners/{id}/booking/bookings/{id}/action`. Порядок визита (`EN_ROUTE → ARRIVED → START → COMPLETE`) принудительно проверяет сервер.
