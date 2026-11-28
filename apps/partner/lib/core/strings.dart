@@ -736,6 +736,8 @@ class S {
   String get filterStatus => _t('Статус', 'Мәртебе', 'Status');
   String get bookingService => _t('Услуга', 'Қызмет', 'Service');
   String get bookingMaster => _t('Мастер', 'Шебер', 'Specialist');
+  String get bookingProposeReschedule =>
+      _t('Предложить перенос', 'Ауыстыруды ұсыну', 'Propose a change');
   String get bookingUnassigned =>
       _t('Ожидает назначения', 'Тағайындау күтілуде', 'Awaiting assignment');
   String get bookingPlace => _t('Заведение', 'Мекеме', 'Venue');

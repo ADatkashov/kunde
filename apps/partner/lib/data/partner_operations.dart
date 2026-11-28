@@ -85,6 +85,14 @@ class PartnerOperations {
     return rows.map(PartnerBooking.fromJson).toList();
   }
 
+  Future<void> proposeHomeReschedule(
+      String bookingId, int version, String startsAt, String reason) async {
+    await api.postJson(
+      '$_root/home-services/assignments/${Uri.encodeComponent(bookingId)}/reschedule',
+      {'expectedVersion': version, 'startsAt': startsAt, 'reason': reason},
+    );
+  }
+
   Future<PartnerBooking> bookingAction(String bookingId, String action,
       {String? reason, int? finalPriceMinor}) async {
     final json = await api.postMap(

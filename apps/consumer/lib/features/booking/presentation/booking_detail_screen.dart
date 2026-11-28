@@ -219,6 +219,18 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                               b.status == 'IN_PROGRESS'))
                         HomeServiceVisitCard(
                           key: ValueKey('visit-${b.id}-${b.status}'),
+                          decideReschedule: (version, accepted) async {
+                            await widget.services.auth.authorizedJson(
+                              'POST',
+                              'home-services/bookings/${b.id}/reschedule',
+                              body: {
+                                'expectedVersion': version,
+                                'accepted': accepted,
+                              },
+                              expected: const {204},
+                            );
+                            if (mounted) await _load();
+                          },
                           load: () async => (await widget.services.auth
                                   .authorizedJson('GET',
                                       'home-services/bookings/${b.id}/visit'))

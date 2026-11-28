@@ -11,12 +11,14 @@ import 'home_services_widgets.dart';
 class HomeServiceVisitCard extends StatefulWidget {
   const HomeServiceVisitCard({
     required this.load,
+    this.decideReschedule,
     this.every = const Duration(seconds: 15),
     super.key,
   });
 
   final Future<Map<String, dynamic>> Function() load;
   final Duration every;
+  final Future<void> Function(int version, bool accepted)? decideReschedule;
 
   @override
   State<HomeServiceVisitCard> createState() => _HomeServiceVisitCardState();
@@ -26,6 +28,7 @@ class _HomeServiceVisitCardState extends State<HomeServiceVisitCard> {
   Map<String, dynamic>? _visit;
   Timer? _timer;
   bool _inFlight = false;
+  bool _saving = false;
 
   @override
   void initState() {
@@ -54,6 +57,24 @@ class _HomeServiceVisitCardState extends State<HomeServiceVisitCard> {
     }
   }
 
+  Future<void> _decide(int version, bool accepted, RideStrings strings) async {
+    setState(() => _saving = true);
+    try {
+      await widget.decideReschedule!(version, accepted);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(strings.error)),
+        );
+      }
+    } finally {
+      if (mounted) {
+        await _refresh();
+        if (mounted) setState(() => _saving = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final visit = _visit;
@@ -62,6 +83,7 @@ class _HomeServiceVisitCardState extends State<HomeServiceVisitCard> {
     final status = '${visit['status']}';
     final stage = visit['stage'] as String?;
     final eta = visit['etaMinutes'] as int?;
+    final proposal = visit['reschedule'] as Map<String, dynamic>?;
     final (IconData icon, String text) = switch ((status, stage)) {
       ('CONFIRMED', _) when visit['assigned'] == false => (
           Icons.person_search_outlined,
@@ -120,6 +142,36 @@ class _HomeServiceVisitCardState extends State<HomeServiceVisitCard> {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Column(
             children: [
+              if (proposal != null && widget.decideReschedule != null) ...[
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(s.t('Предложено новое время',
+                      'Жаңа уақыт ұсынылды', 'New time proposed')),
+                  subtitle: Text(
+                    '${_proposalTime(context, proposal['startsAt'] as String)}\n'
+                    '${proposal['reason']}',
+                  ),
+                ),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    OutlinedButton(
+                      onPressed: _saving
+                          ? null
+                          : () => _decide(proposal['version'] as int, false, s),
+                      child: Text(s.t('Оставить текущее время',
+                          'Қазіргі уақытты қалдыру', 'Keep current time')),
+                    ),
+                    FilledButton(
+                      onPressed: _saving
+                          ? null
+                          : () => _decide(proposal['version'] as int, true, s),
+                      child: Text(s.t('Подтвердить перенос',
+                          'Ауыстыруды растау', 'Confirm change')),
+                    ),
+                  ],
+                ),
+              ],
               HomeServiceStepper(
                 step: switch ((status, stage)) {
                   ('IN_PROGRESS', _) => 2,
@@ -150,4 +202,11 @@ class _HomeServiceVisitCardState extends State<HomeServiceVisitCard> {
       ),
     );
   }
+}
+
+String _proposalTime(BuildContext context, String value) {
+  final date = DateTime.parse(value).toUtc().add(const Duration(hours: 5));
+  final strings = MaterialLocalizations.of(context);
+  return '${strings.formatMediumDate(date)} · '
+      '${strings.formatTimeOfDay(TimeOfDay.fromDateTime(date))} (UTC+5)';
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:kunde_ui/home_service_reschedule_dialog.dart';
 
 import '../../app/ops_store.dart';
+import '../../core/error_text.dart';
 import '../../core/format.dart';
 import '../../core/strings.dart';
 import '../../core/theme.dart';
@@ -12,9 +14,13 @@ import 'booking_card.dart';
 
 class BookingDetailsPage extends StatelessWidget {
   const BookingDetailsPage(
-      {required this.store, required this.bookingId, super.key});
+      {required this.store,
+      required this.bookingId,
+      this.canManage = false,
+      super.key});
   final OpsStore store;
   final String bookingId;
+  final bool canManage;
 
   PartnerBooking? _find() {
     for (final list in [
@@ -29,6 +35,25 @@ class BookingDetailsPage extends StatelessWidget {
     return null;
   }
 
+  Future<void> _propose(BuildContext context, PartnerBooking booking) async {
+    final proposal = await showDialog<HomeServiceScheduleProposal>(
+      context: context,
+      builder: (_) => const HomeServiceRescheduleDialog(),
+    );
+    if (proposal == null || !context.mounted) return;
+    try {
+      await store.ops.proposeHomeReschedule(
+          booking.id, booking.version!, proposal.startsAt, proposal.reason);
+      await store.refreshBookingUpcoming();
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorText(S.of(context), error))),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
@@ -37,7 +62,21 @@ class BookingDetailsPage extends StatelessWidget {
       builder: (context, _) {
         final b = _find();
         return Scaffold(
-          appBar: AppBar(title: Text(s.bookingDetails)),
+          appBar: AppBar(
+            title: Text(s.bookingDetails),
+            actions: [
+              if (canManage &&
+                  b != null &&
+                  b.category == 'CLEANING' &&
+                  b.status == 'CONFIRMED' &&
+                  b.version != null)
+                IconButton(
+                  onPressed: () => _propose(context, b),
+                  tooltip: s.bookingProposeReschedule,
+                  icon: const Icon(Icons.edit_calendar_outlined),
+                ),
+            ],
+          ),
           body: b == null
               ? const SizedBox.shrink()
               : _Body(booking: b, store: store),

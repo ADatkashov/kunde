@@ -49,7 +49,7 @@ public class HomeServicesVisitController {
             OffsetDateTime startsAt, OffsetDateTime endsAt, String status, String stage, Integer etaMinutes,
             long priceMinor, long version) {}
 
-    public record Visit(String bookingId, String status, String stage, Integer etaMinutes, boolean assigned) {}
+    public record Visit(String bookingId, String status, String stage, Integer etaMinutes, boolean assigned, HomeServiceReschedules.Proposal reschedule) {}
 
     public record LinkRequest(@NotBlank @Pattern(regexp = "[A-Za-z0-9-]{6,24}") String code) {}
 
@@ -63,12 +63,15 @@ public class HomeServicesVisitController {
     private final FeatureToggles toggles;
     private final BookingService bookings;
     private final HomeServiceEta eta;
+    private final HomeServiceReschedules reschedules;
 
-    public HomeServicesVisitController(JdbcTemplate db, FeatureToggles toggles, BookingService bookings, HomeServiceEta eta) {
+    public HomeServicesVisitController(JdbcTemplate db, FeatureToggles toggles, BookingService bookings, HomeServiceEta eta,
+            HomeServiceReschedules reschedules) {
         this.db = db;
         this.toggles = toggles;
         this.bookings = bookings;
         this.eta = eta;
+        this.reschedules = reschedules;
     }
 
     private UUID user(Jwt principal) {
@@ -245,12 +248,16 @@ public class HomeServicesVisitController {
     }
 
     private Visit visit(UUID bookingId) {
+        return visit(bookingId, null);
+    }
+
+    private Visit visit(UUID bookingId, HomeServiceReschedules.Proposal proposal) {
         return db.query("""
                 select b.id, b.status, v.stage, case when v.stage = 'EN_ROUTE' and v.eta_minutes is not null
                             then greatest(0, v.eta_minutes - floor(extract(epoch from (now() - v.updated_at)) / 60)::int)
                             else v.eta_minutes end, b.master_id is not null from transactions.bookings b
                 left join marketplace.home_service_visits v on v.booking_id = b.id where b.id = ?
-                """, (rs, n) -> new Visit(rs.getString(1), rs.getString(2), rs.getString(3), rs.getObject(4, Integer.class), rs.getBoolean(5)), bookingId)
+                """, (rs, n) -> new Visit(rs.getString(1), rs.getString(2), rs.getString(3), rs.getObject(4, Integer.class), rs.getBoolean(5), proposal), bookingId)
                 .getFirst();
     }
 
@@ -266,6 +273,14 @@ public class HomeServicesVisitController {
         if (!mine) {
             throw new ApiException(HttpStatus.NOT_FOUND, "BOOKING_NOT_FOUND", "Booking not found");
         }
-        return ok(visit(id));
+        return ok(visit(id, reschedules.get(id, user)));
+    }
+
+    @PostMapping("/home-services/bookings/{id}/reschedule")
+    @Transactional
+    ResponseEntity<Void> decideReschedule(@AuthenticationPrincipal Jwt principal, @PathVariable UUID id,
+            @Valid @RequestBody HomeServiceReschedules.Decision decision) {
+        reschedules.decide(id, user(principal), decision);
+        return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
     }
 }
