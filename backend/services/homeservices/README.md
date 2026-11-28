@@ -12,6 +12,7 @@
 | `HomeServicesPartnerPricingController` | `partner/partners/{partnerId}/home-services/zones`, `offers/{id}/tariff` | Partner |
 | `HomeServicesPartnerMastersController` | `partner/partners/{partnerId}/home-services/masters` (+ `/{id}/invite`, `/{id}/deactivate`) | Partner: мастера и коды-приглашения для Executor |
 | `HomeServicesAdminOffersController` | `admin/home-services/offers` (+ `/{id}/decision`) | Admin (грант `HOME_SERVICES_CATALOG`) |
+| `HomeServicesAdminOrdersController` | `admin/home-services/orders` (+ `/{id}`, `/{id}/masters`, `/{id}/cancel`, `/{id}/reassign`) | Admin (грант `HOME_SERVICES_OPERATIONS`): реестр без контактов клиента, карточка с историей, отмена и переназначение мастера с причиной, версией и аудитом (`home_service_admin_events`, V77); начатую работу (`IN_PROGRESS`) операция не трогает — это спор (H7) |
 | `HomeServicesVisitController` | `executor/home-services/{link,jobs,jobs/{id}/stage,start,complete}`, `home-services/bookings/{id}/visit` | Executor, Consumer (своя запись) |
 
 Заказ создаётся общим `POST /booking/bookings` (идемпотентно, `Idempotency-Key`); Partner подтверждает через `partner/partners/{id}/booking/bookings/{id}/action`. Порядок визита (`EN_ROUTE → ARRIVED → START → COMPLETE`) принудительно проверяет сервер.

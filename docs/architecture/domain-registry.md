@@ -14,7 +14,7 @@
 | maps | (карты, внешний сервис `kunde-maps`) | `maps` → `services/maps` ✔ | — | `maps` | — | platform.geo |
 | booking | Движок записи | `booking` → `services/booking` ✔ (контракт для вертикалей — `BookingCategory`, `BookingSlots`, `BookingService`) | `booking`, `booking/bookings`, `partner/…/booking` | `booking` | `booking_*`, `bookings` | partners |
 | beauty | Красота | `beauty` → `services/beauty` ✔ (вертикаль Booking; готов к модулю) | `beauty`, `beauty/favorites`, `executor/beauty`, `partner/…/beauty`, `admin/beauty` | `beauty` | `marketplace.beauty_*` | booking |
-| homeservices | Услуги на дом | `homeservices` → `services/homeservices` ✔ (вертикаль Booking; готов к модулю) | `home-services`, `admin/home-services/{categories,offers}`, `partner/partners/{id}/home-services/offers` | `home`, `home_services_admin` | `home_service*` | booking |
+| homeservices | Услуги на дом | `homeservices` → `services/homeservices` ✔ (вертикаль Booking; готов к модулю) | `home-services`, `admin/home-services/{categories,offers,orders}`, `partner/partners/{id}/home-services/offers` | `home`, `home_services_admin` | `home_service*` | booking |
 | health | Здоровье | `health` → `services/health` ✔ | `booking/health/favorites`, `admin/health` | `health` | `health_*` | booking, partners |
 | auto | Авто | `auto` → `services/auto` ✔ | `auto`, `admin/auto` | `auto`, `auto_admin`, `executor/auto_work` | `auto_*`, `customer_vehicles` | booking |
 | leisure | Досуг | `leisure` → `services/leisure` ✔ | `leisure`, `executor/leisure`, `partner/…/leisure`, `admin/leisure` | `leisure`, `leisure_admin`, `executor/gate_scan` | `leisure_*` | partners, auth |
