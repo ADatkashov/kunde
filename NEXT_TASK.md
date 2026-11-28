@@ -2,9 +2,11 @@
 
 ## Home Services MVP: аудит и недостающие функции (приоритет P0)
 
-DEV подтверждён на `fa06ce1` (PR #303), [четыре APK](https://github.com/ADatkashov/kunde/actions/runs/46125145903). V77/V78 применены.
+DEV на `ae67668ad86fcd8deb1aa49f3710cb1222685e01` (PR #306). V77–V80 применены. Readiness и расширенный HTTP smoke прошли. [Release workflow на том же SHA](https://github.com/ADatkashov/kunde/actions/runs/46132079845).
 
-**H10.** PR #304 добавил V79, отказ Executor с причиной, снятие назначения и ETA, запись истории, повтор создания заказа и повторное назначение через Admin. Очередь и повторное назначение Partner используют общую операцию с Admin. Перенос с согласием клиента использует V80 и сохраняет исходный слот до подтверждения. Следующие проверки: конкуренция на смене слота и назначения, отдельные синтетические роли, V80 на DEV. Далее H11: загрузка и приватный доступ к фото по области заказа. Фото отзывов относятся к H11.
+**Следующий срез — H11.** В [draft PR #307](https://github.com/ADatkashov/kunde/pull/307) сохранены перекодирование JPEG/PNG с удалением EXIF и отключённый по умолчанию S3-адаптер. Подключить миграцию метаданных, привязку объектов к заказу или предложению, проверку владельца, лимиты на заказ, очистку и авторизованные API. Сначала провести интеграционный тест на локальном S3-совместимом хранилище, затем добавить загрузку и просмотр в приложениях.
+
+**Открытая приёмка H10:** отдельный разрешённый синтетический Executor, временный `HOME_SERVICES_OPERATIONS`, изоляция между городами, сценарий гонки и уточнение точки для исторических заказов. Основной контур отказа, переназначения и переноса прошёл CI в PR #304–306.
 
 Владельцу: подключить «Required CI Gate» к branch protection по [инструкции](docs/engineering-foundation/branch-protection-required-ci-gate.md) (старые required checks пока не отключать). Проверка: `python3 -m unittest discover -s scripts/ci -p 'test_*.py'`; `cd backend && ./gradlew :services:homeservices:test :app:test --tests 'kz.kunde.homeservices.*'`; `cd apps/executor && flutter test test/features/home_services`.
 
