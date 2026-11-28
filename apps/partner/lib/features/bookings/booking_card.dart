@@ -109,6 +109,10 @@ class BookingCard extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 4),
                 child: Text('${s.vehicleLabel}: ${booking.vehicle}'),
               ),
+            if (booking.category == 'CLEANING' &&
+                booking.status == 'CONFIRMED' &&
+                booking.masterName == null)
+              Text(s.bookingUnassigned, style: muted),
             if (booking.masterName != null)
               Padding(
                 padding: const EdgeInsets.only(top: 4),

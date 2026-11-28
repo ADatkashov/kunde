@@ -63,6 +63,14 @@ class _HomeServiceVisitCardState extends State<HomeServiceVisitCard> {
     final stage = visit['stage'] as String?;
     final eta = visit['etaMinutes'] as int?;
     final (IconData icon, String text) = switch ((status, stage)) {
+      ('CONFIRMED', _) when visit['assigned'] == false => (
+          Icons.person_search_outlined,
+          s.t(
+            'Ищем нового мастера',
+            'Жаңа шебер іздеп жатырмыз',
+            'Finding a replacement master',
+          ),
+        ),
       ('IN_PROGRESS', _) => (
           Icons.handyman_outlined,
           s.t(

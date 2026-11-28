@@ -7,6 +7,7 @@ import 'package:kunde_executor/features/home_services/home_services_work_screen.
 class _Session implements AuthRepository {
   bool linked = false;
   bool offline = false;
+  bool declined = false;
   String status = 'CONFIRMED';
   String? stage;
   final calls = <String>[];
@@ -31,13 +32,17 @@ class _Session implements AuthRepository {
     if (path.endsWith('/stage')) {
       stageBody = body;
       stage = body!['stage'] as String;
+    } else if (path.endsWith('/decline')) {
+      expect(body, {'expectedVersion': 0, 'reason': 'Unavailable'});
+      expect(expected, {204});
+      declined = true;
     } else if (path.endsWith('/start')) {
       status = 'IN_PROGRESS';
     } else if (path.endsWith('/complete')) {
       status = 'COMPLETED';
     }
     if (method == 'GET') {
-      return status == 'COMPLETED'
+      return status == 'COMPLETED' || declined
           ? []
           : [
               {
@@ -47,6 +52,7 @@ class _Session implements AuthRepository {
                 'startsAt': '2026-11-27T18:00:00+05:00',
                 'status': status,
                 'stage': stage,
+                'version': 0,
               },
             ];
     }
@@ -67,6 +73,31 @@ void main() {
     expect(next('CONFIRMED', 'ARRIVED'), 'START');
     expect(next('IN_PROGRESS', 'ARRIVED'), 'COMPLETE');
     expect(next('COMPLETED', 'ARRIVED'), isNull);
+  });
+
+  testWidgets('declining a job requires a reason and reloads the list',
+      (tester) async {
+    final auth = _Session()..linked = true;
+    await tester.pumpWidget(MaterialApp(
+      home: HomeServicesWorkScreen(auth: auth),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('decline-j1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.byType(FilledButton),
+    ));
+    await tester.pumpAndSettle();
+    expect(auth.declined, isFalse);
+    await tester.enterText(find.byType(TextFormField), '  Unavailable ');
+    await tester.tap(find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.byType(FilledButton),
+    ));
+    await tester.pumpAndSettle();
+    expect(auth.declined, isTrue);
+    expect(find.byKey(const ValueKey('decline-j1')), findsNothing);
   });
 
   testWidgets(

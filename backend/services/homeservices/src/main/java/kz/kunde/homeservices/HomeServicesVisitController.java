@@ -47,9 +47,9 @@ public class HomeServicesVisitController {
 
     public record Job(String id, String bookingNumber, String serviceName, String venueName, String addressText,
             OffsetDateTime startsAt, OffsetDateTime endsAt, String status, String stage, Integer etaMinutes,
-            long priceMinor) {}
+            long priceMinor, long version) {}
 
-    public record Visit(String bookingId, String status, String stage, Integer etaMinutes) {}
+    public record Visit(String bookingId, String status, String stage, Integer etaMinutes, boolean assigned) {}
 
     public record LinkRequest(@NotBlank @Pattern(regexp = "[A-Za-z0-9-]{6,24}") String code) {}
 
@@ -117,20 +117,20 @@ public class HomeServicesVisitController {
                 select b.id, b.booking_number, b.service_name, b.venue_name, b.address_text, b.starts_at, b.ends_at, b.status,
                        v.stage, case when v.stage = 'EN_ROUTE' and v.eta_minutes is not null
                             then greatest(0, v.eta_minutes - floor(extract(epoch from (now() - v.updated_at)) / 60)::int)
-                            else v.eta_minutes end, b.price_minor
+                            else v.eta_minutes end, b.price_minor, b.version
                 from transactions.bookings b left join marketplace.home_service_visits v on v.booking_id = b.id
                 where b.master_id = ? and b.category = ? and b.status in ('CONFIRMED', 'IN_PROGRESS')
                   and (b.ends_at > now() - interval '12 hours' or b.status = 'IN_PROGRESS') and b.starts_at < now() + interval '7 days'
                 order by b.starts_at, b.id
                 """, (rs, row) -> new Job(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5),
                 rs.getObject(6, OffsetDateTime.class), rs.getObject(7, OffsetDateTime.class), rs.getString(8),
-                rs.getString(9), rs.getObject(10, Integer.class), rs.getLong(11)), master, CATEGORY));
+                rs.getString(9), rs.getObject(10, Integer.class), rs.getLong(11), rs.getLong(12)), master, CATEGORY));
     }
 
     /** The master's own booking, locked for the transition. */
     private Object[] lockJob(UUID master, UUID id) {
-        return db.query("select status from transactions.bookings where id = ? and master_id = ? and category = ? for update",
-                (rs, n) -> new Object[] {rs.getString(1)}, id, master, CATEGORY).stream().findFirst()
+        return db.query("select status, version from transactions.bookings where id = ? and master_id = ? and category = ? for update",
+                (rs, n) -> new Object[] {rs.getString(1), rs.getLong(2)}, id, master, CATEGORY).stream().findFirst()
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "JOB_NOT_FOUND", "Job not found"));
     }
 
@@ -208,6 +208,37 @@ public class HomeServicesVisitController {
         return ok(visit(id));
     }
 
+    public record DeclineRequest(@NotNull @Min(0) Long expectedVersion,
+            @NotBlank @jakarta.validation.constraints.Size(max = 200) String reason) {}
+
+    @PostMapping("/executor/home-services/jobs/{id}/decline")
+    @Transactional
+    ResponseEntity<Void> decline(@AuthenticationPrincipal Jwt principal, @PathVariable UUID id,
+            @Valid @RequestBody DeclineRequest request) {
+        UUID actor = user(principal);
+        UUID master = master(actor);
+        String reason = "DECLINED: " + request.reason().strip();
+        if (bookings.repeatedAssignmentChange(id, request.expectedVersion(), actor, reason)) {
+            return ResponseEntity.noContent().build();
+        }
+        Object[] order;
+        try {
+            order = lockJob(master, id);
+        } catch (ApiException missing) {
+            if (bookings.repeatedAssignmentChange(id, request.expectedVersion(), actor, reason)) {
+                return ResponseEntity.noContent().build();
+            }
+            throw missing;
+        }
+        if (!"CONFIRMED".equals(order[0]) || !request.expectedVersion().equals(order[1])) {
+            throw stateInvalid();
+        }
+        bookings.changeHomeAssignment(id, null, "");
+        db.update("delete from marketplace.home_service_visits where booking_id = ?", id);
+        bookings.assignmentEvent(id, request.expectedVersion(), "CONFIRMED", "EXECUTOR", actor, reason, master, null);
+        return ResponseEntity.noContent().build();
+    }
+
     private void setStatus(UUID id, String status, UUID actor) {
         db.update("update transactions.bookings set status = ?, updated_at = now(), version = version + 1 where id = ?", status, id);
         bookings.event(id, status, "PARTNER", actor, null);
@@ -217,9 +248,9 @@ public class HomeServicesVisitController {
         return db.query("""
                 select b.id, b.status, v.stage, case when v.stage = 'EN_ROUTE' and v.eta_minutes is not null
                             then greatest(0, v.eta_minutes - floor(extract(epoch from (now() - v.updated_at)) / 60)::int)
-                            else v.eta_minutes end from transactions.bookings b
+                            else v.eta_minutes end, b.master_id is not null from transactions.bookings b
                 left join marketplace.home_service_visits v on v.booking_id = b.id where b.id = ?
-                """, (rs, n) -> new Visit(rs.getString(1), rs.getString(2), rs.getString(3), rs.getObject(4, Integer.class)), bookingId)
+                """, (rs, n) -> new Visit(rs.getString(1), rs.getString(2), rs.getString(3), rs.getObject(4, Integer.class), rs.getBoolean(5)), bookingId)
                 .getFirst();
     }
 

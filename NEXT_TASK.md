@@ -2,9 +2,9 @@
 
 ## Home Services MVP: аудит и недостающие функции (приоритет P0)
 
-H1, H2, H6 и H8 в `main` (`542e3c68`). DEV обслуживает этот SHA, V77/V78 применены, штатный Home Services smoke прошёл. Четыре подписанных APK собраны на том же SHA в [run 46120317655](https://github.com/ADatkashov/kunde/actions/runs/46120317655).
+DEV подтверждён на `fa06ce1` (PR #303), [четыре APK](https://github.com/ADatkashov/kunde/actions/runs/46125145903). V77/V78 применены.
 
-**Следующее — H10.** Сначала проверить правила завершения в CI: Partner и Executor завершают начатую работу, повтор не добавляет запись в историю, чтение просроченного заказа сохраняет `CONFIRMED`. Затем реализовать отказ мастера с обязательной причиной, снятие назначения и этапа визита под блокировкой Booking, повторное назначение с проверкой расписания и зоны, историю и перенос с согласием клиента. Проверить гонки и обновление экранов всех ролей. Оставшийся бэклог — [аудит MVP](docs/product/home-services-mvp-audit.md). Фото отзывов относятся к H11.
+**H10.** Ветка `codex/home-services-h10-assignment` содержит V79, отказ Executor с причиной, снятие назначения и ETA, запись истории, повтор создания заказа и повторное назначение через Admin. Следующий срез: очередь и повторное назначение в Partner, координаты заказа и проверка зоны, перенос с согласием клиента, гонки и полноценная приёмка четырёх ролей. Фото отзывов относятся к H11.
 
 Владельцу: подключить «Required CI Gate» к branch protection по [инструкции](docs/engineering-foundation/branch-protection-required-ci-gate.md) (старые required checks пока не отключать). Проверка: `python3 -m unittest discover -s scripts/ci -p 'test_*.py'`; `cd backend && ./gradlew :services:homeservices:test :app:test --tests 'kz.kunde.homeservices.*'`; `cd apps/executor && flutter test test/features/home_services`.
 

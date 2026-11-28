@@ -60,7 +60,7 @@ public class HomeServicesAdminOrdersController {
 
     public record Page(List<Row> items, long total, int limit, int offset) {}
 
-    public record HistoryEntry(String status, String actorType, String reason, OffsetDateTime occurredAt) {}
+    public record HistoryEntry(String status, String actorType, String reason, OffsetDateTime occurredAt, UUID fromMasterId, UUID toMasterId) {}
 
     public record AdminAction(String action, String reason, OffsetDateTime occurredAt) {}
 
@@ -168,16 +168,19 @@ public class HomeServicesAdminOrdersController {
         if (taken) {
             throw new ApiException(HttpStatus.CONFLICT, "MASTER_BUSY", "The master is busy at this time");
         }
+        if (order.master() == null) {
+            bookings.requireHomeReplacementSlot(id, order.venue(), order.service(), request.masterId());
+        }
         try {
             // Backstop for a race: the Booking Engine's exclusion constraint refuses a second confirmed visit at the same time.
-            db.update("update transactions.bookings set master_id = ?, master_name = ?, updated_at = now(), version = version + 1 where id = ?",
-                    request.masterId(), name, id);
+            bookings.changeHomeAssignment(id, request.masterId(), name);
         } catch (DataIntegrityViolationException busy) {
             throw new ApiException(HttpStatus.CONFLICT, "MASTER_BUSY", "The master is busy at this time");
         }
         // The previous master's "on the way" report does not carry over to the new one.
         db.update("delete from marketplace.home_service_visits where booking_id = ?", id);
-        bookings.event(id, order.status(), "ADMIN", admin, "REASSIGNED: " + request.reason().trim());
+        bookings.assignmentEvent(id, request.expectedVersion(), order.status(), "ADMIN", admin,
+                "REASSIGNED: " + request.reason().trim(), order.master(), request.masterId());
         audit(id, admin, "REASSIGN", request.reason().trim(), order.master(), request.masterId());
         return ok(detailOf(id));
     }
@@ -221,8 +224,9 @@ public class HomeServicesAdminOrdersController {
         Visit visit = db.query("select stage, eta_minutes, en_route_at, arrived_at from marketplace.home_service_visits where booking_id = ?",
                 (rs, n) -> new Visit(rs.getString(1), rs.getObject(2, Integer.class), rs.getObject(3, OffsetDateTime.class),
                         rs.getObject(4, OffsetDateTime.class)), id).stream().findFirst().orElse(null);
-        List<HistoryEntry> history = db.query("select status, actor_type, reason, occurred_at from transactions.booking_events where booking_id = ? order by id",
-                (rs, n) -> new HistoryEntry(rs.getString(1), rs.getString(2), rs.getString(3), rs.getObject(4, OffsetDateTime.class)), id);
+        List<HistoryEntry> history = db.query("select status, actor_type, reason, occurred_at, from_master_id, to_master_id from transactions.booking_events where booking_id = ? order by id",
+                (rs, n) -> new HistoryEntry(rs.getString(1), rs.getString(2), rs.getString(3), rs.getObject(4, OffsetDateTime.class),
+                        rs.getObject(5, UUID.class), rs.getObject(6, UUID.class)), id);
         List<AdminAction> actions = db.query("select action, reason, occurred_at from marketplace.home_service_admin_events where booking_id = ? order by id",
                 (rs, n) -> new AdminAction(rs.getString(1), rs.getString(2), rs.getObject(3, OffsetDateTime.class)), id);
         boolean actionable = "PENDING".equals(order.status()) || "CONFIRMED".equals(order.status());

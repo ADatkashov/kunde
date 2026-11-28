@@ -243,6 +243,13 @@ class _HomeServicesOrdersScreenState extends State<HomeServicesOrdersScreen> {
   }
 }
 
+String _masterLabel(RideStrings s, Map<String, dynamic> order) {
+  final name = order['masterName'] as String?;
+  return name == null || name.isEmpty
+      ? s.t('Ожидает назначения', 'Тағайындау күтілуде', 'Awaiting assignment')
+      : name;
+}
+
 class _OrderCard extends StatelessWidget {
   const _OrderCard({required this.order, required this.onTap});
 
@@ -257,7 +264,7 @@ class _OrderCard extends StatelessWidget {
         key: ValueKey('order-${order['id']}'),
         title: Text('${order['bookingNumber']} · ${order['serviceName']}'),
         subtitle: Text(
-          '${order['venueName']} · ${order['masterName']}\n'
+          '${order['venueName']} · ${_masterLabel(s, order)}\n'
           '${_time(order['startsAt'])} · '
           '${formatTenge(order['priceMinor'] as num)}',
         ),
@@ -432,7 +439,7 @@ class _HomeServicesOrderScreenState extends State<HomeServicesOrderScreen> {
         Chip(label: Text(_statusLabel(s, '${order['status']}'))),
         const SizedBox(height: 8),
         _line(s.t('Площадка', 'Алаң', 'Venue'), '${order['venueName']}'),
-        _line(s.t('Мастер', 'Шебер', 'Master'), '${order['masterName']}'),
+        _line(s.t('Мастер', 'Шебер', 'Master'), _masterLabel(s, order)),
         _line(s.t('Время', 'Уақыты', 'Time'), _time(order['startsAt'])),
         _line(s.t('Адрес', 'Мекенжай', 'Address'), '${d['addressText'] ?? ''}'),
         if (d['areaSqm'] != null)
