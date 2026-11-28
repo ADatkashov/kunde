@@ -234,6 +234,13 @@ class HomeServicesJourneyIntegrationTest {
         // 4. The master (linked to the booking's master) performs the visit in order; impossible transitions change nothing.
         db.update("update marketplace.booking_masters set user_id = ?::uuid where id = ?::uuid", executorUser, JsonPath.read(slots, "$[0].masterId"));
         call("GET", "/api/v1/executor/home-services/jobs", executor, null).andExpect(jsonPath("$.length()").value(1)).andExpect(jsonPath("$[0].id").value(booking));
+        String partnerAction = bookingBase() + "/" + booking + "/action";
+        String complete = "{\"action\":\"COMPLETE\"}";
+        call("POST", partnerAction, owner, complete).andExpect(status().isConflict());
+        db.update("update transactions.bookings set starts_at = now() - interval '2 hours', ends_at = now() - interval '1 hour' where id = ?::uuid", booking);
+        call("GET", "/api/v1/booking/bookings/" + booking, customer, null)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("CONFIRMED"));
+        call("POST", partnerAction, owner, complete).andExpect(status().isConflict());
         act(booking, "complete", executor).andExpect(status().isConflict());
         stage(booking, "ARRIVED", null, executor).andExpect(status().isConflict());
         stage(booking, "EN_ROUTE", "20", executor).andExpect(status().isOk());
@@ -242,7 +249,11 @@ class HomeServicesJourneyIntegrationTest {
         act(booking, "start", executor).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("IN_PROGRESS"));
         act(booking, "start", executor).andExpect(clientError());
         act(booking, "complete", executor).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("COMPLETED"));
-        act(booking, "complete", executor).andExpect(clientError());
+        call("POST", partnerAction, owner, complete).andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("COMPLETED"));
+        act(booking, "complete", executor).andExpect(status().isOk());
+        assertThat(db.queryForObject("select count(*) from transactions.booking_events where booking_id = ?::uuid and status = 'COMPLETED'",
+                Long.class, booking)).isEqualTo(1L);
 
         // 5. The customer sees the outcome; completed work can no longer be cancelled or re-confirmed.
         call("GET", "/api/v1/booking/bookings/" + booking, customer, null).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("COMPLETED"));

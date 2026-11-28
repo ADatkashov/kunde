@@ -293,7 +293,7 @@ public class BookingService {
     /** Lazy transitions on read: finished confirmed visits are COMPLETED; a request nobody answered before the start expires. */
     public void completeDue(String scope, Object arg) {
         for (UUID id : db.queryForList("select id from transactions.bookings where " + scope
-                + " and status = 'CONFIRMED' and (category not in ('AUTO', 'HEALTH') or (category = 'HEALTH' and confirmation = 'DEV_MOCK')) and ends_at <= now() for update", UUID.class, arg)) {
+                + " and status = 'CONFIRMED' and (category not in ('AUTO', 'HEALTH', 'CLEANING') or (category = 'HEALTH' and confirmation = 'DEV_MOCK')) and ends_at <= now() for update", UUID.class, arg)) {
             db.update("update transactions.bookings set status = 'COMPLETED', updated_at = now(), version = version + 1 where id = ?", id);
             event(id, "COMPLETED", "SYSTEM", null, null);
             if (payments != null) {

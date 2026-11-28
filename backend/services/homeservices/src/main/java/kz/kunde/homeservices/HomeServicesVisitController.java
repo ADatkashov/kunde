@@ -198,10 +198,13 @@ public class HomeServicesVisitController {
     ResponseEntity<Visit> complete(@AuthenticationPrincipal Jwt principal, @PathVariable UUID id) {
         UUID user = user(principal);
         UUID master = master(user);
-        if (!"IN_PROGRESS".equals(lockJob(master, id)[0])) {
-            throw stateInvalid();
+        String status = (String) lockJob(master, id)[0];
+        if (!"COMPLETED".equals(status)) {
+            if (!"IN_PROGRESS".equals(status)) {
+                throw stateInvalid();
+            }
+            setStatus(id, "COMPLETED", user);
         }
-        setStatus(id, "COMPLETED", user);
         return ok(visit(id));
     }
 

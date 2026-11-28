@@ -136,7 +136,8 @@ public class BookingPartnerService {
             case COMPLETE -> {
                 if ("COMPLETED".equals(status)) { break; }
                 boolean auto = "AUTO".equals(row[3]);
-                require(auto ? "IN_PROGRESS".equals(status) : "CONFIRMED".equals(status) && !future, action, status);
+                boolean visitRequiresStart = auto || "CLEANING".equals(row[3]);
+                require(visitRequiresStart ? "IN_PROGRESS".equals(status) : "CONFIRMED".equals(status) && !future, action, status);
                 if (auto && "PENDING".equals(row[5])) {
                     throw new ApiException(HttpStatus.CONFLICT, "PRICE_APPROVAL_PENDING", "The customer has not approved the final price yet");
                 }
@@ -629,14 +630,16 @@ public class BookingPartnerService {
                     boolean future = rs.getBoolean("future");
                     List<String> actions = new ArrayList<>();
                     if ("PENDING".equals(status) && future) { actions.add("CONFIRM"); actions.add("REJECT"); }
-                    boolean auto = "AUTO".equals(rs.getString("category"));
+                    String category = rs.getString("category");
+                    boolean auto = "AUTO".equals(category);
+                    boolean home = "CLEANING".equals(category);
                     if ("CONFIRMED".equals(status) && future) { actions.add("CANCEL"); }
                     if ("CONFIRMED".equals(status) && auto) { actions.add("CHECK_IN"); }
-                    if ("CONFIRMED".equals(status) && !future) { actions.add(auto ? "NO_SHOW" : "COMPLETE"); }
+                    if ("CONFIRMED".equals(status) && !future && !home) { actions.add(auto ? "NO_SHOW" : "COMPLETE"); }
                     if ("CHECKED_IN".equals(status)) { actions.add("START"); }
                     if ("IN_PROGRESS".equals(status)) {
-                        if (!"FIXED".equals(rs.getString("price_kind"))) { actions.add("PROPOSE_PRICE"); }
-                        if (!"PENDING".equals(rs.getString("price_approval"))) { actions.add("COMPLETE"); }
+                        if (auto && !"FIXED".equals(rs.getString("price_kind"))) { actions.add("PROPOSE_PRICE"); }
+                        if (home || !"PENDING".equals(rs.getString("price_approval"))) { actions.add("COMPLETE"); }
                     }
                     byId.put(id, new PartnerBooking(id.toString(), rs.getString("venue_id"), rs.getString("venue_name"),
                             rs.getString("category"), rs.getString("service_name"), rs.getInt("duration_minutes"),
