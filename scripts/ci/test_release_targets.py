@@ -22,7 +22,7 @@ class ReleaseTargetsTest(unittest.TestCase):
 
     def test_package_builds_only_the_apps_that_depend_on_it(self):
         self.assertEqual(targets(["packages/kunde_maps/lib/a.dart"]), only("consumer", "executor"))
-        self.assertEqual(targets(["packages/kunde_ui/lib/a.dart"]), only("consumer", "executor", "admin"))
+        self.assertEqual(targets(["packages/kunde_ui/lib/a.dart"]), only("consumer", "executor", "admin", "partner"))
         self.assertEqual(targets(["packages/kunde_session/lib/a.dart"]), only("consumer", "executor", "admin", "partner"))
 
     def test_unknown_package_builds_everything(self):
