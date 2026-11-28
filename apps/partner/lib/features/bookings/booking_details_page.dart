@@ -114,6 +114,10 @@ class _Body extends StatelessWidget {
                   s.finalPriceLabel,
                   '${formatMoney(booking.finalPriceMinor!, currency: booking.currency)}'
                   '${booking.priceApproval == null ? '' : ' · ${s.priceApproval(booking.priceApproval!)}'}'),
+            if (booking.category == 'CLEANING' &&
+                booking.status == 'CONFIRMED' &&
+                booking.masterName == null)
+              row(s.bookingMaster, s.bookingUnassigned),
             if (booking.masterName != null)
               row(s.bookingMaster, booking.masterName!),
             if (booking.venueName.isNotEmpty)

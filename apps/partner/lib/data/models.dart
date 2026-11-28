@@ -227,6 +227,7 @@ class PartnerBooking {
     required this.currency,
     required this.allowedActions,
     required this.timeline,
+    this.category,
     this.masterName,
     this.startsAt,
     this.endsAt,
@@ -251,6 +252,7 @@ class PartnerBooking {
         currency: _str(j['currency']) ?? 'KZT',
         allowedActions: _strings(j['allowedActions']),
         timeline: _list(j['timeline'], TimelineEntry.fromJson),
+        category: _str(j['category']),
         masterName: _str(j['masterName']),
         startsAt: _time(j['startsAt']),
         endsAt: _time(j['endsAt']),
@@ -275,6 +277,7 @@ class PartnerBooking {
   final String currency;
   final List<String> allowedActions;
   final List<TimelineEntry> timeline;
+  final String? category;
   final String? masterName;
   final DateTime? startsAt;
   final DateTime? endsAt;

@@ -136,6 +136,55 @@ class _HomeServicesWorkScreenState extends State<HomeServicesWorkScreen> {
         }
       });
 
+  Future<void> _decline(Map<String, dynamic> job) async {
+    final s = RideStrings(context);
+    final form = GlobalKey<FormState>();
+    var reason = '';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(s.t('Отказаться от задания?',
+            'Тапсырмадан бас тартасыз ба?', 'Decline this job?')),
+        content: Form(
+          key: form,
+          child: TextFormField(
+            autofocus: true,
+            maxLength: 200,
+            maxLines: 3,
+            decoration: InputDecoration(
+              labelText: s.t('Причина', 'Себеп', 'Reason'),
+            ),
+            onChanged: (value) => reason = value.trim(),
+            validator: (_) => reason.isEmpty
+                ? s.t('Укажите причину', 'Себебін көрсетіңіз', 'Enter a reason')
+                : null,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(s.back),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (form.currentState!.validate()) Navigator.pop(context, true);
+            },
+            child: Text(s.t('Отказаться', 'Бас тарту', 'Decline')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await _run(() async {
+      await widget.auth.authorizedJson(
+        'POST',
+        '$_root/jobs/${job['id']}/decline',
+        body: {'expectedVersion': job['version'], 'reason': reason},
+        expected: const {204},
+      );
+    });
+  }
+
   String _label(RideStrings s, String action) => switch (action) {
         'EN_ROUTE' => s.t('Выехал', 'Шықтым', 'On my way'),
         'ARRIVED' => s.t('Прибыл на место', 'Жеттім', 'Arrived'),
@@ -230,6 +279,14 @@ class _HomeServicesWorkScreenState extends State<HomeServicesWorkScreen> {
                                 child: Text(_label(s, action)),
                               );
                             }),
+                          if (job['status'] == 'CONFIRMED' &&
+                              job['version'] is int)
+                            TextButton(
+                              key: ValueKey('decline-${job['id']}'),
+                              onPressed: _busy ? null : () => _decline(job),
+                              child: Text(
+                                  s.t('Отказаться', 'Бас тарту', 'Decline')),
+                            ),
                         ],
                       ),
                     ),

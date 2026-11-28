@@ -192,11 +192,41 @@ class HomeServicesVisitApiIntegrationTest {
         stage(booking, "EN_ROUTE", "5", executor).andExpect(status().isConflict());
         act(booking, "start", executor).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("IN_PROGRESS"));
         stage(booking, "EN_ROUTE", "5", executor).andExpect(status().isConflict());
+        call("POST", "/api/v1/executor/home-services/jobs/" + booking + "/decline", executor,
+                "{\"expectedVersion\":1,\"reason\":\"Unavailable\"}").andExpect(status().isConflict());
         act(booking, "complete", executor).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("COMPLETED"));
         call("GET", "/api/v1/executor/home-services/jobs", executor, null).andExpect(jsonPath("$.length()").value(0));
 
         var events = db.queryForList("select status from transactions.booking_events where booking_id = ?::uuid and actor_user_id is not null", booking);
         assertThat(events.stream().map(e -> e.get("status")).toList()).contains("IN_PROGRESS", "COMPLETED");
+    }
+
+    @Test
+    void declineRemovesAssignmentAndEtaWithoutChangingBookingAndReplaysSafely() throws Exception {
+        String booking = confirmedBooking();
+        String original = db.queryForObject("""
+                select json_build_object('venueId', venue_id, 'serviceId', service_id, 'masterId', master_id,
+                    'startsAt', starts_at, 'addressText', address_text, 'areaSqm', area_sqm)::text
+                from transactions.bookings where id = ?::uuid
+                """, String.class, booking);
+        String path = "/api/v1/executor/home-services/jobs/" + booking + "/decline";
+        call("POST", path, executor, "{\"expectedVersion\":0,\"reason\":\" \"}").andExpect(status().isBadRequest());
+        String request = "{\"expectedVersion\":0,\"reason\":\"Unavailable\"}";
+        stage(booking, "EN_ROUTE", "25", executor).andExpect(status().isOk());
+        call("POST", path, executor, request).andExpect(status().isNoContent());
+        call("POST", path, executor, request).andExpect(status().isNoContent());
+        call("GET", "/api/v1/executor/home-services/jobs", executor, null).andExpect(jsonPath("$.length()").value(0));
+        stage(booking, "EN_ROUTE", "25", executor).andExpect(status().isNotFound());
+        call("GET", "/api/v1/home-services/bookings/" + booking + "/visit", customer, null)
+                .andExpect(jsonPath("$.status").value("CONFIRMED")).andExpect(jsonPath("$.assigned").value(false))
+                .andExpect(jsonPath("$.etaMinutes").doesNotExist()).andExpect(jsonPath("$.stage").doesNotExist());
+        assertThat(db.queryForObject("select count(*) from transactions.booking_events where booking_id = ?::uuid and actor_type = 'EXECUTOR'",
+                Integer.class, booking)).isEqualTo(1);
+        http.perform(post("/api/v1/booking/bookings").header("Authorization", "Bearer " + customer)
+                .header("Idempotency-Key", "visit-booking-0000000001").contentType(MediaType.APPLICATION_JSON).content(original))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.id").value(booking));
+        assertThat(db.queryForObject("select home_initial_master_id is not null and master_id is null from transactions.bookings where id = ?::uuid",
+                Boolean.class, booking)).isTrue();
     }
 
     @Test

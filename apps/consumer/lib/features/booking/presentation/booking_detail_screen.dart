@@ -252,13 +252,14 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                       if (b.areaSqm != null)
                         _row(Icons.square_foot_outlined,
                             s.bkAreaLine(b.areaSqm!)),
-                      _row(
-                          Icons.person_outline_rounded,
-                          b.isCleaning
-                              ? '${s.bkCrew}: ${b.masterName}'
-                              : b.isHealth
-                                  ? s.healthSpecialistLine(b.masterName)
-                                  : s.bkMasterLine(b.masterName)),
+                      if (!b.isCleaning || b.masterName.isNotEmpty)
+                        _row(
+                            Icons.person_outline_rounded,
+                            b.isCleaning
+                                ? '${s.bkCrew}: ${b.masterName}'
+                                : b.isHealth
+                                    ? s.healthSpecialistLine(b.masterName)
+                                    : s.bkMasterLine(b.masterName)),
                       _row(
                           Icons.payments_outlined,
                           b.paymentMethod == 'TEST_CARD'
