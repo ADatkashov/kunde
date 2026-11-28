@@ -334,22 +334,36 @@ public class BookingService {
 
     /** Checks the held booking's original time against the replacement master's calendar. */
     public void requireHomeReplacementSlot(UUID id, UUID venue, UUID service, UUID master) {
-        UUID declinedMaster = db.query("""
-                select from_master_id from transactions.booking_events
-                where booking_id = ? and actor_type = 'EXECUTOR' and assignment_version is not null
-                order by assignment_version desc limit 1
-                """, (rs, row) -> rs.getObject(1, UUID.class), id).stream().findFirst().orElse(null);
-        if (master.equals(declinedMaster)) {
+        if (master.equals(homeLastDeclinedMaster(id))) {
             throw new ApiException(HttpStatus.CONFLICT, "MASTER_UNCHANGED", "Choose a different master");
         }
         db.queryForObject("select id from marketplace.booking_venues where id = ? for share", UUID.class, venue);
         db.queryForObject("select id from marketplace.booking_masters where id = ? for share", UUID.class, master);
+        if (!homeReplacementSlotAvailable(id, venue, service, master)) {
+            throw new ApiException(HttpStatus.CONFLICT, "SLOT_UNAVAILABLE", "The master is unavailable at this time");
+        }
+    }
+
+    public UUID homeLastDeclinedMaster(UUID id) {
+        return db.query("""
+                select from_master_id from transactions.booking_events
+                where booking_id = ? and actor_type = 'EXECUTOR' and assignment_version is not null
+                order by assignment_version desc limit 1
+                """, (rs, row) -> rs.getObject(1, UUID.class), id).stream().findFirst().orElse(null);
+    }
+
+    public boolean homeReplacementSlotAvailable(UUID id, UUID venue, UUID service, UUID master) {
         var start = db.queryForObject("select starts_at from transactions.bookings where id = ?",
                 OffsetDateTime.class, id);
         var date = start.atZoneSameInstant(slots.venue(venue).zone()).toLocalDate();
-        if (slots.freeSlots(venue, service, master, date, id).stream()
-                .noneMatch(slot -> slot.startsAt().toInstant().equals(start.toInstant()))) {
-            throw new ApiException(HttpStatus.CONFLICT, "SLOT_UNAVAILABLE", "The master is unavailable at this time");
+        try {
+            return slots.freeSlots(venue, service, master, date, id).stream()
+                    .anyMatch(slot -> slot.startsAt().toInstant().equals(start.toInstant()));
+        } catch (ApiException unavailable) {
+            if (unavailable.status() == HttpStatus.NOT_FOUND || unavailable.status() == HttpStatus.BAD_REQUEST) {
+                return false;
+            }
+            throw unavailable;
         }
     }
 

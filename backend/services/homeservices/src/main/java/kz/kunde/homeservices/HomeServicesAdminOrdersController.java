@@ -15,7 +15,7 @@ import kz.kunde.booking.BookingService;
 import kz.kunde.platform.ApiException;
 import kz.kunde.platform.authz.AdminGrants;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.dao.DataIntegrityViolationException;
+import kz.kunde.homeservices.HomeServiceAssignments.Assignment;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -48,11 +48,6 @@ import org.springframework.web.bind.annotation.RestController;
 @ConditionalOnProperty(name = {"app.identity.consumer-enabled", "app.auth.phone.enabled", "app.booking.enabled"}, havingValue = "true")
 public class HomeServicesAdminOrdersController {
     private static final String CATEGORY = "CLEANING";
-    /** Active masters of a venue that perform a service: the only ones an order of that service can be handed to. */
-    private static final String PERFORMERS = """
-            select m.id, m.name, m.online from marketplace.booking_masters m
-            join marketplace.booking_master_services ms on ms.master_id = m.id and ms.service_id = ?
-            where m.venue_id = ? and m.active""";
     private static final String STATUSES = "PENDING|CONFIRMED|IN_PROGRESS|COMPLETED|CANCELLED|NO_SHOW";
 
     public record Row(String id, String bookingNumber, String serviceName, String venueName, String masterName, String status,
@@ -78,13 +73,13 @@ public class HomeServicesAdminOrdersController {
     private final JdbcTemplate db;
     private final AdminGrants grants;
     private final BookingService bookings;
-    private final HomeServicePricing pricing;
+    private final HomeServiceAssignments assignments;
 
-    public HomeServicesAdminOrdersController(JdbcTemplate db, AdminGrants grants, BookingService bookings, HomeServicePricing pricing) {
+    public HomeServicesAdminOrdersController(JdbcTemplate db, AdminGrants grants, BookingService bookings, HomeServiceAssignments assignments) {
         this.db = db;
         this.grants = grants;
         this.bookings = bookings;
-        this.pricing = pricing;
+        this.assignments = assignments;
     }
 
     @GetMapping
@@ -133,7 +128,7 @@ public class HomeServicesAdminOrdersController {
         UUID[] order = db.query("select venue_id, service_id from transactions.bookings where id = ? and category = ?",
                 (rs, n) -> new UUID[] {rs.getObject(1, UUID.class), rs.getObject(2, UUID.class)}, id, CATEGORY).stream().findFirst()
                 .orElseThrow(HomeServicesAdminOrdersController::notFound);
-        return ok(db.query(PERFORMERS + " order by m.name, m.id",
+        return ok(db.query(HomeServiceAssignments.PERFORMERS + " order by m.name, m.id",
                 (rs, n) -> new MasterOption(rs.getString(1), rs.getString(2), rs.getBoolean(3)), order[1], order[0]));
     }
 
@@ -141,7 +136,7 @@ public class HomeServicesAdminOrdersController {
     @Transactional
     ResponseEntity<Detail> cancel(@AuthenticationPrincipal Jwt principal, @PathVariable UUID id, @Valid @RequestBody CancelRequest request) {
         UUID admin = authorize(principal);
-        Locked order = lock(id, request.expectedVersion());
+        Assignment order = lock(id, request.expectedVersion());
         db.update("""
                 update transactions.bookings set status = 'CANCELLED', cancelled_at = now(), cancelled_by = 'ADMIN', cancel_reason = ?,
                     updated_at = now(), version = version + 1 where id = ?
@@ -155,53 +150,24 @@ public class HomeServicesAdminOrdersController {
     @Transactional
     ResponseEntity<Detail> reassign(@AuthenticationPrincipal Jwt principal, @PathVariable UUID id, @Valid @RequestBody ReassignRequest request) {
         UUID admin = authorize(principal);
-        Locked order = lock(id, request.expectedVersion());
-        if (request.masterId().equals(order.master())) {
-            throw new ApiException(HttpStatus.CONFLICT, "MASTER_UNCHANGED", "The order already belongs to this master");
-        }
-        String name = db.query(PERFORMERS + " and m.id = ?", (rs, n) -> rs.getString(2), order.service(), order.venue(), request.masterId())
-                .stream().findFirst().orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "MASTER_INVALID",
-                        "Choose an active master of the same venue who performs this service"));
-        boolean taken = Boolean.TRUE.equals(db.queryForObject("""
-                select exists (select 1 from transactions.bookings o join transactions.bookings b on b.master_id = ? and b.id <> o.id
-                    and b.status in ('PENDING', 'CONFIRMED', 'CHECKED_IN', 'IN_PROGRESS')
-                    and tstzrange(b.starts_at, b.ends_at) && tstzrange(o.starts_at, o.ends_at) where o.id = ?)
-                """, Boolean.class, request.masterId(), id));
-        if (taken) {
-            throw new ApiException(HttpStatus.CONFLICT, "MASTER_BUSY", "The master is busy at this time");
-        }
-        if (order.master() == null) {
-            pricing.requireServiceable(order.venue(), order.latitude(), order.longitude());
-            bookings.requireHomeReplacementSlot(id, order.venue(), order.service(), request.masterId());
-        }
-        try {
-            // Backstop for a race: the Booking Engine's exclusion constraint refuses a second confirmed visit at the same time.
-            bookings.changeHomeAssignment(id, request.masterId(), name);
-        } catch (DataIntegrityViolationException busy) {
-            throw new ApiException(HttpStatus.CONFLICT, "MASTER_BUSY", "The master is busy at this time");
-        }
-        // The previous master's "on the way" report does not carry over to the new one.
-        db.update("delete from marketplace.home_service_visits where booking_id = ?", id);
-        bookings.assignmentEvent(id, request.expectedVersion(), order.status(), "ADMIN", admin,
-                "REASSIGNED: " + request.reason().trim(), order.master(), request.masterId());
+        Assignment order = lock(id, request.expectedVersion());
+        assignments.replace(id, order, request.masterId(), request.expectedVersion(), "ADMIN", admin, request.reason().trim());
         audit(id, admin, "REASSIGN", request.reason().trim(), order.master(), request.masterId());
         return ok(detailOf(id));
     }
 
     // ---- internals
 
-    private record Locked(String status, UUID venue, UUID master, UUID service, Double latitude, Double longitude) {}
-
     /** The order, locked; only an upcoming order that has not started can be operated on, and only at the version the screen saw. */
-    private Locked lock(UUID id, long expectedVersion) {
+    private Assignment lock(UUID id, long expectedVersion) {
         var row = db.query("select status, venue_id, master_id, service_id, version, home_latitude, home_longitude from transactions.bookings where id = ? and category = ? for update",
-                (rs, n) -> new Object[] {new Locked(rs.getString(1), rs.getObject(2, UUID.class), rs.getObject(3, UUID.class),
+                (rs, n) -> new Object[] {new Assignment(rs.getString(1), rs.getObject(2, UUID.class), rs.getObject(3, UUID.class),
                         rs.getObject(4, UUID.class), rs.getObject(6, Double.class), rs.getObject(7, Double.class)), rs.getLong(5)},
                 id, CATEGORY).stream().findFirst().orElseThrow(HomeServicesAdminOrdersController::notFound);
         if ((long) row[1] != expectedVersion) {
             throw new ApiException(HttpStatus.CONFLICT, "VERSION_CONFLICT", "The order has changed; reload it");
         }
-        Locked order = (Locked) row[0];
+        Assignment order = (Assignment) row[0];
         if (!"PENDING".equals(order.status()) && !"CONFIRMED".equals(order.status())) {
             throw new ApiException(HttpStatus.CONFLICT, "ORDER_NOT_OPERABLE",
                     "Only a pending or confirmed order can be cancelled or reassigned");

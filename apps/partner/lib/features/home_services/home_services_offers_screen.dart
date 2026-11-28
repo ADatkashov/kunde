@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../data/models.dart';
 import '../../data/partner_api.dart';
 import '../../data/partner_operations.dart';
+import 'home_services_assignments_screen.dart';
 import 'home_services_masters_screen.dart';
 import 'home_services_reviews_screen.dart';
 
@@ -103,6 +104,17 @@ class _HomeServicesOffersScreenState extends State<HomeServicesOffersScreen> {
         title: Text(t('Дом и быт: мои услуги', 'Үй және тұрмыс: қызметтерім',
             'Home services: my offers')),
         actions: [
+          IconButton(
+            key: const ValueKey('open-assignments'),
+            tooltip: t('Ожидают назначения', 'Тағайындау күтілуде',
+                'Awaiting assignment'),
+            icon: const Icon(Icons.assignment_ind_outlined),
+            onPressed: () => Navigator.of(context).push<void>(MaterialPageRoute(
+                builder: (_) => HomeServicesAssignmentsScreen(
+                    api: widget.api,
+                    partnerId: widget.partnerId,
+                    canManage: widget.canManage))),
+          ),
           IconButton(
             key: const ValueKey('open-reviews'),
             tooltip: t('Отзывы', 'Пікірлер', 'Reviews'),
