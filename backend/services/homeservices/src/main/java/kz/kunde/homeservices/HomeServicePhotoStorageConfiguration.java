@@ -3,6 +3,9 @@ package kz.kunde.homeservices;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Set;
+import java.util.regex.Pattern;
+import kz.kunde.platform.ApiBodyLimitFilter;
+import org.springframework.http.HttpMethod;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,6 +21,17 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 @EnableScheduling
 @ConditionalOnProperty(name = {"app.home-services.enabled", "app.home-services.photos.enabled"}, havingValue = "true")
 class HomeServicePhotoStorageConfiguration {
+    private static final Pattern BOOKING_UPLOAD = Pattern.compile(
+            "/api/v1/home-services/bookings/[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}/photos");
+
+    @Bean
+    @ConditionalOnProperty(name = {"app.booking.enabled", "app.identity.consumer-enabled", "app.auth.phone.enabled"}, havingValue = "true")
+    ApiBodyLimitFilter.StreamingRoute homeServicePhotoUploadRoute() {
+        return request -> HttpMethod.POST.matches(request.getMethod())
+                && BOOKING_UPLOAD.matcher(request.getServletPath()).matches();
+    }
+
+
     @Bean
     HomeServicePhotoStorage homeServicePhotoStorage(Environment environment) {
         boolean internal = Set.of("local", "dev", "test").contains(environment.getProperty("app.environment", "production"))

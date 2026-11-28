@@ -24,7 +24,7 @@ class HomeServiceBookingPhotos {
     private static final int CLEANUP_BATCH_SIZE = 20;
     private static final String SCOPED = """
             subject_type = 'BOOKING' and subject_id = ? and venue_id = ?
-            and city_id is not distinct from ?::uuid and partner_id is not distinct from ?::uuid
+            and partner_id is not distinct from ?::uuid
             """;
 
     record Photo(UUID id, String purpose, String contentType, int byteSize, int width, int height, OffsetDateTime createdAt) {}
@@ -56,7 +56,7 @@ class HomeServiceBookingPhotos {
             var previous = db.query("select id, state, content_sha256 from marketplace.home_service_photos where "
                             + SCOPED + " and uploaded_by = ? and idempotency_key = ?",
                     (rs, n) -> new Reservation(rs.getObject(1, UUID.class), rs.getString(2), rs.getBytes(3)),
-                    booking, scope.venueId(), scope.cityId(), scope.partnerId(), actor, idempotencyKey).stream().findFirst();
+                    booking, scope.venueId(), scope.partnerId(), actor, idempotencyKey).stream().findFirst();
             if (previous.isPresent()) {
                 Reservation reservation = previous.get();
                 if (!MessageDigest.isEqual(hash, reservation.hash()) || "DELETED".equals(reservation.state())) {
@@ -67,17 +67,17 @@ class HomeServiceBookingPhotos {
             requireEditable(scope);
             int count = db.queryForObject("select count(*) from marketplace.home_service_photos where " + SCOPED
                             + " and purpose = 'PROBLEM' and state in ('PENDING', 'READY')",
-                    Integer.class, booking, scope.venueId(), scope.cityId(), scope.partnerId());
+                    Integer.class, booking, scope.venueId(), scope.partnerId());
             if (count >= MAX_PROBLEM_PHOTOS) {
                 throw new ApiException(HttpStatus.CONFLICT, "PHOTO_LIMIT_REACHED", "Too many photos for this order");
             }
             UUID photoId = UUID.randomUUID();
             db.update("""
                     insert into marketplace.home_service_photos
-                        (id, subject_type, subject_id, venue_id, city_id, partner_id, uploaded_by, purpose,
+                        (id, subject_type, subject_id, venue_id, partner_id, uploaded_by, purpose,
                          idempotency_key, content_sha256, content_type, byte_size, width, height, moderation)
-                    values (?, 'BOOKING', ?, ?, ?, ?, ?, 'PROBLEM', ?, ?, ?, ?, ?, ?, 'PRIVATE')
-                    """, photoId, booking, scope.venueId(), scope.cityId(), scope.partnerId(), actor, idempotencyKey,
+                    values (?, 'BOOKING', ?, ?, ?, ?, 'PROBLEM', ?, ?, ?, ?, ?, ?, 'PRIVATE')
+                    """, photoId, booking, scope.venueId(), scope.partnerId(), actor, idempotencyKey,
                     hash, input.contentType(), input.bytes().length, input.width(), input.height());
             return photoId;
         });
@@ -85,7 +85,7 @@ class HomeServiceBookingPhotos {
         return transactions.execute(transaction -> {
             HomePhotoScope scope = bookings.lockHomeBookingForCustomerPhotos(actor, booking);
             String state = db.query("select state from marketplace.home_service_photos where " + SCOPED + " and id = ? for update",
-                    (rs, n) -> rs.getString(1), booking, scope.venueId(), scope.cityId(), scope.partnerId(), id)
+                    (rs, n) -> rs.getString(1), booking, scope.venueId(), scope.partnerId(), id)
                     .stream().findFirst().orElseThrow(HomeServiceBookingPhotos::notFound);
             if ("PENDING".equals(state)) {
                 requireEditable(scope);
@@ -118,7 +118,7 @@ class HomeServiceBookingPhotos {
                     update marketplace.home_service_photos set state = 'DELETED', updated_at = now()
                     where
                     """ + SCOPED + " and id = ? and uploaded_by = ? and purpose = 'PROBLEM' and state <> 'DELETED'",
-                    booking, scope.venueId(), scope.cityId(), scope.partnerId(), id, actor);
+                    booking, scope.venueId(), scope.partnerId(), id, actor);
             if (updated != 0) {
                 audit(id, actor, "DELETE");
             }
@@ -160,7 +160,7 @@ class HomeServiceBookingPhotos {
                 """ + SCOPED + " and state = 'READY' and (?::uuid is null or id = ?) order by created_at, id",
                 (rs, n) -> new Photo(rs.getObject(1, UUID.class), rs.getString(2), rs.getString(3), rs.getInt(4),
                         rs.getInt(5), rs.getInt(6), rs.getObject(7, OffsetDateTime.class)),
-                booking, scope.venueId(), scope.cityId(), scope.partnerId(), id, id);
+                booking, scope.venueId(), scope.partnerId(), id, id);
     }
 
     private void audit(UUID photo, UUID actor, String action) {

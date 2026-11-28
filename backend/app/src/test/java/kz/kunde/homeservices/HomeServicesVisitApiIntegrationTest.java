@@ -117,16 +117,24 @@ class HomeServicesVisitApiIntegrationTest {
         String path = "/api/v1/home-services/bookings/" + confirmedBooking() + "/photos";
         String key = UUID.randomUUID().toString();
         var image = new java.io.ByteArrayOutputStream();
-        javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(2, 3, java.awt.image.BufferedImage.TYPE_INT_RGB), "png", image);
+        var pixels = new java.awt.image.BufferedImage(160, 160, java.awt.image.BufferedImage.TYPE_INT_RGB);
+        var random = new java.util.Random(271);
+        for (int y = 0; y < pixels.getHeight(); y++) {
+            for (int x = 0; x < pixels.getWidth(); x++) {
+                pixels.setRGB(x, y, random.nextInt());
+            }
+        }
+        javax.imageio.ImageIO.write(pixels, "png", image);
         byte[] png = image.toByteArray();
+        assertThat(png.length).isGreaterThan(65_536);
 
         http.perform(get(path)).andExpect(status().isUnauthorized());
-        http.perform(post(path).contentType("image/png").content(png).header("Authorization", "Bearer " + stranger)
+        http.perform(post(path).servletPath(path).contentType("image/png").content(png).header("Authorization", "Bearer " + stranger)
                 .header("Idempotency-Key", key)).andExpect(status().isNotFound());
-        var upload = post(path).contentType("image/png").content(png).header("Authorization", "Bearer " + customer)
+        var upload = post(path).servletPath(path).contentType("image/png").content(png).header("Authorization", "Bearer " + customer)
                 .header("Idempotency-Key", key);
         String photoId = JsonPath.read(body(http.perform(upload).andExpect(status().isOk())
-                .andExpect(jsonPath("$.purpose").value("PROBLEM")).andExpect(jsonPath("$.height").value(3))), "$.id");
+                .andExpect(jsonPath("$.purpose").value("PROBLEM")).andExpect(jsonPath("$.height").value(160))), "$.id");
         http.perform(upload).andExpect(status().isOk()).andExpect(jsonPath("$.id").value(photoId));
         verify(photoStorage, times(1)).putReserved(anyString(), any());
 

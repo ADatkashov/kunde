@@ -1,10 +1,10 @@
 -- Only metadata is stored here. Booking-owned subjects are resolved through the Booking module.
+-- City placement is inherited from the venue. The stored partner ID prevents cross-tenant reads after transfer.
 CREATE TABLE marketplace.home_service_photos (
     id uuid PRIMARY KEY,
     subject_type text NOT NULL CHECK (subject_type IN ('BOOKING', 'OFFER', 'REVIEW')),
     subject_id uuid NOT NULL,
     venue_id uuid NOT NULL,
-    city_id uuid,
     partner_id uuid,
     uploaded_by uuid NOT NULL,
     purpose text NOT NULL,

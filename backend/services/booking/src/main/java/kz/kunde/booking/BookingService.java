@@ -205,16 +205,15 @@ public class BookingService {
         return view(user, id);
     }
 
-    public record HomePhotoScope(UUID venueId, UUID cityId, UUID partnerId, String status) {}
+    public record HomePhotoScope(UUID venueId, UUID partnerId, String status) {}
 
     @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
     public HomePhotoScope lockHomeBookingForCustomerPhotos(UUID user, UUID id) {
         return db.query("""
-                select b.venue_id, v.city_id, v.partner_id, b.status
+                select b.venue_id, v.partner_id, b.status
                 from transactions.bookings b join marketplace.booking_venues v on v.id = b.venue_id
                 where b.id = ? and b.user_id = ? and b.category = 'CLEANING' for update of b
-                """, (rs, n) -> new HomePhotoScope(rs.getObject(1, UUID.class), rs.getObject(2, UUID.class),
-                rs.getObject(3, UUID.class), rs.getString(4)), id, user).stream().findFirst()
+                """, (rs, n) -> new HomePhotoScope(rs.getObject(1, UUID.class), rs.getObject(2, UUID.class), rs.getString(3)), id, user).stream().findFirst()
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND", "Order not found"));
     }
 
