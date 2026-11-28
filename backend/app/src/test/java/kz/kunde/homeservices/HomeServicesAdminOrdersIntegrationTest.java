@@ -279,6 +279,47 @@ class HomeServicesAdminOrdersIntegrationTest {
     }
 
     @Test
+    void staffCanReplaceTheMasterAfterAnAuditedDecline() throws Exception {
+        String key = "admin-orders-replace-000001";
+        String booking = confirm(orderFor(customer, key));
+        String previous = JsonPath.read(slots, "$[0].masterId");
+        String other = masterOtherThan(booking);
+        String startsAt = JsonPath.read(slots, "$[0].startsAt");
+        db.update("update marketplace.booking_masters set user_id = ?::uuid where id = ?::uuid", executorUser, previous);
+        db.update("delete from marketplace.booking_working_hours where master_id = ?::uuid", other);
+        db.update("""
+                insert into marketplace.booking_working_hours (master_id, weekday, start_time, end_time, break_start, break_end)
+                select ?::uuid, weekday, start_time, end_time, break_start, break_end from marketplace.booking_working_hours
+                where master_id = ?::uuid
+                """, other, previous);
+        long originalVersion = version(booking);
+        String decline = "{\"expectedVersion\":" + originalVersion + ",\"reason\":\"Unavailable\"}";
+        String job = "/api/v1/executor/home-services/jobs/" + booking;
+        call("POST", job + "/decline", executor, decline).andExpect(status().isNoContent());
+        String reassign = orders("/" + booking + "/reassign");
+        call("POST", reassign, ops, replacement(previous, originalVersion + 1)).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("MASTER_UNCHANGED"));
+
+        db.update("update marketplace.booking_masters set online = false where id = ?::uuid", other);
+        call("POST", reassign, ops, replacement(other, originalVersion + 1)).andExpect(status().isNotFound());
+        db.update("update marketplace.booking_masters set online = true where id = ?::uuid", other);
+        call("POST", reassign, ops, replacement(other, originalVersion + 1)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.history[1].fromMasterId").value(previous))
+                .andExpect(jsonPath("$.history[2].toMasterId").value(other));
+        call("POST", reassign, ops, replacement(other, originalVersion + 1)).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("VERSION_CONFLICT"));
+        call("POST", job + "/decline", executor, decline).andExpect(status().isNoContent());
+        call("POST", job + "/start", executor, null).andExpect(status().isNotFound());
+        http.perform(post("/api/v1/booking/bookings").header("Authorization", "Bearer " + customer)
+                .header("Idempotency-Key", key).contentType(MediaType.APPLICATION_JSON).content(bookingJson(previous, startsAt)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.id").value(booking)).andExpect(jsonPath("$.masterId").value(other));
+    }
+
+    private static String replacement(String master, long version) {
+        return "{\"masterId\":\"" + master + "\",\"expectedVersion\":" + version + ",\"reason\":\"Replacement\"}";
+    }
+
+    @Test
     void workThatHasStartedCannotBeCancelledOrReassignedByOperations() throws Exception {
         String booking = confirm(orderFor(customer, "admin-orders-started-000001"));
         String other = masterOtherThan(booking);

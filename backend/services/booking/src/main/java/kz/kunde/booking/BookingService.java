@@ -172,13 +172,15 @@ public class BookingService {
             UUID id = db.queryForObject("""
                     insert into transactions.bookings (user_id, venue_id, service_id, master_id, venue_name, venue_address,
                         service_name, master_name, duration_minutes, starts_at, ends_at, price_minor, comment, idempotency_key,
-                        category, address_text, area_sqm, status, confirmation, health_initial_starts_at, discount_percent, original_price_minor)
-                    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning id
+                        category, address_text, area_sqm, status, confirmation, health_initial_starts_at, discount_percent, original_price_minor,
+                        home_latitude, home_longitude)
+                    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning id
                     """, UUID.class, user, venue.id(), service.id(), request.masterId(), venue.name(), venue.address(),
                     service.name(), master, service.durationMinutes(), Timestamp.from(start), Timestamp.from(end),
                     price, comment, idempotencyKey, venue.category(), address, area,
                     partnerManaged ? "PENDING" : "CONFIRMED", partnerManaged ? "PARTNER" : "DEV_MOCK",
-                    health ? Timestamp.from(start) : null, discount, discount == null ? null : listPrice);
+                    health ? Timestamp.from(start) : null, discount, discount == null ? null : listPrice,
+                    home ? request.latitude() : null, home ? request.longitude() : null);
             event(id, partnerManaged ? "PENDING" : "CONFIRMED", partnerManaged ? "CUSTOMER" : "SYSTEM", user, null);
             if (health) { payments.open(user, id, null, paymentMethod, price); }
             return new Booked(view(user, id), true);

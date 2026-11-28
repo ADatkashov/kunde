@@ -73,7 +73,7 @@ public class HomeServicePricing {
     }
 
     /** A venue without active zones serves the whole city; otherwise the address must lie inside one of them. */
-    private String requireServiceable(UUID venueId, Double latitude, Double longitude) {
+    String requireServiceable(UUID venueId, Double latitude, Double longitude) {
         List<Object[]> zones = db.query("select id, center_lat, center_lng, radius_m from marketplace.home_service_zones "
                 + "where venue_id = ? and active order by name, id",
                 (rs, row) -> new Object[] {rs.getObject(1, UUID.class), rs.getDouble(2), rs.getDouble(3), rs.getInt(4)}, venueId);

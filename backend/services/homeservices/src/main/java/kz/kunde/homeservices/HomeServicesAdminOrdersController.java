@@ -78,11 +78,13 @@ public class HomeServicesAdminOrdersController {
     private final JdbcTemplate db;
     private final AdminGrants grants;
     private final BookingService bookings;
+    private final HomeServicePricing pricing;
 
-    public HomeServicesAdminOrdersController(JdbcTemplate db, AdminGrants grants, BookingService bookings) {
+    public HomeServicesAdminOrdersController(JdbcTemplate db, AdminGrants grants, BookingService bookings, HomeServicePricing pricing) {
         this.db = db;
         this.grants = grants;
         this.bookings = bookings;
+        this.pricing = pricing;
     }
 
     @GetMapping
@@ -169,6 +171,7 @@ public class HomeServicesAdminOrdersController {
             throw new ApiException(HttpStatus.CONFLICT, "MASTER_BUSY", "The master is busy at this time");
         }
         if (order.master() == null) {
+            pricing.requireServiceable(order.venue(), order.latitude(), order.longitude());
             bookings.requireHomeReplacementSlot(id, order.venue(), order.service(), request.masterId());
         }
         try {
@@ -187,13 +190,13 @@ public class HomeServicesAdminOrdersController {
 
     // ---- internals
 
-    private record Locked(String status, UUID venue, UUID master, UUID service) {}
+    private record Locked(String status, UUID venue, UUID master, UUID service, Double latitude, Double longitude) {}
 
     /** The order, locked; only an upcoming order that has not started can be operated on, and only at the version the screen saw. */
     private Locked lock(UUID id, long expectedVersion) {
-        var row = db.query("select status, venue_id, master_id, service_id, version from transactions.bookings where id = ? and category = ? for update",
+        var row = db.query("select status, venue_id, master_id, service_id, version, home_latitude, home_longitude from transactions.bookings where id = ? and category = ? for update",
                 (rs, n) -> new Object[] {new Locked(rs.getString(1), rs.getObject(2, UUID.class), rs.getObject(3, UUID.class),
-                        rs.getObject(4, UUID.class)), rs.getLong(5)},
+                        rs.getObject(4, UUID.class), rs.getObject(6, Double.class), rs.getObject(7, Double.class)), rs.getLong(5)},
                 id, CATEGORY).stream().findFirst().orElseThrow(HomeServicesAdminOrdersController::notFound);
         if ((long) row[1] != expectedVersion) {
             throw new ApiException(HttpStatus.CONFLICT, "VERSION_CONFLICT", "The order has changed; reload it");

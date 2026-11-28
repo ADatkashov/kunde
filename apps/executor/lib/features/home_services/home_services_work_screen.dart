@@ -143,8 +143,8 @@ class _HomeServicesWorkScreenState extends State<HomeServicesWorkScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(s.t('Отказаться от задания?', 'Тапсырмадан бас тартасыз ба?',
-            'Decline this job?')),
+        title: Text(s.t('Отказаться от задания?',
+            'Тапсырмадан бас тартасыз ба?', 'Decline this job?')),
         content: Form(
           key: form,
           child: TextFormField(
@@ -284,8 +284,8 @@ class _HomeServicesWorkScreenState extends State<HomeServicesWorkScreen> {
                             TextButton(
                               key: ValueKey('decline-${job['id']}'),
                               onPressed: _busy ? null : () => _decline(job),
-                              child: Text(s.t(
-                                  'Отказаться', 'Бас тарту', 'Decline')),
+                              child: Text(
+                                  s.t('Отказаться', 'Бас тарту', 'Decline')),
                             ),
                         ],
                       ),

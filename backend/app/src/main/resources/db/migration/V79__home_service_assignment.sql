@@ -2,6 +2,8 @@
 ALTER TABLE transactions.bookings
     ALTER COLUMN master_id DROP NOT NULL,
     ADD COLUMN home_initial_master_id uuid,
+    ADD COLUMN home_latitude double precision,
+    ADD COLUMN home_longitude double precision,
     ADD CONSTRAINT bookings_unassigned_home_service CHECK (
         master_id IS NOT NULL OR (category = 'CLEANING' AND status IN ('PENDING', 'CONFIRMED', 'CANCELLED'))
     );
