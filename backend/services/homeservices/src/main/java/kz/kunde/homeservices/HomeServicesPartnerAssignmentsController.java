@@ -48,13 +48,15 @@ public class HomeServicesPartnerAssignmentsController {
     private final PartnerDirectory partners;
     private final FeatureToggles toggles;
     private final HomeServiceAssignments assignments;
+    private final HomeServiceReschedules reschedules;
 
     public HomeServicesPartnerAssignmentsController(JdbcTemplate db, PartnerDirectory partners,
-            FeatureToggles toggles, HomeServiceAssignments assignments) {
+            FeatureToggles toggles, HomeServiceAssignments assignments, HomeServiceReschedules reschedules) {
         this.db = db;
         this.partners = partners;
         this.toggles = toggles;
         this.assignments = assignments;
+        this.reschedules = reschedules;
     }
 
     @GetMapping
@@ -73,6 +75,15 @@ public class HomeServicesPartnerAssignmentsController {
             @PathVariable UUID partnerId, @PathVariable UUID id) {
         authorize(principal, partnerId, false);
         return ok(assignments.candidates(id, order(partnerId, id, null)));
+    }
+
+    @PostMapping("/{id}/reschedule")
+    @Transactional
+    ResponseEntity<Void> proposeReschedule(@AuthenticationPrincipal Jwt principal, @PathVariable UUID partnerId, @PathVariable UUID id,
+            @Valid @RequestBody HomeServiceReschedules.Request request) {
+        UUID actor = authorize(principal, partnerId, true);
+        reschedules.propose(id, partnerId, actor, "PARTNER", request);
+        return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
     }
 
     @PostMapping("/{id}")

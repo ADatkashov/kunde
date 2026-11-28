@@ -11,6 +11,38 @@ Widget _app(Future<Map<String, dynamic>> Function() load) => MaterialApp(
     );
 
 void main() {
+  testWidgets('the customer approves only the displayed schedule version',
+      (tester) async {
+    var decided = false;
+    await tester.pumpWidget(MaterialApp(
+      locale: const Locale('en'),
+      home: Scaffold(
+        body: HomeServiceVisitCard(
+          load: () async => {
+            'status': 'CONFIRMED',
+            if (!decided)
+              'reschedule': {
+                'startsAt': '2026-12-01T06:00:00Z',
+                'reason': 'New time',
+                'version': 3,
+              }
+          },
+          decideReschedule: (version, accepted) async {
+            expect(version, 3);
+            expect(accepted, isTrue);
+            decided = true;
+          },
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('New time proposed'), findsOneWidget);
+    await tester.tap(find.text('Confirm change'));
+    await tester.pumpAndSettle();
+    expect(decided, isTrue);
+    expect(find.text('New time proposed'), findsNothing);
+  });
+
   testWidgets('shows the master on the way with the ETA, then on site',
       (tester) async {
     var visit = {'status': 'CONFIRMED', 'stage': 'EN_ROUTE', 'etaMinutes': 12};

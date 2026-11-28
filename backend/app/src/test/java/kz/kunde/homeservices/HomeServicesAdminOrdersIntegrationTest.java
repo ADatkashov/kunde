@@ -344,6 +344,42 @@ class HomeServicesAdminOrdersIntegrationTest {
         call("GET", queue, owner, null).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
     }
 
+    @Test
+    void onlyTheCustomerCanApproveAProposedScheduleAndTheOriginalRequestReplays() throws Exception {
+        String key = "home-reschedule-00000001";
+        String booking = confirm(orderFor(customer, key));
+        String startsAt = JsonPath.read(slots, "$[0].startsAt");
+        var target = java.time.OffsetDateTime.parse(startsAt).plusDays(7);
+        String master = JsonPath.read(slots, "$[0].masterId");
+        long current = version(booking);
+        String propose = orders("/" + booking + "/reschedule");
+        String decision = "/api/v1/home-services/bookings/" + booking + "/reschedule";
+        String visit = "/api/v1/home-services/bookings/" + booking + "/visit";
+        call("POST", propose, ops, scheduleProposal(current, target)).andExpect(status().isNoContent());
+        assertThat(db.queryForObject("select starts_at from transactions.bookings where id = ?::uuid",
+                java.time.OffsetDateTime.class, booking).toInstant()).isEqualTo(java.time.OffsetDateTime.parse(startsAt).toInstant());
+        call("GET", visit, customer, null).andExpect(jsonPath("$.reschedule.version").value(current + 1));
+        call("POST", decision, otherCustomer, scheduleDecision(current + 1, true)).andExpect(status().isNotFound());
+        call("POST", decision, customer, scheduleDecision(current + 1, false)).andExpect(status().isNoContent());
+        call("GET", visit, customer, null).andExpect(jsonPath("$.reschedule").doesNotExist());
+        call("POST", propose, ops, scheduleProposal(current + 2, target)).andExpect(status().isNoContent());
+        call("POST", decision, customer, scheduleDecision(current + 1, true)).andExpect(status().isConflict());
+        call("POST", decision, customer, scheduleDecision(current + 3, true)).andExpect(status().isNoContent());
+        assertThat(db.queryForObject("select starts_at from transactions.bookings where id = ?::uuid",
+                java.time.OffsetDateTime.class, booking).toInstant()).isEqualTo(target.toInstant());
+        http.perform(post("/api/v1/booking/bookings").header("Authorization", "Bearer " + customer)
+                .header("Idempotency-Key", key).contentType(MediaType.APPLICATION_JSON).content(bookingJson(master, startsAt)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.id").value(booking));
+    }
+
+    private static String scheduleProposal(long version, java.time.OffsetDateTime time) {
+        return "{\"expectedVersion\":" + version + ",\"startsAt\":\"" + time + "\",\"reason\":\"New time\"}";
+    }
+
+    private static String scheduleDecision(long version, boolean accepted) {
+        return "{\"expectedVersion\":" + version + ",\"accepted\":" + accepted + "}";
+    }
+
     private static String replacement(String master, long version) {
         return "{\"masterId\":\"" + master + "\",\"expectedVersion\":" + version + ",\"reason\":\"Replacement\"}";
     }

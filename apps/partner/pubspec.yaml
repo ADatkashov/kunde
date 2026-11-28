@@ -12,6 +12,8 @@ dependencies:
       path: packages/kunde_maps_sdk
   kunde_api:
     path: ../../packages/kunde_api
+  kunde_ui:
+    path: ../../packages/kunde_ui
   kunde_design:
     path: ../../packages/kunde_design
   kunde_session:

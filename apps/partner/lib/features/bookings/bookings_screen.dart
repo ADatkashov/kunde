@@ -11,8 +11,10 @@ import 'booking_details_page.dart';
 import 'booking_filters.dart';
 
 class BookingsScreen extends StatefulWidget {
-  const BookingsScreen({required this.store, super.key});
+  const BookingsScreen(
+      {required this.store, this.canManage = false, super.key});
   final OpsStore store;
+  final bool canManage;
   @override
   State<BookingsScreen> createState() => _BookingsScreenState();
 }
@@ -145,7 +147,9 @@ class _BookingsScreenState extends State<BookingsScreen> {
                       onOpen: () => Navigator.of(context).push(
                           MaterialPageRoute<void>(
                               builder: (_) => BookingDetailsPage(
-                                  store: store, bookingId: b.id))),
+                                  store: store,
+                                  bookingId: b.id,
+                                  canManage: widget.canManage))),
                       onAction: (a) =>
                           performBookingAction(context, store, b, a),
                     );

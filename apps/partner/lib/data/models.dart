@@ -228,6 +228,7 @@ class PartnerBooking {
     required this.allowedActions,
     required this.timeline,
     this.category,
+    this.version,
     this.masterName,
     this.startsAt,
     this.endsAt,
@@ -253,6 +254,7 @@ class PartnerBooking {
         allowedActions: _strings(j['allowedActions']),
         timeline: _list(j['timeline'], TimelineEntry.fromJson),
         category: _str(j['category']),
+        version: j['version'] as int?,
         masterName: _str(j['masterName']),
         startsAt: _time(j['startsAt']),
         endsAt: _time(j['endsAt']),
@@ -278,6 +280,7 @@ class PartnerBooking {
   final List<String> allowedActions;
   final List<TimelineEntry> timeline;
   final String? category;
+  final int? version;
   final String? masterName;
   final DateTime? startsAt;
   final DateTime? endsAt;
