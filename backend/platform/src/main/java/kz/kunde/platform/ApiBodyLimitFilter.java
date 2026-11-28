@@ -15,6 +15,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -26,21 +28,35 @@ public class ApiBodyLimitFilter extends OncePerRequestFilter {
     private final ApiSecurityErrorWriter errors;
     private final Counter denied;
     private final int maxBytes;
+    private final List<StreamingRoute> streamingRoutes;
 
+    /** A route with its own bounded stream reader, invoked after authentication. */
+    @FunctionalInterface
+    public interface StreamingRoute {
+        boolean matches(HttpServletRequest request);
+    }
+
+    ApiBodyLimitFilter(ApiSecurityErrorWriter errors, MeterRegistry metrics, int maxBytes) {
+        this(errors, metrics, maxBytes, List.of());
+    }
+
+    @Autowired
     public ApiBodyLimitFilter(ApiSecurityErrorWriter errors, MeterRegistry metrics,
-            @Value("${app.security.max-body-bytes:65536}") int maxBytes) {
+            @Value("${app.security.max-body-bytes:65536}") int maxBytes, List<StreamingRoute> streamingRoutes) {
         if (maxBytes < 1 || maxBytes > 1048576) {
             throw new IllegalArgumentException("API body limit must be between 1 and 1048576 bytes");
         }
         this.errors = errors;
         this.denied = metrics.counter("kunde.api.body_limit.denied");
         this.maxBytes = maxBytes;
+        this.streamingRoutes = List.copyOf(streamingRoutes);
     }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
-        return !(path.equals("/api/v1") || path.startsWith("/api/v1/"));
+        return !(path.equals("/api/v1") || path.startsWith("/api/v1/"))
+                || streamingRoutes.stream().anyMatch(route -> route.matches(request));
     }
 
     @Override

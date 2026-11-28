@@ -2,6 +2,12 @@ package kz.kunde.homeservices;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -26,6 +32,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +48,9 @@ import org.springframework.transaction.annotation.Transactional;
         "app.food.enabled=true",
         "app.booking.enabled=true",
         "app.home-services.enabled=true",
+        "app.home-services.photos.enabled=true",
+        "app.home-services.photos.endpoint=http://127.0.0.1:9000",
+        "app.home-services.photos.bucket=synthetic-private-photos",
         "app.auth.phone.enabled=true",
         "app.auth.phone.secret=synthetic-test-secret-synthetic-test-secret",
         "app.auth.phone.dev-otp.enabled=true",
@@ -56,6 +66,7 @@ class HomeServicesVisitApiIntegrationTest {
     @Autowired PhoneAuthProperties auth;
     @Autowired Environment env;
     @Autowired FeatureToggles toggles;
+    @MockitoBean HomeServicePhotoStorage photoStorage;
 
     String owner;      // partner A owner (+77000000002), owns the cleaning venue
     String stranger;   // partner B owner (+77000000003)
@@ -99,6 +110,45 @@ class HomeServicesVisitApiIntegrationTest {
     @AfterEach
     void tearDown() {
         toggles.invalidate();
+    }
+
+    @Test
+    void orderOwnerCanUploadReadAndDeletePrivatePhotosAndRetrySafely() throws Exception {
+        String path = "/api/v1/home-services/bookings/" + confirmedBooking() + "/photos";
+        String key = UUID.randomUUID().toString();
+        var image = new java.io.ByteArrayOutputStream();
+        var pixels = new java.awt.image.BufferedImage(160, 160, java.awt.image.BufferedImage.TYPE_INT_RGB);
+        var random = new java.util.Random(271);
+        for (int y = 0; y < pixels.getHeight(); y++) {
+            for (int x = 0; x < pixels.getWidth(); x++) {
+                pixels.setRGB(x, y, random.nextInt());
+            }
+        }
+        javax.imageio.ImageIO.write(pixels, "png", image);
+        byte[] png = image.toByteArray();
+        assertThat(png.length).isGreaterThan(65_536);
+
+        http.perform(get(path)).andExpect(status().isUnauthorized());
+        http.perform(post(path).servletPath(path).contentType("image/png").content(png).header("Authorization", "Bearer " + stranger)
+                .header("Idempotency-Key", key)).andExpect(status().isNotFound());
+        var upload = post(path).servletPath(path).contentType("image/png").content(png).header("Authorization", "Bearer " + customer)
+                .header("Idempotency-Key", key);
+        String photoId = JsonPath.read(body(http.perform(upload).andExpect(status().isOk())
+                .andExpect(jsonPath("$.purpose").value("PROBLEM")).andExpect(jsonPath("$.height").value(160))), "$.id");
+        http.perform(upload).andExpect(status().isOk()).andExpect(jsonPath("$.id").value(photoId));
+        verify(photoStorage, times(1)).putReserved(anyString(), any());
+
+        String objectKey = HomeServicePhotoStorage.key(UUID.fromString(photoId), "image/png");
+        when(photoStorage.signedRead(objectKey)).thenReturn(java.net.URI.create("https://storage.example.test/signed"));
+        call("GET", path + "/" + photoId, stranger, null).andExpect(status().isNotFound());
+        call("GET", path + "/" + photoId, customer, null).andExpect(status().isOk())
+                .andExpect(jsonPath("$.expiresInSeconds").value(180));
+        http.perform(delete(path + "/" + photoId).header("Authorization", "Bearer " + customer))
+                .andExpect(status().isNoContent());
+        call("GET", path + "/" + photoId, customer, null).andExpect(status().isNotFound());
+        call("GET", path, customer, null).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+        assertThat(db.queryForList("select action from marketplace.home_service_photo_events where photo_id = ?::uuid order by id",
+                String.class, photoId)).containsExactly("UPLOAD", "DELETE");
     }
 
     private String body(ResultActions r) throws Exception { return r.andReturn().getResponse().getContentAsString(); }

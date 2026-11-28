@@ -71,6 +71,11 @@ app:
   # Service booking (barbershops) DEV pilot: DEV mock confirmation; forbidden outside dev/local/test (BookingGuard).
   home-services:
     enabled: ${HOME_SERVICES_ENABLED:false}
+    photos:
+      enabled: ${HOME_SERVICES_PHOTOS_ENABLED:false}
+      endpoint: ${HOME_SERVICES_PHOTOS_ENDPOINT:}
+      region: ${HOME_SERVICES_PHOTOS_REGION:auto}
+      bucket: ${HOME_SERVICES_PHOTOS_BUCKET:}
   # Beauty & Care (salons, masters, booking). Off by default; needs booking; dev/local/test only (BeautySettings).
   beauty:
     enabled: ${BEAUTY_ENABLED:false}
