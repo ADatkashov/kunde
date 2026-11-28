@@ -5,12 +5,14 @@ import java.util.UUID;
 import kz.kunde.booking.BookingService;
 import kz.kunde.platform.ApiException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 /** Shared mutation for authorized operations while the Booking row remains locked. */
 @Service
+@ConditionalOnProperty(name = "app.booking.enabled", havingValue = "true")
 class HomeServiceAssignments {
     /** Active masters of a venue that perform a service: the only ones an order of that service can be handed to. */
     static final String PERFORMERS = """

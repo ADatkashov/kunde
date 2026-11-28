@@ -35,7 +35,9 @@ class _HomeServicesAssignmentsScreenState
       };
 
   Future<void> _reload() async {
-    setState(() => _orders = widget.api.getList(_root));
+    setState(() {
+      _orders = widget.api.getList(_root);
+    });
     try {
       await _orders;
     } catch (_) {
