@@ -379,6 +379,27 @@ class HomeServicesAdminOrdersIntegrationTest {
     }
 
     @Test
+    void grantsAreSeparateAndRevocationIsImmediate() throws Exception {
+        String booking = orderFor(customer, "admin-orders-grants-0000001");
+        // Operations grant: orders yes, catalogue moderation no. Catalogue grant: the opposite (covered in onlyTheOperationsGrantOpensOrders).
+        call("GET", "/api/v1/admin/home-services/offers", ops, null).andExpect(status().isForbidden());
+        call("GET", "/api/v1/admin/home-services/offers", catalogOnly, null).andExpect(status().isOk());
+        call("GET", orders("/" + booking), ops, null).andExpect(status().isOk());
+
+        // Revoking takes effect on the very next request with the same token.
+        int revoked = db.update("update identity.admin_grants set revoked_at = now(), revoked_by_user_id = ?::uuid where user_id = ?::uuid and permission = 'HOME_SERVICES_OPERATIONS' and revoked_at is null",
+                opsUser, opsUser);
+        assertThat(revoked).isEqualTo(1);
+        call("GET", orders(""), ops, null).andExpect(status().isForbidden());
+        call("POST", orders("/" + booking + "/cancel"), ops, "{\"expectedVersion\":" + version(booking) + ",\"reason\":\"after revoke\"}").andExpect(status().isForbidden());
+        assertThat(statusOf(booking)).isIn("PENDING", "CONFIRMED");
+
+        // A fresh grant restores access.
+        db.update("INSERT INTO identity.admin_grants (user_id, permission, reason) VALUES (?::uuid, 'HOME_SERVICES_OPERATIONS', 'synthetic re-grant')", opsUser);
+        call("GET", orders(""), ops, null).andExpect(status().isOk());
+    }
+
+    @Test
     void auditIsAppendOnly() throws Exception {
         String booking = confirm(orderFor(customer, "admin-orders-audit-00000001"));
         call("POST", orders("/" + booking + "/cancel"), ops, "{\"expectedVersion\":" + version(booking) + ",\"reason\":\"audit\"}").andExpect(status().isOk());
